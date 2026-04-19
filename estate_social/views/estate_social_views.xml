@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Botones de redes sociales en el formulario de propiedad -->
+    <record id="estate_property_social_buttons" model="ir.ui.view">
+        <field name="name">estate.property.social.buttons</field>
+        <field name="model">estate.property</field>
+        <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Redes Sociales" name="social">
+
+                    <group string="🚀 Publicar en Redes Sociales">
+                        <div class="o_field_widget text-center py-3">
+                            <h5 class="text-muted mb-2">Publicación automática vía API</h5>
+                            <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                                <button name="action_publish_facebook"
+                                        string="📘 Publicar en Facebook"
+                                        type="object" class="btn btn-primary"
+                                        confirm="¿Publicar esta propiedad en tu página de Facebook?"
+                                        invisible="fb_published"/>
+                                <button name="action_unpublish_facebook"
+                                        string="🗑️ Eliminar de Facebook"
+                                        type="object" class="btn btn-outline-danger"
+                                        confirm="¿Eliminar el post de Facebook?"
+                                        invisible="not fb_published"/>
+                                <button name="action_publish_instagram"
+                                        string="📸 Publicar en Instagram"
+                                        type="object" class="btn btn-warning"
+                                        confirm="¿Publicar esta propiedad en Instagram Business?"
+                                        invisible="ig_published"/>
+                            </div>
+                            <div class="d-flex flex-wrap justify-content-center gap-2">
+                                <field name="fb_published" widget="boolean_toggle" nolabel="1"/>
+                                <span class="text-muted small me-3">Facebook</span>
+                                <field name="ig_published" widget="boolean_toggle" nolabel="1"/>
+                                <span class="text-muted small">Instagram</span>
+                            </div>
+                        </div>
+                    </group>
+
+                    <group string="📣 Compartir manualmente">
+                        <div class="o_field_widget text-center py-3">
+                            <div class="d-flex flex-wrap justify-content-center gap-2">
+                                <button name="action_share_facebook"
+                                        string="📘 Compartir en Facebook"
+                                        type="object" class="btn btn-outline-primary"/>
+                                <button name="action_share_whatsapp"
+                                        string="💬 WhatsApp (difusión)"
+                                        type="object" class="btn btn-outline-success"/>
+                                <button name="action_whatsapp_business_contact"
+                                        string="📲 WhatsApp Business"
+                                        type="object" class="btn btn-outline-success"/>
+                                <button name="action_share_instagram"
+                                        string="📸 Copiar caption Instagram"
+                                        type="object" class="btn btn-outline-warning"/>
+                                <button name="action_share_twitter"
+                                        string="🐦 Twitter/X"
+                                        type="object" class="btn btn-outline-info"/>
+                            </div>
+                        </div>
+                    </group>
+
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Config Settings View (inherit) -->
+    <record id="estate_ai_config_settings_view" model="ir.ui.view">
+        <field name="name">estate.ai.config.settings</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Agente IA Inmobiliario" string="Agente IA Inmobiliario" name="estate_ai_agent">
+                    <block title="Configuración del Agente Inteligente" name="estate_ai_settings">
+                        <setting string="Activar Agente IA" help="Habilitar o deshabilitar el agente conversacional">
+                            <field name="ai_active"/>
+                        </setting>
+                        <setting string="Proveedor de IA" help="Seleccione el proveedor de inteligencia artificial">
+                            <field name="ai_provider" widget="radio"/>
+                        </setting>
+                        <setting string="API Key" help="Clave de acceso a la API del proveedor">
+                            <field name="ai_api_key" password="True"/>
+                        </setting>
+                        <setting string="Modelo" help="Modelo de IA a utilizar (ej: gpt-4o, gemini-1.5-flash, gemini-1.5-pro)">
+                            <field name="ai_model"/>
+                        </setting>
+                        <setting string="Temperatura" help="Controla la creatividad de las respuestas (0-1)">
+                            <field name="ai_temperature"/>
+                        </setting>
+                        <setting string="Máximo de Tokens" help="Límite de longitud de las respuestas">
+                            <field name="ai_max_tokens"/>
+                        </setting>
+                        <setting string="Prompt del Sistema" help="Instrucciones base para el agente IA">
+                            <field name="ai_system_prompt"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

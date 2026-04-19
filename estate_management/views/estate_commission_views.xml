@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         GRÁFICO — Rendimiento de Asesores
+    ============================================================ -->
+    <record id="estate_commission_view_graph" model="ir.ui.view">
+        <field name="name">estate.commission.graph</field>
+        <field name="model">estate.commission</field>
+        <field name="arch" type="xml">
+            <graph string="Rendimiento de Asesores" type="bar" sample="1">
+                <field name="user_id" type="row"/>
+                <field name="type" type="col"/>
+                <field name="amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         PIVOT — Análisis 360 de Comisiones
+    ============================================================ -->
+    <record id="estate_commission_view_pivot" model="ir.ui.view">
+        <field name="name">estate.commission.pivot</field>
+        <field name="model">estate.commission</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Comisiones" display_quantity="true" sample="1">
+                <field name="user_id" type="row"/>
+                <field name="type" type="col"/>
+                <field name="amount" type="measure"/>
+                <field name="date" interval="month" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         LISTA
+    ============================================================ -->
+    <record id="estate_commission_view_tree" model="ir.ui.view">
+        <field name="name">estate.commission.tree</field>
+        <field name="model">estate.commission</field>
+        <field name="arch" type="xml">
+            <list string="Comisiones"
+                  decoration-info="state == 'draft'"
+                  decoration-success="state == 'paid'"
+                  decoration-warning="state == 'approved'"
+                  decoration-danger="state == 'cancelled'">
+                <field name="date"/>
+                <field name="name"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="property_id"/>
+                <field name="type" widget="badge"
+                       decoration-info="type == 'rental'"
+                       decoration-success="type == 'sale'"
+                       decoration-warning="type == 'bonus'"/>
+                <field name="amount" sum="Total Comisiones" widget="monetary"
+                       options="{'currency_field': 'company_currency'}"/>
+                <field name="company_currency" column_invisible="1"/>
+                <field name="invoice_id" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'paid'"
+                       decoration-warning="state == 'approved'"
+                       decoration-info="state == 'draft'"
+                       decoration-danger="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         FORMULARIO
+    ============================================================ -->
+    <record id="estate_commission_view_form" model="ir.ui.view">
+        <field name="name">estate.commission.form</field>
+        <field name="model">estate.commission</field>
+        <field name="arch" type="xml">
+            <form string="Comisión Inmobiliaria">
+                <header>
+                    <button name="action_approve" string="Aprobar" type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_generate_invoice"
+                            string="Generar Factura" type="object"
+                            class="btn-success"
+                            invisible="state not in ('draft', 'approved') or invoice_id != False"
+                            confirm="¿Generar una factura de proveedor para pagar esta comisión al asesor?"/>
+                    <button name="action_view_invoice" string="Ver Factura" type="object"
+                            invisible="not invoice_id"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                            invisible="state in ('paid', 'cancelled')"
+                            confirm="¿Está seguro de cancelar esta comisión?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-file-text-o"
+                                type="object" name="action_view_invoice"
+                                invisible="not invoice_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Factura</span>
+                                <span class="o_stat_value">
+                                    <field name="invoice_state" readonly="1"/>
+                                </span>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Comisión">
+                            <field name="property_id"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="type"/>
+                            <field name="date"/>
+                        </group>
+                        <group string="Monto">
+                            <field name="amount" widget="monetary"
+                                   options="{'currency_field': 'company_currency'}"/>
+                            <field name="company_currency"/>
+                            <field name="invoice_id" readonly="1"/>
+                        </group>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         BÚSQUEDA
+    ============================================================ -->
+    <record id="estate_commission_view_search" model="ir.ui.view">
+        <field name="name">estate.commission.search</field>
+        <field name="model">estate.commission</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Comisiones">
+                <field name="name"/>
+                <field name="user_id"/>
+                <field name="property_id"/>
+                <filter string="Borrador" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Aprobada" name="approved" domain="[('state','=','approved')]"/>
+                <filter string="Pagada" name="paid" domain="[('state','=','paid')]"/>
+                <separator/>
+                <filter string="Venta" name="type_sale" domain="[('type','=','sale')]"/>
+                <filter string="Alquiler" name="type_rental" domain="[('type','=','rental')]"/>
+                <filter string="Bono" name="type_bonus" domain="[('type','=','bonus')]"/>
+                <separator/>
+                <filter string="Sin Factura" name="no_invoice" domain="[('invoice_id','=',False)]"/>
+                <separator/>
+                <filter string="Agrupar por Asesor" name="group_user"
+                        context="{'group_by': 'user_id'}"/>
+                <filter string="Agrupar por Tipo" name="group_type"
+                        context="{'group_by': 'type'}"/>
+                <filter string="Agrupar por Mes" name="group_month"
+                        context="{'group_by': 'date:month'}"/>
+                <filter string="Agrupar por Estado" name="group_state"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         ACCIÓN
+    ============================================================ -->
+    <record id="action_estate_commission_dashboard" model="ir.actions.act_window">
+        <field name="name">Inteligencia de Comisiones</field>
+        <field name="res_model">estate.commission</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="context">{'search_default_group_user': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Centro de Inteligencia Financiera.
+            </p>
+            <p>Aquí verás el rendimiento real de tus asesores y la salud financiera de tus cierres.</p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Heredar Form View -->
+    <record id="crm_lead_view_form_inherit_estate" model="ir.ui.view">
+        <field name="name">crm.lead.form.inherit.estate</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='probability']" position="after">
+                <field name="match_percentage" widget="percentpie" invisible="type == 'lead'"/>
+                <field name="lead_score" widget="priority" invisible="type == 'lead'"/>
+            </xpath>
+            <xpath expr="//div[@id='probability']" position="after">
+                <div class="col-auto ms-4 border-start ps-4" invisible="type == 'lead'">
+                    <label for="lead_temperature" class="d-block text-muted small mb-0">Temperatura</label>
+                    <field name="lead_temperature" widget="label_selection" options="{'classes': {'cold': 'info', 'warm': 'success', 'hot': 'warning', 'boiling': 'danger'}}" class="h5 mb-0 fw-bold"/>
+                </div>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <widget name="web_ribbon" title="GOLDEN" bg_color="bg-warning" invisible="not is_golden_opportunity" />
+                <div class="oe_button_box" name="button_box_estate">
+                    <button name="action_schedule_meeting" type="object"
+                        class="oe_stat_button" icon="fa-calendar"
+                        invisible="not target_property_id">
+                        <span>Agendar Visita</span>
+                    </button>
+                    <button name="action_view_lead_offers" type="object"
+                        class="oe_stat_button" icon="fa-handshake-o"
+                        invisible="offer_count == 0 and not target_property_id">
+                        <field name="offer_count" widget="statinfo" string="Ofertas"/>
+                    </button>
+                    <button name="action_view_lead_contracts" type="object"
+                        class="oe_stat_button" icon="fa-file-text">
+                        <field name="contract_count" widget="statinfo" string="Contratos"/>
+                    </button>
+                    <button name="action_view_lead_sale_orders" type="object"
+                        class="oe_stat_button" icon="fa-shopping-cart">
+                        <field name="sale_order_count" widget="statinfo" string="Órdenes"/>
+                    </button>
+                    <button name="action_view_documents" type="object"
+                        class="oe_stat_button" icon="fa-folder-open-o"
+                        invisible="estate_document_count == 0">
+                        <field name="estate_document_count" widget="statinfo" string="Docs"/>
+                    </button>
+                    <button name="action_view_lead_interactions" type="object"
+                        class="oe_stat_button" icon="fa-comments-o">
+                        <field name="interaction_count" widget="statinfo" string="Interacciones"/>
+                    </button>
+                </div>
+            </xpath>
+            <xpath expr="//header/field[@name='stage_id']" position="before">
+                <button name="action_print_quotation" string="Cotización PDF" type="object"
+                    class="btn-secondary" icon="fa-download"
+                    invisible="type == 'lead'"/>
+                <button name="action_send_quotation_email" string="Enviar Cotización" type="object"
+                    class="btn-secondary" icon="fa-envelope"
+                    invisible="type == 'lead' or not partner_id"/>
+                <button name="action_ai_matchmaker" string=" AI Matchmaker" type="object" class="oe_highlight btn-info" icon="fa-magic"/>
+                <button name="action_send_whatsapp" string=" WhatsApp" type="object" class="btn-success" icon="fa-whatsapp"/>
+                <button name="action_create_offer_from_lead" string="Nueva Oferta" type="object"
+                    class="btn-warning" icon="fa-handshake-o"
+                    invisible="not target_property_id or type == 'lead'"/>
+                <button name="action_reserve_property_from_lead" string="Reservar Propiedad" type="object"
+                    class="btn-secondary" icon="fa-lock"
+                    invisible="not target_property_id or type == 'lead'"/>
+                <button name="action_create_sale_order_from_lead" string="Crear Orden de Venta" type="object"
+                    class="btn-success" icon="fa-shopping-cart"
+                    invisible="type == 'lead'"/>
+                <button name="action_create_invoice_from_lead" string="Generar Factura" type="object"
+                    class="btn-primary" icon="fa-file-text-o"
+                    invisible="not target_property_id or type == 'lead'"/>
+            </xpath>
+            <!-- Pestañas: Ubicación GPS y Documentos Internos -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Ubicación GPS" name="page_gps"
+                      invisible="not target_property_id">
+                    <group>
+                        <group string="Coordenadas de la Propiedad">
+                            <field name="property_latitude" string="Latitud" readonly="1"/>
+                            <field name="property_longitude" string="Longitud" readonly="1"/>
+                            <field name="property_map_url" string="Ver en Google Maps" widget="url" readonly="1"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Timeline de Interacciones" name="page_timeline">
+                    <field name="interaction_ids" nolabel="1"
+                           context="{'default_lead_id': id, 'default_partner_id': partner_id, 'default_property_id': target_property_id}">
+                        <list string="Interacciones" editable="bottom" default_order="date desc">
+                            <field name="date"/>
+                            <field name="interaction_type" widget="badge"/>
+                            <field name="summary"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="property_id"/>
+                        </list>
+                    </field>
+                </page>
+                <page string="Documentos Internos" name="page_docs_private">
+                    <field name="document_ids" nolabel="1">
+                        <list string="Documentos del Lead" editable="bottom">
+                            <field name="name"/>
+                            <field name="document_type" widget="badge"/>
+                            <field name="date"/>
+                            <field name="file" widget="binary" filename="filename"/>
+                            <field name="filename" invisible="1"/>
+                            <field name="notes"/>
+                        </list>
+                    </field>
+                    <p class="text-muted small" style="margin-top:8px;">
+                        Estos documentos son privados del backend. No son visibles en el portal del cliente.
+                    </p>
+                </page>
+            </xpath>
+            <xpath expr="//group" position="after">
+                <group name="elite_crm_intelligence" string="Inmobiliaria Elite ">
+                    <field name="lead_source" widget="badge"
+                        decoration-info="lead_source in ('website','wordpress','portal','ai_agent')"
+                        decoration-success="lead_source in ('referral','walk_in')"
+                        decoration-warning="lead_source in ('whatsapp','instagram')"
+                        decoration-muted="lead_source == 'other'"/>
+                    <field name="referral_partner_id" placeholder="¿Quién lo refirió?" invisible="lead_source != 'referral'"/>
+                    <field name="target_property_id" placeholder="Cruce automático vía Matchmaker..."/>
+                    <field name="client_budget" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                    <field name="match_percentage" widget="progressbar"/>
+                    <field name="expected_commission" widget="monetary" decoration-bf="1" decoration-success="expected_commission &gt; 5000"/>
+                    <field name="lead_velocity_days" readonly="1" decoration-danger="lead_velocity_days &gt; 14" decoration-warning="lead_velocity_days &gt; 7"/>
+                    <field name="closing_difficulty" widget="badge" decoration-success="closing_difficulty == 'easy'" decoration-warning="closing_difficulty == 'moderate'" decoration-danger="closing_difficulty == 'hard'"/>
+                    <field name="smart_negotiation_tips" decoration-info="1" invisible="not smart_negotiation_tips"/>
+                    <field name="is_golden_opportunity" invisible="1"/>
+                </group>
+                <group name="preferred_property" string="Propiedad Buscada">
+                    <field name="preferred_property_type_id" placeholder="Ej. Casa, Apartamento..."/>
+                    <field name="preferred_city" placeholder="Ej. Cuenca, Quito..."/>
+                    <field name="preferred_bedrooms"/>
+                    <field name="preferred_min_area" string="Área Mín. (m²)"/>
+                    <field name="preferred_max_area" string="Área Máx. (m²)"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Heredar Formulario de Creación Rápida -->
+    <record id="crm_lead_view_form_quick_create_inherit_estate" model="ir.ui.view">
+        <field name="name">crm.lead.form.quick.create.inherit.estate</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.quick_create_opportunity_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='expected_revenue']" position="after">
+                <field name="client_budget" string="Presupuesto" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                <field name="city" placeholder="Ciudad Deseada..."/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Heredar Kanban View para mostrar el Match % -->
+    <record id="crm_case_kanban_view_leads_inherit_estate" model="ir.ui.view">
+        <field name="name">crm.lead.kanban.inherit.estate</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="inside">
+                <field name="is_golden_opportunity"/>
+                <field name="lead_temperature"/>
+                <field name="lead_source"/>
+                <field name="match_percentage"/>
+                <field name="expected_commission"/>
+                <field name="lead_velocity_days"/>
+            </xpath>
+            <xpath expr="//footer" position="before">
+                <div class="o_kanban_record_subtitle mt-1 mb-1">
+                    <field name="lead_score" widget="badge" decoration-danger="lead_score == 'high'" decoration-warning="lead_score == 'medium'" decoration-info="lead_score == 'low'"/>
+                    <span class="ms-2 fw-bold text-primary" t-if="record.expected_revenue.raw_value > 0">
+                        <i class="fa fa-money"/> $<field name="expected_revenue"/>
+                    </span>
+                    <span class="ms-2 badge text-bg-secondary small" t-if="record.lead_source.raw_value">
+                        <field name="lead_source"/>
+                    </span>
+                </div>
+                <div t-if="record.match_percentage.raw_value > 0" class="mt-1">
+                    <span class="badge rounded-pill text-bg-success" t-if="record.match_percentage.raw_value &gt;= 80">
+                        <i class="fa fa-star"/> Match: <field name="match_percentage"/>%
+                    </span>
+                    <span class="badge rounded-pill text-bg-warning" t-if="record.match_percentage.raw_value &lt; 80 and record.match_percentage.raw_value &gt;= 50">
+                        <i class="fa fa-star-half-o"/> Match: <field name="match_percentage"/>%
+                    </span>
+                    <span class="badge rounded-pill text-bg-danger" t-if="record.match_percentage.raw_value &lt; 50">
+                        <i class="fa fa-star-o"/> Match: <field name="match_percentage"/>%
+                    </span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

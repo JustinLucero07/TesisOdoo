@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_whatsapp_config_view" model="ir.ui.view">
+        <field name="name">estate.calendar.whatsapp.config</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="WhatsApp Citas" string="WhatsApp Citas" name="estate_calendar">
+                    <block title="Recordatorios WhatsApp — Meta Cloud API" name="whatsapp_settings">
+                        <setting id="whatsapp_active_setting"
+                                 string="WhatsApp Activo"
+                                 help="Enviar recordatorios automáticos por WhatsApp 1 hora antes de cada cita.">
+                            <field name="whatsapp_active"/>
+                        </setting>
+                        <setting id="whatsapp_phone_number_id_setting"
+                                 string="Phone Number ID"
+                                 help="Encuéntralo en developers.facebook.com → Tu App → WhatsApp → Configuración de la API.">
+                            <field name="whatsapp_phone_number_id" placeholder="Ej: 123456789012345"/>
+                        </setting>
+                        <setting id="whatsapp_access_token_setting"
+                                 string="Access Token"
+                                 help="Token permanente generado en Meta Business → Usuarios del sistema.">
+                            <field name="whatsapp_access_token" password="True" placeholder="EAAx..."/>
+                        </setting>
+                        <setting id="whatsapp_template_name_setting"
+                                 string="Nombre de Plantilla"
+                                 help="Nombre exacto de la plantilla aprobada en Meta (ej: recordatorio_cita). Debe tener 4 parámetros: cita, hora, cliente, propiedad.">
+                            <field name="whatsapp_template_name" placeholder="recordatorio_cita"/>
+                        </setting>
+                    </block>
+                    <block title="WhatsApp Business — Redes Sociales" name="whatsapp_social_settings">
+                        <setting id="whatsapp_business_number_setting"
+                                 string="Número WhatsApp Business"
+                                 help="Número de contacto directo para que los clientes interesados escriban por WhatsApp. Se usa en los botones de compartir propiedad.">
+                            <field name="whatsapp_business_number" placeholder="Ej: 593981234567"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

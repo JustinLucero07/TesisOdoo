@@ -1,0 +1,134 @@
+<odoo>
+    <!-- Menú principal consolidado -->
+    <menuitem id="estate_menu_root"
+              name="Inmobiliaria"
+              sequence="1"
+              web_icon="estate_management,static/description/icon.png"/>
+
+    <!-- 1. SECCIÓN: PROPIEDADES -->
+    <menuitem id="estate_menu_property_root"
+              name="Propiedades"
+              parent="estate_menu_root"
+              sequence="10"/>
+
+        <menuitem id="estate_menu_property_list"
+                  name="Catálogo"
+                  parent="estate_menu_property_root"
+                  action="estate_property_action"
+                  sequence="10"/>
+
+        <!-- Tipos de Inmueble movido a Configuración -->
+
+        <menuitem id="estate_menu_property_comparator"
+                  name="Comparar Propiedades"
+                  parent="estate_menu_property_root"
+                  action="estate_property_comparator_wizard_action"
+                  sequence="30"/>
+
+    <!-- 2. SECCIÓN: OPERACIONES -->
+    <menuitem id="estate_menu_operations_root"
+              name="Operaciones"
+              parent="estate_menu_root"
+              sequence="20"/>
+
+        <menuitem id="estate_menu_contract_list"
+                  name="Contratos"
+                  parent="estate_menu_operations_root"
+                  action="estate_contract_action"
+                  sequence="10"/>
+
+        <menuitem id="estate_menu_offer_list"
+                  name="Ofertas"
+                  parent="estate_menu_operations_root"
+                  action="estate_offer_action"
+                  sequence="30"/>
+
+        <menuitem id="estate_menu_appraisal_list"
+                  name="Tasaciones"
+                  parent="estate_menu_operations_root"
+                  action="estate_appraisal_action"
+                  sequence="50"/>
+
+        <menuitem id="estate_menu_tenant_request_list"
+                  name="Solicitudes de Mantenimiento"
+                  parent="estate_menu_operations_root"
+                  action="estate_tenant_request_action"
+                  sequence="60"/>
+
+        <menuitem id="estate_menu_deposit_list"
+                  name="Depósitos"
+                  parent="estate_menu_operations_root"
+                  action="estate_contract_deposit_action"
+                  sequence="70"/>
+
+
+    <!-- 4. SECCIÓN: PLANIFICACIÓN -->
+    <menuitem id="estate_menu_planning_root"
+              name="Planificación"
+              parent="estate_menu_root"
+              sequence="40"/>
+
+        <menuitem id="estate_menu_master_calendar"
+                  name="Calendario de Citas"
+                  parent="estate_menu_planning_root"
+                  action="calendar.action_calendar_event"
+                  sequence="10"/>
+    <!-- 5. SECCIÓN: INTELIGENCIA & AGENTE -->
+    <menuitem id="estate_menu_intel_root"
+              name="Inteligencia"
+              parent="estate_menu_root"
+              sequence="50"/>
+
+
+
+    <!-- Acción cliente: Calculadora de Hipoteca -->
+    <record id="action_mortgage_calculator" model="ir.actions.client">
+        <field name="name">Calculadora de Hipoteca</field>
+        <field name="tag">estate_mortgage_calculator</field>
+    </record>
+
+    <menuitem id="estate_menu_mortgage_calculator"
+              name="Calculadora Hipotecaria"
+              parent="estate_menu_planning_root"
+              action="action_mortgage_calculator"
+              sequence="30"/>
+
+    <!-- 6. SECCIÓN: CONFIGURACIÓN -->
+    <menuitem id="estate_menu_config_root"
+              name="Configuración"
+              parent="estate_menu_root"
+              sequence="100"
+              groups="estate_group_admin"/>
+
+        <record id="action_estate_roles" model="ir.actions.act_window">
+            <field name="name">Roles Inmobiliarios</field>
+            <field name="res_model">res.groups</field>
+            <field name="view_mode">list,form</field>
+            <field name="domain" eval="[('privilege_id.category_id', '=', ref('estate_management.module_category_real_estate'))]"/>
+            <field name="context" eval="{'search_default_privilege_id_category_id': ref('estate_management.module_category_real_estate')}"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Permisos de Inmobiliaria
+                </p>
+                <p>Aquí verás los roles principales: Agente, Manager y Administrador.</p>
+            </field>
+        </record>
+
+        <menuitem id="estate_menu_config_roles"
+                  name="Roles Inmobiliarios"
+                  parent="estate_menu_config_root"
+                  action="action_estate_roles"
+                  sequence="10"/>
+
+        <menuitem id="estate_menu_config_users"
+                  name="Usuarios del Sistema"
+                  parent="estate_menu_config_root"
+                  action="base.action_res_users"
+                  sequence="20"/>
+
+        <menuitem id="estate_menu_config_property_types"
+                  name="Tipos de Inmueble"
+                  parent="estate_menu_config_root"
+                  action="estate_property_type_action"
+                  sequence="30"/>
+</odoo>

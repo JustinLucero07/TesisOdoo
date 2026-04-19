@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_partner_form_inherit_estate" model="ir.ui.view">
+            <field name="name">res.partner.form.inherit.estate</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+
+                <!-- Smart buttons: propiedades, contratos, pagos -->
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_view_owned_properties" type="object"
+                            class="oe_stat_button" icon="fa-building"
+                            invisible="property_owned_count == 0">
+                        <field name="property_owned_count" string="Propiedades" widget="statinfo"/>
+                    </button>
+                    <button name="action_view_bought_properties" type="object"
+                            class="oe_stat_button" icon="fa-home"
+                            invisible="property_bought_count == 0">
+                        <field name="property_bought_count" string="Compras" widget="statinfo"/>
+                    </button>
+                    <button name="action_view_contracts" type="object"
+                            class="oe_stat_button" icon="fa-file-text-o"
+                            invisible="contract_count == 0">
+                        <field name="contract_count" string="Contratos" widget="statinfo"/>
+                    </button>
+                    <button name="action_view_estate_payments" type="object"
+                            class="oe_stat_button" icon="fa-money"
+                            invisible="estate_payment_count == 0">
+                        <field name="estate_payment_count" string="Pagos" widget="statinfo"/>
+                    </button>
+                </xpath>
+
+                <!-- Tab "Inmobiliaria" con roles, alianza y etiquetas -->
+                <xpath expr="//page[@name='contact_addresses']" position="after">
+                    <page string="Inmobiliaria" name="estate_info">
+                        <group>
+                            <group string="Rol en Inmobi">
+                                <field name="is_property_owner"/>
+                                <field name="category_id"
+                                       widget="many2many_tags"
+                                       string="Etiquetas de Rol"
+                                       options="{'color_field': 'color'}"/>
+                                <field name="preferred_contact"/>
+                                <field name="best_contact_time"/>
+                            </group>
+                            <group string="Documento de Identidad">
+                                <field name="id_type"/>
+                                <field name="id_number"/>
+                            </group>
+                            <group string="Cuenta Bancaria (Pagos de Arriendo)">
+                                <field name="bank_account_name"/>
+                                <field name="bank_account_number"/>
+                                <field name="bank_name"/>
+                                <field name="bank_account_type"/>
+                            </group>
+                            <group string="Copropietarios" invisible="not is_property_owner">
+                                <field name="ownership_percentage"/>
+                                <field name="co_owner_ids" widget="many2many_tags"/>
+                            </group>
+                            <group string="Red de Agencias Aliadas">
+                                <field name="is_allied_agency"/>
+                                <field name="agency_commission_rate"
+                                       invisible="not is_allied_agency"/>
+                                <field name="allied_specialty"
+                                       invisible="not is_allied_agency"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Filtros extra en la vista de lista de contactos -->
+        <record id="view_partner_filter_inherit_estate" model="ir.ui.view">
+            <field name="name">res.partner.search.inherit.estate</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_res_partner_filter"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='customer']" position="after">
+                    <filter string="Propietarios" name="owners"
+                            domain="[('is_property_owner','=',True)]"/>
+                    <filter string="Agencias Aliadas" name="agencies"
+                            domain="[('is_allied_agency','=',True)]"/>
+                    <separator/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

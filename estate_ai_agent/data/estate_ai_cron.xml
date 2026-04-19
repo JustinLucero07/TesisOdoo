@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Cron: Agente Proactivo (B6) — se ejecuta diariamente -->
+        <record id="cron_estate_ai_proactive_agent" model="ir.cron">
+            <field name="name">Agente IA: Alertas Proactivas Diarias</field>
+            <field name="model_id" ref="estate_ai_agent.model_estate_ai_chat_history"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_proactive_agent()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

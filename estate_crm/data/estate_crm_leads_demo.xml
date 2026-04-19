@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- ============ 5 CONTACTOS (res.partner) ============ -->
+        <record id="partner_demo_01" model="res.partner">
+            <field name="name">Eduardo Torres</field>
+            <field name="email">eduardo.t@ejemplo.com</field>
+            <field name="phone">0981112222</field>
+            <field name="city">Cuenca</field>
+        </record>
+
+        <record id="partner_demo_02" model="res.partner">
+            <field name="name">Sofía Narváez</field>
+            <field name="email">sofia.n@ejemplo.com</field>
+            <field name="phone">0992223333</field>
+            <field name="city">Quito</field>
+        </record>
+
+        <record id="partner_demo_03" model="res.partner">
+            <field name="name">Miguel Endara</field>
+            <field name="email">miguel.e@ejemplo.com</field>
+            <field name="phone">0973334444</field>
+            <field name="city">Guayaquil</field>
+        </record>
+
+        <record id="partner_demo_04" model="res.partner">
+            <field name="name">Valeria Román</field>
+            <field name="email">valeria.r@ejemplo.com</field>
+            <field name="phone">0964445555</field>
+            <field name="city">Cuenca</field>
+        </record>
+
+        <record id="partner_demo_05" model="res.partner">
+            <field name="name">Andrés Salazar</field>
+            <field name="email">andres.s@ejemplo.com</field>
+            <field name="phone">0955556666</field>
+            <field name="city">Cuenca</field>
+        </record>
+
+        <!-- ============ FLUJO EN EL CRM (crm.lead) ============ -->
+        
+        <record id="lead_demo_01" model="crm.lead">
+            <field name="name">Busca Casa Moderna en El Batán</field>
+            <field name="partner_id" ref="partner_demo_01"/>
+            <field name="type">opportunity</field>
+            <field name="expected_revenue">185000</field>
+            <field name="client_budget">190000</field>
+            <field name="city">Cuenca</field>
+            <field name="stage_id" ref="crm.stage_lead1"/>  <!-- Nuevo -->
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
+
+        <record id="lead_demo_02" model="crm.lead">
+            <field name="name">Departamento para Estudiante</field>
+            <field name="partner_id" ref="partner_demo_02"/>
+            <field name="type">opportunity</field>
+            <field name="expected_revenue">95000</field>
+            <field name="client_budget">100000</field>
+            <field name="city">Cuenca</field>
+            <field name="stage_id" ref="crm.stage_lead2"/>  <!-- Calificado -->
+            <field name="user_id" ref="estate_management.user_agent_01"/>
+        </record>
+
+        <record id="lead_demo_03" model="crm.lead">
+            <field name="name">Interés en Oficina Corporativa</field>
+            <field name="partner_id" ref="partner_demo_03"/>
+            <field name="type">opportunity</field>
+            <field name="expected_revenue">125000</field>
+            <field name="client_budget">120000</field>
+            <field name="city">Cuenca</field>
+            <field name="stage_id" ref="crm.stage_lead3"/>  <!-- Propuesta -->
+            <field name="user_id" ref="estate_management.user_agent_02"/>
+            <field name="target_property_id" ref="estate_management.property_demo_04"/>
+        </record>
+
+        <record id="lead_demo_04" model="crm.lead">
+            <field name="name">Inversión en Terreno Industrial</field>
+            <field name="partner_id" ref="partner_demo_04"/>
+            <field name="type">opportunity</field>
+            <field name="expected_revenue">280000</field>
+            <field name="client_budget">285000</field>
+            <field name="city">Cuenca</field>
+            <field name="stage_id" ref="crm.stage_lead1"/>
+            <field name="user_id" ref="estate_management.user_manager_01"/>
+        </record>
+
+        <record id="lead_demo_05" model="crm.lead">
+            <field name="name">Busca Casa Campestre</field>
+            <field name="partner_id" ref="partner_demo_05"/>
+            <field name="type">opportunity</field>
+            <field name="expected_revenue">240000</field>
+            <field name="client_budget">250000</field>
+            <field name="city">Cuenca</field>
+            <field name="stage_id" ref="crm.stage_lead2"/>
+            <field name="user_id" ref="base.user_admin"/>
+        </record>
+
+    </data>
+</odoo>

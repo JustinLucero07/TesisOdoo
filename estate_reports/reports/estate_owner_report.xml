@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         REPORTE 1: Gestión Mensual para el Propietario
+    ============================================================ -->
+    <record id="action_report_owner_monthly" model="ir.actions.report">
+        <field name="name">Reporte de Gestión — Propietario</field>
+        <field name="model">estate.property</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_owner_monthly_template</field>
+        <field name="report_file">estate_reports.report_owner_monthly_template</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_property"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_owner_monthly_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="prop">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- Encabezado -->
+                        <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 12px; margin-bottom: 20px;">
+                            <h2 style="color: #1B4F72; margin: 0;">Reporte de Gestión Inmobiliaria</h2>
+                            <p style="margin: 4px 0 0 0; color: #666;">
+                                Preparado para: <strong><t t-out="prop.owner_id.name or 'Propietario'"/></strong>
+                                &#160;·&#160; Fecha: <strong><t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></strong>
+                            </p>
+                        </div>
+
+                        <!-- Datos de la propiedad -->
+                        <h4 style="color: #2E86C1; border-left: 4px solid #2E86C1; padding-left: 8px;">
+                            <t t-out="prop.title"/>
+                        </h4>
+                        <table class="table table-sm table-bordered" style="font-size: 13px; width: 100%;">
+                            <tr><td style="width:40%; background:#f8f9fa;"><strong>Dirección</strong></td>
+                                <td><t t-out="(prop.street or '') + (', ' + prop.city if prop.city else '')"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Tipo</strong></td>
+                                <td><t t-out="prop.property_type_id.name or '—'"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Precio Actual</strong></td>
+                                <td><strong>$<t t-out="'{:,.0f}'.format(prop.price)"/></strong></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Valor AVM Estimado</strong></td>
+                                <td>$<t t-out="'{:,.0f}'.format(prop.avm_estimated_price or 0)"/>
+                                    &#160;<span t-if="prop.avm_status == 'fair'" style="color:green;">(Alineado al mercado)</span>
+                                    <span t-if="prop.avm_status == 'high'" style="color:red;">(Sobrevalorado)</span>
+                                    <span t-if="prop.avm_status == 'low'" style="color:orange;">(Oportunidad)</span>
+                                </td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Estado</strong></td>
+                                <td><t t-out="dict([('available','Disponible'),('reserved','Reservado'),('sold','Vendido'),('rented','Alquilado')]).get(prop.state, prop.state)"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Días en el Mercado</strong></td>
+                                <td><t t-out="prop.days_on_market"/> días</td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Score de la Propiedad</strong></td>
+                                <td><t t-out="prop.property_score"/>/100 — <t t-out="prop.property_score_label or '—'"/></td></tr>
+                        </table>
+
+                        <!-- Actividad del mes -->
+                        <h4 style="color: #2E86C1; border-left: 4px solid #2E86C1; padding-left: 8px; margin-top: 20px;">
+                            Actividad
+                        </h4>
+                        <table class="table table-sm table-bordered" style="font-size: 13px; width: 100%;">
+                            <tr><td style="width:40%; background:#f8f9fa;"><strong>Total de Visitas</strong></td>
+                                <td><t t-out="prop.meeting_count"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Ofertas Recibidas</strong></td>
+                                <td><t t-out="prop.offer_count"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Mejor Oferta</strong></td>
+                                <td t-if="prop.best_offer">$<t t-out="'{:,.0f}'.format(prop.best_offer)"/></td>
+                                <td t-else="">Sin ofertas</td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Publicado en Web</strong></td>
+                                <td><t t-out="'Sí' if prop.wp_published else 'No'"/></td></tr>
+                        </table>
+
+                        <!-- Historial de precios -->
+                        <t t-if="prop.price_history_ids">
+                            <h4 style="color: #2E86C1; border-left: 4px solid #2E86C1; padding-left: 8px; margin-top: 20px;">
+                                Historial de Precios
+                            </h4>
+                            <table class="table table-sm table-bordered" style="font-size: 12px;">
+                                <thead style="background: #1B4F72; color: white;">
+                                    <tr>
+                                        <th>Fecha</th><th>Precio Anterior</th><th>Precio Nuevo</th><th>Variación</th><th>Motivo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="prop.price_history_ids[:10]" t-as="ph">
+                                        <tr>
+                                            <td><t t-out="ph.date.strftime('%d/%m/%Y') if ph.date else '—'"/></td>
+                                            <td>$<t t-out="'{:,.0f}'.format(ph.old_price)"/></td>
+                                            <td>$<t t-out="'{:,.0f}'.format(ph.new_price)"/></td>
+                                            <td>
+                                                <span t-if="ph.change_pct &lt; 0" style="color:red;"><t t-out="'{:.1f}'.format(ph.change_pct)"/>%</span>
+                                                <span t-else="" style="color:green;">+<t t-out="'{:.1f}'.format(ph.change_pct)"/>%</span>
+                                            </td>
+                                            <td><t t-out="ph.change_reason or '—'"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <!-- Asesor responsable -->
+                        <div style="margin-top: 24px; padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 12px;">
+                            <strong>Asesor Responsable:</strong> <t t-out="prop.user_id.name or '—'"/>
+                            <t t-if="prop.co_user_id">
+                                &#160;·&#160; <strong>Co-Asesor:</strong> <t t-out="prop.co_user_id.name"/>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================================================
+         REPORTE 2: Estado de Cuenta del Contrato
+    ============================================================ -->
+    <record id="action_report_contract_statement" model="ir.actions.report">
+        <field name="name">Estado de Cuenta — Contrato</field>
+        <field name="model">estate.contract</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_contract_statement_template</field>
+        <field name="report_file">estate_reports.report_contract_statement_template</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_contract"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_contract_statement_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="contract">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 12px; margin-bottom: 20px;">
+                            <h2 style="color: #1B4F72; margin: 0;">Estado de Cuenta — Contrato</h2>
+                            <p style="margin: 4px 0 0 0; color: #666;">
+                                <strong><t t-out="contract.name"/></strong>
+                                &#160;·&#160; Fecha: <t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                            </p>
+                        </div>
+
+                        <table class="table table-sm table-bordered" style="font-size:13px;">
+                            <tr><td style="width:35%;background:#f8f9fa;"><strong>Cliente</strong></td>
+                                <td><t t-out="contract.partner_id.name"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Propiedad</strong></td>
+                                <td><t t-out="contract.property_id.title or '—'"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Tipo de Contrato</strong></td>
+                                <td><t t-out="dict([('sale','Compraventa'),('rent','Alquiler'),('exclusive','Exclusividad')]).get(contract.contract_type, '—')"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Fecha de Inicio</strong></td>
+                                <td><t t-out="contract.date_start.strftime('%d/%m/%Y') if contract.date_start else '—'"/></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Monto Total</strong></td>
+                                <td><strong>$<t t-out="'{:,.2f}'.format(contract.amount)"/></strong></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Total Pagado</strong></td>
+                                <td style="color: green;"><strong>$<t t-out="'{:,.2f}'.format(contract.total_paid)"/></strong></td></tr>
+                            <tr><td style="background:#f8f9fa;"><strong>Saldo Pendiente</strong></td>
+                                <td style="color: #c0392b;"><strong>$<t t-out="'{:,.2f}'.format(contract.amount - contract.total_paid)"/></strong></td></tr>
+                        </table>
+
+                        <h4 style="color:#2E86C1; border-left:4px solid #2E86C1; padding-left:8px; margin-top:20px;">Detalle de Pagos</h4>
+                        <table class="table table-sm table-bordered" style="font-size:12px;">
+                            <thead style="background:#1B4F72; color:white;">
+                                <tr><th>Referencia</th><th>Fecha</th><th>Método</th><th>Monto</th><th>Estado</th></tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="contract.payment_ids" t-as="pay">
+                                    <tr>
+                                        <td><t t-out="pay.name"/></td>
+                                        <td><t t-out="pay.date.strftime('%d/%m/%Y') if pay.date else '—'"/></td>
+                                        <td><t t-out="dict([('cash','Efectivo'),('bank','Transferencia'),('check','Cheque'),('card','Tarjeta')]).get(pay.payment_method,'—')"/></td>
+                                        <td>$<t t-out="'{:,.2f}'.format(pay.amount)"/></td>
+                                        <td>
+                                            <span t-if="pay.state == 'paid'" style="color:green;">Pagado</span>
+                                            <span t-elif="pay.state == 'pending'" style="color:orange;">Pendiente</span>
+                                            <span t-else="" style="color:red;">Anulado</span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ============================================================
+         REPORTE 3: Comisiones por Asesor
+    ============================================================ -->
+    <record id="action_report_commission_summary" model="ir.actions.report">
+        <field name="name">Reporte de Comisiones</field>
+        <field name="model">estate.commission</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_commission_summary_template</field>
+        <field name="report_file">estate_reports.report_commission_summary_template</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_commission"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_commission_summary_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 12px; margin-bottom: 20px;">
+                        <h2 style="color: #1B4F72; margin: 0;">Reporte de Comisiones</h2>
+                        <p style="margin: 4px 0 0 0; color: #666;">Fecha: <t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></p>
+                    </div>
+                    <table class="table table-sm table-bordered" style="font-size:12px;">
+                        <thead style="background:#1B4F72; color:white;">
+                            <tr><th>Referencia</th><th>Propiedad</th><th>Asesor</th><th>Tipo</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="docs" t-as="comm">
+                                <tr>
+                                    <td><t t-out="comm.name"/></td>
+                                    <td><t t-out="comm.property_id.title or '—'"/></td>
+                                    <td><t t-out="comm.user_id.name or '—'"/></td>
+                                    <td><t t-out="dict([('sale','Venta'),('rental','Alquiler'),('bonus','Bono')]).get(comm.type,'—')"/></td>
+                                    <td><t t-out="comm.date.strftime('%d/%m/%Y') if comm.date else '—'"/></td>
+                                    <td><strong>$<t t-out="'{:,.2f}'.format(comm.amount)"/></strong></td>
+                                    <td>
+                                        <span t-if="comm.state=='paid'" style="color:green;">Pagada</span>
+                                        <span t-elif="comm.state=='approved'" style="color:blue;">Aprobada</span>
+                                        <span t-elif="comm.state=='draft'" style="color:orange;">Borrador</span>
+                                        <span t-else="" style="color:red;">Cancelada</span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                        <tfoot>
+                            <tr style="background:#f8f9fa;">
+                                <td colspan="5"><strong>TOTAL</strong></td>
+                                <td><strong>$<t t-out="'{:,.2f}'.format(sum(d.amount for d in docs))"/></strong></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+</odoo>

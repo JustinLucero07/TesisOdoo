@@ -1,0 +1,521 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== REPORT ACTION ==================== -->
+    <record id="action_report_estate_general" model="ir.actions.report">
+        <field name="name">Reporte Inmobiliario</field>
+        <field name="model">estate.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_estate_general_template</field>
+        <field name="report_file">estate_reports.report_estate_general_template</field>
+    </record>
+
+    <!-- ==================== REPORT TEMPLATE ==================== -->
+    <template id="report_estate_general_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 class="text-center" style="color: #4472C4;">
+                            <t t-esc="data.get('form', {}).get('title', 'Reporte Inmobiliario')"/>
+                        </h2>
+                        <div class="row mt-3 mb-3" t-if="data.get('form', {}).get('date_from') or data.get('form', {}).get('date_to')">
+                            <div class="col-12 text-center">
+                                <span t-if="data['form'].get('date_from')">
+                                    <strong>Desde:</strong> <t t-esc="data['form']['date_from']"/>
+                                </span>
+                                <span t-if="data['form'].get('date_to')" class="ml-3">
+                                    <strong>Hasta:</strong> <t t-esc="data['form']['date_to']"/>
+                                </span>
+                            </div>
+                        </div>
+                        <hr/>
+
+                        <!-- Propiedades Disponibles -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'available_properties'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Ref.</th>
+                                        <th>Título</th>
+                                        <th>Tipo</th>
+                                        <th>Ciudad</th>
+                                        <th class="text-right">Precio</th>
+                                        <th class="text-right">Área (m²)</th>
+                                        <th class="text-center">Hab.</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/></td>
+                                            <td><t t-esc="rec.title"/></td>
+                                            <td><t t-esc="rec.property_type_id.name"/></td>
+                                            <td><t t-esc="rec.city"/></td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.price"/></td>
+                                            <td class="text-right"><t t-esc="rec.area"/></td>
+                                            <td class="text-center"><t t-esc="rec.bedrooms"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <p class="text-right"><strong>Total: <t t-esc="len(data['form']['records'])"/> propiedades</strong></p>
+                        </t>
+
+                        <!-- Reporte de Ventas -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'sales_report'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Ref.</th>
+                                        <th>Cliente</th>
+                                        <th>Propiedad</th>
+                                        <th>Fecha</th>
+                                        <th class="text-right">Monto</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="total" t-value="0"/>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/></td>
+                                            <td><t t-esc="rec.client_id.name"/></td>
+                                            <td><t t-esc="rec.property_id.title"/></td>
+                                            <td><t t-esc="rec.date_start"/></td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.amount"/></td>
+                                        </tr>
+                                        <t t-set="total" t-value="total + rec.amount"/>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; background-color: #E8EDF5;">
+                                        <td colspan="4" class="text-right">TOTAL:</td>
+                                        <td class="text-right">$<t t-esc="'%.2f' % total"/></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- Ingresos por Alquiler -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'rental_income'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Ref.</th>
+                                        <th>Cliente</th>
+                                        <th>Propiedad</th>
+                                        <th class="text-right">Monto</th>
+                                        <th>Fecha Pago</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="total" t-value="0"/>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/></td>
+                                            <td><t t-esc="rec.client_id.name"/></td>
+                                            <td><t t-esc="rec.property_id.title"/></td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.amount"/></td>
+                                            <td><t t-esc="rec.date_paid"/></td>
+                                        </tr>
+                                        <t t-set="total" t-value="total + rec.amount"/>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; background-color: #E8EDF5;">
+                                        <td colspan="3" class="text-right">TOTAL:</td>
+                                        <td class="text-right">$<t t-esc="'%.2f' % total"/></td>
+                                        <td/>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- Contratos Activos -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'active_contracts'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Ref.</th>
+                                        <th>Tipo</th>
+                                        <th>Cliente</th>
+                                        <th>Propiedad</th>
+                                        <th>Inicio</th>
+                                        <th>Fin</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/></td>
+                                            <td><span t-if="rec.contract_type == 'sale'">Venta</span><span t-else="">Alquiler</span></td>
+                                            <td><t t-esc="rec.client_id.name"/></td>
+                                            <td><t t-esc="rec.property_id.title"/></td>
+                                            <td><t t-esc="rec.date_start"/></td>
+                                            <td><t t-esc="rec.date_end"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <p class="text-right"><strong>Total: <t t-esc="len(data['form']['records'])"/> contratos activos</strong></p>
+                        </t>
+
+                        <!-- Pagos Pendientes -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'pending_payments'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Ref.</th>
+                                        <th>Cliente</th>
+                                        <th>Propiedad</th>
+                                        <th class="text-right">Monto</th>
+                                        <th>Vencimiento</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="total" t-value="0"/>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/></td>
+                                            <td><t t-esc="rec.client_id.full_name"/></td>
+                                            <td><t t-esc="rec.property_id.title"/></td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.amount"/></td>
+                                            <td><t t-esc="rec.date_due"/></td>
+                                            <td>
+                                                <span t-if="rec.state == 'pending'" class="badge" style="background-color: #FFC107;">Pendiente</span>
+                                                <span t-if="rec.state == 'overdue'" class="badge" style="background-color: #DC3545; color: white;">Vencido</span>
+                                            </td>
+                                        </tr>
+                                        <t t-set="total" t-value="total + rec.amount"/>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; background-color: #E8EDF5;">
+                                        <td colspan="3" class="text-right">TOTAL PENDIENTE:</td>
+                                        <td class="text-right">$<t t-esc="'%.2f' % total"/></td>
+                                        <td colspan="2"/>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- Clientes Activos -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'active_clients'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Ref.</th>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Celular</th>
+                                        <th>Agente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/></td>
+                                            <td><t t-esc="rec.partner_id.name"/></td>
+                                            <td><t t-esc="rec.email_from"/></td>
+                                            <td><t t-esc="rec.phone"/></td>
+                                            <td><t t-esc="rec.user_id.name"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <p class="text-right"><strong>Total: <t t-esc="len(data['form']['records'])"/> clientes activos</strong></p>
+                        </t>
+
+                        <!-- ==============================
+                             NUEVOS REPORTES INTELIGENTES (FASE 5)
+                             ============================== -->
+
+                        <!-- Agente Comisiones -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'agent_commissions'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Asesor Inmobiliario</th>
+                                        <th>Propiedad Vendida</th>
+                                        <th>Fecha de Cierre</th>
+                                        <th class="text-right">Monto Venta</th>
+                                        <th class="text-center">% Comisión</th>
+                                        <th class="text-right">Comisión Ganada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="total_commissions" t-value="0"/>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.user_id.name or 'Sin Asignar'"/></td>
+                                            <td><t t-esc="rec.title"/></td>
+                                            <td><t t-esc="rec.date_sold"/></td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.price"/></td>
+                                            <td class="text-center"><t t-esc="'%.1f' % rec.commission_percentage"/>%</td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.commission_amount"/></td>
+                                        </tr>
+                                        <t t-set="total_commissions" t-value="total_commissions + rec.commission_amount"/>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; background-color: #E8EDF5;">
+                                        <td colspan="5" class="text-right">TOTAL COMISIONES PAGADAS A AGENTES:</td>
+                                        <td class="text-right text-success">$<t t-esc="'%.2f' % total_commissions"/></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <!-- Análisis Geográfico y Mercado AVM -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'geographic_avm'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Código Propiedad</th>
+                                        <th>Ciudad / Ubicación</th>
+                                        <th>Tiempo en Mercado</th>
+                                        <th class="text-right">Área (m²)</th>
+                                        <th class="text-right">Precio Cierre</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/> - <t t-esc="rec.title"/></td>
+                                            <td><strong><t t-esc="rec.city"/></strong></td>
+                                            <td><t t-esc="rec.days_on_market"/> días</td>
+                                            <td class="text-right"><t t-esc="rec.area"/> m²</td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.price"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <!-- Retorno Marketing ROI -->
+                        <t t-if="data.get('form', {}).get('report_type') == 'marketing_roi'">
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr style="background-color: #D9E2F3;">
+                                        <th>Cliente Potencial (Lead)</th>
+                                        <th>Email / Celular</th>
+                                        <th>Origen (Fuente Marketing)</th>
+                                        <th>Asesor / Etapa</th>
+                                        <th class="text-right">Ingreso Proyectado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="total_revenue" t-value="0"/>
+                                    <t t-foreach="data['form']['records']" t-as="rec">
+                                        <tr>
+                                            <td><t t-esc="rec.name"/></td>
+                                            <td><t t-esc="rec.email_from"/> <t t-esc="rec.phone"/></td>
+                                            <td><span class="badge" style="background-color: #17A2B8; color: white;"><t t-esc="rec.source_id.name or 'Tráfico Directo'"/></span></td>
+                                            <td><t t-esc="rec.user_id.name"/> / <t t-esc="rec.stage_id.name"/></td>
+                                            <td class="text-right">$<t t-esc="'%.2f' % rec.expected_revenue"/></td>
+                                        </tr>
+                                        <t t-if="rec.stage_id.is_won">
+                                            <t t-set="total_revenue" t-value="total_revenue + rec.expected_revenue"/>
+                                        </t>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr style="font-weight: bold; background-color: #E8EDF5;">
+                                        <td colspan="4" class="text-right">TOTAL RECUPERADO (CIERRES EXÍTOSOS):</td>
+                                        <td class="text-right text-success">$<t t-esc="'%.2f' % total_revenue"/></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </t>
+
+                        <div class="mt-4 text-center" style="color: #888;">
+                            <small>Generado el <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/></small>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ==================== MEJORA 2A: FICHA TÉCNICA DE PROPIEDAD ==================== -->
+    <record id="action_report_ficha_tecnica" model="ir.actions.report">
+        <field name="name">Ficha Técnica de Propiedad</field>
+        <field name="model">estate.property</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_ficha_tecnica_template</field>
+        <field name="report_file">estate_reports.report_ficha_tecnica_template</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_property"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_ficha_tecnica_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family: Arial, sans-serif;">
+                        <!-- Cabecera con imagen y datos básicos -->
+                        <div style="display:flex; gap:20px; margin-bottom:20px; border-bottom:3px solid #1a56db; padding-bottom:20px;">
+                            <div style="flex:1;">
+                                <h1 style="color:#1a56db; font-size:22px; margin:0 0 5px;">
+                                    <t t-esc="doc.title or doc.name"/>
+                                </h1>
+                                <p style="color:#6b7280; margin:0; font-size:13px;">
+                                    <t t-esc="doc.street or ''"/>
+                                    <t t-if="doc.city">, <t t-esc="doc.city"/></t>
+                                </p>
+                                <div style="margin-top:12px;">
+                                    <span style="background:#1a56db;color:white;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;">
+                                        $<t t-esc="'{:,.2f}'.format(doc.price or 0)"/>
+                                    </span>
+                                    <span style="margin-left:8px;background:#e5e7eb;color:#374151;padding:4px 10px;border-radius:20px;font-size:12px;">
+                                        <t t-esc="dict(doc._fields['state'].selection).get(doc.state, '')"/>
+                                    </span>
+                                </div>
+                            </div>
+                            <div t-if="doc.qr_image" style="flex-shrink:0;">
+                                <img t-att-src="image_data_uri(doc.qr_image)" style="width:90px;height:90px;" alt="QR"/>
+                                <p style="text-align:center;font-size:9px;color:#9ca3af;margin:2px 0 0;">Escanear para más info</p>
+                            </div>
+                        </div>
+
+                        <!-- Características físicas -->
+                        <h3 style="color:#1a56db; font-size:14px; border-bottom:1px solid #e5e7eb; padding-bottom:5px;">Características del Inmueble</h3>
+                        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+                            <tr>
+                                <td style="padding:6px 0;width:33%;"><strong>Tipo:</strong> <t t-esc="doc.property_type_id.name if doc.property_type_id else 'N/A'"/></td>
+                                <td style="padding:6px 0;width:33%;"><strong>Área:</strong> <t t-esc="doc.area or 0"/> m²</td>
+                                <td style="padding:6px 0;width:33%;"><strong>Modalidad:</strong> <t t-esc="'Venta' if doc.offer_type == 'sale' else 'Arriendo'"/></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 0;"><strong>Habitaciones:</strong> <t t-esc="doc.bedrooms or 0"/></td>
+                                <td style="padding:6px 0;"><strong>Baños:</strong> <t t-esc="doc.bathrooms or 0"/></td>
+                                <td style="padding:6px 0;"><strong>Parqueaderos:</strong> <t t-esc="doc.parking_spaces or 0"/></td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 0;" colspan="2"><strong>Antigüedad:</strong> <t t-esc="doc.year_built or 'N/A'"/></td>
+                                <td style="padding:6px 0;"><strong>Piso:</strong> <t t-esc="doc.floor or 'N/A'"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- AVM -->
+                        <t t-if="doc.avm_estimated_price">
+                            <h3 style="color:#1a56db;font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">Valoración de Mercado (AVM)</h3>
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+                                <tr>
+                                    <td style="padding:6px 0;"><strong>Precio Listado:</strong> $<t t-esc="'{:,.2f}'.format(doc.price or 0)"/></td>
+                                    <td style="padding:6px 0;"><strong>AVM Estimado:</strong> $<t t-esc="'{:,.2f}'.format(doc.avm_estimated_price or 0)"/></td>
+                                    <td style="padding:6px 0;"><strong>Estado AVM:</strong> <t t-esc="dict(doc._fields['avm_status'].selection).get(doc.avm_status, '')"/></td>
+                                </tr>
+                            </table>
+                        </t>
+
+                        <!-- ROI para inversores -->
+                        <t t-if="doc.roi_annual_yield">
+                            <h3 style="color:#1a56db;font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">Rentabilidad (Inversores)</h3>
+                            <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+                                <tr>
+                                    <td style="padding:6px 0;"><strong>Rendimiento anual:</strong> <t t-esc="'%.1f' % (doc.roi_annual_yield or 0)"/>%</td>
+                                    <td style="padding:6px 0;"><strong>Flujo mensual neto:</strong> $<t t-esc="'{:,.2f}'.format(doc.roi_monthly_cashflow or 0)"/></td>
+                                    <td style="padding:6px 0;"><strong>Valor a 5 años:</strong> $<t t-esc="'{:,.2f}'.format(doc.roi_5year_value or 0)"/></td>
+                                </tr>
+                            </table>
+                        </t>
+
+                        <!-- Descripción -->
+                        <t t-if="doc.description">
+                            <h3 style="color:#1a56db;font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">Descripción</h3>
+                            <p style="color:#374151;font-size:13px;line-height:1.6;margin-bottom:16px;"><t t-esc="doc.description"/></p>
+                        </t>
+
+                        <!-- Asesor -->
+                        <div style="margin-top:20px;padding:12px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+                            <strong>Asesor responsable:</strong>
+                            <t t-esc="doc.user_id.name if doc.user_id else 'No asignado'"/>
+                            <t t-if="doc.user_id.partner_id.phone">
+                                — Tel: <t t-esc="doc.user_id.partner_id.phone"/>
+                            </t>
+                            <t t-if="doc.user_id.partner_id.email">
+                                — Email: <t t-esc="doc.user_id.partner_id.email"/>
+                            </t>
+                        </div>
+
+                        <div style="text-align:center;margin-top:24px;color:#9ca3af;font-size:10px;">
+                            Generado por Sistema de Gestión Inmobiliaria Elite ·
+                            <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <!-- ==================== MEJORA 2B: LIQUIDACIÓN DE COMISIONES ==================== -->
+    <record id="action_report_commission_liquidation" model="ir.actions.report">
+        <field name="name">Liquidación de Comisiones</field>
+        <field name="model">res.users</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_commission_liquidation_template</field>
+        <field name="report_file">estate_reports.report_commission_liquidation_template</field>
+    </record>
+
+    <template id="report_commission_liquidation_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family:Arial,sans-serif;">
+                        <div style="border-bottom:3px solid #1a56db;padding-bottom:16px;margin-bottom:20px;">
+                            <h1 style="color:#1a56db;font-size:20px;margin:0;">Liquidación de Comisiones</h1>
+                            <h2 style="font-size:15px;color:#374151;margin:4px 0 0;">Asesor: <t t-esc="doc.name"/></h2>
+                            <p style="color:#6b7280;font-size:12px;margin:4px 0 0;">
+                                Generado: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                            </p>
+                        </div>
+
+                        <t t-set="props" t-value="doc.env['estate.property'].search([('user_id','=',doc.id),('state','=','sold'),('commission_amount','>',0)])"/>
+                        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                            <thead>
+                                <tr style="background:#1a56db;color:white;">
+                                    <th style="padding:8px;text-align:left;">Propiedad</th>
+                                    <th style="padding:8px;">Ciudad</th>
+                                    <th style="padding:8px;text-align:right;">Precio Venta</th>
+                                    <th style="padding:8px;text-align:right;">Comisión</th>
+                                    <th style="padding:8px;">Fecha</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="props" t-as="p">
+                                    <tr t-att-style="'background:#f9fafb' if p_index % 2 == 0 else 'background:white'">
+                                        <td style="padding:8px;"><t t-esc="p.title or p.name"/></td>
+                                        <td style="padding:8px;text-align:center;"><t t-esc="p.city or '—'"/></td>
+                                        <td style="padding:8px;text-align:right;">$<t t-esc="'{:,.2f}'.format(p.price or 0)"/></td>
+                                        <td style="padding:8px;text-align:right;font-weight:bold;color:#16a34a;">$<t t-esc="'{:,.2f}'.format(p.commission_amount or 0)"/></td>
+                                        <td style="padding:8px;text-align:center;"><t t-esc="p.date_sold or '—'"/></td>
+                                    </tr>
+                                </t>
+                                <t t-if="not props">
+                                    <tr><td colspan="5" style="padding:16px;text-align:center;color:#9ca3af;">Sin comisiones registradas</td></tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr style="background:#1a56db;color:white;font-weight:bold;">
+                                    <td colspan="3" style="padding:10px;">TOTAL</td>
+                                    <td style="padding:10px;text-align:right;">$<t t-esc="'{:,.2f}'.format(sum(props.mapped('commission_amount')))"/></td>
+                                    <td style="padding:10px;text-align:center;"><t t-esc="len(props)"/> ventas</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+
+                        <div style="margin-top:40px;display:flex;justify-content:space-between;">
+                            <div style="text-align:center;width:45%;">
+                                <div style="border-top:1px solid #374151;padding-top:8px;color:#6b7280;font-size:12px;">Firma del Asesor</div>
+                            </div>
+                            <div style="text-align:center;width:45%;">
+                                <div style="border-top:1px solid #374151;padding-top:8px;color:#6b7280;font-size:12px;">Firma de Gerencia</div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

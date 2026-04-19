@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== FORM VIEW INHERIT ==================== -->
+    <record id="view_calendar_event_form_inherit_estate" model="ir.ui.view">
+        <field name="name">calendar.event.form.inherit.estate</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_title')]" position="before">
+                <div class="oe_right oe_button_box" name="visit_buttons" invisible="property_id == False">
+                    <button name="action_done_visit" string=" Visita Realizada" type="object" class="oe_stat_button" icon="fa-check" invisible="visit_state != 'scheduled'"/>
+                    <button name="action_send_whatsapp_followup" string=" WhatsApp Seguimiento" type="object" class="oe_stat_button" icon="fa-whatsapp" invisible="visit_state != 'done' or whatsapp_sent == True"/>
+                    <button name="action_send_survey_whatsapp" string="⭐ Encuesta Satisfacción" type="object" class="oe_stat_button" icon="fa-star" invisible="visit_state != 'done' or survey_sent == True" title="Envía encuesta de 1-5 estrellas al cliente por WhatsApp"/>
+                    <button name="action_cancel_visit" string="❌ Cancelar Visita" type="object" class="oe_stat_button" icon="fa-times" invisible="visit_state != 'scheduled'" confirm="¿Está seguro de cancelar esta visita?"/>
+                    <button name="action_schedule_visit" string=" Re-programar" type="object" class="oe_stat_button" icon="fa-refresh" invisible="visit_state == 'scheduled'"/>
+                </div>
+                <field name="visit_state" widget="statusbar" statusbar_visible="scheduled,done" invisible="property_id == False"/>
+            </xpath>
+
+            <xpath expr="//field[@name='location']" position="after">
+                <field name="appointment_type" widget="radio" options="{'horizontal': true}"/>
+                <field name="property_id" options="{'no_create': True}"/>
+                <field name="partner_id" options="{'no_create': True}"/>
+                <field name="lead_id" domain="[('type','=','opportunity')]"
+                       options="{'no_create': True}"
+                       placeholder="Lead CRM relacionado (opcional)"/>
+            </xpath>
+            <xpath expr="//sheet" position="inside">
+                <group string=" Resultado de la Visita" invisible="visit_state != 'done' or property_id == False">
+                    <group>
+                        <field name="visit_result" widget="radio"/>
+                    </group>
+                    <group>
+                        <field name="visit_rating" widget="priority"/>
+                    </group>
+                    <field name="visit_notes" placeholder="Observaciones de la visita..."/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==================== QUICK CREATE VIEW INHERIT ==================== -->
+    <record id="view_calendar_event_form_quick_create_inherit_estate" model="ir.ui.view">
+        <field name="name">calendar.event.form.quick_create.inherit.estate</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_form_quick_create"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='allday']" position="after">
+                <field name="appointment_type" widget="radio" options="{'horizontal': true}"/>
+                <field name="property_id" options="{'no_create': True}" placeholder="Seleccionar Propiedad..."/>
+                <field name="partner_id" options="{'no_create': True}" placeholder="Seleccionar Cliente..."/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==================== CALENDAR VIEW INHERIT ==================== -->
+    <record id="view_calendar_event_calendar_inherit_estate" model="ir.ui.view">
+        <field name="name">calendar.event.calendar.inherit.estate</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_calendar"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_ids']" position="after">
+                <field name="property_id" filters="1"/>
+                <field name="visit_state" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==================== TREE VIEW INHERIT ==================== -->
+    <record id="view_calendar_event_tree_inherit_estate" model="ir.ui.view">
+        <field name="name">calendar.event.tree.inherit.estate</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="appointment_type" widget="badge" optional="show"/>
+                <field name="property_id" optional="show"/>
+                <field name="partner_id" optional="show"/>
+                <field name="visit_state" widget="badge" decoration-success="visit_state == 'done'" decoration-info="visit_state == 'scheduled'" invisible="property_id == False" optional="show"/>
+                <field name="visit_result" widget="badge" decoration-success="visit_result == 'offer_made'" decoration-info="visit_result == 'interested'" optional="hide"/>
+                <field name="visit_rating" widget="priority" optional="hide"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- ==================== SEARCH VIEW INHERIT ==================== -->
+    <record id="view_calendar_event_search_inherit_estate" model="ir.ui.view">
+        <field name="name">calendar.event.search.inherit.estate</field>
+        <field name="model">calendar.event</field>
+        <field name="inherit_id" ref="calendar.view_calendar_event_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='mymeetings']" position="after">
+                <separator/>
+                <filter name="filter_visits" string="Visitas Inmobiliarias" domain="[('property_id', '!=', False)]"/>
+                <filter name="filter_visits_done" string="Visitas Realizadas" domain="[('property_id', '!=', False), ('visit_state', '=', 'done')]"/>
+                <filter name="filter_visits_scheduled" string="Visitas Programadas" domain="[('property_id', '!=', False), ('visit_state', '=', 'scheduled')]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- ==================== SPECIALIZED TREE VIEW FOR VISITS ==================== -->
+    <record id="view_calendar_event_tree_visits" model="ir.ui.view">
+        <field name="name">calendar.event.tree.visits</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <list string="Visitas Realizadas" decoration-success="visit_state == 'done'" create="false">
+                <field name="visit_state" column_invisible="True"/>
+                <field name="name" string="Asunto"/>
+                <field name="property_id"/>
+                <field name="partner_id"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="start" string="Fecha"/>
+                <field name="appointment_type" widget="badge"/>
+                <field name="visit_result" widget="badge" decoration-success="visit_result == 'offer_made'" decoration-info="visit_result == 'interested'" decoration-warning="visit_result == 'follow_up'" decoration-danger="visit_result == 'not_interested'"/>
+                <field name="visit_rating" widget="priority"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ==================== ACTIONS ==================== -->
+    <!-- Restaurar acción base pero con filtros extra opcionales -->
+    <record id="calendar.action_calendar_event" model="ir.actions.act_window">
+        <field name="context">{'search_default_mymeetings': 1}</field>
+    </record>
+
+    <!-- Acción específica para Visitas Realizadas -->
+    <record id="estate_appointment_done_action" model="ir.actions.act_window">
+        <field name="name">Visitas Realizadas</field>
+        <field name="res_model" >calendar.event</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="domain">[('property_id', '!=', False), ('visit_state', '=', 'done')]</field>
+        <field name="view_id" ref="view_calendar_event_tree_visits"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay visitas inmobiliarias marcadas como realizadas aún.
+            </p>
+        </field>
+    </record>
+</odoo>
+

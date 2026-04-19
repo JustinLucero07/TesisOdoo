@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_estate_ai_chat_history_agent,estate.ai.chat.history.agent,model_estate_ai_chat_history,estate_management.estate_group_agent,1,0,1,0
+access_estate_ai_chat_history_manager,estate.ai.chat.history.manager,model_estate_ai_chat_history,estate_management.estate_group_manager,1,1,1,1
+access_estate_ai_chat_history_admin,estate.ai.chat.history.admin,model_estate_ai_chat_history,estate_management.estate_group_admin,1,1,1,1
+access_estate_ai_memory_agent,estate.ai.memory.agent,model_estate_ai_memory,estate_management.estate_group_agent,1,1,1,0
+access_estate_ai_memory_manager,estate.ai.memory.manager,model_estate_ai_memory,estate_management.estate_group_manager,1,1,1,1
+access_estate_ai_memory_admin,estate.ai.memory.admin,model_estate_ai_memory,estate_management.estate_group_admin,1,1,1,1

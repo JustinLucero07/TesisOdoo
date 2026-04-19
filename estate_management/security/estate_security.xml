@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Categoría del módulo -->
+    <record id="module_category_real_estate" model="ir.module.category">
+        <field name="name">Inmobiliaria</field>
+        <field name="description">Gestión inmobiliaria integral</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <!-- Privilegio (nivel intermedio en Odoo 19 entre category y res.groups) -->
+    <record id="res_groups_privilege_estate" model="res.groups.privilege">
+        <field name="name">Inmobiliaria</field>
+        <field name="category_id" ref="module_category_real_estate"/>
+    </record>
+
+    <!-- Grupo: Agente Inmobiliario -->
+    <record id="estate_group_agent" model="res.groups">
+        <field name="name">Agente</field>
+        <field name="privilege_id" ref="res_groups_privilege_estate"/>
+        <field name="comment">Puede ver y gestionar sus propias propiedades y clientes</field>
+    </record>
+
+    <!-- Grupo: Manager -->
+    <record id="estate_group_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="privilege_id" ref="res_groups_privilege_estate"/>
+        <field name="implied_ids" eval="[Command.link(ref('estate_group_agent'))]"/>
+        <field name="comment">Puede gestionar todas las propiedades, clientes, contratos y reportes</field>
+    </record>
+
+    <!-- Grupo: Administrador -->
+    <record id="estate_group_admin" model="res.groups">
+        <field name="name">Administrador</field>
+        <field name="privilege_id" ref="res_groups_privilege_estate"/>
+        <field name="implied_ids" eval="[Command.link(ref('estate_group_manager'))]"/>
+        <field name="comment">Acceso total al sistema inmobiliario, incluyendo configuración</field>
+        <field name="user_ids" eval="[Command.link(ref('base.user_root')), Command.link(ref('base.user_admin'))]"/>
+    </record>
+
+    <!-- ==============================================================
+         REGLAS DE REGISTRO (ir.rule) — Nivel 2 de permisos
+         Agente ve solo SUS registros · Manager/Admin ven TODO
+         Nota: cuando un usuario tiene AMBAS reglas (agente + manager),
+         Odoo las combina con OR, por lo que el manager siempre ve todo.
+         ============================================================== -->
+    <data noupdate="1">
+
+        <!-- PROPIEDAD: agente ve solo las asignadas a él -->
+        <record id="rule_property_agent" model="ir.rule">
+            <field name="name">Propiedad: agente ve solo las suyas</field>
+            <field name="model_id" ref="model_estate_property"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_property_manager" model="ir.rule">
+            <field name="name">Propiedad: manager/admin ven todas</field>
+            <field name="model_id" ref="model_estate_property"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- CONTRATO: agente ve solo los contratos de sus propiedades -->
+        <record id="rule_contract_agent" model="ir.rule">
+            <field name="name">Contrato: agente ve solo los suyos</field>
+            <field name="model_id" ref="model_estate_contract"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_contract_manager" model="ir.rule">
+            <field name="name">Contrato: manager/admin ven todos</field>
+            <field name="model_id" ref="model_estate_contract"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- PAGO: agente ve solo los pagos de sus contratos -->
+        <record id="rule_payment_agent" model="ir.rule">
+            <field name="name">Pago: agente ve solo los suyos</field>
+            <field name="model_id" ref="model_estate_payment"/>
+            <field name="domain_force">[('contract_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_payment_manager" model="ir.rule">
+            <field name="name">Pago: manager/admin ven todos</field>
+            <field name="model_id" ref="model_estate_payment"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- COMISIÓN: agente ve solo las suyas -->
+        <record id="rule_commission_agent" model="ir.rule">
+            <field name="name">Comisión: agente ve solo las suyas</field>
+            <field name="model_id" ref="model_estate_commission"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_commission_manager" model="ir.rule">
+            <field name="name">Comisión: manager/admin ven todas</field>
+            <field name="model_id" ref="model_estate_commission"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- SOLICITUD DE INQUILINO: agente ve solo las suyas -->
+        <record id="rule_tenant_request_agent" model="ir.rule">
+            <field name="name">Solicitud inquilino: agente ve solo las suyas</field>
+            <field name="model_id" ref="model_estate_tenant_request"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_tenant_request_manager" model="ir.rule">
+            <field name="name">Solicitud inquilino: manager/admin ven todas</field>
+            <field name="model_id" ref="model_estate_tenant_request"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- GASTO DE PROPIEDAD: agente ve solo los de sus propiedades -->
+        <record id="rule_expense_agent" model="ir.rule">
+            <field name="name">Gasto: agente ve solo los de sus propiedades</field>
+            <field name="model_id" ref="model_estate_property_expense"/>
+            <field name="domain_force">[('property_id.user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_expense_manager" model="ir.rule">
+            <field name="name">Gasto: manager/admin ven todos</field>
+            <field name="model_id" ref="model_estate_property_expense"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- HISTORIAL DE PRECIOS: agente ve solo los de sus propiedades -->
+        <record id="rule_price_history_agent" model="ir.rule">
+            <field name="name">Historial precios: agente ve solo los suyos</field>
+            <field name="model_id" ref="model_estate_property_price_history"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_price_history_manager" model="ir.rule">
+            <field name="name">Historial precios: manager/admin ven todos</field>
+            <field name="model_id" ref="model_estate_property_price_history"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- TASACIÓN: agente ve solo las suyas -->
+        <record id="rule_appraisal_agent" model="ir.rule">
+            <field name="name">Tasación: agente ve solo las suyas</field>
+            <field name="model_id" ref="model_estate_appraisal"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_appraisal_manager" model="ir.rule">
+            <field name="name">Tasación: manager/admin ven todas</field>
+            <field name="model_id" ref="model_estate_appraisal"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+    </data>
+</odoo>

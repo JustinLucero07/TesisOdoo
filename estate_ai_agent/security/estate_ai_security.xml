@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- HISTORIAL IA: agente ve solo su propio historial de chat -->
+        <record id="rule_ai_chat_agent" model="ir.rule">
+            <field name="name">Chat IA: agente ve solo su historial</field>
+            <field name="model_id" ref="model_estate_ai_chat_history"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- HISTORIAL IA: manager/admin ven todo el historial -->
+        <record id="rule_ai_chat_manager" model="ir.rule">
+            <field name="name">Chat IA: manager/admin ven todo</field>
+            <field name="model_id" ref="model_estate_ai_chat_history"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_manager'))]"/>
+        </record>
+
+        <!-- MEMORIA IA: agente ve solo sus propias memorias -->
+        <record id="rule_ai_memory_agent" model="ir.rule">
+            <field name="name">Memoria IA: agente ve solo las suyas</field>
+            <field name="model_id" ref="model_estate_ai_memory"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_ai_memory_manager" model="ir.rule">
+            <field name="name">Memoria IA: manager/admin ven todas</field>
+            <field name="model_id" ref="model_estate_ai_memory"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_manager'))]"/>
+        </record>
+
+    </data>
+</odoo>

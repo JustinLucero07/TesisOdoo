@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="estate_property_comparator_wizard_view_form" model="ir.ui.view">
+        <field name="name">estate.property.comparator.wizard.form</field>
+        <field name="model">estate.property.comparator.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Comparar Propiedades">
+                <div class="alert alert-info mb-3" role="alert">
+                    <i class="fa fa-info-circle"/> Selecciona entre <strong>2 y 4 propiedades</strong> para generar un reporte comparativo en PDF.
+                </div>
+                <group>
+                    <field name="property_ids"
+                           widget="many2many_tags"
+                           options="{'no_create': True}"
+                           domain="[('state', '!=', 'cancelled')]"
+                           string="Propiedades"/>
+                </group>
+                <footer>
+                    <button name="action_print_comparison" string="Generar PDF Comparativo"
+                            type="object" class="btn-primary" icon="fa-file-pdf-o"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="estate_property_comparator_wizard_action" model="ir.actions.act_window">
+        <field name="name">Comparar Propiedades</field>
+        <field name="res_model">estate.property.comparator.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Reporte PDF de comparación -->
+    <record id="action_report_property_comparison" model="ir.actions.report">
+        <field name="name">Comparativa de Propiedades</field>
+        <field name="model">estate.property.comparator.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_management.report_property_comparison_template</field>
+        <field name="report_file">estate_management.report_property_comparison_template</field>
+    </record>
+
+    <template id="report_property_comparison_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="wiz">
+                <t t-set="props" t-value="wiz.property_ids"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+
+                        <!-- Encabezado -->
+                        <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 12px; margin-bottom: 22px;">
+                            <h2 style="color: #1B4F72; margin: 0;">Comparativa de Propiedades</h2>
+                            <p style="margin: 6px 0 0 0; color: #555; font-size: 13px;">
+                                Fecha: <t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                &#160;·&#160; <t t-out="len(props)"/> propiedades comparadas
+                            </p>
+                        </div>
+
+                        <!-- Tabla comparativa -->
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                            <thead>
+                                <tr style="background: #1B4F72; color: white;">
+                                    <th style="padding: 10px 12px; text-align: left; width: 20%;">Característica</th>
+                                    <t t-foreach="props" t-as="prop">
+                                        <th style="padding: 10px 12px; text-align: center;">
+                                            <t t-out="prop.title"/>
+                                        </th>
+                                    </t>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Precio -->
+                                <tr style="background: #eaf4fb;">
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600; color: #1B4F72;">Precio</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center; font-weight: 700; font-size: 14px; color: #1B4F72;">
+                                            $<t t-out="'{:,.2f}'.format(prop.price)"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Valor AVM -->
+                                <tr>
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Valor Mercado (AVM)</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-if="prop.avm_estimated_price">
+                                                $<t t-out="'{:,.2f}'.format(prop.avm_estimated_price)"/>
+                                                <br/>
+                                                <span t-if="prop.avm_status == 'fair'"  style="color:green; font-size:10px;">Precio justo</span>
+                                                <span t-elif="prop.avm_status == 'high'" style="color:red; font-size:10px;">Sobre el mercado</span>
+                                                <span t-elif="prop.avm_status == 'low'"  style="color:orange; font-size:10px;">Oportunidad</span>
+                                            </t>
+                                            <t t-else="">—</t>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Tipo -->
+                                <tr style="background: #f8f9fa;">
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Tipo de Propiedad</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="prop.property_type_id.name or '—'"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Operación -->
+                                <tr>
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Operación</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="dict([('sale','Venta'),('rent','Arriendo'),('both','Venta/Arriendo')]).get(prop.offer_type,'—')"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Área total -->
+                                <tr style="background: #f8f9fa;">
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Área Total (m²)</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="'{:,.0f}'.format(prop.total_area or 0)"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Área construida -->
+                                <tr>
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Área Construida (m²)</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="'{:,.0f}'.format(prop.area or 0)"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Precio / m² -->
+                                <tr style="background: #f8f9fa;">
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Precio / m²</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-if="prop.total_area and prop.total_area > 0">
+                                                $<t t-out="'{:,.2f}'.format(prop.price / prop.total_area)"/>
+                                            </t>
+                                            <t t-else="">—</t>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Dormitorios -->
+                                <tr>
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Dormitorios</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="prop.bedrooms or '—'"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Baños -->
+                                <tr style="background: #f8f9fa;">
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Baños</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="prop.bathrooms or '—'"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Parqueaderos -->
+                                <tr>
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Parqueaderos</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="prop.garage or '—'"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Ciudad -->
+                                <tr style="background: #f8f9fa;">
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Ciudad</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="prop.city or '—'"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Días en mercado -->
+                                <tr>
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Días en Mercado</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="prop.days_on_market or 0"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Score -->
+                                <tr style="background: #f8f9fa;">
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Score Propiedad</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <t t-out="prop.property_score or 0"/>/100
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Estado -->
+                                <tr>
+                                    <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Estado</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
+                                            <span t-if="prop.state == 'available'" style="color:green;">Disponible</span>
+                                            <span t-elif="prop.state == 'reserved'" style="color:orange;">Reservada</span>
+                                            <span t-elif="prop.state == 'sold'" style="color:#666;">Vendida</span>
+                                            <span t-else="" style="color:#2E86C1;">Arrendada</span>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Nota final -->
+                        <div style="margin-top: 20px; padding: 12px; background: #f8f9fa; border-radius: 6px; font-size: 11px; color: #666;">
+                            Reporte generado automáticamente por el Sistema Inmobiliario.
+                            Los precios y datos son informativos y están sujetos a verificación.
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

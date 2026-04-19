@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!--
+        Integración de grupos HR con grupos inmobiliarios.
+        - Los Agentes pueden registrar su propia asistencia.
+        - Los Managers pueden gestionar asistencias de su equipo.
+        - Los Administradores tienen acceso total a asistencias.
+    -->
+
+    <!-- Agente → puede ver/registrar su propia asistencia -->
+    <record id="estate_group_agent" model="res.groups">
+        <field name="implied_ids" eval="[
+            Command.link(ref('hr_attendance.hr_attendance_group_user')),
+        ]"/>
+    </record>
+
+    <!-- Manager → puede gestionar asistencias del equipo -->
+    <record id="estate_group_manager" model="res.groups">
+        <field name="implied_ids" eval="[
+            Command.link(ref('hr_attendance.hr_attendance_group_officer')),
+        ]"/>
+    </record>
+
+    <!-- Admin → acceso total a asistencias -->
+    <record id="estate_group_admin" model="res.groups">
+        <field name="implied_ids" eval="[
+            Command.link(ref('hr_attendance.hr_attendance_group_manager')),
+        ]"/>
+    </record>
+</odoo>

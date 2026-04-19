@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <t t-name="estate_ai_agent.AIChat">
+        <div class="estate-ai-chat-container">
+            <!-- Header -->
+            <div class="estate-ai-header">
+                <div class="estate-ai-header-title">
+                    <i class="fa fa-robot"/>  Agente IA Inmobiliario
+                    <span t-if="state.loading" class="estate-ai-status-dot ms-2">
+                        <i class="fa fa-circle-o-notch fa-spin text-warning"/>
+                        <small class="text-muted ms-1">Procesando...</small>
+                    </span>
+                </div>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-info" t-on-click="toggleOcrMode"
+                            t-att-class="state.ocrMode ? 'btn-info text-white' : 'btn-outline-info'">
+                        <i class="fa fa-file-image-o"/> OCR
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" t-on-click="clearChat">
+                        <i class="fa fa-trash"/>
+                    </button>
+                </div>
+            </div>
+
+            <!-- OCR Banner -->
+            <t t-if="state.ocrMode">
+                <div class="alert alert-info m-2 p-2 d-flex align-items-center gap-2">
+                    <i class="fa fa-camera fa-lg"/>
+                    <span>Modo OCR activo — sube una imagen o PDF para extraer datos automáticamente.</span>
+                    <button class="btn btn-sm btn-info ms-auto" t-on-click="triggerFileUpload">
+                        <i class="fa fa-upload"/> Subir Archivo
+                    </button>
+                </div>
+                <input t-ref="fileInput" type="file" class="d-none"
+                       accept="image/*,.pdf"
+                       t-on-change="onFileSelected"/>
+            </t>
+
+            <!-- Chat Body -->
+            <div class="estate-ai-body" t-ref="chatBody">
+                <!-- Welcome message -->
+                <t t-if="!state.messages.length">
+                    <div class="estate-ai-welcome">
+                        <h3>¡Bienvenido al Asistente Inmobiliario!</h3>
+                        <p>Puedo consultar, crear y gestionar propiedades, leads, contratos y más. También puedo subir documentos con OCR.</p>
+                    </div>
+                </t>
+
+                <!-- Messages -->
+                <t t-foreach="state.messages" t-as="msg" t-key="msg_index">
+                    <div t-attf-class="estate-ai-message estate-ai-message-{{ msg.type }}">
+                        <div class="estate-ai-message-avatar">
+                            <t t-if="msg.type === 'user'">👤</t>
+                            <t t-else="">🤖</t>
+                        </div>
+                        <div class="estate-ai-message-content">
+                            <!-- Confirmation warning banner -->
+                            <t t-if="msg.type === 'bot' and isConfirmationNeeded(msg.text)">
+                                <div class="alert alert-warning p-2 mb-2">
+                                    <i class="fa fa-exclamation-triangle"/> <strong>Acción destructiva detectada</strong>
+                                </div>
+                            </t>
+
+                            <t t-if="msg.type === 'user'">
+                                <t t-esc="msg.text"/>
+                            </t>
+                            <t t-else="">
+                                <t t-out="formatResponse(msg.text)"/>
+                            </t>
+
+                            <!-- Copy button for bot messages -->
+                            <t t-if="msg.type === 'bot' and msg.copyable and !msg.streaming">
+                                <div class="mt-1">
+                                    <button class="btn btn-xs btn-outline-secondary estate-ai-copy-btn"
+                                            t-on-click="() => this.copyMessage(msg)">
+                                        <t t-if="msg.copied">
+                                            <i class="fa fa-check text-success"/> Copiado
+                                        </t>
+                                        <t t-else="">
+                                            <i class="fa fa-copy"/> Copiar
+                                        </t>
+                                    </button>
+                                </div>
+                            </t>
+
+                            <div class="estate-ai-message-time">
+                                <small><t t-esc="msg.date"/></small>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <!-- Suggestions (shown when no messages) -->
+            <t t-if="state.suggestions.length and !state.messages.length">
+                <div class="estate-ai-suggestions">
+                    <t t-foreach="state.suggestions" t-as="suggestion" t-key="suggestion_index">
+                        <button class="btn btn-outline-primary btn-sm estate-ai-suggestion-btn"
+                                t-on-click="() => this.useSuggestion(suggestion)">
+                            <t t-esc="suggestion"/>
+                        </button>
+                    </t>
+                </div>
+            </t>
+
+            <!-- Contextual chips (shown after responses) -->
+            <t t-if="state.showChips and state.messages.length">
+                <div class="estate-ai-suggestions estate-ai-chips">
+                    <small class="text-muted d-block mb-1">Sugerencias rápidas:</small>
+                    <t t-foreach="['¿Cuántas propiedades disponibles?', 'Leads más calientes', 'Pagos vencidos', 'Reporte del mes', 'Recordar preferencia']" t-as="chip" t-key="chip_index">
+                        <button class="btn btn-outline-secondary btn-xs estate-ai-suggestion-btn"
+                                t-on-click="() => this.useChip(chip)">
+                            <t t-esc="chip"/>
+                        </button>
+                    </t>
+                </div>
+            </t>
+
+            <!-- Input -->
+            <div class="estate-ai-input">
+                <textarea
+                    class="form-control"
+                    placeholder="Escribe tu consulta o dile al agente qué hacer..."
+                    t-model="state.inputText"
+                    t-on-keydown="onKeydown"
+                    rows="2"
+                />
+                <button class="btn btn-primary estate-ai-send-btn"
+                        t-on-click="() => this.sendMessage()"
+                        t-att-disabled="state.loading || !state.inputText.trim()">
+                    <t t-if="state.loading">
+                        <i class="fa fa-spinner fa-spin"/>
+                    </t>
+                    <t t-else="">
+                        <i class="fa fa-paper-plane"/>
+                    </t>
+                </button>
+            </div>
+        </div>
+    </t>
+</templates>

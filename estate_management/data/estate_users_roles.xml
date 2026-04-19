@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================================================================
+         USUARIOS, ROLES Y PERMISOS — Sistema Inmobiliario Inmobi
+         Odoo 19: los grupos se asignan desde el grupo (user_ids),
+                  NO desde el usuario (groups_id fue eliminado en Odoo 19)
+         ================================================================== -->
+
+    <!-- noupdate="1" → Usuarios/empleados/compañía se crean UNA sola vez -->
+    <data noupdate="1">
+
+        <!-- 
+             COLOR CORPORATIVO
+             También editable desde: Ajustes → Compañías → editar
+             -->
+        <record id="base.main_company" model="res.company">
+            <field name="primary_color">#1B4F72</field>
+            <field name="secondary_color">#2E86C1</field>
+        </record>
+
+        <!-- 
+             DEPARTAMENTOS
+             -->
+        <record id="dept_inmobi_comercial" model="hr.department">
+            <field name="name">Área Comercial</field>
+        </record>
+        <record id="dept_inmobi_admin" model="hr.department">
+            <field name="name">Administración</field>
+        </record>
+
+        <!-- 
+             PUESTOS DE TRABAJO
+             -->
+        <record id="job_agente_inmobiliario" model="hr.job">
+            <field name="name">Agente Inmobiliario</field>
+            <field name="department_id" ref="dept_inmobi_comercial"/>
+        </record>
+        <record id="job_gerente_comercial" model="hr.job">
+            <field name="name">Gerente Comercial</field>
+            <field name="department_id" ref="dept_inmobi_comercial"/>
+        </record>
+
+        <!-- 
+             USUARIO: VENDEDOR  |  Login: vendedor@inmobi.com  |  Clave: Inmobi2024!
+             -->
+        <record id="user_vendedor_carlos" model="res.users">
+            <field name="name">Carlos Mendoza</field>
+            <field name="login">vendedor@inmobi.com</field>
+            <field name="email">vendedor@inmobi.com</field>
+            <field name="password">Inmobi2024!</field>
+            <field name="tz">America/Guayaquil</field>
+        </record>
+        <record id="employee_vendedor_carlos" model="hr.employee">
+            <field name="name">Carlos Mendoza</field>
+            <field name="user_id" ref="user_vendedor_carlos"/>
+            <field name="job_id" ref="job_agente_inmobiliario"/>
+            <field name="department_id" ref="dept_inmobi_comercial"/>
+            <field name="work_email">vendedor@inmobi.com</field>
+            <field name="mobile_phone">0991234567</field>
+        </record>
+
+        <!-- 
+             USUARIO: GERENTE  |  Login: gerente@inmobi.com  |  Clave: Inmobi2024!
+             -->
+        <record id="user_gerente_maria" model="res.users">
+            <field name="name">María Torres</field>
+            <field name="login">gerente@inmobi.com</field>
+            <field name="email">gerente@inmobi.com</field>
+            <field name="password">Inmobi2024!</field>
+            <field name="tz">America/Guayaquil</field>
+        </record>
+        <record id="employee_gerente_maria" model="hr.employee">
+            <field name="name">María Torres</field>
+            <field name="user_id" ref="user_gerente_maria"/>
+            <field name="job_id" ref="job_gerente_comercial"/>
+            <field name="department_id" ref="dept_inmobi_comercial"/>
+            <field name="work_email">gerente@inmobi.com</field>
+            <field name="mobile_phone">0997654321</field>
+        </record>
+
+    </data>
+
+    <!-- noupdate="0" → Permisos se re-aplican en cada -u (Command.link es idempotente) -->
+    <data noupdate="0">
+
+        <!-- ================================================================
+             PERMISOS VENDEDOR (estate_group_agent)
+             Acceso:  Sus propias propiedades · Sus leads CRM · Calendario
+                      Contratos y pagos · Comisiones propias · Facturación
+                      Documentos · Agente IA · Compartir en redes sociales
+             ================================================================ -->
+
+        <!-- Módulo Inmobiliario: Agente -->
+        <record id="estate_management.estate_group_agent" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_vendedor_carlos'))]"/>
+        </record>
+
+        <!-- Ventas: Vendedor (acceso a CRM leads, oportunidades, órdenes de venta) -->
+        <record id="sales_team.group_sale_salesman" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_vendedor_carlos'))]"/>
+        </record>
+
+        <!-- Ventas: Ver todos los leads (no solo los propios) -->
+        <record id="sales_team.group_sale_salesman_all_leads" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_vendedor_carlos'))]"/>
+        </record>
+
+        <!-- Facturación: Crear y ver facturas de sus propiedades -->
+        <record id="account.group_account_invoice" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_vendedor_carlos'))]"/>
+        </record>
+
+        <!-- RRHH: Ver ficha de empleado propia -->
+        <record id="hr.group_hr_user" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_vendedor_carlos'))]"/>
+        </record>
+
+        <!-- ================================================================
+             PERMISOS GERENTE (estate_group_manager)
+             Acceso:  TODO lo del Agente + todas las propiedades/leads
+                      Reportes KPI · Dashboard · Aprobación de contratos
+                      Contabilidad completa · Gestión de empleados
+                      Configuración de ventas · Agente IA completo
+             NOTA: estate_group_manager ya incluye estate_group_agent
+                   group_sale_manager ya incluye group_sale_salesman_all_leads
+                   group_hr_manager ya incluye group_hr_user
+             ================================================================ -->
+
+        <!-- Módulo Inmobiliario: Manager (incluye permisos de Agente) -->
+        <record id="estate_management.estate_group_manager" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_gerente_maria'))]"/>
+        </record>
+
+        <!-- Ventas: Administrador (ver todos, gestionar equipos y configuración) -->
+        <record id="sales_team.group_sale_manager" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_gerente_maria'))]"/>
+        </record>
+
+        <!-- Contabilidad: Usuario completo (libro mayor, asientos, reportes) -->
+        <record id="account.group_account_user" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_gerente_maria'))]"/>
+        </record>
+
+        <!-- RRHH: Administrador (gestionar todos los empleados, contratos laborales) -->
+        <record id="hr.group_hr_manager" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_gerente_maria'))]"/>
+        </record>
+
+        <!-- ================================================================
+             PERMISOS ADMINISTRADOR (base.user_admin)
+             El admin ya tiene acceso total por base.group_system y
+             estate_group_admin, pero se refuerzan los grupos de negocio
+             ================================================================ -->
+
+        <!-- Módulo Inmobiliario: Admin (incluye Manager y Agente) -->
+        <record id="estate_management.estate_group_admin" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('base.user_admin'))]"/>
+        </record>
+
+        <!-- Contabilidad: Administrador (configurar impuestos, cuentas, diarios) -->
+        <record id="account.group_account_manager" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('base.user_admin'))]"/>
+        </record>
+
+        <!-- RRHH: Administrador -->
+        <record id="hr.group_hr_manager" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('base.user_admin'))]"/>
+        </record>
+
+        <!-- Ventas: Administrador -->
+        <record id="sales_team.group_sale_manager" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('base.user_admin'))]"/>
+        </record>
+
+    </data>
+</odoo>

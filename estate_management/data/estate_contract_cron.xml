@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_price_alerts" model="ir.cron">
+        <field name="name">Inmobiliaria: Alertas Inteligentes de Precio</field>
+        <field name="model_id" ref="model_estate_property"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_price_alerts()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">weeks</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="ir_cron_overdue_payments" model="ir.cron">
+        <field name="name">Inmobiliaria: Alertas de Pagos Vencidos</field>
+        <field name="model_id" ref="model_estate_payment"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_check_overdue_payments()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+    <record id="ir_cron_check_contract_expiry" model="ir.cron">
+        <field name="name">Inmobiliaria: Verificar Vencimientos de Contratos</field>
+        <field name="model_id" ref="model_estate_property"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_check_contract_expiry()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+    <!-- Alerta de propiedades estancadas sin visitas -->
+    <record id="ir_cron_stagnant_properties_alert" model="ir.cron">
+        <field name="name">Inmobiliaria: Alerta Propiedades Estancadas (45+ días sin visitas)</field>
+        <field name="model_id" ref="estate_management.model_estate_property"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_stagnant_properties_alert()</field>
+        <field name="interval_number">3</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Generación automática de facturas mensuales de arrendamiento -->
+    <record id="ir_cron_generate_rent_invoices" model="ir.cron">
+        <field name="name">Inmobiliaria: Generar Facturas Mensuales de Arrendamiento</field>
+        <field name="model_id" ref="estate_management.model_estate_contract"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_generate_rent_invoices()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">months</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Sincronización diaria de estado de propiedad desde facturas pagadas -->
+    <record id="ir_cron_sync_property_state_invoices" model="ir.cron">
+        <field name="name">Inmobiliaria: Sincronizar Estado Propiedad desde Facturas Pagadas</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_sync_property_state_from_invoices()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

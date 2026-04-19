@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Agrega "Nómina / Sueldos" al menú Finanzas de estate_management -->
+    <menuitem id="estate_menu_finance_payroll"
+              name="Nómina / Sueldos"
+              parent="estate_management.estate_menu_finance_root"
+              action="estate_payroll_line_action"
+              sequence="60"/>
+</odoo>

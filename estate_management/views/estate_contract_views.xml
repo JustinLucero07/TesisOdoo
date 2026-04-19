@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vista de Lista de Contratos -->
+    <record id="estate_contract_view_tree" model="ir.ui.view">
+        <field name="name">estate.contract.tree</field>
+        <field name="model">estate.contract</field>
+        <field name="arch" type="xml">
+            <list string="Contratos" decoration-info="state == 'draft'" decoration-success="state == 'active'" decoration-danger="state == 'expired'" decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="property_id"/>
+                <field name="partner_id"/>
+                <field name="contract_type" widget="badge"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="amount" widget="monetary"/>
+                <field name="total_paid" widget="monetary"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario de Contratos -->
+    <record id="estate_contract_view_form" model="ir.ui.view">
+        <field name="name">estate.contract.form</field>
+        <field name="model">estate.contract</field>
+        <field name="arch" type="xml">
+            <form string="Contrato Inmobiliario">
+                <header>
+                    <button name="action_activate" string="Activar" type="object"
+                        class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_generate_rent_invoice" string="Generar Factura Mensual" type="object"
+                        class="btn-primary" icon="fa-file-text-o"
+                        invisible="state != 'active' or contract_type != 'rent'"/>
+                    <button name="action_set_expired" string="Marcar Vencido" type="object"
+                        class="btn-warning" invisible="state != 'active'"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                        class="btn-danger" invisible="state in ('expired', 'cancelled')"
+                        confirm="¿Está seguro de cancelar este contrato? Esta acción no se puede deshacer fácilmente."/>
+                    <button name="action_reset_draft" string="Volver a Borrador" type="object"
+                        invisible="state not in ('cancelled', 'expired')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,expired"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_invoices" type="object"
+                                class="oe_stat_button" icon="fa-pencil-square-o"
+                                invisible="invoice_count == 0">
+                            <field name="invoice_count" string="Facturas" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Información del Contrato">
+                            <field name="contract_type" readonly="state != 'draft'"/>
+                            <field name="property_id" readonly="state != 'draft'"/>
+                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="offer_id" readonly="1"/>
+                            <field name="sale_order_id" readonly="1"/>
+                        </group>
+                        <group string="Fechas y Montos">
+                            <field name="date_start" readonly="state != 'draft'"/>
+                            <field name="date_end" readonly="state != 'draft'"/>
+                            <field name="amount" widget="monetary" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="total_paid" widget="monetary"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Pagos Inmobiliarios" name="payments">
+                            <div class="alert alert-info mb-3" role="alert" style="font-size:0.85em;">
+                                <i class="fa fa-info-circle" title="Info"/> <strong>Pagos Inmobiliarios</strong>: cuotas registradas en tu sistema.
+                                Una vez pagado, usa el botón <strong>Facturar</strong> para generar la factura contable oficial en Odoo.
+                            </div>
+                            <field name="payment_ids">
+                                <list editable="bottom"
+                                      decoration-success="state == 'paid'"
+                                      decoration-muted="state == 'cancelled'"
+                                      decoration-warning="state == 'pending'">
+                                    <field name="name" readonly="1"/>
+                                    <field name="date"/>
+                                    <field name="amount" widget="monetary"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="payment_method" widget="badge"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'paid'"
+                                           decoration-warning="state == 'pending'"
+                                           decoration-muted="state == 'cancelled'"/>
+                                    <field name="invoice_id" string="Factura Odoo" readonly="1" optional="show"/>
+                                    <field name="invoice_state" string="Estado Factura" readonly="1" optional="show"
+                                           widget="badge"
+                                           decoration-success="invoice_state == 'paid'"
+                                           decoration-warning="invoice_state == 'partial'"
+                                           decoration-danger="invoice_state == 'not_paid'"/>
+                                    <field name="notes" optional="hide"/>
+                                    <button name="action_confirm" type="object"
+                                            string="Marcar Pagado" icon="fa-check"
+                                            invisible="state != 'pending'" class="btn-success btn-sm"/>
+                                    <button name="action_create_invoice" type="object"
+                                            string="Facturar" icon="fa-file-text-o"
+                                            class="btn-primary btn-sm"
+                                            invisible="state != 'paid' or invoice_id"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notas / Cláusulas" name="notes">
+                            <field name="notes" placeholder="Escriba las cláusulas del contrato aquí..."/>
+                        </page>
+                        <page string="Firma Digital" name="signature" invisible="not customer_signature">
+                            <group>
+                                <field name="customer_signature" widget="image" readonly="1"/>
+                                <field name="signature_date"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda Contratos -->
+    <record id="estate_contract_view_search" model="ir.ui.view">
+        <field name="name">estate.contract.search</field>
+        <field name="model">estate.contract</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Contratos">
+                <field name="name" string="Referencia"/>
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Cliente"/>
+                <field name="user_id" string="Asesor"/>
+                <filter name="filter_active" string="Activos"
+                        domain="[('state', '=', 'active')]"/>
+                <filter name="filter_draft" string="Borradores"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="filter_expiring" string="Por Vencer (30 días)"
+                        domain="[('date_end', '&lt;=', (context_today() + datetime.timedelta(days=30)).strftime('%Y-%m-%d')), ('state', '=', 'active')]"/>
+                <filter name="filter_this_month" string="Este mes"
+                        domain="[('date_start', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_year" string="Este año"
+                        domain="[('date_start', '&gt;=', context_today().strftime('%Y-01-01'))]"/>
+                <separator/>
+                <filter name="group_type" string="Por Tipo"
+                        context="{'group_by': 'contract_type'}"/>
+                <filter name="group_state" string="Por Estado"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_property" string="Por Propiedad"
+                        context="{'group_by': 'property_id'}"/>
+                <filter name="group_month" string="Por Mes Inicio"
+                        context="{'group_by': 'date_start:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Pivot Contratos -->
+    <record id="estate_contract_view_pivot" model="ir.ui.view">
+        <field name="name">estate.contract.pivot</field>
+        <field name="model">estate.contract</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Contratos" sample="1" display_quantity="true">
+                <field name="contract_type" type="row"/>
+                <field name="state" type="col"/>
+                <field name="amount" type="measure" string="Monto"/>
+                <field name="total_paid" type="measure" string="Pagado"/>
+            </pivot>
+        </field>
+    </record>
+    <!-- Vista Graph Contratos -->
+    <record id="estate_contract_view_graph" model="ir.ui.view">
+        <field name="name">estate.contract.graph</field>
+        <field name="model">estate.contract</field>
+        <field name="arch" type="xml">
+            <graph string="Contratos por Tipo" type="bar" sample="1">
+                <field name="contract_type"/>
+                <field name="amount" type="measure" string="Monto Total"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción de Contratos -->
+    <record id="estate_contract_action" model="ir.actions.act_window">
+        <field name="name">Contratos Inmobiliarios</field>
+        <field name="res_model">estate.contract</field>
+        <field name="view_mode">list,graph,pivot,form</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="search_view_id" ref="estate_contract_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Cree su primer contrato inmobiliario.
+            </p>
+            <p>Gestione contratos de venta, alquiler y exclusividad.</p>
+        </field>
+    </record>
+
+    <!-- Vista de Lista de Pagos -->
+    <record id="estate_payment_view_tree" model="ir.ui.view">
+        <field name="name">estate.payment.tree</field>
+        <field name="model">estate.payment</field>
+        <field name="arch" type="xml">
+            <list string="Pagos Inmobiliarios"
+                  decoration-success="state == 'paid'"
+                  decoration-warning="state == 'pending'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="contract_id"/>
+                <field name="property_id"/>
+                <field name="partner_id"/>
+                <field name="date"/>
+                <field name="amount" sum="Total" widget="monetary"/>
+                <field name="payment_method" widget="badge"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'paid'"
+                       decoration-warning="state == 'pending'"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="invoice_id" string="Factura Odoo" optional="show"/>
+                <field name="invoice_state" string="Estado Factura" widget="badge"
+                       decoration-success="invoice_state == 'paid'"
+                       decoration-warning="invoice_state == 'partial'"
+                       decoration-info="invoice_state == 'not_paid'"
+                       optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista de Formulario de Pagos -->
+    <record id="estate_payment_view_form" model="ir.ui.view">
+        <field name="name">estate.payment.form</field>
+        <field name="model">estate.payment</field>
+        <field name="arch" type="xml">
+            <form string="Pago Inmobiliario">
+                <header>
+                    <button name="action_confirm" string="Confirmar Pago" type="object"
+                        class="oe_highlight" invisible="state != 'pending'"/>
+                    <button name="action_create_invoice" string="Generar Factura Odoo" type="object"
+                        class="btn-primary" icon="fa-file-text-o"
+                        invisible="state != 'paid'"/>
+                    <button name="action_cancel" string="Anular" type="object"
+                        class="btn-danger" invisible="state != 'pending'"
+                        confirm="¿Está seguro de anular este pago? Esta acción no se puede deshacer fácilmente."/>
+                    <button name="action_reset" string="Restaurar" type="object"
+                        invisible="state != 'cancelled'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning mb-0" style="font-size:0.82em; border-radius:0;" role="alert">
+                        <i class="fa fa-home" title="Home"/> <strong>Pago Inmobiliario</strong> —
+                        Cuota registrada en el sistema inmobiliario (estate.payment).
+                        Para contabilizarlo, genera la <strong>Factura Odoo</strong> con el botón del header.
+                        Los pagos del módulo de <em>Facturación</em> de Odoo son distintos y viven en
+                        <strong>Facturación &gt; Pagos</strong>.
+                    </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_create_invoice" type="object"
+                                class="oe_stat_button" icon="fa-pencil-square-o"
+                                invisible="not invoice_id">
+                            <span class="o_stat_text">Ver Factura</span>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Información del Pago">
+                            <field name="contract_id"/>
+                            <field name="property_id" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                        </group>
+                        <group string="Detalles">
+                            <field name="amount" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date"/>
+                            <field name="payment_method"/>
+                        </group>
+                    </group>
+                    <group string="Facturación" invisible="not invoice_id">
+                        <field name="invoice_id" readonly="1"/>
+                        <field name="invoice_state" widget="badge"
+                            decoration-success="invoice_state == 'paid'"
+                            decoration-warning="invoice_state == 'partial'"
+                            decoration-info="invoice_state == 'not_paid'"
+                            readonly="1"/>
+                    </group>
+                    <group string="Notas">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda Pagos -->
+    <record id="estate_payment_view_search" model="ir.ui.view">
+        <field name="name">estate.payment.search</field>
+        <field name="model">estate.payment</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Pagos">
+                <field name="name" string="Referencia"/>
+                <field name="contract_id" string="Contrato"/>
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Cliente"/>
+                <filter name="filter_paid" string="Pagados"
+                        domain="[('state', '=', 'paid')]"/>
+                <filter name="filter_pending" string="Pendientes"
+                        domain="[('state', '=', 'pending')]"/>
+                <filter name="filter_this_month" string="Este mes"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_year" string="Este año"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-01-01'))]"/>
+                <separator/>
+                <filter name="group_method" string="Por Método de Pago"
+                        context="{'group_by': 'payment_method'}"/>
+                <filter name="group_state" string="Por Estado"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_contract" string="Por Contrato"
+                        context="{'group_by': 'contract_id'}"/>
+                <filter name="group_month" string="Por Mes"
+                        context="{'group_by': 'date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Pivot Pagos -->
+    <record id="estate_payment_view_pivot" model="ir.ui.view">
+        <field name="name">estate.payment.pivot</field>
+        <field name="model">estate.payment</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Pagos" sample="1" display_quantity="true">
+                <field name="payment_method" type="row"/>
+                <field name="state" type="col"/>
+                <field name="amount" type="measure" string="Monto"/>
+            </pivot>
+        </field>
+    </record>
+    <!-- Vista Graph Pagos -->
+    <record id="estate_payment_view_graph" model="ir.ui.view">
+        <field name="name">estate.payment.graph</field>
+        <field name="model">estate.payment</field>
+        <field name="arch" type="xml">
+            <graph string="Pagos por Método" type="pie" sample="1">
+                <field name="payment_method"/>
+                <field name="amount" type="measure" string="Monto"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción de Pagos -->
+    <record id="estate_payment_action" model="ir.actions.act_window">
+        <field name="name">Pagos Inmobiliarios</field>
+        <field name="res_model">estate.payment</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="search_view_id" ref="estate_payment_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Registre su primer pago.
+            </p>
+            <p>Lleve el control de pagos por contrato.</p>
+        </field>
+    </record>
+
+    <!-- Secuencias -->
+    <record id="estate_contract_sequence" model="ir.sequence">
+        <field name="name">Contrato Inmobiliario</field>
+        <field name="code">estate.contract</field>
+        <field name="prefix">CONT-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+
+    <record id="estate_payment_sequence" model="ir.sequence">
+        <field name="name">Pago Inmobiliario</field>
+        <field name="code">estate.payment</field>
+        <field name="prefix">PAG-%(year)s-</field>
+        <field name="padding">4</field>
+    </record>
+</odoo>

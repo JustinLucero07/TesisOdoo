@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_appraisal_view_list" model="ir.ui.view">
+        <field name="name">estate.appraisal.list</field>
+        <field name="model">estate.appraisal</field>
+        <field name="arch" type="xml">
+            <list string="Tasaciones"
+                  decoration-success="state == 'completed'"
+                  decoration-warning="state in ('scheduled','in_progress')"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="property_id"/>
+                <field name="partner_id" string="Solicitante"/>
+                <field name="user_id" string="Tasador"/>
+                <field name="request_reason" widget="badge"/>
+                <field name="date_requested"/>
+                <field name="date_scheduled"/>
+                <field name="current_price" widget="monetary"/>
+                <field name="market_value" widget="monetary"/>
+                <field name="price_variance_pct" string="Variación %"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'completed'"
+                       decoration-warning="state in ('scheduled','in_progress')"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_appraisal_view_form" model="ir.ui.view">
+        <field name="name">estate.appraisal.form</field>
+        <field name="model">estate.appraisal</field>
+        <field name="arch" type="xml">
+            <form string="Solicitud de Tasación">
+                <header>
+                    <button name="action_schedule" string="Programar Visita" type="object"
+                            class="oe_highlight" invisible="state != 'requested'"/>
+                    <button name="action_start" string="Iniciar Elaboración" type="object"
+                            class="btn-warning" invisible="state != 'scheduled'"/>
+                    <button name="action_complete" string="Completar Tasación" type="object"
+                            class="btn-success" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                            class="btn-danger" invisible="state == 'completed'"
+                            confirm="¿Está seguro de cancelar esta tasación?"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="requested,scheduled,in_progress,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Información">
+                            <field name="property_id"/>
+                            <field name="partner_id" string="Solicitante"/>
+                            <field name="user_id" string="Tasador" widget="many2one_avatar_user"/>
+                            <field name="request_reason"/>
+                            <field name="methodology"/>
+                        </group>
+                        <group string="Fechas">
+                            <field name="date_requested"/>
+                            <field name="date_scheduled"/>
+                            <field name="date_completed" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Resultado de la Tasación" invisible="state not in ('in_progress','completed')">
+                        <group>
+                            <field name="market_value" widget="monetary"/>
+                            <field name="commercial_value" widget="monetary"/>
+                            <field name="replacement_value" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="current_price" widget="monetary" readonly="1"/>
+                            <field name="price_variance_pct" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Informe" invisible="state not in ('in_progress','completed')">
+                        <field name="appraisal_notes" nolabel="1"/>
+                    </group>
+                    <group string="Observaciones">
+                        <field name="observations" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda Tasaciones -->
+    <record id="estate_appraisal_view_search" model="ir.ui.view">
+        <field name="name">estate.appraisal.search</field>
+        <field name="model">estate.appraisal</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Tasaciones">
+                <field name="name" string="Referencia"/>
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Solicitante"/>
+                <field name="user_id" string="Tasador"/>
+                <filter name="filter_completed" string="Completadas"
+                        domain="[('state', '=', 'completed')]"/>
+                <filter name="filter_in_progress" string="En Proceso"
+                        domain="[('state', 'in', ('scheduled', 'in_progress'))]"/>
+                <filter name="filter_this_month" string="Este mes"
+                        domain="[('date_requested', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_year" string="Este año"
+                        domain="[('date_requested', '&gt;=', context_today().strftime('%Y-01-01'))]"/>
+                <separator/>
+                <filter name="group_reason" string="Por Motivo"
+                        context="{'group_by': 'request_reason'}"/>
+                <filter name="group_state" string="Por Estado"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_appraiser" string="Por Tasador"
+                        context="{'group_by': 'user_id'}"/>
+                <filter name="group_month" string="Por Mes"
+                        context="{'group_by': 'date_requested:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Pivot Tasaciones -->
+    <record id="estate_appraisal_view_pivot" model="ir.ui.view">
+        <field name="name">estate.appraisal.pivot</field>
+        <field name="model">estate.appraisal</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Tasaciones" sample="1" display_quantity="true">
+                <field name="request_reason" type="row"/>
+                <field name="state" type="col"/>
+                <field name="market_value" type="measure" string="Valor Mercado"/>
+                <field name="price_variance_pct" type="measure" string="Variación %"/>
+            </pivot>
+        </field>
+    </record>
+    <!-- Vista Graph Tasaciones -->
+    <record id="estate_appraisal_view_graph" model="ir.ui.view">
+        <field name="name">estate.appraisal.graph</field>
+        <field name="model">estate.appraisal</field>
+        <field name="arch" type="xml">
+            <graph string="Tasaciones por Motivo" type="bar" sample="1">
+                <field name="request_reason"/>
+                <field name="market_value" type="measure" string="Valor de Mercado"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="estate_appraisal_action" model="ir.actions.act_window">
+        <field name="name">Tasaciones</field>
+        <field name="res_model">estate.appraisal</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="context">{'search_default_filter_in_progress': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin tasaciones aún</p>
+            <p>Registra solicitudes de tasación formal para tus propiedades.</p>
+        </field>
+    </record>
+</odoo>

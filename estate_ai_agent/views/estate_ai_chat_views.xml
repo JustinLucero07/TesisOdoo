@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Chat History View -->
+
+    <record id="estate_ai_chat_history_view_tree" model="ir.ui.view">
+        <field name="name">estate.ai.chat.history.tree</field>
+        <field name="model">estate.ai.chat.history</field>
+        <field name="arch" type="xml">
+            <list string="Historial de Chat IA" create="false">
+                <field name="create_date" string="Fecha"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="query"/>
+                <field name="query_type" widget="badge"/>
+                <field name="processing_time" string="Tiempo (s)"/>
+                <field name="tool_calls_count" string="Herramientas"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_ai_chat_history_view_form" model="ir.ui.view">
+        <field name="name">estate.ai.chat.history.form</field>
+        <field name="model">estate.ai.chat.history</field>
+        <field name="arch" type="xml">
+            <form string="Detalle de Chat" create="false" edit="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="query_type" widget="badge"/>
+                            <field name="processing_time"/>
+                            <field name="create_date"/>
+                        </group>
+                    </group>
+                    <group string="Consulta">
+                        <field name="query" nolabel="1"/>
+                    </group>
+                    <group string="Respuesta">
+                        <field name="response" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="estate_ai_chat_history_action" model="ir.actions.act_window">
+        <field name="name">Historial de Chat</field>
+        <field name="res_model">estate.ai.chat.history</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Chat Client Action -->
+    <record id="estate_ai_chat_action" model="ir.actions.client">
+        <field name="name">Chat IA</field>
+        <field name="tag">estate_ai_chat</field>
+    </record>
+</odoo>

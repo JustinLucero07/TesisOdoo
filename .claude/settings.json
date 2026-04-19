@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(psql -d tesis_odoo18 -c \"SELECT name, ttype, store FROM ir_model_fields WHERE model = ''estate.property'' AND name IN \\(''garage'', ''parking_spaces'', ''bathrooms'', ''bedrooms''\\);\")",
+      "Bash(python3 -c \":*)",
+      "Bash(xargs strings:*)",
+      "Bash(find /home/justin/Documentos/Tesis -name *.pyc -exec strings {})",
+      "Bash(2)",
+      "Bash(grep \"^garage$\")",
+      "Bash(psql -d tesis_odoo18 -c \"SELECT id, name, sequence, probability, is_won FROM crm_stage ORDER BY sequence;\")",
+      "Bash(psql -d tesis_odoo18 -c \"SELECT id, name, sequence, is_won FROM crm_stage ORDER BY sequence;\")",
+      "Bash(psql -d tesis_odoo18 -c \"SELECT l.id, l.name, l.type, s.name as stage FROM crm_lead l LEFT JOIN crm_stage s ON s.id = l.stage_id WHERE l.active = true ORDER BY l.stage_id LIMIT 20;\")",
+      "Bash(psql -d:*)",
+      "Bash(pkill -f odoo-bin)"
+    ]
+  }
+}

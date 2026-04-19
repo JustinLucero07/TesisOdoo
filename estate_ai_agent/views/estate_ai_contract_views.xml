@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_contract_view_form_inherit_ai" model="ir.ui.view">
+        <field name="name">estate.contract.form.inherit.ai</field>
+        <field name="model">estate.contract</field>
+        <field name="inherit_id" ref="estate_management.estate_contract_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header/button[@name='action_activate']" position="before">
+                <button name="action_generate_contract_ai" string=" Redactar con IA" type="object" class="oe_highlight btn-info" icon="fa-magic" invisible="state != 'draft'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

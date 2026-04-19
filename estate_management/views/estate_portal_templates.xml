@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Inyectar al menú principal del portal (Breadcrumbs) -->
+    <template id="portal_my_home_menu_estate" name="Portal layout : estate menu entries" inherit_id="portal.portal_breadcrumbs" priority="20">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'property' or property" t-attf-class="breadcrumb-item #{'active ' if not property else ''}">
+                <a t-if="property" t-attf-href="/my/properties?{{ keep_query() }}">Mis Propiedades</a>
+                <t t-else="">Mis Propiedades</t>
+            </li>
+            <li t-if="property" class="breadcrumb-item active">
+                <t t-esc="property.name"/>
+            </li>
+            <li t-if="page_name == 'contract' or contract" t-attf-class="breadcrumb-item #{'active ' if not contract else ''}">
+                <a t-if="contract" t-attf-href="/my/contracts?{{ keep_query() }}">Mis Contratos</a>
+                <t t-else="">Mis Contratos</t>
+            </li>
+            <li t-if="contract" class="breadcrumb-item active">
+                <t t-esc="contract.name"/>
+            </li>
+        </xpath>
+    </template>
+
+    <!-- Inyectar las tarjetas de contadores en el inicio del Portal -->
+    <template id="portal_my_home_estate" name="Show Estate Items" customize_show="True" inherit_id="portal.portal_my_home" priority="20">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Mis Propiedades</t>
+                <t t-set="url" t-value="'/my/properties'"/>
+                <t t-set="placeholder_count" t-value="'property_count'"/>
+            </t>
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Mis Contratos</t>
+                <t t-set="url" t-value="'/my/contracts'"/>
+                <t t-set="placeholder_count" t-value="'contract_count'"/>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>

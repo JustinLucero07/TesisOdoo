@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Template 1: Bienvenida al nuevo lead -->
+        <record id="email_template_lead_welcome" model="mail.template">
+            <field name="name">Inmobiliaria: Bienvenida al nuevo prospecto</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="subject">Bienvenido a Inmobi — Encontraremos tu propiedad ideal</field>
+            <field name="email_to">{{ object.email_from }}</field>
+            <field name="lang">{{ object.partner_id.lang }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+  <div style="background: #1B4F72; padding: 24px; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px;">🏠 Inmobi — Gestión Inmobiliaria</h1>
+  </div>
+  <div style="padding: 32px;">
+    <p style="font-size: 16px;">Hola <strong>{{ object.partner_id.name or object.contact_name or 'estimado cliente' }}</strong>,</p>
+    <p>Gracias por contactarnos. Hemos recibido tu solicitud y un asesor especializado se pondrá en contacto contigo muy pronto.</p>
+    {% if object.client_budget %}<p><strong>Presupuesto registrado:</strong> ${{ "{:,.0f}".format(object.client_budget) }}</p>{% endif %}
+    {% if object.preferred_city %}<p><strong>Ciudad de interés:</strong> {{ object.preferred_city }}</p>{% endif %}
+    <p style="margin-top: 24px;">Mientras tanto, te invitamos a explorar nuestro catálogo de propiedades.</p>
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="https://wa.me/{{ (object.user_id.partner_id.mobile or object.user_id.partner_id.phone or '593XXXXXXXXX') | replace('+','') | replace(' ','') | replace('-','') }}" style="background: #25D366; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;">💬 Escríbenos por WhatsApp</a>
+    </div>
+    <p style="color: #888; font-size: 13px;">Equipo Inmobi · Cuenca, Ecuador</p>
+  </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Template 2: Seguimiento a los 3 días sin respuesta -->
+        <record id="email_template_lead_followup_3d" model="mail.template">
+            <field name="name">Inmobiliaria: Seguimiento 3 días sin actividad</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="subject">¿Seguimos buscando tu propiedad ideal? — Inmobi</field>
+            <field name="email_to">{{ object.email_from }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+  <div style="background: #2E86C1; padding: 24px; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px;">🔍 Seguimos buscando para ti</h1>
+  </div>
+  <div style="padding: 32px;">
+    <p>Hola <strong>{{ object.partner_id.name or object.contact_name or 'estimado cliente' }}</strong>,</p>
+    <p>Han pasado unos días desde tu consulta y queremos asegurarnos de que encontraste lo que buscabas.</p>
+    <p>Nuestro equipo tiene propiedades disponibles que podrían interesarte. ¿Agendamos una llamada de 15 minutos esta semana?</p>
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="https://wa.me/{{ (object.user_id.partner_id.mobile or object.user_id.partner_id.phone or '593XXXXXXXXX') | replace('+','') | replace(' ','') | replace('-','') }}?text=Hola,%20quiero%20retomar%20mi%20búsqueda%20de%20propiedad" style="background: #1B4F72; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;">Retomar mi búsqueda</a>
+    </div>
+    <p style="color: #888; font-size: 13px;">Inmobi · Cuenca, Ecuador</p>
+  </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Template 3: Seguimiento 7 días -->
+        <record id="email_template_lead_followup_7d" model="mail.template">
+            <field name="name">Inmobiliaria: Seguimiento 7 días — última oportunidad</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="subject">Última propiedad disponible en tu rango — Inmobi</field>
+            <field name="email_to">{{ object.email_from }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+  <div style="background: #E74C3C; padding: 24px; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px;">⏰ No pierdas esta oportunidad</h1>
+  </div>
+  <div style="padding: 32px;">
+    <p>Hola <strong>{{ object.partner_id.name or object.contact_name or 'estimado cliente' }}</strong>,</p>
+    <p>Queremos compartirte que hay propiedades disponibles en tu rango que están recibiendo mucho interés. El mercado inmobiliario en Cuenca es activo y las buenas oportunidades no duran mucho.</p>
+    {% if object.preferred_city %}<p>Tenemos opciones en <strong>{{ object.preferred_city }}</strong> que podrían ser justo lo que buscas.</p>{% endif %}
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="https://wa.me/{{ (object.user_id.partner_id.mobile or object.user_id.partner_id.phone or '593XXXXXXXXX') | replace('+','') | replace(' ','') | replace('-','') }}?text=Quiero%20ver%20las%20propiedades%20disponibles" style="background: #E74C3C; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;">Ver propiedades disponibles</a>
+    </div>
+    <p style="color: #888; font-size: 13px;">Inmobi · Cuenca, Ecuador</p>
+  </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Template 4: Notificación propietario — nueva visita agendada -->
+        <record id="email_template_owner_visit_notification" model="mail.template">
+            <field name="name">Inmobiliaria: Notificar propietario — visita agendada</field>
+            <field name="model_id" ref="estate_management.model_estate_property"/>
+            <field name="subject">Visita programada para tu propiedad: {{ object.title }}</field>
+            <field name="email_to">{{ object.owner_id.email }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+  <div style="background: #27AE60; padding: 24px; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 22px;">📅 Nueva visita para tu propiedad</h1>
+  </div>
+  <div style="padding: 32px;">
+    <p>Estimado/a <strong>{{ object.owner_id.name }}</strong>,</p>
+    <p>Te informamos que se ha programado una visita para la propiedad:</p>
+    <div style="background: #f8f9fa; border-left: 4px solid #27AE60; padding: 16px; margin: 20px 0; border-radius: 4px;">
+      <strong>{{ object.title }}</strong><br/>
+      {{ object.street or '' }}{% if object.city %}, {{ object.city }}{% endif %}<br/>
+      Precio: ${{ "{:,.0f}".format(object.price) }}
+    </div>
+    <p>El asesor <strong>{{ object.user_id.name }}</strong> coordinará todos los detalles. Te mantendremos informado/a del resultado.</p>
+    <p style="color: #888; font-size: 13px;">Inmobi · Cuenca, Ecuador</p>
+  </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Template 5: Resumen mensual al propietario -->
+        <record id="email_template_owner_monthly_report" model="mail.template">
+            <field name="name">Inmobiliaria: Reporte mensual al propietario</field>
+            <field name="model_id" ref="estate_management.model_estate_property"/>
+            <field name="subject">Reporte de gestión de tu propiedad — {{ object.title }}</field>
+            <field name="email_to">{{ object.owner_id.email }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+  <div style="background: #1B4F72; padding: 24px; text-align: center;">
+    <h1 style="color: white; margin: 0; font-size: 20px;">📊 Reporte Mensual de Gestión</h1>
+    <p style="color: #aed6f1; margin: 8px 0 0 0;">{{ object.title }}</p>
+  </div>
+  <div style="padding: 32px;">
+    <p>Estimado/a <strong>{{ object.owner_id.name }}</strong>,</p>
+    <p>Te presentamos el resumen de la gestión de tu propiedad durante el último mes:</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <tr style="background: #f8f9fa;">
+        <td style="padding: 10px; border: 1px solid #dee2e6;">📍 Propiedad</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.title }}</strong></td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">💰 Precio Actual</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>${{ "{:,.0f}".format(object.price) }}</strong></td>
+      </tr>
+      <tr style="background: #f8f9fa;">
+        <td style="padding: 10px; border: 1px solid #dee2e6;">📅 Días en el Mercado</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.days_on_market }}</strong> días</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">👁️ Visitas Realizadas</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.meeting_count }}</strong></td>
+      </tr>
+      <tr style="background: #f8f9fa;">
+        <td style="padding: 10px; border: 1px solid #dee2e6;">📈 Estado AVM</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">{{ object.avm_status or 'Sin calcular' }}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">⭐ Score de la Propiedad</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.property_score }}/100</strong> — {{ object.property_score_label }}</td>
+      </tr>
+    </table>
+
+    <p>Tu asesor <strong>{{ object.user_id.name }}</strong> está disponible para cualquier consulta.</p>
+    <p style="color: #888; font-size: 13px;">Inmobi · Cuenca, Ecuador</p>
+  </div>
+</div>
+            ]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

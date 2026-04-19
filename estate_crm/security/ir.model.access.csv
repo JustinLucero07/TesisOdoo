@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_estate_interaction_agent,estate.client.interaction.agent,model_estate_client_interaction,estate_management.estate_group_agent,1,1,1,0
+access_estate_interaction_manager,estate.client.interaction.manager,model_estate_client_interaction,estate_management.estate_group_manager,1,1,1,1
+access_estate_interaction_admin,estate.client.interaction.admin,model_estate_client_interaction,estate_management.estate_group_admin,1,1,1,1

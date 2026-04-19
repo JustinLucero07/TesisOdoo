@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_estate_contract" model="ir.actions.report">
+        <field name="name">Contrato Inmobiliario Autogenerado</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_management.report_estate_contract_document</field>
+        <field name="report_file">estate_management.report_estate_contract_document</field>
+        <field name="print_report_name">'Contrato_%s' % (object.name)</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_estate_contract_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <div class="text-center mb-4">
+                            <h2 t-if="o.estate_transaction_type == 'sale'">CONTRATO DE COMPRAVENTA INMOBILIARIA</h2>
+                            <h2 t-if="o.estate_transaction_type == 'rent'">CONTRATO DE ARRENDAMIENTO INMOBILIARIO</h2>
+                            <h2 t-if="o.estate_transaction_type not in ('sale', 'rent')">ACUERDO INMOBILIARIO</h2>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <p>
+                                Conste por el presente documento, el 
+                                <strong><span t-field="o.estate_transaction_type"/></strong> 
+                                que celebran por una parte la Agencia Inmobiliaria y por otra el cliente:
+                            </p>
+                            <p><strong>El Cliente (Arrendatario/Comprador):</strong> <span t-field="o.partner_id.name"/></p>
+                            <p t-if="o.property_id">
+                                <strong>Sobre la Propiedad:</strong> <span t-field="o.property_id.title"/> ubicada en <span t-field="o.property_id.city"/>.
+                            </p>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h4>CLÁUSULAS DEL AI CONTRACT GENERATOR</h4>
+                            <p><strong>PRIMERA:</strong> Que el Cliente ha inspeccionado la propiedad y declara encontrarse conforme con las condiciones físicas de la misma, tal como el sistema AI Matchmaker de la inmobiliaria recomendó originalmente.</p>
+                            <p><strong>SEGUNDA:</strong> La contraprestación monetaria acordada es de <strong><span t-field="o.amount_total"/></strong>, que el Cliente abonará según el esquema de pagos adjunto.</p>
+                            <p><strong>TERCERA:</strong> El presente documento es autogenerado por el Módulo de Contratos y está validado como borrador o documento oficial según las políticas vigentes de la Inmobiliaria.</p>
+                        </div>
+                        
+                        <div class="row mt-5 pt-5 text-center">
+                            <div class="col-6">
+                                <hr style="width: 70%;" />
+                                <p><strong>FIRMA INMOBILIARIA</strong></p>
+                            </div>
+                            <div class="col-6">
+                                <hr style="width: 70%;" />
+                                <p><strong><span t-field="o.partner_id.name"/></strong></p>
+                                <p><strong>FIRMA CLIENTE</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         LISTA
+    ============================================================ -->
+    <record id="estate_payroll_line_view_list" model="ir.ui.view">
+        <field name="name">estate.payroll.line.list</field>
+        <field name="model">estate.payroll.line</field>
+        <field name="arch" type="xml">
+            <list string="Nómina" decoration-success="state == 'paid'"
+                  decoration-muted="state == 'cancel'"
+                  decoration-warning="state == 'confirmed'">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="period_month"/>
+                <field name="period_year"/>
+                <field name="base_salary" sum="Total Sueldo Base"/>
+                <field name="commission_bonus" sum="Total Bonos"/>
+                <field name="gross_salary" sum="Total Haberes"/>
+                <field name="total_deductions" sum="Total Deducciones"/>
+                <field name="net_salary" sum="Total Neto"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'paid'"
+                       decoration-warning="state == 'confirmed'"
+                       decoration-info="state == 'draft'"
+                       decoration-danger="state == 'cancel'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         FORMULARIO
+    ============================================================ -->
+    <record id="estate_payroll_line_view_form" model="ir.ui.view">
+        <field name="name">estate.payroll.line.form</field>
+        <field name="model">estate.payroll.line</field>
+        <field name="arch" type="xml">
+            <form string="Nómina de Asesor">
+                <header>
+                    <button name="action_compute_commissions"
+                            string="Calcular Comisiones" type="object"
+                            class="btn-secondary"
+                            invisible="state != 'draft'"
+                            title="Suma automáticamente las comisiones aprobadas/pagadas del período"/>
+                    <button name="action_confirm" string="Confirmar" type="object"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_generate_payment_invoice"
+                            string="Generar Factura de Pago" type="object"
+                            class="btn-success"
+                            invisible="state != 'confirmed'"
+                            confirm="¿Generar la factura de proveedor y marcar como Pagado?"/>
+                    <button name="action_view_invoice" string="Ver Factura" type="object"
+                            invisible="not invoice_id"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                            invisible="state in ('paid', 'cancel')"
+                            confirm="¿Está seguro de cancelar esta nómina?"/>
+                    <button name="action_reset_draft" string="Restablecer Borrador" type="object"
+                            invisible="state != 'cancel'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,confirmed,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Empleado y Período">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                            <field name="period_month" readonly="state != 'draft'"/>
+                            <field name="period_year" readonly="state != 'draft'"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Estado">
+                            <field name="state" readonly="1"/>
+                            <field name="invoice_id" readonly="1"/>
+                            <field name="invoice_state" readonly="1"
+                                   invisible="not invoice_id"/>
+                        </group>
+                    </group>
+
+                    <separator string="Haberes"/>
+                    <group>
+                        <group>
+                            <field name="base_salary" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="state != 'draft'"/>
+                            <field name="commission_bonus" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="state != 'draft'"/>
+                            <field name="transport_allowance" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="state != 'draft'"/>
+                            <field name="other_income" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="gross_salary" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
+                    <separator string="Deducciones"/>
+                    <group>
+                        <group>
+                            <field name="iess_personal" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="1"/>
+                            <field name="advance_deduction" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="state != 'draft'"/>
+                            <field name="other_deduction" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="state != 'draft'"/>
+                        </group>
+                        <group>
+                            <field name="total_deductions" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   readonly="1"/>
+                        </group>
+                    </group>
+
+                    <separator string="Sueldo Neto"/>
+                    <group>
+                        <field name="net_salary" widget="monetary"
+                               options="{'currency_field': 'currency_id'}"
+                               readonly="1"/>
+                    </group>
+
+                    <separator string="Notas"/>
+                    <field name="notes" placeholder="Observaciones adicionales..."
+                           readonly="state not in ('draft',)"/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         BÚSQUEDA
+    ============================================================ -->
+    <record id="estate_payroll_line_view_search" model="ir.ui.view">
+        <field name="name">estate.payroll.line.search</field>
+        <field name="model">estate.payroll.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Nómina">
+                <field name="employee_id"/>
+                <filter string="Borrador" name="draft" domain="[('state','=','draft')]"/>
+                <filter string="Confirmado" name="confirmed" domain="[('state','=','confirmed')]"/>
+                <filter string="Pagado" name="paid" domain="[('state','=','paid')]"/>
+                <separator/>
+                <filter string="Agrupar por Empleado" name="group_employee"
+                        context="{'group_by': 'employee_id'}"/>
+                <filter string="Agrupar por Mes" name="group_month"
+                        context="{'group_by': 'period_month'}"/>
+                <filter string="Agrupar por Año" name="group_year"
+                        context="{'group_by': 'period_year'}"/>
+                <filter string="Agrupar por Estado" name="group_state"
+                        context="{'group_by': 'state'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         PIVOT
+    ============================================================ -->
+    <record id="estate_payroll_line_view_pivot" model="ir.ui.view">
+        <field name="name">estate.payroll.line.pivot</field>
+        <field name="model">estate.payroll.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Nómina — Resumen">
+                <field name="period_year" type="row"/>
+                <field name="period_month" type="col"/>
+                <field name="net_salary" type="measure"/>
+                <field name="gross_salary" type="measure"/>
+                <field name="total_deductions" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ============================================================
+         ACCIÓN
+    ============================================================ -->
+    <record id="estate_payroll_line_action" model="ir.actions.act_window">
+        <field name="name">Nómina / Sueldos</field>
+        <field name="res_model">estate.payroll.line</field>
+        <field name="view_mode">list,form,pivot</field>
+        <field name="context">{'search_default_group_employee': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin registros de nómina.</p>
+            <p>Registra el sueldo mensual de cada asesor, incluyendo bonos de comisiones y deducciones IESS.</p>
+        </field>
+    </record>
+
+</odoo>

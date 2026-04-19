@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_social_config_view" model="ir.ui.view">
+        <field name="name">estate.social.config</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Redes Sociales" string="Redes Sociales" name="estate_social">
+                    <block title="WhatsApp Business" name="whatsapp_social">
+                        <setting string="Número WhatsApp Business"
+                                 help="Número de contacto directo para clientes interesados en propiedades.">
+                            <field name="whatsapp_business_number" placeholder="593981234567"/>
+                        </setting>
+                    </block>
+                    <block title="Facebook — Publicación Automática" name="facebook_settings">
+                        <setting string="Facebook Page ID"
+                                 help="ID de tu página de Facebook (no el de tu perfil personal).">
+                            <field name="facebook_page_id" placeholder="123456789012345"/>
+                        </setting>
+                        <setting string="Page Access Token"
+                                 help="Token de la página generado en Explorador de la API Graph de Meta.">
+                            <field name="facebook_page_token" password="True" placeholder="EAAx..."/>
+                        </setting>
+                    </block>
+                    <block title="Instagram — Publicación Automática" name="instagram_settings">
+                        <setting string="Instagram Business Account ID"
+                                 help="ID de la cuenta de Instagram Business vinculada a tu página de Facebook.">
+                            <field name="instagram_account_id" placeholder="987654321098765"/>
+                        </setting>
+                        <setting string="URL Pública del Servidor"
+                                 help="Solo necesario si no usas WordPress. URL pública donde Instagram puede acceder a las imágenes.">
+                            <field name="odoo_base_url" placeholder="https://miinmobiliaria.com"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

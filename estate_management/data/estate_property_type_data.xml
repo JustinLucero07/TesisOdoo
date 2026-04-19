@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="property_type_house" model="estate.property.type">
+            <field name="name">Casa</field>
+            <field name="sequence">1</field>
+        </record>
+        <record id="property_type_apartment" model="estate.property.type">
+            <field name="name">Departamento</field>
+            <field name="sequence">2</field>
+        </record>
+        <record id="property_type_land" model="estate.property.type">
+            <field name="name">Terreno</field>
+            <field name="sequence">3</field>
+        </record>
+        <record id="property_type_office" model="estate.property.type">
+            <field name="name">Oficina</field>
+            <field name="sequence">4</field>
+        </record>
+        <record id="property_type_commercial" model="estate.property.type">
+            <field name="name">Local Comercial</field>
+            <field name="sequence">5</field>
+        </record>
+    </data>
+</odoo>

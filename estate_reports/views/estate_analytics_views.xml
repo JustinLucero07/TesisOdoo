@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        ============================================================
+        ACCIONES DE ANÁLISIS — Inteligencia Inmobiliaria
+        Todas abren en modo GRÁFICO por defecto (graph primero).
+        El usuario puede cambiar a pivot/lista con los botones del toolbar.
+        ============================================================
+    -->
+
+    <!-- ═══════════════════════════════════════════
+         1. ANÁLISIS DE PROPIEDADES (estate.property)
+    ═══════════════════════════════════════════ -->
+    <record id="estate_analytics_property_action" model="ir.actions.act_window">
+        <field name="name">Análisis de Propiedades</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{
+            'search_default_group_type': 1
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin propiedades registradas.</p>
+            <p>Visualiza el inventario de propiedades por tipo, estado, precio y ciudad.
+               Cambia entre gráfico de barras, líneas, circular y tabla pivot.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         2. ANÁLISIS DE CONTRATOS (estate.contract)
+    ═══════════════════════════════════════════ -->
+    <record id="estate_analytics_contract_action" model="ir.actions.act_window">
+        <field name="name">Análisis de Contratos</field>
+        <field name="res_model">estate.contract</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin contratos registrados.</p>
+            <p>Analiza contratos por tipo (venta/alquiler/exclusividad), estado y montos.
+               Cambia entre gráfico y tabla pivot.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         3. ANÁLISIS DE PAGOS (estate.payment)
+    ═══════════════════════════════════════════ -->
+    <record id="estate_analytics_payment_action" model="ir.actions.act_window">
+        <field name="name">Análisis de Pagos</field>
+        <field name="res_model">estate.payment</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin pagos registrados.</p>
+            <p>Analiza pagos por método, estado y período.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         4. ANÁLISIS DE OFERTAS (estate.property.offer)
+    ═══════════════════════════════════════════ -->
+    <record id="estate_analytics_offer_action" model="ir.actions.act_window">
+        <field name="name">Análisis de Ofertas</field>
+        <field name="res_model">estate.property.offer</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ofertas registradas.</p>
+            <p>Analiza ofertas por propiedad, estado y monto ofertado.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         5. ANÁLISIS DE GASTOS (estate.property.expense)
+    ═══════════════════════════════════════════ -->
+    <record id="estate_analytics_expense_action" model="ir.actions.act_window">
+        <field name="name">Análisis de Gastos</field>
+        <field name="res_model">estate.property.expense</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin gastos registrados.</p>
+            <p>Analiza gastos por tipo, responsable y propiedad.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         6. ANÁLISIS DE TASACIONES (estate.appraisal)
+    ═══════════════════════════════════════════ -->
+    <record id="estate_analytics_appraisal_action" model="ir.actions.act_window">
+        <field name="name">Análisis de Tasaciones</field>
+        <field name="res_model">estate.appraisal</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin tasaciones registradas.</p>
+            <p>Analiza tasaciones por motivo, estado y valor de mercado.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         7. ANÁLISIS DE MANTENIMIENTO (estate.tenant.request)
+    ═══════════════════════════════════════════ -->
+    <record id="estate_analytics_maintenance_action" model="ir.actions.act_window">
+        <field name="name">Análisis de Mantenimiento</field>
+        <field name="res_model">estate.tenant.request</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin solicitudes registradas.</p>
+            <p>Analiza solicitudes de mantenimiento por tipo, propiedad y costo.</p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════
+         MENÚS — Sección Inteligencia
+    ═══════════════════════════════════════════ -->
+
+    <!-- Sub-sección: Análisis -->
+    <menuitem id="estate_menu_analytics_root"
+              name="Análisis"
+              parent="estate_management.estate_menu_intel_root"
+              sequence="22"/>
+
+        <menuitem id="estate_menu_analytics_property"
+                  name="Propiedades"
+                  parent="estate_menu_analytics_root"
+                  action="estate_analytics_property_action"
+                  sequence="10"/>
+
+        <menuitem id="estate_menu_analytics_contract"
+                  name="Contratos"
+                  parent="estate_menu_analytics_root"
+                  action="estate_analytics_contract_action"
+                  sequence="20"/>
+
+        <menuitem id="estate_menu_analytics_payment"
+                  name="Pagos"
+                  parent="estate_menu_analytics_root"
+                  action="estate_analytics_payment_action"
+                  sequence="30"/>
+
+        <menuitem id="estate_menu_analytics_offer"
+                  name="Ofertas"
+                  parent="estate_menu_analytics_root"
+                  action="estate_analytics_offer_action"
+                  sequence="40"/>
+
+        <menuitem id="estate_menu_analytics_expense"
+                  name="Gastos"
+                  parent="estate_menu_analytics_root"
+                  action="estate_analytics_expense_action"
+                  sequence="50"/>
+
+        <menuitem id="estate_menu_analytics_appraisal"
+                  name="Tasaciones"
+                  parent="estate_menu_analytics_root"
+                  action="estate_analytics_appraisal_action"
+                  sequence="60"/>
+
+        <menuitem id="estate_menu_analytics_maintenance"
+                  name="Mantenimiento"
+                  parent="estate_menu_analytics_root"
+                  action="estate_analytics_maintenance_action"
+                  sequence="70"/>
+</odoo>

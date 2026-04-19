@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_payroll_config_view" model="ir.ui.view">
+        <field name="name">estate.payroll.config</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="Nómina Inmobiliaria" string="Nómina Inmobiliaria" name="estate_payroll">
+                    <block title="Parámetros de Nómina" name="payroll_settings">
+                        <setting id="iess_personal_pct_setting"
+                                 string="Aporte Personal IESS (%)"
+                                 help="Porcentaje del sueldo base que se descuenta como aporte personal al IESS. Valor vigente en Ecuador: 9.45%.">
+                            <field name="iess_personal_pct"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

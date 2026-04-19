@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== TREE VIEW ==================== -->
+    <record id="estate_property_view_tree" model="ir.ui.view">
+        <field name="name">estate.property.tree</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <list string="Propiedades" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-info="state == 'rented'" decoration-warning="state == 'reserved'">
+                <field name="image_main" widget="image" options="{'size': [150, 150]}" />
+                <field name="name"/>
+                <field name="title"/>
+                <field name="property_type_id"/>
+                <field name="offer_type" optional="show"/>
+                <field name="city"/>
+                <field name="price" widget="monetary"/>
+                <field name="area"/>
+                <field name="bedrooms"/>
+                <field name="days_on_market" optional="show"/>
+                <field name="sold_by" optional="hide"/>
+                <field name="contract_end_date" optional="hide"/>
+                <field name="state" widget="badge" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-info="state == 'rented'" decoration-warning="state == 'reserved'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ==================== FORM VIEW ==================== -->
+    <record id="estate_property_view_form" model="ir.ui.view">
+        <field name="name">estate.property.form</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <form string="Propiedad">
+                <header>
+                    <button name="action_open_map" string=" Ver en Mapa" type="object" class="btn-info" invisible="not map_url"/>
+                    <button name="action_calculate_avm" string=" Calcular Precio AVM" type="object" class="btn-warning" invisible="state in ('sold', 'rented')"/>
+                    <button name="action_create_sale_order" string="Crear Orden de Venta" type="object" class="btn-success" icon="fa-shopping-cart" invisible="state in ('sold', 'rented')"/>
+                    <button name="action_create_invoice" string="Generar Factura Directa" type="object" class="btn-primary" invisible="state in ('sold', 'rented')"/>
+                    <button name="%(estate_reports.action_report_ficha_tecnica)d" string="Descargar Ficha PDF" type="action" class="btn-secondary" icon="fa-download"/>
+                    <button name="action_set_available" string="Disponible" type="object" class="oe_highlight" invisible="state == 'available'"/>
+                    <button name="action_set_reserved" string="Reservar" type="object" invisible="state in ('sold', 'rented')"/>
+                    <button name="action_set_sold" string="Cerrar como Vendido" type="object" class="btn-success" invisible="state == 'sold'"/>
+                    <button name="action_set_rented" string="Alquilado" type="object" class="btn-primary" invisible="state == 'rented'"/>
+                    <button name="action_relist" string="Re-listar en Mercado" type="object"
+                            class="btn-warning"
+                            invisible="state not in ('sold', 'rented')"
+                            confirm="¿Confirmas re-listar esta propiedad? Se borrarán los datos de comprador y fecha de venta/alquiler anteriores."/>
+                    <field name="state" widget="statusbar" statusbar_visible="available,reserved,sold,rented"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="title" placeholder="Título de la propiedad"/>
+                        </h1>
+                        <h3>
+                            <field name="name" readonly="1"/>
+                        </h3>
+                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                    </div>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_meetings" type="object" class="oe_stat_button" icon="fa-calendar">
+                            <field name="meeting_count" string="Citas" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_offers" type="object" class="oe_stat_button" icon="fa-handshake-o"
+                                invisible="offer_count == 0">
+                            <field name="offer_count" string="Ofertas" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_expenses" type="object" class="oe_stat_button" icon="fa-wrench"
+                                invisible="expense_count == 0">
+                            <field name="expense_count" string="Gastos" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_appraisals" type="object" class="oe_stat_button" icon="fa-balance-scale"
+                                invisible="appraisal_count == 0">
+                            <field name="appraisal_count" string="Tasaciones" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_price_history" type="object" class="oe_stat_button" icon="fa-line-chart"
+                                invisible="price_history_count == 0">
+                            <field name="price_history_count" string="Cambios Precio" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_sale_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart"
+                                invisible="sale_count == 0">
+                            <field name="sale_count" string="Ventas" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_property_invoices" type="object" class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="property_invoice_count == 0">
+                            <field name="property_invoice_count" string="Facturas" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <field name="map_url" invisible="1"/>
+                    <group>
+                        <group string="Información General">
+                            <field name="property_type_id" readonly="state in ('sold', 'rented')"/>
+                            <field name="offer_type" widget="radio" options="{'horizontal': true}" readonly="state in ('sold', 'rented')"/>
+                            <field name="price" widget="monetary" readonly="state in ('sold', 'rented')"/>
+                            <field name="commission_percentage" readonly="state in ('sold', 'rented')"/>
+                            <field name="commission_amount" widget="monetary"/>
+                            <field name="area" readonly="state in ('sold', 'rented')"/>
+                            <field name="owner_id" readonly="state in ('sold', 'rented')"/>
+                            <field name="buyer_id" readonly="state in ('sold', 'rented')"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="co_user_id" widget="many2one_avatar_user"/>
+                            <field name="commission_split_pct" invisible="not co_user_id"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Características">
+                            <field name="bedrooms"/>
+                            <field name="bathrooms"/>
+                            <field name="parking_spaces"/>
+                            <field name="floor"/>
+                            <field name="year_built"/>
+                        </group>
+                    </group>
+                    <group string="Ubicación">
+                        <group>
+                            <field name="street"/>
+                            <field name="city"/>
+                            <field name="latitude"/>
+                        </group>
+                        <group>
+                            <field name="state_id"/>
+                            <field name="country_id"/>
+                            <field name="zip_code"/>
+                            <field name="longitude"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="map_iframe" nolabel="1" widget="html" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Descripción" name="description">
+                            <field name="description"/>
+                        </page>
+                        <page string="Imágenes" name="images">
+                            <field name="image_main" widget="image" class="oe_avatar"/>
+                            <field name="image_ids">
+                                <list>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="image" widget="image" options="{'size': [100, 100]}"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="WordPress" name="wordpress">
+                            <group>
+                                <field name="wp_published"/>
+                                <field name="wp_post_id"/>
+                            </group>
+                        </page>
+                        <page string="Código QR" name="qr_code">
+                            <group>
+                                <field name="qr_image" widget="image" class="oe_avatar" readonly="1"/>
+                            </group>
+                            <p class="text-muted">Escanee este código para ver los datos rápidos de la propiedad.</p>
+                        </page>
+                        <page string="Hipoteca / Financiamiento" name="mortgage">
+                            <group string="Simulador de Crédito Hipotecario">
+                                <group string="Parámetros">
+                                    <field name="mortgage_down_payment_pct"/>
+                                    <field name="mortgage_rate"/>
+                                    <field name="mortgage_term_years"/>
+                                </group>
+                                <group string="Resultado (calculado automáticamente)">
+                                    <field name="mortgage_down_payment" widget="monetary" readonly="1"/>
+                                    <field name="mortgage_loan_amount" widget="monetary" readonly="1"/>
+                                    <field name="mortgage_monthly_payment" widget="monetary" readonly="1"
+                                           decoration-bf="1"/>
+                                </group>
+                            </group>
+                            <p class="text-muted">
+                                <i class="fa fa-info-circle"/> Cálculo referencial basado en sistema francés de amortización.
+                                Tasas referenciales Ecuador: BIESS 8.69%, bancos privados 9-11%.
+                            </p>
+                        </page>
+                        <page string="Ofertas" name="offers">
+                            <field name="offer_ids">
+                                <list decoration-success="state == 'accepted'"
+                                      decoration-danger="state in ('rejected','expired')"
+                                      decoration-warning="state == 'countered'">
+                                    <field name="name" readonly="1"/>
+                                    <field name="partner_id"/>
+                                    <field name="offer_amount" widget="monetary"/>
+                                    <field name="discount_pct" string="Dto%"/>
+                                    <field name="counteroffer_amount" widget="monetary" optional="show"/>
+                                    <field name="financing_type" widget="badge"/>
+                                    <field name="date"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Historial de Precios" name="price_history">
+                            <field name="price_history_ids">
+                                <list>
+                                    <field name="date"/>
+                                    <field name="old_price" widget="monetary"/>
+                                    <field name="new_price" widget="monetary"/>
+                                    <field name="change_pct" string="Variación %"
+                                           decoration-danger="change_pct &lt; 0"
+                                           decoration-success="change_pct &gt; 0"/>
+                                    <field name="change_reason" widget="badge"/>
+                                    <field name="user_id" readonly="1"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Geolocalización e IA" name="geo_ai">
+                            <group name="geo_ai">
+                                <group string="Análisis Vision IA">
+                                    <field name="ai_vision_description"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page string="Ventas y Mercado" name="sales_metrics">
+                            <group>
+                                <group string="Métricas de Venta">
+                                    <field name="date_listed"/>
+                                    <field name="date_sold"/>
+                                    <field name="days_on_market"/>
+                                    <field name="predicted_days_on_market"/>
+                                    <field name="sold_by"/>
+                                </group>
+                                <group string="Puntuación del Expediente">
+                                    <field name="property_score"/>
+                                    <field name="property_score_label"/>
+                                </group>
+                                <group string="Valoración Automatizada (AVM)">
+                                    <field name="avm_estimated_price" widget="monetary"/>
+                                    <field name="avm_status" widget="badge" decoration-success="avm_status == 'fair'" decoration-danger="avm_status == 'high'" decoration-info="avm_status == 'low'" decoration-warning="avm_status == 'insufficient'"/>
+                                    <field name="avm_confidence" widget="badge" decoration-success="avm_confidence == 'high'" decoration-warning="avm_confidence == 'medium'" decoration-danger="avm_confidence in ('low','none')"/>
+                                    <field name="avm_comparable_count"/>
+                                    <field name="avm_price_trend" invisible="not avm_price_trend"/>
+                                    <field name="avm_last_calculated"/>
+                                    <button name="action_recalculate_avm" type="object" string="Recalcular AVM" class="btn-sm btn-secondary" icon="fa-refresh" title="Recalcula con comparables de los últimos 6 meses"/>
+                                </group>
+                                <group string="Contratos">
+                                    <field name="contract_end_date"/>
+                                    <field name="contract_reminder_days"/>
+                                </group>
+                            </group>
+                            <!-- Mejora 13: ROI para Inversores -->
+                            <group string="Calculadora de Rentabilidad (Inversores)">
+                                <group string="Entradas">
+                                    <field name="roi_monthly_rent_estimate" widget="monetary"/>
+                                    <field name="roi_appreciation_rate"/>
+                                </group>
+                                <group string="Resultados (calculados automáticamente)">
+                                    <field name="roi_annual_yield" string="Rendimiento por Arriendo (% anual)"/>
+                                    <field name="roi_monthly_cashflow" widget="monetary" string="Flujo de Caja Neto Mensual"/>
+                                    <field name="roi_5year_value" widget="monetary" string="Valor Estimado a 5 Años"/>
+                                </group>
+                            </group>
+                            <p class="text-muted">
+                                <i class="fa fa-info-circle"/> Los recordatorios automáticos se generan cuando el contrato está próximo a vencer. Revise sus Actividades Planificadas.
+                            </p>
+                        </page>
+                        <!-- Mejora 14: Tour Virtual 360° -->
+                        <page string="Tour 360°" name="tour_360">
+                            <group>
+                                <group string="Tour Virtual">
+                                    <field name="tour_360_active"/>
+                                    <field name="tour_360_url" placeholder="https://ejemplo.com/tour.jpg (imagen equirectangular) o URL de Matterport"/>
+                                </group>
+                            </group>
+                            <div invisible="not tour_360_url or not tour_360_active" class="mt-3">
+                                <p class="text-muted"><i class="fa fa-info-circle"/> El tour 360° se mostrará automáticamente en el portal de propietarios cuando esté activo.</p>
+                            </div>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- ==================== SEARCH VIEW ==================== -->
+    <record id="estate_property_view_search" model="ir.ui.view">
+        <field name="name">estate.property.search</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Propiedad">
+                <field name="title"/>
+                <field name="name"/>
+                <field name="city"/>
+                <field name="property_type_id"/>
+                <field name="offer_type"/>
+                <filter name="filter_available" string="Disponibles" domain="[('state', '=', 'available')]"/>
+                <filter name="filter_reserved" string="Reservadas" domain="[('state', '=', 'reserved')]"/>
+                <filter name="filter_sold" string="Vendidas" domain="[('state', '=', 'sold')]"/>
+                <filter name="filter_rented" string="Alquiladas" domain="[('state', '=', 'rented')]"/>
+                <filter name="filter_sale" string="En Venta" domain="[('offer_type', '=', 'sale')]"/>
+                <filter name="filter_rent" string="En Arriendo" domain="[('offer_type', '=', 'rent')]"/>
+                <separator/>
+                <group>
+                    <filter name="group_type" string="Tipo" context="{'group_by': 'property_type_id'}"/>
+                    <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>
+                    <filter name="group_city" string="Ciudad" context="{'group_by': 'city'}"/>
+                </group>
+                <searchpanel>
+                    <field name="state" string="Estado" icon="fa-home" select="one" enable_counters="1"/>
+                    <field name="offer_type" string="Tipo de Operación" icon="fa-tag" select="one" enable_counters="1"/>
+                    <field name="property_type_id" string="Tipo de Propiedad" icon="fa-building" enable_counters="1"/>
+                </searchpanel>
+            </search>
+        </field>
+    </record>
+
+    <!-- ==================== KANBAN VIEW ==================== -->
+    <record id="estate_property_view_kanban" model="ir.ui.view">
+        <field name="name">estate.property.kanban</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="title"/>
+                <field name="price"/>
+                <field name="city"/>
+                <field name="property_type_id"/>
+                <field name="state"/>
+                <field name="image_main"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_global_click">
+                            <div class="o_kanban_image">
+                                <img t-att-src="kanban_image('estate.property', 'image_main', record.id.raw_value)" alt="Propiedad" class="o_image_64_cover"/>
+                            </div>
+                            <div class="oe_kanban_details">
+                                <strong class="o_kanban_record_title">
+                                    <field name="title"/>
+                                </strong>
+                                <div class="o_kanban_tags_section">
+                                    <field name="property_type_id"/>
+                                </div>
+                                <ul>
+                                    <li><strong>Precio:</strong> $<field name="price"/></li>
+                                    <li><strong>Ciudad:</strong> <field name="city"/></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ==================== PIVOT VIEW ==================== -->
+    <record id="estate_property_view_pivot" model="ir.ui.view">
+        <field name="name">estate.property.pivot</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Propiedades" sample="1" display_quantity="true">
+                <field name="property_type_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="price" type="measure" string="Precio Promedio"/>
+                <field name="area" type="measure" string="Área m²"/>
+                <field name="days_on_market" type="measure" string="Días en Mercado"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ==================== GRAPH VIEW ==================== -->
+    <record id="estate_property_view_graph" model="ir.ui.view">
+        <field name="name">estate.property.graph</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Propiedades por Tipo y Estado" type="bar" sample="1">
+                <field name="property_type_id" string="Tipo"/>
+                <field name="price" type="measure" string="Precio"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ==================== ACTION ==================== -->
+    <record id="estate_property_action" model="ir.actions.act_window">
+        <field name="name">Propiedades</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">list,kanban,pivot,graph,form</field>
+        <field name="context">{'search_default_filter_available': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Crear una nueva propiedad
+            </p>
+            <p>Registre las propiedades de su inmobiliaria.</p>
+        </field>
+    </record>
+</odoo>

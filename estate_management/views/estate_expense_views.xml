@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_expense_view_list" model="ir.ui.view">
+        <field name="name">estate.property.expense.list</field>
+        <field name="model">estate.property.expense</field>
+        <field name="arch" type="xml">
+            <list string="Gastos de Propiedades"
+                  decoration-muted="state == 'cancelled'"
+                  decoration-success="state == 'paid'"
+                  decoration-warning="state == 'approved'">
+                <field name="name"/>
+                <field name="property_id"/>
+                <field name="expense_type" widget="badge"/>
+                <field name="date"/>
+                <field name="amount" sum="Total" widget="monetary"/>
+                <field name="paid_by" widget="badge"/>
+                <field name="reimbursable"/>
+                <field name="reimbursed"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_expense_view_form" model="ir.ui.view">
+        <field name="name">estate.property.expense.form</field>
+        <field name="model">estate.property.expense</field>
+        <field name="arch" type="xml">
+            <form string="Gasto de Propiedad">
+                <header>
+                    <button name="action_approve" string="Aprobar" type="object"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_mark_paid" string="Marcar Pagado" type="object"
+                            class="btn-success" invisible="state != 'approved'"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                            class="btn-danger" invisible="state in ('paid','cancelled')"
+                            confirm="¿Está seguro de cancelar este gasto?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,paid"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Información">
+                            <field name="name"/>
+                            <field name="property_id"/>
+                            <field name="contract_id"/>
+                            <field name="expense_type"/>
+                        </group>
+                        <group string="Monto y Fechas">
+                            <field name="amount" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date"/>
+                            <field name="paid_by"/>
+                            <field name="reimbursable"/>
+                            <field name="reimbursed" invisible="not reimbursable"/>
+                        </group>
+                    </group>
+                    <group string="Notas">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda Gastos -->
+    <record id="estate_expense_view_search" model="ir.ui.view">
+        <field name="name">estate.property.expense.search</field>
+        <field name="model">estate.property.expense</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Gastos">
+                <field name="name" string="Descripción"/>
+                <field name="property_id" string="Propiedad"/>
+                <filter name="filter_paid" string="Pagados"
+                        domain="[('state', '=', 'paid')]"/>
+                <filter name="filter_approved" string="Aprobados"
+                        domain="[('state', '=', 'approved')]"/>
+                <filter name="filter_reimbursable" string="Reembolsables"
+                        domain="[('reimbursable', '=', True)]"/>
+                <filter name="filter_not_reimbursed" string="Pendiente Reembolso"
+                        domain="[('reimbursable', '=', True), ('reimbursed', '=', False)]"/>
+                <filter name="filter_this_month" string="Este mes"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_year" string="Este año"
+                        domain="[('date', '&gt;=', context_today().strftime('%Y-01-01'))]"/>
+                <separator/>
+                <filter name="group_type" string="Por Tipo"
+                        context="{'group_by': 'expense_type'}"/>
+                <filter name="group_property" string="Por Propiedad"
+                        context="{'group_by': 'property_id'}"/>
+                <filter name="group_paid_by" string="Por Responsable de Pago"
+                        context="{'group_by': 'paid_by'}"/>
+                <filter name="group_month" string="Por Mes"
+                        context="{'group_by': 'date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Pivot Gastos -->
+    <record id="estate_expense_view_pivot" model="ir.ui.view">
+        <field name="name">estate.property.expense.pivot</field>
+        <field name="model">estate.property.expense</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Gastos" sample="1" display_quantity="true">
+                <field name="expense_type" type="row"/>
+                <field name="paid_by" type="col"/>
+                <field name="amount" type="measure" string="Monto"/>
+            </pivot>
+        </field>
+    </record>
+    <!-- Vista Graph Gastos -->
+    <record id="estate_expense_view_graph" model="ir.ui.view">
+        <field name="name">estate.property.expense.graph</field>
+        <field name="model">estate.property.expense</field>
+        <field name="arch" type="xml">
+            <graph string="Gastos por Tipo" type="pie" sample="1">
+                <field name="expense_type"/>
+                <field name="amount" type="measure" string="Monto"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="estate_expense_action" model="ir.actions.act_window">
+        <field name="name">Gastos de Propiedades</field>
+        <field name="res_model">estate.property.expense</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin gastos registrados aún</p>
+            <p>Registra los gastos asociados a cada propiedad.</p>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,8 @@
+// ═══════════════════════════════════════════════════════════════
+// Inmobi — Override del tema Odoo Community
+// Reemplaza el morado #71639e → azul #004274
+// ═══════════════════════════════════════════════════════════════
+
+$o-community-color: #004274 !default;
+$o-brand-odoo: $o-community-color !default;
+$o-brand-primary: $o-community-color !default;

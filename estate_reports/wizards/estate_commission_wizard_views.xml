@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_commission_wizard_view_form" model="ir.ui.view">
+        <field name="name">estate.commission.wizard.form</field>
+        <field name="model">estate.commission.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reporte de Comisiones PDF">
+                <group>
+                    <group string="Filtros">
+                        <field name="user_id" placeholder="Todos los asesores"/>
+                        <field name="include_all_states"/>
+                    </group>
+                    <group string="Período">
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print_commission_report" string="Generar PDF" type="object"
+                            class="oe_highlight" icon="fa-file-pdf-o"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="estate_commission_wizard_action" model="ir.actions.act_window">
+        <field name="name">Liquidación de Comisiones PDF</field>
+        <field name="res_model">estate.commission.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

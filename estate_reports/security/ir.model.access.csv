@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_estate_dashboard_agent,estate.dashboard.agent,model_estate_dashboard,estate_management.estate_group_agent,1,0,1,0
+access_estate_dashboard_manager,estate.dashboard.manager,model_estate_dashboard,estate_management.estate_group_manager,1,1,1,1
+access_estate_dashboard_admin,estate.dashboard.admin,model_estate_dashboard,estate_management.estate_group_admin,1,1,1,1
+access_estate_report_wizard_agent,estate.report.wizard.agent,model_estate_report_wizard,estate_management.estate_group_agent,1,1,1,0
+access_estate_report_wizard_manager,estate.report.wizard.manager,model_estate_report_wizard,estate_management.estate_group_manager,1,1,1,1
+access_estate_report_wizard_admin,estate.report.wizard.admin,model_estate_report_wizard,estate_management.estate_group_admin,1,1,1,1
+access_estate_commission_wizard_agent,estate.commission.wizard.agent,model_estate_commission_wizard,estate_management.estate_group_agent,1,1,1,0
+access_estate_commission_wizard_manager,estate.commission.wizard.manager,model_estate_commission_wizard,estate_management.estate_group_manager,1,1,1,1
+access_estate_commission_wizard_admin,estate.commission.wizard.admin,model_estate_commission_wizard,estate_management.estate_group_admin,1,1,1,1

@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         REPORTE: Cotización Inmobiliaria desde Lead CRM
+    ============================================================ -->
+    <record id="action_report_crm_quotation" model="ir.actions.report">
+        <field name="name">Cotización Inmobiliaria</field>
+        <field name="model">crm.lead</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_crm.report_crm_quotation_template</field>
+        <field name="report_file">estate_crm.report_crm_quotation_template</field>
+        <field name="binding_model_id" ref="crm.model_crm_lead"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_crm_quotation_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="lead">
+                <t t-set="prop" t-value="lead.target_property_id"/>
+                <t t-set="company" t-value="lead.company_id or env.company"/>
+                <t t-call="web.external_layout">
+                    <div class="page">
+
+                        <!-- Encabezado -->
+                        <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 14px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <h2 style="color: #1B4F72; margin: 0; font-size: 22px;">Cotización Inmobiliaria</h2>
+                                <p style="margin: 6px 0 0 0; color: #555; font-size: 13px;">
+                                    Referencia: <strong><t t-out="lead.name"/></strong>
+                                    &#160;·&#160;
+                                    Fecha: <strong><t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></strong>
+                                </p>
+                            </div>
+                            <div style="text-align: right; font-size: 12px; color: #666;">
+                                Válida por: <strong>30 días</strong>
+                            </div>
+                        </div>
+
+                        <!-- Datos del cliente y del asesor -->
+                        <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+                            <!-- Cliente -->
+                            <div style="flex: 1; background: #f8f9fa; border-radius: 6px; padding: 16px; font-size: 13px;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Prospecto / Cliente</div>
+                                <div style="font-size: 15px; font-weight: 700; color: #1B4F72;">
+                                    <t t-out="lead.partner_id.name if lead.partner_id else lead.contact_name or lead.name"/>
+                                </div>
+                                <t t-if="lead.partner_id">
+                                    <div style="margin-top: 4px;"><t t-out="lead.partner_id.email or ''"/></div>
+                                    <div><t t-out="lead.partner_id.phone or lead.partner_id.mobile or ''"/></div>
+                                    <div><t t-out="lead.partner_id.street or ''"/>
+                                         <t t-if="lead.partner_id.city">, <t t-out="lead.partner_id.city"/></t>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div style="margin-top: 4px;"><t t-out="lead.email_from or ''"/></div>
+                                    <div><t t-out="lead.phone or ''"/></div>
+                                </t>
+                            </div>
+                            <!-- Asesor -->
+                            <div style="flex: 1; background: #f8f9fa; border-radius: 6px; padding: 16px; font-size: 13px;">
+                                <div style="font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">Asesor Inmobiliario</div>
+                                <div style="font-size: 15px; font-weight: 700; color: #1B4F72;">
+                                    <t t-out="lead.user_id.name or '—'"/>
+                                </div>
+                                <div style="margin-top: 4px;"><t t-out="lead.user_id.email or ''"/></div>
+                                <div><t t-out="lead.user_id.partner_id.mobile or lead.user_id.partner_id.phone or ''"/></div>
+                                <div style="margin-top: 6px; font-weight: 600;"><t t-out="company.name"/></div>
+                            </div>
+                        </div>
+
+                        <!-- Propiedad propuesta -->
+                        <h4 style="color: #2E86C1; border-left: 4px solid #2E86C1; padding-left: 8px; margin-bottom: 12px;">
+                            Propiedad Propuesta
+                        </h4>
+                        <t t-if="prop">
+                            <table class="table table-sm table-bordered" style="font-size: 13px; margin-bottom: 20px;">
+                                <tr>
+                                    <td style="width: 35%; background: #f8f9fa;"><strong>Nombre / Título</strong></td>
+                                    <td><strong><t t-out="prop.title"/></strong></td>
+                                </tr>
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Tipo</strong></td>
+                                    <td><t t-out="prop.property_type_id.name or '—'"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Ubicación</strong></td>
+                                    <td>
+                                        <t t-out="prop.street or ''"/>
+                                        <t t-if="prop.city">, <t t-out="prop.city"/></t>
+                                        <t t-if="prop.state_id">, <t t-out="prop.state_id.name"/></t>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Área Total</strong></td>
+                                    <td><t t-out="'{:,.0f}'.format(prop.total_area or 0)"/> m²</td>
+                                </tr>
+                                <t t-if="prop.bedrooms">
+                                    <tr>
+                                        <td style="background: #f8f9fa;"><strong>Dormitorios</strong></td>
+                                        <td><t t-out="prop.bedrooms"/></td>
+                                    </tr>
+                                </t>
+                                <t t-if="prop.bathrooms">
+                                    <tr>
+                                        <td style="background: #f8f9fa;"><strong>Baños</strong></td>
+                                        <td><t t-out="prop.bathrooms"/></td>
+                                    </tr>
+                                </t>
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Operación</strong></td>
+                                    <td><t t-out="dict([('sale','Venta'),('rent','Arriendo'),('both','Venta o Arriendo')]).get(prop.offer_type, '—')"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="background: #1B4F72; color: white;"><strong>Precio de Lista</strong></td>
+                                    <td style="background: #eaf4fb;"><strong style="font-size: 16px; color: #1B4F72;">$<t t-out="'{:,.2f}'.format(prop.price)"/></strong></td>
+                                </tr>
+                                <t t-if="prop.avm_estimated_price">
+                                    <tr>
+                                        <td style="background: #f8f9fa;"><strong>Valor de Mercado (AVM)</strong></td>
+                                        <td>$<t t-out="'{:,.2f}'.format(prop.avm_estimated_price)"/>
+                                            &#160;
+                                            <span t-if="prop.avm_status == 'fair'" style="color: green; font-size: 11px;">(Precio justo)</span>
+                                            <span t-elif="prop.avm_status == 'high'" style="color: red; font-size: 11px;">(Por encima del mercado)</span>
+                                            <span t-elif="prop.avm_status == 'low'" style="color: orange; font-size: 11px;">(Oportunidad de mercado)</span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 14px; font-size: 13px; margin-bottom: 20px;">
+                                No se ha seleccionado una propiedad específica para este prospecto.
+                                Se coordinará la selección de inmuebles de acuerdo a las necesidades del cliente.
+                            </div>
+                        </t>
+
+                        <!-- Perfil del cliente -->
+                        <h4 style="color: #2E86C1; border-left: 4px solid #2E86C1; padding-left: 8px; margin-bottom: 12px;">
+                            Perfil del Comprador / Arrendatario
+                        </h4>
+                        <table class="table table-sm table-bordered" style="font-size: 13px; margin-bottom: 24px;">
+                            <t t-if="lead.client_budget">
+                                <tr>
+                                    <td style="width: 35%; background: #f8f9fa;"><strong>Presupuesto disponible</strong></td>
+                                    <td>$<t t-out="'{:,.2f}'.format(lead.client_budget)"/></td>
+                                </tr>
+                            </t>
+                            <t t-if="lead.preferred_property_type_id">
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Tipo de propiedad buscada</strong></td>
+                                    <td><t t-out="lead.preferred_property_type_id.name"/></td>
+                                </tr>
+                            </t>
+                            <t t-if="lead.preferred_city">
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Ciudad de preferencia</strong></td>
+                                    <td><t t-out="lead.preferred_city"/></td>
+                                </tr>
+                            </t>
+                            <t t-if="lead.preferred_bedrooms">
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Dormitorios requeridos</strong></td>
+                                    <td><t t-out="lead.preferred_bedrooms"/>+</td>
+                                </tr>
+                            </t>
+                            <t t-if="lead.preferred_min_area or lead.preferred_max_area">
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Rango de área</strong></td>
+                                    <td>
+                                        <t t-if="lead.preferred_min_area"><t t-out="'{:,.0f}'.format(lead.preferred_min_area)"/> m²</t>
+                                        <t t-if="lead.preferred_min_area and lead.preferred_max_area"> — </t>
+                                        <t t-if="lead.preferred_max_area"><t t-out="'{:,.0f}'.format(lead.preferred_max_area)"/> m²</t>
+                                    </td>
+                                </tr>
+                            </t>
+                            <t t-if="prop and lead.match_percentage">
+                                <tr>
+                                    <td style="background: #f8f9fa;"><strong>Compatibilidad con la propiedad</strong></td>
+                                    <td><strong style="color: #1e8449;"><t t-out="lead.match_percentage"/>%</strong></td>
+                                </tr>
+                            </t>
+                        </table>
+
+                        <!-- Términos -->
+                        <div style="background: #f8f9fa; border-radius: 6px; padding: 16px; font-size: 12px; color: #555; margin-top: 8px;">
+                            <strong>Condiciones:</strong> Esta cotización es válida por 30 días a partir de su fecha de emisión.
+                            Los precios están sujetos a disponibilidad y variaciones del mercado.
+                            Para más información, contacte a su asesor inmobiliario.
+                        </div>
+
+                        <!-- Firmas -->
+                        <div style="margin-top: 48px; display: flex; gap: 48px;">
+                            <div style="flex: 1; text-align: center;">
+                                <div style="border-top: 1px solid #333; padding-top: 8px; font-size: 12px;">
+                                    Firma del Cliente<br/>
+                                    <t t-out="lead.partner_id.name if lead.partner_id else lead.contact_name or '____________________'"/>
+                                </div>
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <div style="border-top: 1px solid #333; padding-top: 8px; font-size: 12px;">
+                                    Asesor Inmobiliario<br/>
+                                    <strong><t t-out="lead.user_id.name or '____________________'"/></strong>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

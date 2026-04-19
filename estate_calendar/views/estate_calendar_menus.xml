@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Ya no creamos un root, usamos el de estate_management.estate_menu_planning_root -->
+    
+    <menuitem id="estate_menu_calendar_visits_root"
+              name="Visitas y Citas"
+              parent="estate_management.estate_menu_planning_root"
+              sequence="20"/>
+
+    <menuitem id="estate_menu_visits_done"
+              name=" Visitas Realizadas"
+              parent="estate_menu_calendar_visits_root"
+              action="estate_appointment_done_action"
+              sequence="20"/>
+</odoo>

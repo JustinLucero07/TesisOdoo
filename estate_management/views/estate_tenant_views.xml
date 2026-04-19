@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ===================== SOLICITUDES DE MANTENIMIENTO ===================== -->
+    <record id="estate_tenant_request_view_list" model="ir.ui.view">
+        <field name="name">estate.tenant.request.list</field>
+        <field name="model">estate.tenant.request</field>
+        <field name="arch" type="xml">
+            <list string="Solicitudes de Mantenimiento"
+                  decoration-danger="state == 'new' and priority == '2'"
+                  decoration-warning="state == 'in_progress'"
+                  decoration-success="state == 'resolved'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="property_id"/>
+                <field name="partner_id" string="Inquilino"/>
+                <field name="request_type" widget="badge"/>
+                <field name="priority" widget="priority"/>
+                <field name="date_requested"/>
+                <field name="date_scheduled"/>
+                <field name="actual_cost" widget="monetary" sum="Total Costo Real"/>
+                <field name="responsible_party" widget="badge"/>
+                <field name="state" widget="badge"
+                       decoration-info="state == 'new'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-success="state == 'resolved'"
+                       decoration-muted="state == 'cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_tenant_request_view_form" model="ir.ui.view">
+        <field name="name">estate.tenant.request.form</field>
+        <field name="model">estate.tenant.request</field>
+        <field name="arch" type="xml">
+            <form string="Solicitud de Mantenimiento">
+                <header>
+                    <button name="action_start" string="Iniciar" type="object"
+                            class="oe_highlight" invisible="state != 'new'"/>
+                    <button name="action_resolve" string="Marcar Resuelta" type="object"
+                            class="btn-success" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Cancelar" type="object"
+                            class="btn-danger" invisible="state in ('resolved','cancelled')"
+                            confirm="¿Está seguro de cancelar esta solicitud?"/>
+                    <field name="state" widget="statusbar" statusbar_visible="new,in_progress,resolved"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Información">
+                            <field name="contract_id"/>
+                            <field name="property_id" readonly="1"/>
+                            <field name="partner_id" readonly="1" string="Inquilino"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Clasificación">
+                            <field name="request_type"/>
+                            <field name="priority" widget="priority"/>
+                            <field name="responsible_party"/>
+                            <field name="date_requested"/>
+                            <field name="date_scheduled"/>
+                            <field name="date_resolved" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Costos" invisible="state == 'new'">
+                        <field name="estimated_cost" widget="monetary"/>
+                        <field name="actual_cost" widget="monetary"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                    <group string="Descripción">
+                        <field name="description" nolabel="1" placeholder="Describe el problema..."/>
+                    </group>
+                    <group string="Resolución" invisible="state not in ('in_progress','resolved')">
+                        <field name="resolution_notes" nolabel="1" placeholder="Describe cómo se resolvió..."/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda Mantenimiento -->
+    <record id="estate_tenant_request_view_search" model="ir.ui.view">
+        <field name="name">estate.tenant.request.search</field>
+        <field name="model">estate.tenant.request</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Solicitudes">
+                <field name="name" string="Descripción"/>
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Inquilino"/>
+                <field name="user_id" string="Responsable"/>
+                <filter name="filter_new" string="Nuevas"
+                        domain="[('state', '=', 'new')]"/>
+                <filter name="filter_in_progress" string="En Proceso"
+                        domain="[('state', '=', 'in_progress')]"/>
+                <filter name="filter_resolved" string="Resueltas"
+                        domain="[('state', '=', 'resolved')]"/>
+                <filter name="filter_urgent" string="Urgentes"
+                        domain="[('priority', '=', '2')]"/>
+                <filter name="filter_this_month" string="Este mes"
+                        domain="[('date_requested', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_year" string="Este año"
+                        domain="[('date_requested', '&gt;=', context_today().strftime('%Y-01-01'))]"/>
+                <separator/>
+                <filter name="group_type" string="Por Tipo"
+                        context="{'group_by': 'request_type'}"/>
+                <filter name="group_state" string="Por Estado"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_property" string="Por Propiedad"
+                        context="{'group_by': 'property_id'}"/>
+                <filter name="group_responsible" string="Por Responsable"
+                        context="{'group_by': 'responsible_party'}"/>
+                <filter name="group_month" string="Por Mes"
+                        context="{'group_by': 'date_requested:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Pivot Mantenimiento -->
+    <record id="estate_tenant_request_view_pivot" model="ir.ui.view">
+        <field name="name">estate.tenant.request.pivot</field>
+        <field name="model">estate.tenant.request</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Mantenimiento" sample="1" display_quantity="true">
+                <field name="request_type" type="row"/>
+                <field name="state" type="col"/>
+                <field name="actual_cost" type="measure" string="Costo Real"/>
+                <field name="estimated_cost" type="measure" string="Costo Estimado"/>
+            </pivot>
+        </field>
+    </record>
+    <!-- Vista Graph Mantenimiento -->
+    <record id="estate_tenant_request_view_graph" model="ir.ui.view">
+        <field name="name">estate.tenant.request.graph</field>
+        <field name="model">estate.tenant.request</field>
+        <field name="arch" type="xml">
+            <graph string="Solicitudes por Tipo" type="bar" sample="1">
+                <field name="request_type"/>
+                <field name="actual_cost" type="measure" string="Costo Real"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="estate_tenant_request_action" model="ir.actions.act_window">
+        <field name="name">Solicitudes de Mantenimiento</field>
+        <field name="res_model">estate.tenant.request</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="context">{'search_default_filter_new': 1, 'search_default_filter_in_progress': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin solicitudes de mantenimiento</p>
+            <p>Los inquilinos pueden reportar problemas aquí.</p>
+        </field>
+    </record>
+
+    <!-- ===================== DEPÓSITOS ===================== -->
+    <record id="estate_contract_deposit_view_list" model="ir.ui.view">
+        <field name="name">estate.contract.deposit.list</field>
+        <field name="model">estate.contract.deposit</field>
+        <field name="arch" type="xml">
+            <list string="Depósitos / Garantías"
+                  decoration-success="state == 'returned'"
+                  decoration-warning="state == 'partial'"
+                  decoration-danger="state == 'forfeited'">
+                <field name="contract_id"/>
+                <field name="partner_id" string="Inquilino"/>
+                <field name="property_id"/>
+                <field name="amount_received" widget="monetary"/>
+                <field name="amount_returned" widget="monetary"/>
+                <field name="deductions" widget="monetary"/>
+                <field name="balance" widget="monetary"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_contract_deposit_view_form" model="ir.ui.view">
+        <field name="name">estate.contract.deposit.form</field>
+        <field name="model">estate.contract.deposit</field>
+        <field name="arch" type="xml">
+            <form string="Depósito / Garantía">
+                <header>
+                    <button name="action_return_full" string="Devolver Completo" type="object"
+                            class="btn-success" invisible="state != 'held'"
+                            confirm="¿Devolver el depósito completo al inquilino?"/>
+                    <button name="action_return_partial" string="Devolver con Deducciones" type="object"
+                            class="btn-warning" invisible="state != 'held'"
+                            confirm="¿Devolver el depósito descontando las deducciones registradas?"/>
+                    <button name="action_forfeit" string="Retener por Daños" type="object"
+                            class="btn-danger" invisible="state != 'held'"
+                            confirm="¿Retener el depósito completo? Esta acción no se puede deshacer fácilmente."/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Contrato">
+                            <field name="contract_id" readonly="state != 'held'"/>
+                            <field name="property_id" readonly="1"/>
+                            <field name="partner_id" readonly="1"/>
+                        </group>
+                        <group string="Depósito">
+                            <field name="amount_received" widget="monetary" readonly="state != 'held'"/>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="date_received" readonly="state != 'held'"/>
+                        </group>
+                    </group>
+                    <group string="Devolución" invisible="state == 'held'">
+                        <group>
+                            <field name="amount_returned" widget="monetary" readonly="1"/>
+                            <field name="date_returned" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="deductions" widget="monetary"/>
+                            <field name="balance" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Deducciones" invisible="state in ('returned', 'held')">
+                        <field name="deduction_reason" nolabel="1"
+                               placeholder="Detalle los daños o motivos de deducción..."/>
+                    </group>
+                    <group string="Registrar Deducciones" invisible="state != 'held'">
+                        <field name="deductions" widget="monetary" string="Monto a Deducir"/>
+                        <field name="deduction_reason" nolabel="1"
+                               placeholder="Detalle los daños o motivos de deducción (requerido para devolución parcial)..."/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <record id="estate_contract_deposit_action" model="ir.actions.act_window">
+        <field name="name">Depósitos / Garantías</field>
+        <field name="res_model">estate.contract.deposit</field>
+        <field name="view_mode">list,form</field>
+    </record>
+</odoo>

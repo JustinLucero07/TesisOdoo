@@ -1,0 +1,21 @@
+<odoo>
+    <!-- El Dashboard principal como primera opción de Inteligencia -->
+    <menuitem id="estate_menu_dashboard_direct"
+              name=" Dashboard General"
+              parent="estate_management.estate_menu_intel_root"
+              action="estate_dashboard_action"
+              sequence="5"/>
+
+    <!-- Movemos el generador de reportes abajo del análisis de comisiones -->
+    <menuitem id="estate_menu_report_report_wizard"
+              name="️ Generar Reportes (PDF/Excel)"
+              parent="estate_management.estate_menu_intel_root"
+              action="estate_report_wizard_action"
+              sequence="30"/>
+
+    <menuitem id="estate_menu_commission_wizard"
+              name=" Liquidación de Comisiones PDF"
+              parent="estate_management.estate_menu_intel_root"
+              action="estate_commission_wizard_action"
+              sequence="35"/>
+</odoo>

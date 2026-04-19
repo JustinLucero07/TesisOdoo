@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- El menú de ventas se ha consolidado en estate_menus.xml -->
+
+
+    <!-- Heredar la vista de pedidos para inyectar propiedad -->
+    <record id="view_order_form_inherit_estate" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.estate</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(estate_management.action_report_estate_contract)d" string=" Generar Contrato AI" type="action" class="btn-primary"/>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="property_id"/>
+                <field name="estate_transaction_type"/>
+                <field name="lead_id"/>
+            </xpath>
+            <!-- Firma digital del cliente inmobiliario -->
+            <xpath expr="//page[@name='order_lines']" position="after">
+                <page string="Firma Inmobiliaria" name="page_estate_signature">
+                    <group>
+                        <group string="Firma Digital del Cliente">
+                            <field name="customer_signature" widget="signature"
+                                   string="Firma del Cliente"
+                                   readonly="state in ('sale', 'done', 'cancel')"/>
+                            <field name="signature_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert"
+                         invisible="customer_signature">
+                        <i class="fa fa-info-circle"/>
+                        El cliente puede firmar directamente sobre este campo.
+                        La firma queda registrada con fecha y hora automáticamente.
+                    </div>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Heredar la vista de lista de pedidos para inyectar propiedad -->
+    <record id="view_order_tree_inherit_estate" model="ir.ui.view">
+        <field name="name">sale.order.tree.inherit.estate</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="property_id" optional="show"/>
+                <field name="estate_transaction_type" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

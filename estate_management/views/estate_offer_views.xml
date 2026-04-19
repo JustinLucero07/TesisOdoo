@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_offer_view_list" model="ir.ui.view">
+        <field name="name">estate.property.offer.list</field>
+        <field name="model">estate.property.offer</field>
+        <field name="arch" type="xml">
+            <list string="Ofertas"
+                  decoration-success="state == 'accepted'"
+                  decoration-danger="state in ('rejected','expired')"
+                  decoration-warning="state == 'countered'"
+                  decoration-info="state == 'submitted'">
+                <field name="name"/>
+                <field name="property_id"/>
+                <field name="partner_id"/>
+                <field name="asking_price" widget="monetary" string="Precio Solicitado"/>
+                <field name="offer_amount" widget="monetary" string="Oferta"/>
+                <field name="discount_pct" string="Descuento %" widget="percentage"/>
+                <field name="counteroffer_amount" widget="monetary" optional="show"/>
+                <field name="final_agreed_amount" widget="monetary" optional="show"/>
+                <field name="financing_type" widget="badge"/>
+                <field name="date"/>
+                <field name="date_expiry" optional="show"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'accepted'"
+                       decoration-danger="state in ('rejected','expired')"
+                       decoration-warning="state == 'countered'"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_offer_view_form" model="ir.ui.view">
+        <field name="name">estate.property.offer.form</field>
+        <field name="model">estate.property.offer</field>
+        <field name="arch" type="xml">
+            <form string="Oferta sobre Propiedad">
+                <header>
+                    <button name="action_submit" string="Presentar Oferta" type="object"
+                            class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_counteroffer" string="Enviar Contraoferta" type="object"
+                            class="btn-warning" invisible="state != 'submitted'"/>
+                    <button name="action_accept" string="Aceptar" type="object"
+                            class="btn-success" invisible="state not in ('submitted','countered')"/>
+                    <button name="action_reject" string="Rechazar" type="object"
+                            class="btn-danger" invisible="state not in ('submitted','countered')"/>
+                    <button name="action_create_contract" string="Generar Contrato" type="object"
+                            class="btn-primary" icon="fa-file-text-o"
+                            invisible="state != 'accepted'"/>
+                    <button name="action_create_sale_order" string="Crear Orden de Venta" type="object"
+                            class="btn-success" icon="fa-shopping-cart"
+                            invisible="state != 'accepted' or offer_type != 'sale'"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,submitted,countered,accepted"/>
+                </header>
+                <sheet>
+                    <field name="offer_type" invisible="1"/>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Propiedad y Cliente">
+                            <field name="property_id"/>
+                            <field name="partner_id"/>
+                            <field name="lead_id"/>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                        </group>
+                        <group string="Fechas">
+                            <field name="date"/>
+                            <field name="date_expiry"/>
+                            <field name="financing_type"/>
+                            <field name="appraisal_id"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Precios">
+                            <field name="asking_price" widget="monetary" readonly="1"/>
+                            <field name="offer_amount" widget="monetary"/>
+                            <field name="discount_pct" widget="percentage" readonly="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Negociación">
+                            <field name="counteroffer_amount" widget="monetary"/>
+                            <field name="final_agreed_amount" widget="monetary"/>
+                        </group>
+                    </group>
+                    <group string="Observaciones">
+                        <field name="notes" nolabel="1"/>
+                    </group>
+                </sheet>
+                <chatter>
+                    <field name="message_follower_ids" widget="mail_followers"/>
+                    <field name="activity_ids" widget="mail_activity"/>
+                    <field name="message_ids" widget="mail_thread"/>
+                </chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vista Búsqueda Ofertas -->
+    <record id="estate_offer_view_search" model="ir.ui.view">
+        <field name="name">estate.property.offer.search</field>
+        <field name="model">estate.property.offer</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Ofertas">
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Cliente"/>
+                <field name="user_id" string="Asesor"/>
+                <filter name="filter_submitted" string="Presentadas"
+                        domain="[('state', '=', 'submitted')]"/>
+                <filter name="filter_accepted" string="Aceptadas"
+                        domain="[('state', '=', 'accepted')]"/>
+                <filter name="filter_rejected" string="Rechazadas/Expiradas"
+                        domain="[('state', 'in', ('rejected', 'expired'))]"/>
+                <filter name="filter_this_month" string="Este mes"
+                        domain="[('date', '&gt;=', (context_today()).strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_quarter" string="Este trimestre"
+                        domain="[('date', '&gt;=', context_today().replace(month=((context_today().month-1)//3)*3+1, day=1).strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_this_year" string="Este año"
+                        domain="[('date', '&gt;=', (context_today()).strftime('%Y-01-01'))]"/>
+                <separator/>
+                <filter name="group_property" string="Por Propiedad"
+                        context="{'group_by': 'property_id'}"/>
+                <filter name="group_state" string="Por Estado"
+                        context="{'group_by': 'state'}"/>
+                <filter name="group_financing" string="Por Financiamiento"
+                        context="{'group_by': 'financing_type'}"/>
+                <filter name="group_month" string="Por Mes"
+                        context="{'group_by': 'date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista Kanban Ofertas (pipeline por estado) -->
+    <record id="estate_offer_view_kanban" model="ir.ui.view">
+        <field name="name">estate.property.offer.kanban</field>
+        <field name="model">estate.property.offer</field>
+        <field name="arch" type="xml">
+            <kanban string="Pipeline de Ofertas" default_group_by="state"
+                    group_create="false" sample="1">
+                <field name="state"/>
+                <field name="property_id"/>
+                <field name="partner_id"/>
+                <field name="offer_amount"/>
+                <field name="date"/>
+                <field name="date_expiry"/>
+                <field name="financing_type"/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_details">
+                            <strong class="o_kanban_record_title">
+                                <field name="property_id"/>
+                            </strong>
+                            <div class="o_kanban_record_subtitle text-muted">
+                                <field name="partner_id"/>
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-primary">
+                                    $<field name="offer_amount"/>
+                                </span>
+                                <span class="ms-2 text-muted small">
+                                    <field name="date"/>
+                                </span>
+                            </div>
+                            <div class="mt-1" t-if="record.financing_type.raw_value">
+                                <field name="financing_type" widget="badge"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Vista Pivot Ofertas -->
+    <record id="estate_offer_view_pivot" model="ir.ui.view">
+        <field name="name">estate.property.offer.pivot</field>
+        <field name="model">estate.property.offer</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Ofertas" sample="1" display_quantity="true">
+                <field name="property_id" type="row"/>
+                <field name="state" type="col"/>
+                <field name="offer_amount" type="measure" string="Oferta"/>
+                <field name="discount_pct" type="measure" string="Descuento %"/>
+            </pivot>
+        </field>
+    </record>
+    <!-- Vista Graph Ofertas -->
+    <record id="estate_offer_view_graph" model="ir.ui.view">
+        <field name="name">estate.property.offer.graph</field>
+        <field name="model">estate.property.offer</field>
+        <field name="arch" type="xml">
+            <graph string="Ofertas por Estado" type="bar" sample="1">
+                <field name="state"/>
+                <field name="offer_amount" type="measure" string="Monto Ofertado"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="estate_offer_action" model="ir.actions.act_window">
+        <field name="name">Ofertas</field>
+        <field name="res_model">estate.property.offer</field>
+        <field name="view_mode">list,kanban,pivot,graph,form</field>
+        <field name="context">{'search_default_filter_submitted': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ofertas registradas aún</p>
+            <p>Las ofertas creadas desde leads o propiedades aparecerán aquí.</p>
+        </field>
+    </record>
+</odoo>

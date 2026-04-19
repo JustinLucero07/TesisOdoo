@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================================================
+         Reporte de Visitantes por Propiedad
+         Usa calendar.event (extendido) como fuente de datos
+    ======================================================== -->
+
+    <!-- Vista lista: todas las visitas con propiedad, cliente y resultado -->
+    <record id="estate_visitor_report_view_list" model="ir.ui.view">
+        <field name="name">calendar.event.visitor.report.list</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <list string="Reporte de Visitantes"
+                  create="false" delete="false"
+                  decoration-success="visit_state == 'done' and visit_result == 'offer_made'"
+                  decoration-muted="visit_state == 'cancelled'"
+                  decoration-info="visit_state == 'done'">
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Cliente Visitante"/>
+                <field name="start" string="Fecha y Hora"/>
+                <field name="appointment_type" widget="badge" optional="show"/>
+                <field name="visit_state" widget="badge"
+                       decoration-success="visit_state == 'done'"
+                       decoration-warning="visit_state == 'scheduled'"
+                       decoration-muted="visit_state == 'cancelled'"/>
+                <field name="visit_result" widget="badge"
+                       decoration-success="visit_result == 'offer_made'"
+                       decoration-warning="visit_result == 'follow_up'"
+                       decoration-muted="visit_result == 'not_interested'"
+                       optional="show"/>
+                <field name="visit_rating" optional="show"/>
+                <field name="user_id" string="Asesor" optional="show"/>
+                <field name="visit_notes" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista búsqueda y filtros -->
+    <record id="estate_visitor_report_view_search" model="ir.ui.view">
+        <field name="name">calendar.event.visitor.report.search</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Visitas">
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Cliente"/>
+                <field name="user_id" string="Asesor"/>
+                <!-- Filtros rápidos -->
+                <filter name="filter_done" string="Realizadas"
+                        domain="[('visit_state', '=', 'done')]"/>
+                <filter name="filter_scheduled" string="Pendientes"
+                        domain="[('visit_state', '=', 'scheduled')]"/>
+                <filter name="filter_offer_made" string="Con Oferta"
+                        domain="[('visit_result', '=', 'offer_made')]"/>
+                <filter name="filter_interested" string="Interesados"
+                        domain="[('visit_result', 'in', ('interested', 'offer_made'))]"/>
+                <filter name="filter_this_month" string="Este mes"
+                        domain="[('start', '&gt;=', context_today().strftime('%Y-%m-01'))]"/>
+                <filter name="filter_this_year" string="Este año"
+                        domain="[('start', '&gt;=', context_today().strftime('%Y-01-01'))]"/>
+                <filter name="filter_has_property" string="Con Propiedad Asignada"
+                        domain="[('property_id', '!=', False)]"/>
+                <separator/>
+                <filter name="group_property" string="Agrupar por Propiedad"
+                        context="{'group_by': 'property_id'}"/>
+                <filter name="group_client" string="Agrupar por Cliente"
+                        context="{'group_by': 'partner_id'}"/>
+                <filter name="group_result" string="Agrupar por Resultado"
+                        context="{'group_by': 'visit_result'}"/>
+                <filter name="group_asesor" string="Agrupar por Asesor"
+                        context="{'group_by': 'user_id'}"/>
+                <filter name="group_month" string="Agrupar por Mes"
+                        context="{'group_by': 'start:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vista pivot: resumen cruzado de visitas -->
+    <record id="estate_visitor_report_view_pivot" model="ir.ui.view">
+        <field name="name">calendar.event.visitor.report.pivot</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <pivot string="Visitas por Propiedad" disable_linking="false">
+                <field name="property_id" type="row"/>
+                <field name="visit_result" type="col"/>
+                <field name="id" type="measure" string="N° Visitas"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Vista Graph visitantes -->
+    <record id="estate_visitor_report_view_graph" model="ir.ui.view">
+        <field name="name">calendar.event.visitor.report.graph</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <graph string="Visitas por Propiedad" type="bar" sample="1">
+                <field name="property_id" string="Propiedad"/>
+                <field name="id" type="measure" string="N° Visitas"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción de ventana -->
+    <record id="estate_visitor_report_action" model="ir.actions.act_window">
+        <field name="name">Visitantes por Propiedad</field>
+        <field name="res_model">calendar.event</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="domain">[('property_id', '!=', False)]</field>
+        <field name="context">{'search_default_filter_has_property': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sin visitas registradas aún
+            </p>
+            <p>Aquí verás todos los clientes que visitaron cada propiedad,
+               con el resultado de cada visita y la valoración del cliente.</p>
+        </field>
+    </record>
+
+    <!-- Menú en Inteligencia -->
+    <menuitem id="estate_menu_visitor_report"
+              name="Visitantes por Propiedad"
+              parent="estate_management.estate_menu_intel_root"
+              action="estate_visitor_report_action"
+              sequence="20"/>
+</odoo>

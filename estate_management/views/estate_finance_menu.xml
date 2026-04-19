@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         ACCIONES FILTRADAS — sección Finanzas
+    ============================================================ -->
+
+    <!-- 1. Pagos de Contratos de Venta / Exclusividad -->
+    <record id="estate_payment_sale_action" model="ir.actions.act_window">
+        <field name="name">Pagos — Contratos de Venta</field>
+        <field name="res_model">estate.payment</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="domain">[('contract_id.contract_type', 'in', ['sale', 'exclusive'])]</field>
+        <field name="context">{'search_default_group_by_contract': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin pagos de venta registrados.</p>
+            <p>Pagos vinculados a contratos de compraventa y exclusividad.</p>
+        </field>
+    </record>
+
+    <!-- 2. Pagos de Contratos de Arrendamiento -->
+    <record id="estate_payment_rent_action" model="ir.actions.act_window">
+        <field name="name">Pagos — Arrendamiento</field>
+        <field name="res_model">estate.payment</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="domain">[('contract_id.contract_type', '=', 'rent')]</field>
+        <field name="context">{'search_default_group_by_contract': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin pagos de arrendamiento.</p>
+            <p>Cuotas mensuales y pagos vinculados a contratos de alquiler.</p>
+        </field>
+    </record>
+
+    <!-- 3. Facturas Inmobiliarias (account.move) -->
+    <record id="estate_invoices_action" model="ir.actions.act_window">
+        <field name="name">Facturas Inmobiliarias</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form,pivot,graph</field>
+        <field name="domain">[('move_type', 'in', ('out_invoice', 'out_refund')), ('property_id', '!=', False)]</field>
+        <field name="context">{'default_move_type': 'out_invoice'}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin facturas registradas.</p>
+            <p>Facturas de venta vinculadas a propiedades del sistema.</p>
+        </field>
+    </record>
+
+    <!-- 4. Gastos de Propiedad — usa la acción existente en estate_expense_views.xml -->
+
+    <!-- Nómina: requiere instalar hr_payroll. Pendiente de activación. -->
+
+    <!-- ============================================================
+         SECCIÓN FINANZAS en el menú principal
+    ============================================================ -->
+    <menuitem id="estate_menu_finance_root"
+              name="Finanzas"
+              parent="estate_menu_root"
+              sequence="30"/>
+
+        <!-- Pagos de Contratos de Venta -->
+        <menuitem id="estate_menu_payment_sale"
+                  name="Pagos de Venta"
+                  parent="estate_menu_finance_root"
+                  action="estate_payment_sale_action"
+                  sequence="10"/>
+
+        <!-- Pagos de Arrendamiento -->
+        <menuitem id="estate_menu_payment_rent"
+                  name="Pagos de Arrendamiento"
+                  parent="estate_menu_finance_root"
+                  action="estate_payment_rent_action"
+                  sequence="20"/>
+
+        <!-- Gastos / Costos de Propiedad -->
+        <menuitem id="estate_menu_finance_expense"
+                  name="Gastos de Propiedad"
+                  parent="estate_menu_finance_root"
+                  action="estate_expense_action"
+                  sequence="30"/>
+
+        <!-- Facturas -->
+        <menuitem id="estate_menu_finance_invoices"
+                  name="Facturas"
+                  parent="estate_menu_finance_root"
+                  action="estate_invoices_action"
+                  sequence="40"/>
+
+        <!-- Comisiones -->
+        <menuitem id="estate_menu_finance_commissions"
+                  name="Comisiones"
+                  parent="estate_menu_finance_root"
+                  action="action_estate_commission_dashboard"
+                  sequence="50"/>
+
+        <!-- Nómina: activar cuando se instale hr_payroll -->
+
+</odoo>

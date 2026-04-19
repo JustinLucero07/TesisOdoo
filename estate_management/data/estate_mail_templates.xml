@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Plantilla: Confirmación de activación de contrato al cliente -->
+    <record id="mail_template_contract_activated" model="mail.template">
+        <field name="name">Contrato Inmobiliario — Activado</field>
+        <field name="model_id" ref="estate_management.model_estate_contract"/>
+        <field name="subject">Confirmación de Contrato: {{ object.name }}</field>
+        <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+        <field name="email_to">{{ object.partner_id.email }}</field>
+        <field name="partner_to">{{ object.partner_id.id }}</field>
+        <field name="lang">{{ object.partner_id.lang }}</field>
+        <field name="body_html"><![CDATA[
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+
+    <!-- Encabezado -->
+    <div style="background: #1B4F72; padding: 28px 32px; border-radius: 8px 8px 0 0; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 22px; letter-spacing: 0.5px;">
+            Sistema Inmobiliario
+        </h1>
+        <p style="color: #aed6f1; margin: 6px 0 0 0; font-size: 14px;">Confirmación de Contrato</p>
+    </div>
+
+    <!-- Cuerpo -->
+    <div style="background: #ffffff; padding: 32px; border: 1px solid #e0e0e0; border-top: none;">
+        <p style="font-size: 15px; margin-top: 0;">
+            Estimado/a <strong>{{ object.partner_id.name }}</strong>,
+        </p>
+        <p style="font-size: 14px; line-height: 1.6;">
+            Nos complace informarle que su contrato ha sido <strong style="color: #1e8449;">activado exitosamente</strong>.
+            A continuación encontrará el resumen de su contrato:
+        </p>
+
+        <!-- Detalles del contrato -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; margin: 20px 0;">
+            <tr style="background: #f4f6f7;">
+                <td style="padding: 10px 14px; border: 1px solid #ddd; width: 40%;"><strong>Número de Contrato</strong></td>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;">{{ object.name }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;"><strong>Tipo</strong></td>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;">
+                    {% if object.contract_type == 'sale' %}Compraventa
+                    {% elif object.contract_type == 'rent' %}Alquiler
+                    {% else %}Exclusividad{% endif %}
+                </td>
+            </tr>
+            <tr style="background: #f4f6f7;">
+                <td style="padding: 10px 14px; border: 1px solid #ddd;"><strong>Propiedad</strong></td>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;">{{ object.property_id.title or '—' }}</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;"><strong>Fecha de Inicio</strong></td>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;">
+                    {{ object.date_start.strftime('%d/%m/%Y') if object.date_start else '—' }}
+                </td>
+            </tr>
+            {% if object.date_end %}
+            <tr style="background: #f4f6f7;">
+                <td style="padding: 10px 14px; border: 1px solid #ddd;"><strong>Fecha de Vencimiento</strong></td>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;">
+                    {{ object.date_end.strftime('%d/%m/%Y') }}
+                </td>
+            </tr>
+            {% endif %}
+            <tr {% if not object.date_end %}style="background: #f4f6f7;"{% endif %}>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;"><strong>Monto del Contrato</strong></td>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;">
+                    <strong>${{ '{:,.2f}'.format(object.amount) }}</strong>
+                </td>
+            </tr>
+            <tr style="background: #f4f6f7;">
+                <td style="padding: 10px 14px; border: 1px solid #ddd;"><strong>Asesor Responsable</strong></td>
+                <td style="padding: 10px 14px; border: 1px solid #ddd;">{{ object.user_id.name or '—' }}</td>
+            </tr>
+        </table>
+
+        <p style="font-size: 14px; line-height: 1.6;">
+            Si tiene alguna pregunta o necesita información adicional, no dude en contactar a su asesor directamente.
+        </p>
+
+        <!-- Firma del asesor -->
+        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 13px; color: #555;">
+            <strong>{{ object.user_id.name or 'El equipo Inmobiliario' }}</strong><br/>
+            {% if object.user_id.email %}{{ object.user_id.email }}<br/>{% endif %}
+            {% if object.user_id.partner_id.phone %}{{ object.user_id.partner_id.phone }}{% endif %}
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <div style="background: #f4f6f7; padding: 16px 32px; border-radius: 0 0 8px 8px; text-align: center; font-size: 11px; color: #999;">
+        Este correo fue generado automáticamente por el Sistema Inmobiliario. Por favor no responda directamente a este mensaje.
+    </div>
+
+</div>
+        ]]></field>
+        <field name="auto_delete" eval="True"/>
+    </record>
+
+</odoo>

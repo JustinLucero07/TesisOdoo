@@ -1,0 +1,83 @@
+<data>
+    <!-- ACCIONES INICIO -->
+    <record id="action_crm_dashboard" model="ir.actions.act_window">
+        <field name="name">Mercado Inmobiliario</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,kanban,list,form</field>
+    </record>
+
+    <record id="action_crm_forum" model="ir.actions.act_window">
+        <field name="name">Foro Inmobiliario</field>
+        <field name="res_model">mail.message</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ACCIONES INMUEBLES -->
+    <record id="action_crm_new_property" model="ir.actions.act_window">
+        <field name="name">Nuevo Inmueble</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">form,list</field>
+        <field name="target">current</field>
+    </record>
+
+    <record id="action_crm_allied_properties" model="ir.actions.act_window">
+        <field name="name">Inmuebles de Aliados</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+
+    <record id="action_crm_match_properties_window" model="ir.actions.act_window">
+        <field name="name">Cruce Inmuebles - Clientes</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="estate_crm.estate_property_view_tree_match"/>
+    </record>
+
+    <!-- ACCIONES RED INMOBILIARIA -->
+    <record id="action_crm_alliances" model="ir.actions.act_window">
+        <field name="name">Alianzas</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_allied_agency', '=', True)]</field>
+        <field name="context">{'default_is_allied_agency': True}</field>
+    </record>
+
+    <record id="action_crm_owners" model="ir.actions.act_window">
+        <field name="name">Propietarios</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="domain">[('is_property_owner', '=', True)]</field>
+        <field name="context">{'default_is_property_owner': True}</field>
+    </record>
+
+    <!-- ACCIONES CLIENTES -->
+    <record id="action_crm_new_client" model="ir.actions.act_window">
+        <field name="name">Nuevo Contacto</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">form,list</field>
+        <field name="target">current</field>
+    </record>
+
+    <!-- ACCIONES REPORTES -->
+    <record id="action_crm_reports_general" model="ir.actions.act_window">
+        <field name="name">Reporte General CRM</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">graph,pivot</field>
+    </record>
+    
+    <record id="action_crm_reports_deals" model="ir.actions.act_window">
+        <field name="name">Negocios Realizados</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="domain">[('stage_id.is_won', '=', True)]</field>
+    </record>
+
+    <record id="action_report_property_visits" model="ir.actions.act_window">
+        <field name="name">Análisis de Visitas</field>
+        <field name="res_model">calendar.event</field>
+        <field name="view_mode">graph,pivot,list,form</field>
+        <field name="domain">[('property_id', '!=', False)]</field>
+        <field name="context">{'search_default_filter_visits': 1}</field>
+    </record>
+</data>
+

@@ -1,0 +1,784 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Agrego el conteo de propiedades a la página principal del Portal -->
+    <template id="portal_my_home_menu_property" name="Portal layout : property menu entries" inherit_id="portal.portal_breadcrumbs" priority="20">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'property' or property" t-attf-class="breadcrumb-item #{'active ' if not property else ''}">
+                <a t-if="property" t-attf-href="/my/properties?{{ keep_query() }}">Mis Propiedades</a>
+                <t t-else="">Mis Propiedades</t>
+            </li>
+            <li t-if="property" class="breadcrumb-item active">
+                <t t-esc="property.title"/>
+            </li>
+            <li t-if="page_name == 'contract' or contract" t-attf-class="breadcrumb-item #{'active ' if not contract else ''}">
+                <a t-if="contract" t-attf-href="/my/contracts?{{ keep_query() }}">Mis Contratos</a>
+                <t t-else="">Mis Contratos</t>
+            </li>
+            <li t-if="contract" class="breadcrumb-item active">
+                <t t-esc="contract.name"/>
+            </li>
+        </xpath>
+    </template>
+
+    <template id="portal_my_home_property" name="Portal My Home : property entries" inherit_id="portal.portal_my_home" priority="20">
+        <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Mis Propiedades</t>
+                <t t-set="url" t-value="'/my/properties'"/>
+                <t t-set="placeholder_count" t-value="'property_count'"/>
+            </t>
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">Mis Contratos</t>
+                <t t-set="url" t-value="'/my/contracts'"/>
+                <t t-set="placeholder_count" t-value="'contract_count'"/>
+            </t>
+            <t t-call="portal.portal_docs_entry">
+                <t t-set="title">🤝 Referir un Amigo</t>
+                <t t-set="url" t-value="'/my/referral'"/>
+                <t t-set="placeholder_count" t-value="'0'"/>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Breadcrumb para referidos -->
+    <template id="portal_my_home_menu_referral" name="Portal layout: referral breadcrumb"
+              inherit_id="portal.portal_breadcrumbs" priority="21">
+        <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
+            <li t-if="page_name == 'referral'"
+                class="breadcrumb-item active">
+                🤝 Programa de Referidos
+            </li>
+        </xpath>
+    </template>
+
+    <!-- Lista de Propiedades -->
+    <template id="portal_my_properties" name="Mis Propiedades">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Mis Propiedades</t>
+            </t>
+            <div t-if="not properties" class="alert alert-warning mt8" role="alert">
+                Aún no tienes propiedades vinculadas a tu cuenta.
+            </div>
+            
+            <div t-if="properties" class="mb-3 text-end">
+                <a href="/my/compare" class="btn btn-outline-secondary btn-sm">
+                    <i class="fa fa-columns mr-1"></i> Comparar Propiedades
+                </a>
+            </div>
+            <div t-if="properties" class="row mt-3">
+                <t t-foreach="properties" t-as="prop">
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100 shadow-sm border-0">
+                            <t t-if="prop.image_main">
+                                <img class="card-img-top" t-att-src="image_data_uri(prop.image_main)" alt="Property Image" style="height: 200px; object-fit: cover;"/>
+                            </t>
+                            <t t-else="">
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <i class="fa fa-home fa-4x text-muted"></i>
+                                </div>
+                            </t>
+                            <div class="card-body">
+                                <h5 class="card-title text-primary"><t t-esc="prop.title"/></h5>
+                                <p class="card-text text-muted mb-1"><i class="fa fa-map-marker"></i> <t t-esc="prop.city"/>, <t t-esc="prop.state_id.name"/></p>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="badge rounded-pill text-bg-info text-white" t-if="prop.state == 'available'">Disponible</span>
+                                    <span class="badge rounded-pill text-bg-warning text-white" t-if="prop.state == 'reserved'">Reservado</span>
+                                    <span class="badge rounded-pill text-bg-success text-white" t-if="prop.state == 'sold'">Vendido</span>
+                                    <span class="fw-bold"><t t-esc="prop.price" t-options='{"widget": "monetary", "display_currency": prop.env.company.currency_id}'/></span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white text-center border-top-0 pb-3">
+                                <a t-attf-href="/my/property/#{prop.id}" class="btn btn-outline-primary btn-block w-100 mb-1">Ver Detalles de Venta</a>
+                                <a t-attf-href="/my/compare?ids=#{prop.id}" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="fa fa-columns mr-1"></i> Comparar esta propiedad
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </t>
+    </template>
+
+    <!-- Detalle de Propiedad -->
+    <template id="portal_property_page" name="Detalle de la Propiedad">
+        <t t-call="portal.portal_layout">
+            <div id="optional_layout" class="mt-4">
+                <div class="container mb8">
+                    <div class="card border-0 shadow-lg">
+                        <div class="card-header bg-white pb-0 border-bottom-0 d-flex justify-content-between align-items-center mt-3">
+                            <h2><t t-esc="property.title"/></h2>
+                            <span class="badge fs-5 rounded-pill text-bg-primary text-white" t-if="property.state == 'available'">En Venta</span>
+                            <span class="badge fs-5 rounded-pill text-bg-success text-white" t-if="property.state == 'sold'">Vendido</span>
+                            <span class="badge fs-5 rounded-pill text-bg-warning text-white" t-if="property.state == 'reserved'">Reservado</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <t t-if="property.image_main">
+                                        <img class="img-fluid rounded" t-att-src="image_data_uri(property.image_main)" alt="Propiedad" style="width: 100%; max-height: 400px; object-fit: cover;"/>
+                                    </t>
+                                </div>
+                                <div class="col-md-6">
+                                    <h4 class="text-primary border-bottom pb-2">Datos Comerciales</h4>
+                                    <ul class="list-group list-group-flush mb-4">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                            <span>Precio Actual</span>
+                                            <span class="fw-bold fs-5"><t t-esc="property.price" t-options='{"widget": "monetary", "display_currency": property.env.company.currency_id}'/></span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                            <span>Mercado Automatizado (AVM)</span>
+                                            <span class="fw-bold text-muted"><t t-esc="property.avm_estimated_price" t-options='{"widget": "monetary", "display_currency": property.env.company.currency_id}'/></span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                            <span>Tiempo en Venta</span>
+                                            <span class="fw-bold"><t t-esc="property.days_on_market"/> días</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center border-0 px-0" t-if="market_avg_days">
+                                            <span class="text-muted">Promedio del Mercado</span>
+                                            <span class="fw-bold text-info"><t t-esc="market_avg_days"/> días</span>
+                                        </li>
+                                        <li class="list-group-item border-0 px-0" t-if="property.avm_estimated_price">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small class="text-muted">Precio vs. Valor de Mercado (AVM)</small>
+                                                <small t-if="property.avm_status == 'fair'" class="text-success fw-bold">✓ Precio Justo</small>
+                                                <small t-if="property.avm_status == 'high'" class="text-danger fw-bold">↑ Sobrevalorado</small>
+                                                <small t-if="property.avm_status == 'low'" class="text-warning fw-bold">↓ Oportunidad</small>
+                                                <small t-if="property.avm_status == 'insufficient'" class="text-muted">Sin datos AVM</small>
+                                            </div>
+                                            <div class="progress" style="height:8px;">
+                                                <div t-if="property.avm_status == 'fair'" class="progress-bar bg-success" style="width:100%"></div>
+                                                <div t-if="property.avm_status == 'high'" class="progress-bar bg-danger" style="width:100%"></div>
+                                                <div t-if="property.avm_status == 'low'" class="progress-bar bg-warning" style="width:100%"></div>
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item border-0 px-0" t-if="property.property_score">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small class="text-muted">Puntuación del Expediente</small>
+                                                <small class="fw-bold"><t t-esc="property.property_score"/>/100 — <t t-esc="property.property_score_label"/></small>
+                                            </div>
+                                            <div class="progress" style="height:8px;">
+                                                <div class="progress-bar"
+                                                    t-attf-class="progress-bar #{property.property_score >= 80 and 'bg-success' or (property.property_score >= 60 and 'bg-info' or (property.property_score >= 40 and 'bg-warning' or 'bg-danger'))}"
+                                                    t-attf-style="width:#{property.property_score}%">
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ul>
+
+                                    <h4 class="text-primary border-bottom pb-2 mt-4">Características</h4>
+                                    <div class="row mb-3">
+                                        <div class="col-6 mb-2"><i class="fa fa-bed text-muted mr-2"></i> Hab: <strong><t t-esc="property.bedrooms"/></strong></div>
+                                        <div class="col-6 mb-2"><i class="fa fa-bath text-muted mr-2"></i> Baños: <strong><t t-esc="property.bathrooms"/></strong></div>
+                                        <div class="col-6 mb-2"><i class="fa fa-arrows text-muted mr-2"></i> Área: <strong><t t-esc="property.area"/> m²</strong></div>
+                                        <div class="col-6 mb-2" t-if="property.parking_spaces"><i class="fa fa-car text-muted mr-2"></i> Parqueaderos: <strong><t t-esc="property.parking_spaces"/></strong></div>
+                                        <div class="col-6 mb-2" t-else=""><i class="fa fa-car text-muted mr-2"></i> <strong>Sin Parqueo</strong></div>
+                                    </div>
+                                    
+                                    <div class="mt-4 p-3 bg-light rounded" t-if="property.sold_by">
+                                        <p class="mb-0 text-success fw-bold"><i class="fa fa-check-circle"></i> Propiedad vendida por: <t t-esc="property.sold_by.name"/></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Grilla de Visitas -->
+                            <div class="row mt-5" t-if="visits">
+                                <div class="col-12">
+                                    <h3 class="text-primary border-bottom pb-2">Historial de Visitas a tu Propiedad</h3>
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-hover">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Interesado</th>
+                                                    <th>Comentarios de Visita</th>
+                                                    <th>Interés Final</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="visits" t-as="visit">
+                                                    <tr>
+                                                        <td><t t-esc="visit.start" t-options="{'widget': 'datetime'}"/></td>
+                                                        <td><t t-esc="visit.partner_id.name" t-if="visit.partner_id"/></td>
+                                                        <td><t t-esc="visit.description" t-if="not visit.description == '&lt;p&gt;&lt;br&gt;&lt;/p&gt;'"/></td>
+                                                        <td>
+                                                            <span class="badge text-bg-info text-white" t-if="visit.visit_result == 'interested'">Interesado</span>
+                                                            <span class="badge text-bg-success text-white" t-if="visit.visit_result == 'offer_made'">Oferta</span>
+                                                            <span class="badge text-bg-secondary text-white" t-if="visit.visit_result == 'no_interest'">No Interesado</span>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-5" t-else="">
+                                <div class="col-12 text-center text-muted">
+                                    <i class="fa fa-calendar fa-3x mb-3"></i>
+                                    <h5>Aún no se han registrado visitas para esta propiedad.</h5>
+                                    <p>Tu asesor programará citas con los interesados y aquí podrás ver su retroalimentación en tiempo real.</p>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    <!-- Lista de Contratos -->
+    <template id="portal_my_contracts" name="Mis Contratos">
+        <t t-call="portal.portal_layout">
+            <t t-set="breadcrumbs_searchbar" t-value="True"/>
+            <t t-call="portal.portal_searchbar">
+                <t t-set="title">Mis Contratos</t>
+            </t>
+            <div t-if="not contracts" class="alert alert-warning mt8" role="alert">
+                No tienes contratos registrados.
+            </div>
+            <div t-if="contracts" class="table-responsive mt-3">
+                <table class="table table-hover bg-white shadow-sm rounded">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Referencia</th>
+                            <th>Propiedad</th>
+                            <th>Tipo</th>
+                            <th>Inicio</th>
+                            <th>Vencimiento</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="contracts" t-as="cont">
+                            <tr>
+                                <td><a t-attf-href="/my/contract/#{cont.id}"><t t-esc="cont.name"/></a></td>
+                                <td><t t-esc="cont.property_id.title"/></td>
+                                <td><span class="badge text-bg-light"><t t-esc="cont.contract_type"/></span></td>
+                                <td><t t-esc="cont.date_start"/></td>
+                                <td><t t-esc="cont.date_end or 'N/A'"/></td>
+                                <td>
+                                    <span class="badge rounded-pill text-bg-success text-white" t-if="cont.state == 'active'">Activo</span>
+                                    <span class="badge rounded-pill text-bg-info text-white" t-if="cont.state == 'draft'">Borrador</span>
+                                    <span class="badge rounded-pill text-bg-secondary text-white" t-if="cont.state == 'expired'">Vencido</span>
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+            </div>
+        </t>
+    </template>
+
+    <!-- Detalle de Contrato y Firma -->
+    <template id="portal_contract_page" name="Detalle del Contrato">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div t-if="success" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <strong>¡Éxito!</strong> El contrato ha sido firmado correctamente.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <div class="card border-0 shadow-lg">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center p-3">
+                        <h4 class="mb-0">Contrato: <t t-esc="contract.name"/></h4>
+                        <span class="badge bg-white text-primary rounded-pill"><t t-esc="contract.state"/></span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5 class="text-primary border-bottom pb-2">Detalles Generales</h5>
+                                <p><strong>Propiedad:</strong> <t t-esc="contract.property_id.title"/></p>
+                                <p><strong>Tipo:</strong> <t t-esc="contract.contract_type"/></p>
+                                <p><strong>Vendedor/Agente:</strong> <t t-esc="contract.user_id.name"/></p>
+                            </div>
+                            <div class="col-md-6">
+                                <h5 class="text-primary border-bottom pb-2">Condiciones Económicas</h5>
+                                <p><strong>Monto Total:</strong> <t t-esc="contract.amount" t-options='{"widget": "monetary", "display_currency": contract.currency_id}'/></p>
+                                <p><strong>Fecha Inicio:</strong> <t t-esc="contract.date_start"/></p>
+                                <p><strong>Fecha Vencimiento:</strong> <t t-esc="contract.date_end or 'No definida'"/></p>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">Cláusulas y Notas</h5>
+                                <div class="p-3 bg-light rounded" style="min-height: 150px;">
+                                    <t t-raw="contract.notes"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Historial de Pagos -->
+                        <div class="row mt-4 pt-4 border-top">
+                            <div class="col-12">
+                                <h5 class="text-primary border-bottom pb-2">
+                                    <i class="fa fa-money"/> Historial de Pagos
+                                </h5>
+                                <t t-set="payments" t-value="contract.payment_ids.filtered(lambda p: p.state != 'cancelled').sorted('date')"/>
+                                <t t-set="total_paid" t-value="sum(p.amount for p in payments if p.state == 'paid')"/>
+                                <t t-set="total_pending" t-value="sum(p.amount for p in payments if p.state == 'pending')"/>
+
+                                <!-- Resumen de pagos -->
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="card text-center border-success">
+                                            <div class="card-body py-2">
+                                                <div class="text-muted small">Total Pagado</div>
+                                                <div class="fw-bold text-success fs-5">
+                                                    $<t t-esc="'{:,.2f}'.format(total_paid)"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-center border-warning">
+                                            <div class="card-body py-2">
+                                                <div class="text-muted small">Pendiente</div>
+                                                <div class="fw-bold text-warning fs-5">
+                                                    $<t t-esc="'{:,.2f}'.format(total_pending)"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-center border-primary">
+                                            <div class="card-body py-2">
+                                                <div class="text-muted small">Monto Total Contrato</div>
+                                                <div class="fw-bold text-primary fs-5">
+                                                    $<t t-esc="'{:,.2f}'.format(contract.amount)"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <t t-if="payments">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Referencia</th>
+                                                    <th>Fecha</th>
+                                                    <th>Método</th>
+                                                    <th class="text-end">Monto</th>
+                                                    <th>Estado</th>
+                                                    <th>Factura</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="payments" t-as="pay">
+                                                    <tr>
+                                                        <td><t t-esc="pay.name"/></td>
+                                                        <td><t t-esc="pay.date.strftime('%d/%m/%Y') if pay.date else '—'"/></td>
+                                                        <td>
+                                                            <t t-esc="{'cash':'Efectivo','bank':'Transferencia','check':'Cheque','card':'Tarjeta','other':'Otro'}.get(pay.payment_method,'—')"/>
+                                                        </td>
+                                                        <td class="text-end fw-bold">$<t t-esc="'{:,.2f}'.format(pay.amount)"/></td>
+                                                        <td>
+                                                            <span t-if="pay.state == 'paid'" class="badge bg-success">Pagado</span>
+                                                            <span t-elif="pay.state == 'pending'" class="badge bg-warning text-dark">Pendiente</span>
+                                                            <span t-else="" class="badge bg-secondary">Anulado</span>
+                                                        </td>
+                                                        <td>
+                                                            <t t-if="pay.invoice_id">
+                                                                <a t-attf-href="/web#action=account.action_move_out_invoice_type&amp;id=#{pay.invoice_id.id}&amp;model=account.move&amp;view_type=form"
+                                                                   class="btn btn-sm btn-outline-primary" target="_blank">
+                                                                    <i class="fa fa-download"/> Ver Factura
+                                                                </a>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <span class="text-muted small">—</span>
+                                                            </t>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <p class="text-muted fst-italic">No hay pagos registrados para este contrato.</p>
+                                </t>
+                            </div>
+                        </div>
+
+                        <!-- Sección de Firma -->
+                        <div class="row mt-5 pt-4 border-top">
+                            <div class="col-md-6 text-center">
+                                <h6 class="text-muted mb-3">Firma del Agente (Odoo)</h6>
+                                <div style="height: 150px; display: flex; align-items: center; justify-content: center;" class="border rounded bg-light">
+                                    <p class="text-muted small">Firmado por <br/><strong><t t-esc="contract.user_id.name"/></strong></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-center">
+                                <h6 class="text-muted mb-3">Firma del Cliente</h6>
+                                <div t-if="contract.customer_signature" class="border rounded p-2 bg-white">
+                                    <img t-attf-src="data:image/png;base64,#{contract.customer_signature}" style="max-height: 150px;"/>
+                                    <p class="text-success small mt-2"><i class="fa fa-calendar"/> Firmado el <t t-esc="contract.signature_date"/></p>
+                                </div>
+                                <div t-else="" class="signature-container">
+                                    <canvas id="signature-pad" class="border rounded bg-white" style="width: 100%; height: 150px; touch-action: none;"></canvas>
+                                    <form t-attf-action="/my/contract/#{contract.id}/sign" method="POST" id="signature-form">
+                                        <input type="hidden" name="signature" id="signature-input"/>
+                                        <div class="mt-2 d-flex gap-2 justify-content-center">
+                                            <button type="button" id="clear-signature" class="btn btn-sm btn-outline-secondary">Limpiar</button>
+                                            <button type="submit" id="save-signature" class="btn btn-sm btn-primary">Firmar Contrato</button>
+                                        </div>
+                                    </form>
+                                    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function() {{
+                                            var canvas = document.getElementById('signature-pad');
+                                            var signaturePad = new SignaturePad(canvas);
+                                            
+                                            function resizeCanvas() {{
+                                                var ratio =  Math.max(window.devicePixelRatio || 1, 1);
+                                                canvas.width = canvas.offsetWidth * ratio;
+                                                canvas.height = canvas.offsetHeight * ratio;
+                                                canvas.getContext("2d").scale(ratio, ratio);
+                                                signaturePad.clear();
+                                            }}
+                                            window.onresize = resizeCanvas;
+                                            resizeCanvas();
+
+                                            document.getElementById('clear-signature').addEventListener('click', function () {{
+                                                signaturePad.clear();
+                                            }});
+
+                                            document.getElementById('signature-form').addEventListener('submit', function (e) {{
+                                                if (signaturePad.isEmpty()) {{
+                                                    alert("Por favor, firme el documento primero.");
+                                                    e.preventDefault();
+                                                }} else {{
+                                                    document.getElementById('signature-input').value = signaturePad.toDataURL();
+                                                }}
+                                            }});
+                                        }});
+                                    </script>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Comparador de Propiedades -->
+    <template id="portal_compare_properties" name="Comparar Propiedades">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <h2 class="mb-4"><i class="fa fa-columns text-primary mr-2"></i>Comparador de Propiedades</h2>
+
+                <div class="card mb-4 border-0 shadow-sm">
+                    <div class="card-body">
+                        <form method="GET" action="/my/compare" class="row g-2 align-items-end">
+                            <div class="col-md-10">
+                                <label class="form-label fw-bold">Selecciona hasta 3 propiedades:</label>
+                                <select name="ids" class="form-select" multiple="multiple" style="height:120px;">
+                                    <t t-foreach="all_properties" t-as="ap">
+                                        <option t-att-value="ap.id"
+                                            t-att-selected="str(ap.id) in (selected_ids or '').split(',') and 'selected' or None">
+                                            <t t-esc="ap.title"/> — <t t-esc="ap.city or ''"/>
+                                        </option>
+                                    </t>
+                                </select>
+                                <small class="text-muted">Mantén Ctrl para seleccionar múltiples</small>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Comparar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div t-if="properties" class="table-responsive">
+                    <table class="table table-bordered bg-white shadow-sm">
+                        <thead class="bg-primary text-white">
+                            <tr>
+                                <th style="width:160px;">Característica</th>
+                                <t t-foreach="properties" t-as="prop">
+                                    <th class="text-center"><t t-esc="prop.title"/></th>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="fw-bold text-muted">Imagen</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <t t-if="prop.image_main">
+                                            <img t-att-src="image_data_uri(prop.image_main)" style="height:90px;object-fit:cover;border-radius:6px;" alt=""/>
+                                        </t>
+                                        <t t-else=""><span class="text-muted small">Sin imagen</span></t>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Precio</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center fw-bold fs-5 text-primary">
+                                        <t t-esc="prop.price" t-options='{"widget":"monetary","display_currency":prop.env.company.currency_id}'/>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">AVM Estimado</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <t t-if="prop.avm_estimated_price">
+                                            <t t-esc="prop.avm_estimated_price" t-options='{"widget":"monetary","display_currency":prop.env.company.currency_id}'/><br/>
+                                            <span t-if="prop.avm_status == 'fair'" class="badge bg-success">Justo</span>
+                                            <span t-if="prop.avm_status == 'high'" class="badge bg-danger">Sobrevalorado</span>
+                                            <span t-if="prop.avm_status == 'low'" class="badge bg-warning text-dark">Oportunidad</span>
+                                        </t>
+                                        <t t-else=""><small class="text-muted">Sin calcular</small></t>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Ciudad</td>
+                                <t t-foreach="properties" t-as="prop"><td class="text-center"><t t-esc="prop.city or '-'"/></td></t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Área (m²)</td>
+                                <t t-foreach="properties" t-as="prop"><td class="text-center"><t t-esc="prop.area"/> m²</td></t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Habitaciones</td>
+                                <t t-foreach="properties" t-as="prop"><td class="text-center"><t t-esc="prop.bedrooms"/></td></t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Baños</td>
+                                <t t-foreach="properties" t-as="prop"><td class="text-center"><t t-esc="prop.bathrooms"/></td></t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Días en Mercado</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <t t-esc="prop.days_on_market"/> días
+                                        <t t-if="avg_data.get(prop.id, {}).get('avg_days')">
+                                            <br/><small class="text-muted">Mercado: <t t-esc="avg_data[prop.id]['avg_days']"/> días</small>
+                                        </t>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Puntuación</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <strong><t t-esc="prop.property_score or 0"/>/100</strong>
+                                        <br/><small class="text-muted"><t t-esc="prop.property_score_label or 'N/A'"/></small>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Estado</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <span class="badge bg-info text-white" t-if="prop.state == 'available'">Disponible</span>
+                                        <span class="badge bg-success text-white" t-if="prop.state == 'sold'">Vendido</span>
+                                        <span class="badge bg-warning text-dark" t-if="prop.state == 'reserved'">Reservado</span>
+                                        <span class="badge bg-primary text-white" t-if="prop.state == 'rented'">Alquilado</span>
+                                    </td>
+                                </t>
+                            </tr>
+                            <!-- Mejora 13: ROI en comparador -->
+                            <tr class="table-light">
+                                <td class="fw-bold text-muted">Rendimiento Arriendo</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <t t-if="prop.roi_annual_yield">
+                                            <strong class="text-success"><t t-esc="'%.1f' % prop.roi_annual_yield"/>%</strong>
+                                            <br/><small class="text-muted">anual</small>
+                                        </t>
+                                        <t t-else=""><small class="text-muted">—</small></t>
+                                    </td>
+                                </t>
+                            </tr>
+                            <tr class="table-light">
+                                <td class="fw-bold text-muted">Valor a 5 Años</td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <t t-if="prop.roi_5year_value">
+                                            <strong class="text-primary"><t t-esc="prop.roi_5year_value" t-options='{"widget":"monetary","display_currency":prop.env.company.currency_id}'/></strong>
+                                        </t>
+                                        <t t-else=""><small class="text-muted">—</small></t>
+                                    </td>
+                                </t>
+                            </tr>
+                            <!-- Acciones -->
+                            <tr>
+                                <td></td>
+                                <t t-foreach="properties" t-as="prop">
+                                    <td class="text-center">
+                                        <a t-attf-href="/my/property/#{prop.id}" class="btn btn-sm btn-outline-primary mb-1">Ver detalle</a>
+                                        <a t-attf-href="/web#action=estate_calendar.action_calendar_event&amp;view_type=form&amp;default_property_id=#{prop.id}" class="btn btn-sm btn-success mb-1">Solicitar visita</a>
+                                        <t t-if="prop.tour_360_active and prop.tour_360_url">
+                                            <a t-att-href="prop.tour_360_url" target="_blank" class="btn btn-sm btn-info mb-1">Tour 360°</a>
+                                        </t>
+                                    </td>
+                                </t>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div t-else="" class="alert alert-info mt-3" role="status">
+                    Selecciona propiedades arriba para compararlas lado a lado.
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- =========================================================
+         PROGRAMA DE REFERIDOS
+         ========================================================= -->
+    <template id="portal_referral_page" name="Programa de Referidos">
+        <t t-call="portal.portal_layout">
+
+            <!-- Mensajes de éxito / error -->
+            <t t-if="success">
+                <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
+                    <strong>✅ ¡Referido enviado!</strong>
+                    Gracias por referir a un amigo. Te avisaremos cuando avance en el proceso.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"/>
+                </div>
+            </t>
+            <t t-if="error">
+                <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
+                    <strong>⚠️ Error:</strong> <t t-esc="error"/>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"/>
+                </div>
+            </t>
+
+            <!-- Hero del programa -->
+            <div class="bg-light rounded-3 p-4 mb-4 mt-3 text-center">
+                <h2>🤝 Programa de Referidos</h2>
+                <p class="lead text-muted">
+                    ¿Conoces a alguien que busca comprar, vender o arrendar una propiedad?
+                    <br/>Refierelos y <strong>recibe beneficios exclusivos</strong> cuando se concrete la transacción.
+                </p>
+                <div class="row justify-content-center mt-3">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="display-6">📋</div>
+                        <p class="small mt-1"><strong>1. Llena el formulario</strong><br/>Con los datos de tu referido</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="display-6">📞</div>
+                        <p class="small mt-1"><strong>2. Lo contactamos</strong><br/>Nuestro equipo lo asesora</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="display-6">🎁</div>
+                        <p class="small mt-1"><strong>3. Recibe tu beneficio</strong><br/>Al cerrarse la transacción</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario de referido -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">📝 Datos de tu Referido</h5>
+                </div>
+                <div class="card-body">
+                    <form action="/my/referral/submit" method="post">
+                        <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Nombre completo *</label>
+                                <input type="text" name="ref_name" class="form-control"
+                                       placeholder="Juan Pérez" required="required"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Teléfono / WhatsApp *</label>
+                                <input type="tel" name="ref_phone" class="form-control"
+                                       placeholder="0991234567" required="required"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email (opcional)</label>
+                                <input type="email" name="ref_email" class="form-control"
+                                       placeholder="juan@email.com"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ciudad donde busca</label>
+                                <input type="text" name="city" class="form-control"
+                                       placeholder="Ej: Cuenca"/>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">¿Qué tipo de propiedad busca?</label>
+                                <select name="prop_type" class="form-select">
+                                    <option value="">— Cualquiera —</option>
+                                    <option value="casa">Casa</option>
+                                    <option value="departamento">Departamento</option>
+                                    <option value="terreno">Terreno</option>
+                                    <option value="oficina">Oficina</option>
+                                    <option value="local">Local Comercial</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Notas adicionales</label>
+                                <textarea name="ref_notes" class="form-control" rows="2"
+                                          placeholder="Ej: Busca algo cerca de la universidad, presupuesto $80k"/>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                🤝 Enviar Referido
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Historial de referidos -->
+            <t t-if="referred_leads">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">📊 Mis Referidos</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Fecha</th>
+                                    <th>Etapa</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="referred_leads" t-as="rl">
+                                    <tr>
+                                        <td><t t-esc="rl.contact_name or rl.name"/></td>
+                                        <td><t t-esc="rl.create_date.strftime('%d/%m/%Y')"/></td>
+                                        <td><t t-esc="rl.stage_id.name or '—'"/></td>
+                                        <td>
+                                            <t t-if="rl.stage_id.is_won">
+                                                <span class="badge bg-success">✅ Cerrado</span>
+                                            </t>
+                                            <t t-elif="not rl.active">
+                                                <span class="badge bg-secondary">Archivado</span>
+                                            </t>
+                                            <t t-else="">
+                                                <span class="badge bg-primary">En proceso</span>
+                                            </t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </t>
+            <t t-else="">
+                <div class="alert alert-info mt-2" role="status">
+                    Aún no tienes referidos registrados. ¡Sé el primero en participar!
+                </div>
+            </t>
+
+        </t>
+    </template>
+
+</odoo>

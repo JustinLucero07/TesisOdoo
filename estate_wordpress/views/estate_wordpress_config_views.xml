@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- WordPress Config in Settings -->
+        <record id="estate_wp_config_settings_view" model="ir.ui.view">
+            <field name="name">estate.wp.config.settings</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+                    <app data-string="Integración WordPress" string="Integración WordPress" name="estate_wordpress">
+                        <block title="Conexión WordPress" name="wp_connection">
+                            <setting string="Activar Integración" help="Habilitar la publicación en WordPress">
+                                <field name="wp_active"/>
+                            </setting>
+                            <setting string="URL de WordPress" help="URL base del sitio WordPress">
+                                <field name="wp_url" placeholder="https://miinmobiliaria.com"/>
+                            </setting>
+                            <setting string="Método de Autenticación" help="Elija JWT si no le aparecen las Contraseñas de Aplicación en WordPress">
+                                <field name="wp_auth_method" widget="radio"/>
+                            </setting>
+                            <setting string="Usuario Administrador" help="Usuario de WordPress con permisos de publicación">
+                                <field name="wp_username"/>
+                            </setting>
+                            <setting string="Contraseña / App Pass" help="Contraseña normal (si usa JWT) o de Aplicación (si usa Básico)">
+                                <field name="wp_app_password" password="True"/>
+                            </setting>
+                            <setting string="Estado de Token (JWT)" help="El token se genera al probar la conexión" invisible="wp_auth_method != 'jwt'">
+                                <field name="wp_jwt_token" readonly="1"/>
+                            </setting>
+                            <setting string="Post Type" help="Para Houzez usar 'property'. Para blog normal usar 'posts'.">
+                                <field name="wp_post_type" placeholder="property"/>
+                            </setting>
+                            <setting string="ID Categoría (solo para Posts)" help="Solo aplica si usas Post Type 'posts'. Para Houzez dejar en 0." invisible="wp_post_type != 'posts'">
+                                <field name="wp_category_id"/>
+                            </setting>
+                            <div class="mt-3">
+                                <button name="action_wp_test_connection" string="⚡ Probar Conexión y Generar Token" type="object" class="btn-primary"/>
+                            </div>
+                        </block>
+
+                        <block title="Configuración Houzez" name="wp_houzez" invisible="wp_post_type == 'posts'">
+                            <setting string="ID Tipo de Propiedad" help="ID de property_type en Houzez. Ej: 93=Casas, 95=Departamentos. Separar con coma si son varios.">
+                                <field name="wp_property_type_id" placeholder="95"/>
+                            </setting>
+                            <setting string="ID Estado de Propiedad" help="ID de property_status en Houzez. Ej: 32=En Venta, 123=Vendido">
+                                <field name="wp_property_status_id" placeholder="32"/>
+                            </setting>
+                            <setting string="ID Ciudad" help="ID de property_city en Houzez. Ej: 102=Cuenca">
+                                <field name="wp_property_city_id" placeholder="102"/>
+                            </setting>
+                            <setting string="ID Agente" help="ID del agente en Houzez (WordPress → Agentes → editar → ver ID en la URL)">
+                                <field name="wp_agent_id" placeholder="150"/>
+                            </setting>
+                            <div class="mt-3">
+                                <button name="action_fetch_wp_agents" string=" Traer Agentes de WordPress" type="object" class="btn-secondary"/>
+                            </div>
+                        </block>
+
+                        <block title="Webhook — Formulario Houzez → CRM" name="wp_webhook">
+                            <setting string="Token Secreto" help="Pega este mismo valor en el plugin de WordPress (ODOO_SECRET). Deja vacío para deshabilitar la validación.">
+                                <field name="wp_webhook_secret" placeholder="mi_clave_secreta_2024"/>
+                            </setting>
+                            <div class="text-muted small mt-2">
+                                URL del webhook a configurar en WordPress:
+                                <code>/estate/wp/houzez/inquiry</code>
+                            </div>
+                        </block>
+                    </app>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Add WordPress buttons to property form -->
+        <record id="estate_property_wp_buttons" model="ir.ui.view">
+            <field name="name">estate.property.wp.buttons</field>
+            <field name="model">estate.property</field>
+            <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//header/button[@name='action_set_available']" position="before">
+                    <button name="action_publish_wordpress" string=" Publicar en WordPress" type="object" class="btn-secondary" invisible="wp_published == True"/>
+                    <button name="action_unpublish_wordpress" string=" Quitar de WordPress" type="object" class="btn-secondary" invisible="wp_published != True"/>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

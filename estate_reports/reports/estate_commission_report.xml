@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         REPORTE: Liquidación de Comisiones por Asesor
+         Modelo base: res.users  (lanzado desde el wizard)
+    ============================================================ -->
+    <record id="action_report_commission_liquidation" model="ir.actions.report">
+        <field name="name">Liquidación de Comisiones</field>
+        <field name="model">res.users</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_commission_liquidation_template</field>
+        <field name="report_file">estate_reports.report_commission_liquidation_template</field>
+    </record>
+
+    <template id="report_commission_liquidation_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="user">
+                <!-- Obtener comisiones del período desde el contexto -->
+                <t t-set="date_from" t-value="context.get('date_from')"/>
+                <t t-set="date_to"   t-value="context.get('date_to')"/>
+                <t t-set="all_states" t-value="context.get('include_all_states', False)"/>
+
+                <!-- Dominio de filtro -->
+                <t t-set="comm_domain" t-value="[('user_id','=',user.id),('date','>=',date_from),('date','&lt;=',date_to)]"/>
+                <t t-if="not all_states">
+                    <t t-set="comm_domain" t-value="comm_domain + [('state','in',['approved','paid'])]"/>
+                </t>
+                <t t-set="commissions" t-value="env['estate.commission'].search(comm_domain, order='date asc')"/>
+                <t t-set="total" t-value="sum(c.amount for c in commissions)"/>
+                <t t-set="total_paid" t-value="sum(c.amount for c in commissions if c.state == 'paid')"/>
+                <t t-set="total_approved" t-value="sum(c.amount for c in commissions if c.state == 'approved')"/>
+
+                <t t-call="web.external_layout">
+                    <div class="page">
+
+                        <!-- Encabezado -->
+                        <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 14px; margin-bottom: 22px;">
+                            <h2 style="color: #1B4F72; margin: 0;">Liquidación de Comisiones</h2>
+                            <p style="margin: 6px 0 0 0; color: #555; font-size: 13px;">
+                                Asesor: <strong><t t-out="user.name"/></strong>
+                                &#160;·&#160;
+                                Período:
+                                <strong>
+                                    <t t-out="date_from.strftime('%d/%m/%Y') if date_from else '—'"/>
+                                    al
+                                    <t t-out="date_to.strftime('%d/%m/%Y') if date_to else '—'"/>
+                                </strong>
+                                &#160;·&#160;
+                                Generado: <t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                            </p>
+                        </div>
+
+                        <!-- Datos del asesor -->
+                        <table class="table table-sm table-bordered" style="font-size:13px; width:60%; margin-bottom:20px;">
+                            <tr>
+                                <td style="width:40%; background:#f8f9fa;"><strong>Nombre</strong></td>
+                                <td><t t-out="user.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="background:#f8f9fa;"><strong>Email</strong></td>
+                                <td><t t-out="user.email or '—'"/></td>
+                            </tr>
+                            <tr>
+                                <td style="background:#f8f9fa;"><strong>Empresa</strong></td>
+                                <td><t t-out="user.company_id.name or '—'"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- Detalle de comisiones -->
+                        <h4 style="color:#2E86C1; border-left:4px solid #2E86C1; padding-left:8px; margin-bottom:10px;">
+                            Detalle de Comisiones
+                        </h4>
+
+                        <t t-if="commissions">
+                            <table class="table table-sm table-bordered" style="font-size:12px; width:100%;">
+                                <thead style="background:#1B4F72; color:white;">
+                                    <tr>
+                                        <th>Referencia</th>
+                                        <th>Fecha</th>
+                                        <th>Propiedad</th>
+                                        <th>Tipo</th>
+                                        <th style="text-align:right;">Monto</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="commissions" t-as="comm">
+                                        <tr>
+                                            <td><t t-out="comm.name"/></td>
+                                            <td><t t-out="comm.date.strftime('%d/%m/%Y') if comm.date else '—'"/></td>
+                                            <td><t t-out="comm.property_id.title or '—'"/></td>
+                                            <td><t t-out="dict([('sale','Venta'),('rental','Alquiler'),('bonus','Bono')]).get(comm.type,'—')"/></td>
+                                            <td style="text-align:right;">$<t t-out="'{:,.2f}'.format(comm.amount)"/></td>
+                                            <td>
+                                                <span t-if="comm.state=='paid'"     style="color:green;font-weight:600;">Pagada</span>
+                                                <span t-elif="comm.state=='approved'" style="color:#2E86C1;font-weight:600;">Aprobada</span>
+                                                <span t-elif="comm.state=='draft'"   style="color:orange;">Borrador</span>
+                                                <span t-else=""                      style="color:red;">Cancelada</span>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                        <t t-else="">
+                            <p style="color:#888; font-style:italic;">No se encontraron comisiones para este asesor en el período seleccionado.</p>
+                        </t>
+
+                        <!-- Resumen financiero -->
+                        <div style="margin-top:24px; display:flex; gap:16px;">
+                            <div style="flex:1; background:#eaf4fb; border:1px solid #2E86C1; border-radius:8px; padding:14px; text-align:center;">
+                                <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Total Período</div>
+                                <div style="font-size:22px; font-weight:700; color:#1B4F72; margin-top:4px;">
+                                    $<t t-out="'{:,.2f}'.format(total)"/>
+                                </div>
+                            </div>
+                            <div style="flex:1; background:#eafaf1; border:1px solid #27ae60; border-radius:8px; padding:14px; text-align:center;">
+                                <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Pagado</div>
+                                <div style="font-size:22px; font-weight:700; color:#1e8449; margin-top:4px;">
+                                    $<t t-out="'{:,.2f}'.format(total_paid)"/>
+                                </div>
+                            </div>
+                            <div style="flex:1; background:#fef9e7; border:1px solid #f39c12; border-radius:8px; padding:14px; text-align:center;">
+                                <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Por Pagar</div>
+                                <div style="font-size:22px; font-weight:700; color:#b7770d; margin-top:4px;">
+                                    $<t t-out="'{:,.2f}'.format(total_approved)"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Firma -->
+                        <div style="margin-top:48px; display:flex; gap:48px;">
+                            <div style="flex:1; text-align:center;">
+                                <div style="border-top:1px solid #333; padding-top:6px; font-size:12px;">
+                                    Firma del Asesor<br/>
+                                    <strong><t t-out="user.name"/></strong>
+                                </div>
+                            </div>
+                            <div style="flex:1; text-align:center;">
+                                <div style="border-top:1px solid #333; padding-top:6px; font-size:12px;">
+                                    Aprobado por<br/>
+                                    <strong>Gerencia Inmobiliaria</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

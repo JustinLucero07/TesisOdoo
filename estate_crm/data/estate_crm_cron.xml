@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Cron Job para Matchmaking Proactivo -->
+        <record id="ir_cron_estate_crm_matchmaking" model="ir.cron">
+            <field name="name">Inmobiliaria: Matchmaking Automático de Leads y Propiedades</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_proactive_matchmaking()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+        <!-- Cron Job para degradación automática de temperatura de leads inactivos -->
+        <record id="ir_cron_estate_crm_cool_down" model="ir.cron">
+            <field name="name">Inmobiliaria: Enfriar Leads sin Actividad</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_cool_down_inactive_leads()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+        <!-- Mejora 4: Drip de seguimiento automático -->
+        <record id="ir_cron_estate_crm_drip_followup" model="ir.cron">
+            <field name="name">Inmobiliaria: Seguimiento Drip Automático de Leads</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_drip_followup()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+        <!-- Mejora 8: Alerta de lead hirviendo sin respuesta -->
+        <record id="ir_cron_hot_lead_no_response" model="ir.cron">
+            <field name="name">Inmobiliaria: Alerta Lead Hirviendo sin Respuesta</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_hot_lead_no_response_alert()</field>
+            <field name="interval_number">6</field>
+            <field name="interval_type">hours</field>
+            <field name="active" eval="True"/>
+        </record>
+        <!-- Programa de Referidos: notificación diaria a referidores -->
+        <record id="ir_cron_estate_crm_notify_referrers" model="ir.cron">
+            <field name="name">Inmobiliaria: Notificar Referidores sobre sus Leads</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_notify_referrers()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

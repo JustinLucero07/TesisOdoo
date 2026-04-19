@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_property_view_form_inherit_ai" model="ir.ui.view">
+        <field name="name">estate.property.form.inherit.ai</field>
+        <field name="model">estate.property</field>
+        <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='ai_vision_description']" position="before">
+                <button name="action_analyze_image_ai" type="object"
+                        string="Analizar Imagen con IA" class="btn-primary"
+                        icon="fa-eye" title="Usa Gemini Vision para analizar la imagen principal"/>
+                <button name="action_generate_ai_description" type="object"
+                        string="Generar Descripción Comercial IA" class="btn-success"
+                        icon="fa-magic" title="Genera 3 versiones de descripción (formal, emocional, directa) + titulares"/>
+            </xpath>
+            <xpath expr="//group[@name='geo_ai']" position="inside">
+                <group string="Atributos Detectados (IA)">
+                    <field name="ai_condition" widget="badge"/>
+                    <field name="ai_room_type"/>
+                    <field name="ai_red_flags" invisible="not ai_red_flags"/>
+                    <field name="ai_staging_suggestions" invisible="not ai_staging_suggestions"/>
+                </group>
+                <group string="Descripción Comercial IA (Mejora 3)">
+                    <field name="ai_marketing_description" nolabel="1" widget="text"
+                           placeholder="Presiona 'Generar Descripción Comercial IA' para crear automáticamente 3 versiones de marketing..."/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

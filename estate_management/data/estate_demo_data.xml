@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- ============ PROPIEDADES DEMO ============ -->
+        <record id="property_demo_01" model="estate.property">
+            <field name="title">Casa Moderna en El Batán</field>
+            <field name="property_type_id" ref="property_type_house"/>
+            <field name="street">Av. El Batán N35-12</field>
+            <field name="city">Cuenca</field>
+            <field name="price">185000</field>
+            <field name="area">220</field>
+            <field name="bedrooms">4</field>
+            <field name="bathrooms">3</field>
+            <field name="parking_spaces">1</field>
+            <field name="year_built">2020</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Hermosa casa moderna con acabados de primera, ubicada en zona residencial. Amplio jardín y terraza.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_02" model="estate.property">
+            <field name="title">Departamento Centro Histórico</field>
+            <field name="property_type_id" ref="property_type_apartment"/>
+            <field name="street">Calle Bolívar 8-42</field>
+            <field name="city">Cuenca</field>
+            <field name="price">95000</field>
+            <field name="area">85</field>
+            <field name="bedrooms">2</field>
+            <field name="bathrooms">1</field>
+            <field name="parking_spaces">0</field>
+            <field name="floor">3</field>
+            <field name="year_built">2018</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Acogedor departamento en el centro histórico de Cuenca, cerca de todos los servicios.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_03" model="estate.property">
+            <field name="title">Terreno en Ricaurte</field>
+            <field name="property_type_id" ref="property_type_land"/>
+            <field name="street">Vía Ricaurte km 2</field>
+            <field name="city">Cuenca</field>
+            <field name="price">65000</field>
+            <field name="area">500</field>
+            <field name="bedrooms">0</field>
+            <field name="bathrooms">0</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Terreno plano con todos los servicios básicos. Ideal para construir.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_04" model="estate.property">
+            <field name="title">Oficina Corporativa Av. Solano</field>
+            <field name="property_type_id" ref="property_type_office"/>
+            <field name="street">Av. Solano 12-50</field>
+            <field name="city">Cuenca</field>
+            <field name="price">120000</field>
+            <field name="area">150</field>
+            <field name="bedrooms">0</field>
+            <field name="bathrooms">2</field>
+            <field name="floor">5</field>
+            <field name="year_built">2022</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Oficina moderna en edificio corporativo con vista panorámica.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_05" model="estate.property">
+            <field name="title">Casa Quinta en Challuabamba</field>
+            <field name="property_type_id" ref="property_type_house"/>
+            <field name="street">Sector Challuabamba</field>
+            <field name="city">Cuenca</field>
+            <field name="price">320000</field>
+            <field name="area">800</field>
+            <field name="bedrooms">5</field>
+            <field name="bathrooms">4</field>
+            <field name="parking_spaces">1</field>
+            <field name="year_built">2019</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Espectacular casa quinta con piscina, jardines amplios y área BBQ.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_06" model="estate.property">
+            <field name="title">Local Comercial Gran Colombia</field>
+            <field name="property_type_id" ref="property_type_commercial"/>
+            <field name="street">Calle Gran Colombia 15-28</field>
+            <field name="city">Cuenca</field>
+            <field name="price">210000</field>
+            <field name="area">180</field>
+            <field name="bedrooms">0</field>
+            <field name="bathrooms">2</field>
+            <field name="year_built">2015</field>
+            <field name="state">rented</field>
+            <field name="description">&lt;p&gt;Local comercial en zona de alto tráfico, ideal para negocios.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_07" model="estate.property">
+            <field name="title">Departamento de Lujo Ordóñez Lasso</field>
+            <field name="property_type_id" ref="property_type_apartment"/>
+            <field name="street">Av. Ordóñez Lasso 5-30</field>
+            <field name="city">Cuenca</field>
+            <field name="price">175000</field>
+            <field name="area">130</field>
+            <field name="bedrooms">3</field>
+            <field name="bathrooms">2</field>
+            <field name="parking_spaces">1</field>
+            <field name="floor">8</field>
+            <field name="year_built">2023</field>
+            <field name="state">sold</field>
+            <field name="description">&lt;p&gt;Departamento de lujo con vista a la ciudad, acabados premium.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_08" model="estate.property">
+            <field name="title">Casa en Totoracocha</field>
+            <field name="property_type_id" ref="property_type_house"/>
+            <field name="street">Calle Totoracocha 3-15</field>
+            <field name="city">Cuenca</field>
+            <field name="price">145000</field>
+            <field name="area">180</field>
+            <field name="bedrooms">3</field>
+            <field name="bathrooms">2</field>
+            <field name="parking_spaces">1</field>
+            <field name="year_built">2010</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Casa amplia y funcional en barrio tranquilo, cerca de escuelas y centros comerciales.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_09" model="estate.property">
+            <field name="title">Terreno Industrial Parque Industrial</field>
+            <field name="property_type_id" ref="property_type_land"/>
+            <field name="street">Parque Industrial de Cuenca</field>
+            <field name="city">Cuenca</field>
+            <field name="price">280000</field>
+            <field name="area">2000</field>
+            <field name="bedrooms">0</field>
+            <field name="bathrooms">0</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Terreno industrial con acceso directo a vía principal y servicios básicos.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_10" model="estate.property">
+            <field name="title">Departamento Estudiantil Av. Américas</field>
+            <field name="property_type_id" ref="property_type_apartment"/>
+            <field name="street">Av. de las Américas 2-40</field>
+            <field name="city">Cuenca</field>
+            <field name="price">55000</field>
+            <field name="area">45</field>
+            <field name="bedrooms">1</field>
+            <field name="bathrooms">1</field>
+            <field name="floor">2</field>
+            <field name="year_built">2021</field>
+            <field name="state">rented</field>
+            <field name="description">&lt;p&gt;Mini departamento ideal para estudiantes, cerca de universidades.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_11" model="estate.property">
+            <field name="title">Casa Campestre Baños</field>
+            <field name="property_type_id" ref="property_type_house"/>
+            <field name="street">Vía Baños km 5</field>
+            <field name="city">Cuenca</field>
+            <field name="price">230000</field>
+            <field name="area">400</field>
+            <field name="bedrooms">4</field>
+            <field name="bathrooms">3</field>
+            <field name="parking_spaces">1</field>
+            <field name="year_built">2017</field>
+            <field name="state">reserved</field>
+            <field name="description">&lt;p&gt;Casa campestre con vista al río, chimenea y ambiente acogedor.&lt;/p&gt;</field>
+        </record>
+
+        <record id="property_demo_12" model="estate.property">
+            <field name="title">Oficina Pequeña Remigio Crespo</field>
+            <field name="property_type_id" ref="property_type_office"/>
+            <field name="street">Av. Remigio Crespo 7-10</field>
+            <field name="city">Cuenca</field>
+            <field name="price">75000</field>
+            <field name="area">60</field>
+            <field name="bedrooms">0</field>
+            <field name="bathrooms">1</field>
+            <field name="floor">3</field>
+            <field name="year_built">2016</field>
+            <field name="state">available</field>
+            <field name="description">&lt;p&gt;Oficina ideal para profesionales independientes, excelente ubicación.&lt;/p&gt;</field>
+        </record>
+
+        <!-- ============ USUARIOS DEMO ============ -->
+        <record id="user_agent_01" model="res.users">
+            <field name="name">Carlos Mendoza</field>
+            <field name="login">agente01@inmobiliaria.com</field>
+            <field name="password">agente01</field>
+        </record>
+
+        <record id="user_agent_02" model="res.users">
+            <field name="name">María Fernández</field>
+            <field name="login">agente02@inmobiliaria.com</field>
+            <field name="password">agente02</field>
+        </record>
+
+        <record id="user_manager_01" model="res.users">
+            <field name="name">Roberto Sánchez</field>
+            <field name="login">manager01@inmobiliaria.com</field>
+            <field name="password">manager01</field>
+        </record>
+
+        <!-- ============ CLIENTES DEMO ============ -->
+        <record id="partner_demo_01" model="res.partner">
+            <field name="name">Eduardo Torres</field>
+            <field name="email">eduardo.t@ejemplo.com</field>
+            <field name="phone">0981112222</field>
+            <field name="city">Cuenca</field>
+        </record>
+
+        <record id="partner_demo_02" model="res.partner">
+            <field name="name">Sofía Narváez</field>
+            <field name="email">sofia.n@ejemplo.com</field>
+            <field name="phone">0992223333</field>
+            <field name="city">Quito</field>
+        </record>
+
+        <record id="partner_demo_03" model="res.partner">
+            <field name="name">Miguel Endara</field>
+            <field name="email">miguel.e@ejemplo.com</field>
+            <field name="phone">0973334444</field>
+            <field name="city">Guayaquil</field>
+        </record>
+
+        <record id="partner_demo_04" model="res.partner">
+            <field name="name">Valeria Román</field>
+            <field name="email">valeria.r@ejemplo.com</field>
+            <field name="phone">0964445555</field>
+            <field name="city">Cuenca</field>
+        </record>
+
+        <record id="partner_demo_05" model="res.partner">
+            <field name="name">Andrés Salazar</field>
+            <field name="email">andres.s@ejemplo.com</field>
+            <field name="phone">0955556666</field>
+            <field name="city">Cuenca</field>
+        </record>
+
+        <!-- ============ CONTRATOS DEMO ============ -->
+        <!-- Contrato de venta — Depto Lujo (vendido) -->
+        <record id="contract_demo_01" model="estate.contract">
+            <field name="property_id" ref="property_demo_07"/>
+            <field name="partner_id" ref="partner_demo_01"/>
+            <field name="user_id" ref="user_agent_01"/>
+            <field name="contract_type">sale</field>
+            <field name="date_start">2025-10-01</field>
+            <field name="amount">175000</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- Contrato de alquiler — Local Comercial -->
+        <record id="contract_demo_02" model="estate.contract">
+            <field name="property_id" ref="property_demo_06"/>
+            <field name="partner_id" ref="partner_demo_02"/>
+            <field name="user_id" ref="user_agent_02"/>
+            <field name="contract_type">rent</field>
+            <field name="date_start">2025-01-01</field>
+            <field name="date_end">2026-01-01</field>
+            <field name="amount">1200</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- Contrato de alquiler — Depto Estudiantil -->
+        <record id="contract_demo_03" model="estate.contract">
+            <field name="property_id" ref="property_demo_10"/>
+            <field name="partner_id" ref="partner_demo_03"/>
+            <field name="user_id" ref="user_agent_01"/>
+            <field name="contract_type">rent</field>
+            <field name="date_start">2025-06-01</field>
+            <field name="date_end">2026-06-01</field>
+            <field name="amount">350</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- Contrato exclusividad — Casa Campestre (reservada) -->
+        <record id="contract_demo_04" model="estate.contract">
+            <field name="property_id" ref="property_demo_11"/>
+            <field name="partner_id" ref="partner_demo_04"/>
+            <field name="user_id" ref="user_manager_01"/>
+            <field name="contract_type">exclusive</field>
+            <field name="date_start">2025-11-01</field>
+            <field name="date_end">2026-02-01</field>
+            <field name="amount">230000</field>
+            <field name="state">active</field>
+        </record>
+
+        <!-- Contrato de venta — Oficina Corporativa (borrador) -->
+        <record id="contract_demo_05" model="estate.contract">
+            <field name="property_id" ref="property_demo_04"/>
+            <field name="partner_id" ref="partner_demo_05"/>
+            <field name="user_id" ref="user_agent_02"/>
+            <field name="contract_type">sale</field>
+            <field name="date_start">2026-01-15</field>
+            <field name="amount">120000</field>
+            <field name="state">draft</field>
+        </record>
+
+        <!-- ============ PAGOS DEMO ============ -->
+        <!-- Pagos del contrato de venta (Depto Lujo) -->
+        <record id="payment_demo_01" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_01"/>
+            <field name="amount">52500</field>
+            <field name="date">2025-10-05</field>
+            <field name="payment_method">bank</field>
+            <field name="state">paid</field>
+            <field name="notes">Cuota inicial 30% - transferencia BancoEcuador</field>
+        </record>
+
+        <record id="payment_demo_02" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_01"/>
+            <field name="amount">87500</field>
+            <field name="date">2025-11-15</field>
+            <field name="payment_method">bank</field>
+            <field name="state">paid</field>
+            <field name="notes">Crédito hipotecario — desembolso BancoFase</field>
+        </record>
+
+        <record id="payment_demo_03" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_01"/>
+            <field name="amount">35000</field>
+            <field name="date">2026-01-10</field>
+            <field name="payment_method">check</field>
+            <field name="state">paid</field>
+            <field name="notes">Saldo final — cheque certificado</field>
+        </record>
+
+        <!-- Pagos mensuales del alquiler (Local Comercial) -->
+        <record id="payment_demo_04" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_02"/>
+            <field name="amount">1200</field>
+            <field name="date">2025-12-01</field>
+            <field name="payment_method">bank</field>
+            <field name="state">paid</field>
+            <field name="notes">Mensualidad diciembre 2025</field>
+        </record>
+
+        <record id="payment_demo_05" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_02"/>
+            <field name="amount">1200</field>
+            <field name="date">2026-01-01</field>
+            <field name="payment_method">bank</field>
+            <field name="state">paid</field>
+            <field name="notes">Mensualidad enero 2026</field>
+        </record>
+
+        <record id="payment_demo_06" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_02"/>
+            <field name="amount">1200</field>
+            <field name="date">2026-02-01</field>
+            <field name="payment_method">bank</field>
+            <field name="state">paid</field>
+            <field name="notes">Mensualidad febrero 2026</field>
+        </record>
+
+        <record id="payment_demo_07" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_02"/>
+            <field name="amount">1200</field>
+            <field name="date">2026-03-01</field>
+            <field name="payment_method">bank</field>
+            <field name="state">pending</field>
+            <field name="notes">Mensualidad marzo 2026</field>
+        </record>
+
+        <!-- Pagos del alquiler (Depto Estudiantil) -->
+        <record id="payment_demo_08" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_03"/>
+            <field name="amount">350</field>
+            <field name="date">2026-01-01</field>
+            <field name="payment_method">cash</field>
+            <field name="state">paid</field>
+            <field name="notes">Mensualidad enero 2026</field>
+        </record>
+
+        <record id="payment_demo_09" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_03"/>
+            <field name="amount">350</field>
+            <field name="date">2026-02-01</field>
+            <field name="payment_method">cash</field>
+            <field name="state">paid</field>
+            <field name="notes">Mensualidad febrero 2026</field>
+        </record>
+
+        <record id="payment_demo_10" model="estate.payment">
+            <field name="contract_id" ref="contract_demo_03"/>
+            <field name="amount">350</field>
+            <field name="date">2026-03-01</field>
+            <field name="payment_method">cash</field>
+            <field name="state">pending</field>
+            <field name="notes">Mensualidad marzo 2026 — pendiente</field>
+        </record>
+
+    </data>
+
+    <!-- Asignación de grupos para usuarios demo (idempotente con noupdate=0) -->
+    <data noupdate="0">
+        <record id="estate_group_agent" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_agent_01')), Command.link(ref('user_agent_02'))]"/>
+        </record>
+        <record id="estate_group_manager" model="res.groups">
+            <field name="user_ids" eval="[Command.link(ref('user_manager_01'))]"/>
+        </record>
+    </data>
+</odoo>

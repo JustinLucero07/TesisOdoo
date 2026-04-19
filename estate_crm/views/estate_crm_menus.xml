@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==============================================
+         MENÚS SUPERIORES DEL CRM INMOBILIARIO
+         Integración ultra-limpia sin botones repetidos
+         ============================================== -->
+
+    <!-- 1. Menús adicionales de Propiedades (Inyectados en Inmobiliaria) -->
+    <menuitem id="estate_menu_property_new"
+              name="Nuevo inmueble"
+              parent="estate_management.estate_menu_property_root"
+              action="action_crm_new_property"
+              sequence="12"/>
+
+    <menuitem id="estate_menu_property_allied"
+              name="Inmuebles de mis aliados"
+              parent="estate_management.estate_menu_property_root"
+              action="action_crm_allied_properties"
+              sequence="14"/>
+
+    <menuitem id="estate_menu_property_match"
+              name="Cruce inmuebles - clientes"
+              parent="estate_management.estate_menu_property_root"
+              action="action_crm_match_properties_window"
+              sequence="16"/>
+
+    <!-- 2. Clientes (Integrado en CRM nativo) -->
+    <menuitem id="estate_menu_crm_directorio_root"
+              name="Clientes"
+              parent="crm.crm_menu_root"
+              sequence="10"/>
+
+        <menuitem id="estate_menu_crm_clientes_lista"
+                  name="Directorio de clientes"
+                  parent="estate_menu_crm_directorio_root"
+                  action="base.action_partner_form"
+                  sequence="10"/>
+
+        <menuitem id="estate_menu_crm_new_client"
+                  name="Nuevo cliente"
+                  parent="estate_menu_crm_directorio_root"
+                  action="action_crm_new_client"
+                  sequence="15"/>
+
+        <menuitem id="estate_menu_crm_gestiones"
+                  name="Gestiones realizadas"
+                  parent="estate_menu_crm_directorio_root"
+                  action="estate_interaction_action"
+                  sequence="20"/>
+
+        <menuitem id="estate_menu_crm_match"
+                  name="Cruce clientes - inmuebles"
+                  parent="estate_menu_crm_directorio_root"
+                  action="action_crm_match_properties_window"
+                  sequence="30"/>
+
+        <!-- Mantengo Alianzas aquí por si es útil tener acceso rápido desde Clientes -->
+        <menuitem id="estate_menu_crm_red_alianzas"
+                  name="Red de Aliados"
+                  parent="estate_menu_crm_directorio_root"
+                  action="action_crm_alliances"
+                  sequence="40"/>
+
+    <!-- 4. Reportes Inyectados al módulo nativo del CRM de Odoo -->
+    <menuitem id="estate_menu_crm_reports_general"
+              name="General (Clientes)"
+              parent="crm.crm_menu_report"
+              action="action_crm_reports_general"
+              sequence="10"/>
+
+    <menuitem id="estate_menu_crm_reports_deals"
+              name="Negocios realizados"
+              parent="crm.crm_menu_report"
+              action="action_crm_reports_deals"
+              sequence="15"/>
+
+    <menuitem id="estate_menu_crm_reports_visits"
+              name="Visitas por Inmueble (Analytics)"
+              parent="crm.crm_menu_report"
+              action="action_report_property_visits"
+              sequence="20"/>
+</odoo>

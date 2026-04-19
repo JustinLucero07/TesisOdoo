@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Stat button en el formulario de propiedad -->
+    <record id="estate_property_view_form_inherit_crm_match" model="ir.ui.view">
+        <field name="name">estate.property.form.inherit.crm.match</field>
+        <field name="model">estate.property</field>
+        <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_price_history']" position="after">
+                <button name="action_view_lead_matches" type="object"
+                        class="oe_stat_button" icon="fa-users">
+                    <field name="crm_match_count" string="Leads Interesados" widget="statinfo"/>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Lista de cruce inmuebles-clientes -->
+    <record id="estate_property_view_tree_match" model="ir.ui.view">
+        <field name="name">estate.property.tree.match</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <list string="Cruce Inmuebles - Clientes" create="false" edit="false">
+                <field name="name" string="Referencia"/>
+                <field name="title"/>
+                <field name="city"/>
+                <field name="price" widget="monetary"/>
+                <field name="state" widget="badge" decoration-success="state == 'available'"/>
+                <field name="crm_match_count" string="Clientes Posibles"/>
+
+                <button name="action_view_lead_matches" type="object"
+                        string="Hay Coincidencias"
+                        class="btn-warning text-uppercase font-weight-bold"
+                        invisible="crm_match_count == 0"/>
+
+                <button name="action_view_lead_matches" type="object"
+                        string="Sin Coincidencias"
+                        class="btn-secondary text-uppercase"
+                        invisible="crm_match_count &gt; 0"/>
+            </list>
+        </field>
+    </record>
+</odoo>

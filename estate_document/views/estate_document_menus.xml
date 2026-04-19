@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="estate_menu_document_root"
+              name="Documentos"
+              parent="estate_management.estate_menu_root"
+              sequence="60"/>
+
+    <menuitem id="estate_menu_document_list"
+              name="Documentos"
+              parent="estate_menu_document_root"
+              action="estate_document_action"
+              sequence="10"/>
+</odoo>
