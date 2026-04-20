@@ -24,3 +24,11 @@ class ResConfigSettings(models.TransientModel):
         string='Número WhatsApp Business',
         config_parameter='estate_social.whatsapp_business_number',
         help='Número de WhatsApp Business para compartir propiedades (ej: 593981234567)')
+
+    meta_verify_token = fields.Char(
+        string='Token de Verificación Meta (Webhook)',
+        config_parameter='estate_crm.meta_verify_token',
+        help=(
+            'Token secreto que configuras en developers.facebook.com al registrar el webhook. '
+            'Debe coincidir exactamente con el que pones en Meta → Webhooks → Token de verificación.'
+        ))

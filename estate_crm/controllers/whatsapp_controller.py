@@ -1,65 +1,240 @@
 import json
 import logging
+
 from odoo import http
 from odoo.http import request
 
 _logger = logging.getLogger(__name__)
 
-class WhatsAppWebhook(http.Controller):
 
-    @http.route('/whatsapp/webhook', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
-    def receive_whatsapp_message(self, **post):
-        """
-        Endpoint que recibe notificaciones de proveedores como Meta o Twilio.
-        Crea Leads directamente en el CRM inmobiliario si recibe consultas.
-        """
-        data = request.jsonrequest
-        if not data:
-            return {'status': 'error', 'message': 'No payload received'}
+class MetaWebhookController(http.Controller):
+    """
+    Webhook universal de Meta (WhatsApp Business, Facebook Messenger, Instagram DMs).
 
-        _logger.info(f"Real Estate WhatsApp Webhook payload: {data}")
+    Un solo endpoint recibe eventos de los tres canales porque Meta usa la misma
+    infraestructura de Webhooks de la API Graph para todos.
 
-        try:
-            # Estructura de ejemplo adaptada para Meta API
-            entry = data.get('entry', [{}])[0]
-            changes = entry.get('changes', [{}])[0]
-            value = changes.get('value', {})
-            
-            messages = value.get('messages', [])
-            contacts = value.get('contacts', [])
-            
-            if not messages:
-                return {'status': 'ok'}
+    Endpoint : /meta/webhook
+    Métodos  : GET  → verificación del endpoint (Meta lo llama al configurar)
+               POST → recibe los mensajes en tiempo real
 
-            msg = messages[0]
-            contact = contacts[0] if contacts else {}
-            
-            phone = msg.get('from', '')
-            name = contact.get('profile', {}).get('name', f'WebLead-{phone}')
-            text = msg.get('text', {}).get('body', '')
+    Configuración en developers.facebook.com:
+        Tu App → Webhooks → Agregar suscripción:
+            URL de devolución de llamada : https://tu-odoo.com/meta/webhook
+            Token de verificación        : (el mismo que en Ajustes → estate_crm.meta_verify_token)
+        Campos a suscribir:
+            - messages          (WhatsApp / Instagram DMs)
+            - messaging_postbacks (Facebook Messenger)
+    """
 
-            if not phone:
-                return {'status': 'error', 'message': 'Remitente no identificado'}
+    # ─── utilidades ────────────────────────────────────────────────────────────
 
-            partner = request.env['res.partner'].sudo().search(['|', ('phone', '=', phone), ('mobile', '=', phone)], limit=1)
-            
-            if not partner:
-                partner = request.env['res.partner'].sudo().create({
-                    'name': name,
-                    'phone': phone,
-                    'mobile': phone,
-                })
+    def _verify_token(self):
+        """Devuelve el token de verificación configurado en parámetros del sistema."""
+        return request.env['ir.config_parameter'].sudo().get_param(
+            'estate_crm.meta_verify_token', 'mi_token_secreto')
 
-            lead = request.env['crm.lead'].sudo().create({
-                'name': f'Consulta Inmobiliaria por WhatsApp - {name}',
-                'partner_id': partner.id,
-                'description': f"Mensaje recibido:\n\n{text}",
-                'type': 'lead',
+    def _get_or_create_partner(self, env, phone=None, name=None, email=None):
+        """Busca un partner existente por teléfono o email; si no existe, lo crea."""
+        Partner = env['res.partner'].sudo()
+        partner = None
+        if phone:
+            clean = ''.join(c for c in phone if c.isdigit())
+            partner = Partner.search(
+                ['|', ('phone', 'ilike', clean), ('mobile', 'ilike', clean)], limit=1)
+        if not partner and email:
+            partner = Partner.search([('email', '=', email)], limit=1)
+        if not partner:
+            partner = Partner.create({
+                'name': name or phone or 'Sin nombre',
+                'phone': phone or False,
+                'email': email or False,
             })
-            
-            _logger.info(f"Oportunidad generada exitosamente. Lead ID {lead.id}")
-            return {'status': 'success', 'lead_id': lead.id}
+        return partner
 
-        except Exception as e:
-            _logger.error(f"Error procesando el Webhook de WhatsApp: {e}")
-            return {'status': 'error', 'message': str(e)}
+    def _create_lead(self, env, source, name, phone=None, email=None,
+                     message='', sender_id=None):
+        """Crea la oportunidad en el CRM evitando duplicados recientes (24 h)."""
+        from datetime import datetime, timedelta
+
+        Lead = env['crm.lead'].sudo()
+
+        # Evitar duplicar: si ya existe un lead de este remitente en las últimas 24h
+        # con el mismo sender_id (PSID de Facebook / número de WhatsApp) no crear otro.
+        if sender_id:
+            cutoff = datetime.now() - timedelta(hours=24)
+            existing = Lead.search([
+                ('description', 'ilike', sender_id),
+                ('lead_source', '=', source),
+                ('create_date', '>=', cutoff),
+            ], limit=1)
+            if existing:
+                # Agregar el nuevo mensaje al chatter del lead existente
+                existing.message_post(
+                    body=f'📨 Nuevo mensaje vía {source}: {message}',
+                    message_type='comment',
+                    subtype_xmlid='mail.mt_note',
+                )
+                _logger.info('Meta webhook: mensaje agregado a lead existente #%d', existing.id)
+                return existing
+
+        partner = self._get_or_create_partner(env, phone=phone, name=name, email=email)
+
+        source_labels = {
+            'whatsapp': 'WhatsApp',
+            'facebook': 'Facebook Messenger',
+            'instagram': 'Instagram DM',
+        }
+        lead_title = f"Consulta vía {source_labels.get(source, source)} — {name or phone or 'Sin nombre'}"
+
+        lead = Lead.create({
+            'name': lead_title,
+            'partner_id': partner.id,
+            'contact_name': name or False,
+            'phone': phone or False,
+            'email_from': email or False,
+            'type': 'opportunity',
+            'lead_source': source,
+            'description': (
+                f'Sender ID: {sender_id}\n'
+                f'Mensaje: {message}'
+            ) if sender_id else message,
+        })
+        _logger.info('Meta webhook: lead #%d creado (fuente=%s, remitente=%s)',
+                     lead.id, source, phone or sender_id)
+        return lead
+
+    # ─── GET — verificación del endpoint por Meta ───────────────────────────────
+
+    @http.route('/meta/webhook', type='http', auth='public', methods=['GET'], csrf=False)
+    def meta_verify(self, **kwargs):
+        """
+        Meta llama a este endpoint con GET cuando configuras el webhook en tu app.
+        Responde con hub.challenge si el token coincide.
+        """
+        mode      = kwargs.get('hub.mode', '')
+        challenge = kwargs.get('hub.challenge', '')
+        token     = kwargs.get('hub.verify_token', '')
+
+        if mode == 'subscribe' and token == self._verify_token():
+            _logger.info('Meta webhook verificado correctamente.')
+            return request.make_response(
+                challenge, headers=[('Content-Type', 'text/plain')])
+
+        _logger.warning('Meta webhook: verificación fallida (token incorrecto).')
+        return request.make_response('Forbidden', status=403,
+                                     headers=[('Content-Type', 'text/plain')])
+
+    # ─── POST — recibe mensajes en tiempo real ──────────────────────────────────
+
+    @http.route('/meta/webhook', type='http', auth='public', methods=['POST'], csrf=False)
+    def meta_receive(self, **kwargs):
+        """
+        Recibe el payload de Meta y lo enruta al handler correcto según el objeto:
+            - whatsapp_business_account → WhatsApp
+            - page                      → Facebook Messenger
+            - instagram                 → Instagram DMs
+        """
+        try:
+            raw  = request.httprequest.data
+            data = json.loads(raw) if raw else {}
+        except Exception:
+            return request.make_json_response({'status': 'error'}, status=400)
+
+        obj = data.get('object', '')
+
+        if obj == 'whatsapp_business_account':
+            self._handle_whatsapp(data)
+        elif obj == 'page':
+            self._handle_facebook(data)
+        elif obj == 'instagram':
+            self._handle_instagram(data)
+        else:
+            _logger.debug('Meta webhook: objeto desconocido "%s" — ignorado.', obj)
+
+        # Meta exige siempre 200 OK, aunque no proceses el evento
+        return request.make_json_response({'status': 'ok'})
+
+    # ─── Handlers por canal ─────────────────────────────────────────────────────
+
+    def _handle_whatsapp(self, data):
+        """
+        Procesa mensajes entrantes de WhatsApp Business.
+        Payload: entry[].changes[].value.messages[]
+        """
+        env = request.env
+        for entry in data.get('entry', []):
+            for change in entry.get('changes', []):
+                value    = change.get('value', {})
+                messages = value.get('messages', [])
+                contacts = value.get('contacts', [])
+
+                for msg in messages:
+                    if msg.get('type') != 'text':
+                        continue  # Solo texto; ignora audio/imagen por ahora
+
+                    phone = msg.get('from', '')
+                    text  = msg.get('text', {}).get('body', '')
+                    name  = (contacts[0].get('profile', {}).get('name', '')
+                             if contacts else '') or phone
+
+                    self._create_lead(
+                        env,
+                        source='whatsapp',
+                        name=name,
+                        phone=phone,
+                        message=text,
+                        sender_id=phone,
+                    )
+
+    def _handle_facebook(self, data):
+        """
+        Procesa mensajes entrantes de Facebook Messenger.
+        Payload: entry[].messaging[].message.text
+        """
+        env = request.env
+        for entry in data.get('entry', []):
+            for event in entry.get('messaging', []):
+                sender  = event.get('sender', {})
+                message = event.get('message', {})
+
+                if not message or message.get('is_echo'):
+                    continue  # Ignorar mensajes enviados por la página
+
+                psid = sender.get('id', '')
+                text = message.get('text', '')
+
+                # Facebook no da nombre ni teléfono directamente en el webhook;
+                # usamos el PSID como identificador.
+                self._create_lead(
+                    env,
+                    source='facebook',
+                    name=f'FB-{psid}',
+                    message=text,
+                    sender_id=psid,
+                )
+
+    def _handle_instagram(self, data):
+        """
+        Procesa Direct Messages entrantes de Instagram Business.
+        Payload idéntico a Facebook Messenger pero con objeto 'instagram'.
+        """
+        env = request.env
+        for entry in data.get('entry', []):
+            for event in entry.get('messaging', []):
+                sender  = event.get('sender', {})
+                message = event.get('message', {})
+
+                if not message or message.get('is_echo'):
+                    continue
+
+                igsid = sender.get('id', '')
+                text  = message.get('text', '')
+
+                self._create_lead(
+                    env,
+                    source='instagram',
+                    name=f'IG-{igsid}',
+                    message=text,
+                    sender_id=igsid,
+                )

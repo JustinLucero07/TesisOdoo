@@ -36,6 +36,19 @@
                             <field name="whatsapp_business_number" placeholder="Ej: 593981234567"/>
                         </setting>
                     </block>
+                    <block title="Webhook Meta — Leads Automáticos (WhatsApp / Facebook / Instagram)" name="meta_webhook_settings">
+                        <setting id="meta_verify_token_setting"
+                                 string="Token de Verificación"
+                                 help="Token secreto que configuras en developers.facebook.com al registrar el webhook /meta/webhook. Ponlo igual en Meta y aquí.">
+                            <field name="meta_verify_token" password="True" placeholder="mi_token_secreto_2025"/>
+                        </setting>
+                        <setting string="URL del Webhook"
+                                 help="Registra esta URL en Meta → Tu App → Webhooks → URL de devolución de llamada.">
+                            <div class="text-muted">
+                                <code>https://TU-DOMINIO.COM/meta/webhook</code>
+                            </div>
+                        </setting>
+                    </block>
                 </app>
             </xpath>
         </field>

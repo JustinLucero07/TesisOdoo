@@ -4,7 +4,66 @@ Guía paso a paso para conectar el sistema con WhatsApp Business, WordPress/Houz
 
 ---
 
-## 1. WhatsApp Business (Meta Cloud API)
+## Cómo llegan los leads automáticamente
+
+```
+Cliente escribe en WhatsApp / Facebook / Instagram
+              ↓
+     Meta envía el mensaje a Odoo
+     vía webhook: POST /meta/webhook
+              ↓
+  Odoo crea el lead en el CRM automáticamente
+  con fuente = WhatsApp / Facebook / Instagram
+              ↓
+  Si el mismo remitente escribe de nuevo en
+  las próximas 24h → se agrega al mismo lead
+  (no se duplica)
+```
+
+Para que esto funcione debes tener Odoo accesible desde internet (con dominio o ngrok en pruebas) y configurar el webhook en Meta una sola vez.
+
+---
+
+---
+
+## 1. Webhook Meta — Configuración única para los 3 canales
+
+WhatsApp, Facebook e Instagram usan la **misma infraestructura de webhooks** de Meta. Se configura una sola vez.
+
+### Paso 1 — Elegir tu Token de Verificación
+
+Es una cadena que tú inventas (cualquier texto sin espacios), por ejemplo: `inmobi_webhook_2025`
+
+En Odoo: **Ajustes → WhatsApp Citas → Webhook Meta → Token de Verificación** → pegar el token.
+
+### Paso 2 — Registrar el webhook en Meta
+
+1. Ir a [developers.facebook.com](https://developers.facebook.com) → Tu App → **Webhooks**
+2. Clic en **Agregar suscripción** (o editar si ya existe)
+3. Completar:
+
+| Campo | Valor |
+|---|---|
+| URL de devolución de llamada | `https://tu-dominio.com/meta/webhook` |
+| Token de verificación | El mismo token que pusiste en Odoo |
+
+4. Clic en **Verificar y guardar** — Meta hace un GET al endpoint con ese token, Odoo responde correctamente y la verificación pasa.
+
+### Paso 3 — Suscribir los eventos
+
+Después de verificar, suscribirse a los campos:
+
+| Canal | Campo a suscribir |
+|---|---|
+| WhatsApp | `messages` |
+| Facebook Messenger | `messages`, `messaging_postbacks` |
+| Instagram DMs | `messages` |
+
+> Para pruebas locales sin dominio puedes usar **ngrok**: `ngrok http 8070` y usar la URL `https://xxxx.ngrok.io/meta/webhook`
+
+---
+
+## 2. WhatsApp Business (Meta Cloud API)
 
 Permite enviar **recordatorios automáticos de citas** al asesor y mensajes de seguimiento a clientes.
 
