@@ -1,21 +1,40 @@
 <odoo>
-    <!-- El Dashboard principal como primera opción de Inteligencia -->
+    <!-- ═══════════════════════════════════════════════════════
+         CENTRO DE REPORTES — Menú reorganizado
+    ═══════════════════════════════════════════════════════ -->
+
+    <!-- 1. Dashboard General — entrada principal -->
     <menuitem id="estate_menu_dashboard_direct"
-              name=" Dashboard General"
+              name="Dashboard General"
               parent="estate_management.estate_menu_intel_root"
               action="estate_dashboard_action"
               sequence="5"/>
 
-    <!-- Movemos el generador de reportes abajo del análisis de comisiones -->
-    <menuitem id="estate_menu_report_report_wizard"
-              name="️ Generar Reportes (PDF/Excel)"
+    <!-- 2. Sub-menú: Reportes PDF / Excel -->
+    <menuitem id="estate_menu_reports_root"
+              name="Reportes"
               parent="estate_management.estate_menu_intel_root"
-              action="estate_report_wizard_action"
-              sequence="30"/>
+              sequence="10"/>
 
-    <menuitem id="estate_menu_commission_wizard"
-              name=" Liquidación de Comisiones PDF"
-              parent="estate_management.estate_menu_intel_root"
-              action="estate_commission_wizard_action"
-              sequence="35"/>
+        <menuitem id="estate_menu_report_report_wizard"
+                  name="Generar Reportes (PDF/Excel)"
+                  parent="estate_menu_reports_root"
+                  action="estate_report_wizard_action"
+                  sequence="10"/>
+
+        <menuitem id="estate_menu_commission_wizard"
+                  name="Liquidación de Comisiones"
+                  parent="estate_menu_reports_root"
+                  action="estate_commission_wizard_action"
+                  sequence="20"/>
+
+        <menuitem id="estate_menu_visitor_report"
+                  name="Reporte de Visitas"
+                  parent="estate_menu_reports_root"
+                  action="estate_visitor_report_action"
+                  sequence="30"/>
+
+    <!-- 3. Sub-menú: Análisis (gráficos/pivots) — ya definido en estate_analytics_views.xml -->
+    <!-- estate_menu_analytics_root con sus 7 sub-items vive en analytics_views.xml -->
+
 </odoo>

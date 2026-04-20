@@ -198,11 +198,15 @@
       "Bash(/tmp/detailed_analysis.txt:*)",
       "Bash(grep -r from.*import.*ValidationError /home/justin/Documentos/odoo19/odoo/models/__init__.py)",
       "Bash(python3 -c \"from odoo import models; print\\(hasattr\\(models, ''''ValidationError''''\\)\\)\")",
-      "Bash(find /home/justin/Documentos/Tesis/estate_reports -name *.js -o -name *.css -o -name *.scss)"
+      "Bash(find /home/justin/Documentos/Tesis/estate_reports -name *.js -o -name *.css -o -name *.scss)",
+      "Bash(ls /home/justin/Documentos/Tesis/*.md /home/justin/Documentos/Tesis/*.py)",
+      "Bash(ls /home/justin/Documentos/Tesis/*.md /home/justin/Documentos/Tesis/*.py /home/justin/Documentos/Tesis/estate_*/*.md)",
+      "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf -d tesis_odoo19 -u estate_crm --stop-after-init)"
     ],
     "additionalDirectories": [
       "/tmp",
-      "/home/justin/Documentos/odoo19/addons/crm/static/description"
+      "/home/justin/Documentos/odoo19/addons/crm/static/description",
+      "/home/justin/Documentos/Tesis"
     ]
   }
 }

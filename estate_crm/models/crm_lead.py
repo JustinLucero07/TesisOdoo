@@ -14,6 +14,7 @@ class CrmLead(models.Model):
         ('wordpress', '📰 WordPress/Houzez'),
         ('whatsapp',  '💬 WhatsApp'),
         ('instagram', '📸 Instagram'),
+        ('facebook',  '📘 Facebook'),
         ('google',    '🔍 Google Business'),
         ('referral',  '🤝 Referido'),
         ('phone',     '📞 Llamada Telefónica'),

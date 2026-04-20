@@ -12,20 +12,25 @@
     </record>
 
     <!-- ============================================================
-         FORMULARIO PRINCIPAL DEL DASHBOARD
+         FORMULARIO PRINCIPAL DEL DASHBOARD — CON PESTAÑAS
     ============================================================ -->
     <record id="estate_dashboard_view_form" model="ir.ui.view">
         <field name="name">estate.dashboard.form</field>
         <field name="model">estate.dashboard</field>
         <field name="arch" type="xml">
-            <form string="Dashboard General" create="false" delete="false">
+            <form string="Dashboard Inmobiliario" create="false" delete="false">
                 <sheet>
 
-                    <!-- Filtro por asesor -->
-                    <group>
+                    <!-- ── Filtros Globales ─────────────────────────── -->
+                    <group col="4">
                         <field name="filter_user_id"
                                options="{'no_create': True}"
                                placeholder="Todos los asesores"/>
+                        <field name="filter_period"/>
+                        <field name="filter_date_from"
+                               invisible="filter_period != 'custom'"/>
+                        <field name="filter_date_to"
+                               invisible="filter_period != 'custom'"/>
                     </group>
 
                     <!-- ── Inventario de Propiedades ─────────────────── -->
@@ -76,98 +81,161 @@
                                 <span class="o_stat_text">Estancadas</span>
                             </div>
                         </button>
-                    </div>
-
-                    <!-- ── Pipeline Comercial ────────────────────────── -->
-                    <separator string="Pipeline Comercial"/>
-                    <div class="oe_button_box" name="button_box_pipeline">
-                        <button class="oe_stat_button" icon="fa-tag" type="object"
-                                name="action_open_offers">
+                        <button class="oe_stat_button" icon="fa-file-excel-o" type="object"
+                                name="action_open_report_wizard">
                             <div class="o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="active_offers_count" readonly="1"/>
-                                </span>
-                                <span class="o_stat_text">Ofertas Activas</span>
-                            </div>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-file-text-o" type="object"
-                                name="action_open_contracts">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="active_contracts_count" readonly="1"/>
-                                </span>
-                                <span class="o_stat_text">Contratos Activos</span>
-                            </div>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-shopping-cart" type="object"
-                                name="action_open_sale_orders">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="sale_orders_count" readonly="1"/>
-                                </span>
-                                <span class="o_stat_text">Órdenes de Venta</span>
-                            </div>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-users" type="object"
-                                name="action_open_opportunities">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="active_clients" readonly="1"/>
-                                </span>
-                                <span class="o_stat_text">Oportunidades</span>
-                            </div>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-calendar-check-o" type="object"
-                                name="action_open_appointments">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="appointments_done" readonly="1"/>
-                                </span>
-                                <span class="o_stat_text">Visitas (Mes)</span>
-                            </div>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-exclamation-triangle"
-                                class2="text-warning" type="object"
-                                name="action_open_expiring_contracts">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="contracts_expiring" readonly="1"/>
-                                </span>
-                                <span class="o_stat_text">Contratos por Vencer</span>
+                                <span class="o_stat_text">Generar Reporte</span>
                             </div>
                         </button>
                     </div>
 
-                    <!-- ── Indicadores Financieros ───────────────────── -->
-                    <separator string="Indicadores Financieros — Mes Actual"/>
-                    <group>
-                        <group string="Ingresos">
-                            <field name="monthly_commissions" readonly="1"
-                                   widget="monetary"/>
-                            <field name="won_revenue_month" readonly="1"
-                                   widget="monetary"/>
-                        </group>
-                        <group string="Pendientes">
-                            <field name="pending_revenue" readonly="1"
-                                   widget="monetary"/>
-                            <field name="pending_invoices_amount" readonly="1"
-                                   widget="monetary"/>
-                            <field name="avg_days_on_market" readonly="1"/>
-                        </group>
-                    </group>
+                    <!-- ══════════════════════════════════════════════
+                         PESTAÑAS DEL DASHBOARD
+                    ══════════════════════════════════════════════ -->
+                    <notebook>
 
-                    <!-- ── Mapa Geográfico ───────────────────────────── -->
-                    <separator string="Distribución Geográfica"/>
-                    <group>
-                        <field name="map_html" nolabel="1" readonly="1" colspan="2"/>
-                    </group>
+                        <!-- ═══ PESTAÑA 1: RESUMEN ═══ -->
+                        <page string="Resumen" name="tab_summary">
 
-                    <!-- ── Ranking de Asesores ──────────────────────── -->
-                    <separator string="Ranking de Asesores — Mes Actual"/>
-                    <group>
-                        <field name="advisor_ranking_html" nolabel="1" readonly="1" colspan="2"/>
-                    </group>
+                            <!-- Pipeline Comercial -->
+                            <separator string="Pipeline Comercial"/>
+                            <div class="oe_button_box" name="button_box_pipeline">
+                                <button class="oe_stat_button" icon="fa-tag" type="object"
+                                        name="action_open_offers">
+                                    <div class="o_stat_info">
+                                        <span class="o_stat_value">
+                                            <field name="active_offers_count" readonly="1"/>
+                                        </span>
+                                        <span class="o_stat_text">Ofertas Activas</span>
+                                    </div>
+                                </button>
+                                <button class="oe_stat_button" icon="fa-file-text-o" type="object"
+                                        name="action_open_contracts">
+                                    <div class="o_stat_info">
+                                        <span class="o_stat_value">
+                                            <field name="active_contracts_count" readonly="1"/>
+                                        </span>
+                                        <span class="o_stat_text">Contratos Activos</span>
+                                    </div>
+                                </button>
+                                <button class="oe_stat_button" icon="fa-shopping-cart" type="object"
+                                        name="action_open_sale_orders">
+                                    <div class="o_stat_info">
+                                        <span class="o_stat_value">
+                                            <field name="sale_orders_count" readonly="1"/>
+                                        </span>
+                                        <span class="o_stat_text">Órdenes de Venta</span>
+                                    </div>
+                                </button>
+                                <button class="oe_stat_button" icon="fa-users" type="object"
+                                        name="action_open_opportunities">
+                                    <div class="o_stat_info">
+                                        <span class="o_stat_value">
+                                            <field name="active_clients" readonly="1"/>
+                                        </span>
+                                        <span class="o_stat_text">Oportunidades</span>
+                                    </div>
+                                </button>
+                                <button class="oe_stat_button" icon="fa-calendar-check-o" type="object"
+                                        name="action_open_appointments">
+                                    <div class="o_stat_info">
+                                        <span class="o_stat_value">
+                                            <field name="appointments_done" readonly="1"/>
+                                        </span>
+                                        <span class="o_stat_text">Visitas (Período)</span>
+                                    </div>
+                                </button>
+                                <button class="oe_stat_button" icon="fa-exclamation-triangle" type="object"
+                                        name="action_open_expiring_contracts">
+                                    <div class="o_stat_info">
+                                        <span class="o_stat_value">
+                                            <field name="contracts_expiring" readonly="1"/>
+                                        </span>
+                                        <span class="o_stat_text">Contratos por Vencer</span>
+                                    </div>
+                                </button>
+                            </div>
 
+                            <!-- Indicadores Financieros -->
+                            <separator string="Indicadores Financieros — Período Seleccionado"/>
+                            <group>
+                                <group string="Ingresos">
+                                    <field name="monthly_commissions" readonly="1" widget="monetary"/>
+                                    <field name="won_revenue_month" readonly="1" widget="monetary"/>
+                                </group>
+                                <group string="Pendientes">
+                                    <field name="pending_revenue" readonly="1" widget="monetary"/>
+                                    <field name="pending_invoices_amount" readonly="1" widget="monetary"/>
+                                    <field name="avg_days_on_market" readonly="1"/>
+                                </group>
+                            </group>
+
+                            <!-- Tendencias -->
+                            <separator string="Tendencias vs Período Anterior"/>
+                            <group>
+                                <field name="trend_html" nolabel="1" readonly="1" colspan="2"/>
+                            </group>
+
+                            <!-- Gráficos inline -->
+                            <group col="2">
+                                <group>
+                                    <field name="sales_chart_html" nolabel="1" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="leads_chart_html" nolabel="1" readonly="1"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- ═══ PESTAÑA 2: VENTAS & AVM ═══ -->
+                        <page string="Ventas &amp; AVM" name="tab_sales">
+                            <separator string="Comparativa Precio vs AVM — Propiedades Disponibles"/>
+                            <group>
+                                <field name="avm_comparison_html" nolabel="1" readonly="1" colspan="2"/>
+                            </group>
+                        </page>
+
+                        <!-- ═══ PESTAÑA 3: CRM — EMBUDO ═══ -->
+                        <page string="CRM / Embudo" name="tab_crm">
+                            <separator string="Embudo de Conversión — Período Seleccionado"/>
+                            <group>
+                                <field name="funnel_html" nolabel="1" readonly="1" colspan="2"/>
+                            </group>
+                            <group col="4">
+                                <button string="Ver Leads del Período" type="object"
+                                        name="action_open_funnel_leads" class="btn-primary"
+                                        icon="fa-external-link"/>
+                                <button string="Ver Pagos Vencidos" type="object"
+                                        name="action_open_overdue_payments" class="btn-warning"
+                                        icon="fa-exclamation-circle"/>
+                            </group>
+                        </page>
+
+                        <!-- ═══ PESTAÑA 4: ARRIENDOS ═══ -->
+                        <page string="Arriendos" name="tab_rentals">
+                            <separator string="Ocupación de Propiedades en Arriendo"/>
+                            <group>
+                                <field name="occupancy_html" nolabel="1" readonly="1" colspan="2"/>
+                            </group>
+                        </page>
+
+                        <!-- ═══ PESTAÑA 5: ASESORES ═══ -->
+                        <page string="Asesores" name="tab_advisors">
+                            <separator string="Ranking de Asesores — Mes Actual"/>
+                            <group>
+                                <field name="advisor_ranking_html" nolabel="1" readonly="1" colspan="2"/>
+                            </group>
+                        </page>
+
+                        <!-- ═══ PESTAÑA 6: MAPA ═══ -->
+                        <page string="Mapa" name="tab_map">
+                            <separator string="Distribución Geográfica"/>
+                            <group>
+                                <field name="map_html" nolabel="1" readonly="1" colspan="2"/>
+                            </group>
+                        </page>
+
+                    </notebook>
                 </sheet>
             </form>
         </field>

@@ -536,23 +536,28 @@ class EstateDashboard(models.TransientModel):
 
     @api.model
     def _cron_send_monthly_report(self):
-        """Genera y envía por email un reporte mensual al administrador."""
+        """Genera y envía por email un reporte mensual mejorado con comparativa."""
         from datetime import date, timedelta
+        import logging
 
         today = date.today()
         first_day = today.replace(day=1)
         last_month_last = first_day - timedelta(days=1)
         last_month_first = last_month_last.replace(day=1)
+        # Mes anterior al anterior (para comparativa)
+        prev2_last = last_month_first - timedelta(days=1)
+        prev2_first = prev2_last.replace(day=1)
 
         Property = self.env['estate.property']
         Lead = self.env['crm.lead']
 
-        sold_last_month = Property.search([
+        # ── Datos del mes reportado ──
+        sold_last = Property.search([
             ('state', '=', 'sold'),
             ('date_sold', '>=', last_month_first),
             ('date_sold', '<=', last_month_last),
         ])
-        rented_last_month = Property.search([
+        rented_last = Property.search([
             ('state', '=', 'rented'),
             ('date_sold', '>=', last_month_first),
             ('date_sold', '<=', last_month_last),
@@ -563,93 +568,187 @@ class EstateDashboard(models.TransientModel):
             ('date_closed', '>=', last_month_first),
             ('date_closed', '<=', last_month_last),
         ])
-        lost_leads = Lead.search([
+        lost_leads = Lead.with_context(active_test=False).search([
             ('active', '=', False),
             ('probability', '=', 0),
             ('date_closed', '>=', last_month_first),
             ('date_closed', '<=', last_month_last),
         ])
+        new_leads = Lead.search([
+            ('create_date', '>=', str(last_month_first)),
+            ('create_date', '<=', str(last_month_last) + ' 23:59:59'),
+        ])
+        visits_done = self.env['calendar.event'].search_count([
+            ('property_id', '!=', False),
+            ('visit_state', '=', 'done'),
+            ('start', '>=', str(last_month_first)),
+            ('start', '<=', str(last_month_last) + ' 23:59:59'),
+        ])
 
-        total_commission = sum(sold_last_month.mapped('commission_amount'))
-        total_revenue = sum(sold_last_month.mapped('price'))
+        # ── Datos del mes anterior (comparativa) ──
+        sold_prev = Property.search_count([
+            ('state', '=', 'sold'),
+            ('date_sold', '>=', prev2_first),
+            ('date_sold', '<=', prev2_last),
+        ])
+        new_leads_prev = Lead.search_count([
+            ('create_date', '>=', str(prev2_first)),
+            ('create_date', '<=', str(prev2_last) + ' 23:59:59'),
+        ])
+        prev_rev = sum(Property.search([
+            ('state', '=', 'sold'),
+            ('date_sold', '>=', prev2_first),
+            ('date_sold', '<=', prev2_last),
+        ]).mapped('price'))
+
+        total_commission = sum(sold_last.mapped('commission_amount'))
+        total_revenue = sum(sold_last.mapped('price'))
         month_name = last_month_last.strftime('%B %Y')
 
+        # Variaciones
+        def _var(cur, prev):
+            if not prev:
+                return '+∞' if cur else '—'
+            pct = round((cur - prev) / prev * 100, 1)
+            return f"{'▲' if pct > 0 else '▼'} {abs(pct)}%"
+
+        var_sales = _var(len(sold_last), sold_prev)
+        var_leads = _var(len(new_leads), new_leads_prev)
+        var_rev = _var(total_revenue, prev_rev)
+
+        # Top asesores
         advisor_stats = {}
-        for prop in sold_last_month:
+        for prop in sold_last:
             name = prop.user_id.name or 'Sin asignar'
-            advisor_stats[name] = advisor_stats.get(name, 0) + 1
-        top_advisors = sorted(advisor_stats.items(), key=lambda x: x[1], reverse=True)[:3]
+            if name not in advisor_stats:
+                advisor_stats[name] = {'sales': 0, 'revenue': 0, 'commission': 0}
+            advisor_stats[name]['sales'] += 1
+            advisor_stats[name]['revenue'] += prop.price or 0
+            advisor_stats[name]['commission'] += prop.commission_amount or 0
+        top_advisors = sorted(advisor_stats.items(), key=lambda x: x[1]['sales'], reverse=True)[:5]
+        medals = ['🥇', '🥈', '🥉', '4.', '5.']
 
         advisors_html = ''.join(
-            f'<tr><td style="padding:8px">{i+1}. {n}</td>'
-            f'<td style="padding:8px;text-align:center">{c}</td></tr>'
-            for i, (n, c) in enumerate(top_advisors)
-        ) or '<tr><td colspan="2" style="padding:8px;text-align:center;color:#6b7280">Sin ventas registradas</td></tr>'
+            f'<tr><td style="padding:10px">{medals[i]} {n}</td>'
+            f'<td style="padding:10px;text-align:center;font-weight:bold">{d["sales"]}</td>'
+            f'<td style="padding:10px;text-align:right">${d["revenue"]:,.0f}</td>'
+            f'<td style="padding:10px;text-align:right;color:#16a34a">${d["commission"]:,.0f}</td></tr>'
+            for i, (n, d) in enumerate(top_advisors)
+        ) or '<tr><td colspan="4" style="padding:10px;text-align:center;color:#6b7280">Sin ventas registradas</td></tr>'
 
         properties_html = ''.join(
-            f'<tr>'
-            f'<td style="padding:8px">{p.title}</td>'
+            f'<tr><td style="padding:8px">{p.title}</td>'
             f'<td style="padding:8px">{p.city or "-"}</td>'
-            f'<td style="padding:8px">${p.price:,.2f}</td>'
-            f'<td style="padding:8px">${p.commission_amount:,.2f}</td>'
-            f'</tr>'
-            for p in sold_last_month[:10]
-        ) or '<tr><td colspan="4" style="padding:8px;text-align:center;color:#6b7280">Sin ventas este mes</td></tr>'
+            f'<td style="padding:8px;text-align:right">${p.price:,.0f}</td>'
+            f'<td style="padding:8px;text-align:right;color:#16a34a">${p.commission_amount:,.0f}</td></tr>'
+            for p in sold_last[:10]
+        ) or '<tr><td colspan="4" style="padding:8px;text-align:center;color:#6b7280">Sin ventas</td></tr>'
+
+        # Alertas críticas
+        alerts = []
+        overdue_count = self.env['estate.payment'].search_count([
+            ('state', '=', 'pending'), ('date', '<', today)])
+        if overdue_count:
+            alerts.append(f'⚠️ {overdue_count} pagos vencidos pendientes')
+        expiring = Property.search_count([
+            ('contract_end_date', '!=', False),
+            ('contract_end_date', '<=', today + timedelta(days=30)),
+            ('state', 'in', ('rented', 'reserved')),
+        ])
+        if expiring:
+            alerts.append(f'📄 {expiring} contratos vencen en 30 días')
+        hot_stale = Lead.search_count([
+            ('lead_temperature', 'in', ['hot', 'boiling']),
+            ('write_date', '<=', str(fields.Datetime.now() - timedelta(days=7))),
+            ('type', '=', 'opportunity'),
+        ])
+        if hot_stale:
+            alerts.append(f'🔥 {hot_stale} leads calientes sin actividad en 7+ días')
+
+        alerts_html = ''
+        if alerts:
+            alerts_items = ''.join(f'<li style="padding:4px 0;">{a}</li>' for a in alerts)
+            alerts_html = f'''
+            <div style="background:#fef2f2;border-left:4px solid #dc2626;padding:16px;border-radius:0 8px 8px 0;margin-bottom:24px;">
+                <div style="font-weight:bold;color:#dc2626;margin-bottom:8px;">Alertas Críticas</div>
+                <ul style="margin:0;padding-left:20px;color:#374151;">{alerts_items}</ul>
+            </div>'''
 
         html_body = f"""
-        <div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;">
-            <div style="background:#1a56db;color:white;padding:24px;border-radius:8px 8px 0 0;">
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;">
+            <div style="background:linear-gradient(135deg,#1a56db,#2E5AAC);color:white;padding:28px;border-radius:12px 12px 0 0;">
                 <h1 style="margin:0;font-size:24px;">📊 Reporte Mensual Inmobiliario</h1>
-                <p style="margin:8px 0 0;opacity:.85;">{month_name}</p>
+                <p style="margin:8px 0 0;opacity:.85;font-size:16px;">{month_name}</p>
             </div>
-            <div style="background:#f8f9fa;padding:24px;border-radius:0 0 8px 8px;">
+            <div style="background:#f8f9fa;padding:24px;border-radius:0 0 12px 12px;">
+
+                {alerts_html}
+
+                <!-- KPIs principales -->
                 <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
                     <tr>
-                        <td style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
-                            <div style="font-size:32px;font-weight:bold;color:#16a34a;">{len(sold_last_month)}</div>
-                            <div style="color:#6b7280;">Propiedades Vendidas</div>
+                        <td style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;border-radius:8px;">
+                            <div style="font-size:32px;font-weight:bold;color:#16a34a;">{len(sold_last)}</div>
+                            <div style="color:#6b7280;font-size:13px;">Vendidas</div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:4px;">{var_sales}</div>
                         </td>
                         <td style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
-                            <div style="font-size:32px;font-weight:bold;color:#2563eb;">{len(rented_last_month)}</div>
-                            <div style="color:#6b7280;">Alquiladas</div>
+                            <div style="font-size:32px;font-weight:bold;color:#2563eb;">{len(rented_last)}</div>
+                            <div style="color:#6b7280;font-size:13px;">Alquiladas</div>
                         </td>
                         <td style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
-                            <div style="font-size:32px;font-weight:bold;color:#7c3aed;">{len(won_leads)}</div>
-                            <div style="color:#6b7280;">Leads Ganados</div>
+                            <div style="font-size:32px;font-weight:bold;color:#8b5cf6;">{len(new_leads)}</div>
+                            <div style="color:#6b7280;font-size:13px;">Leads Nuevos</div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:4px;">{var_leads}</div>
                         </td>
                         <td style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
-                            <div style="font-size:32px;font-weight:bold;color:#dc2626;">{len(lost_leads)}</div>
-                            <div style="color:#6b7280;">Leads Perdidos</div>
+                            <div style="font-size:32px;font-weight:bold;color:#f59e0b;">{visits_done}</div>
+                            <div style="color:#6b7280;font-size:13px;">Visitas</div>
                         </td>
                     </tr>
                     <tr>
                         <td colspan="2" style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
-                            <div style="font-size:24px;font-weight:bold;color:#16a34a;">${total_revenue:,.2f}</div>
-                            <div style="color:#6b7280;">Ingresos por Ventas</div>
+                            <div style="font-size:24px;font-weight:bold;color:#16a34a;">${total_revenue:,.0f}</div>
+                            <div style="color:#6b7280;font-size:13px;">Ingresos por Ventas</div>
+                            <div style="font-size:12px;color:#6b7280;margin-top:4px;">{var_rev}</div>
                         </td>
                         <td colspan="2" style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
-                            <div style="font-size:24px;font-weight:bold;color:#d97706;">${total_commission:,.2f}</div>
-                            <div style="color:#6b7280;">Comisiones Generadas</div>
+                            <div style="font-size:24px;font-weight:bold;color:#d97706;">${total_commission:,.0f}</div>
+                            <div style="color:#6b7280;font-size:13px;">Comisiones</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
+                            <div style="font-size:24px;font-weight:bold;color:#16a34a;">{len(won_leads)}</div>
+                            <div style="color:#6b7280;font-size:13px;">Leads Ganados</div>
+                        </td>
+                        <td colspan="2" style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
+                            <div style="font-size:24px;font-weight:bold;color:#dc2626;">{len(lost_leads)}</div>
+                            <div style="color:#6b7280;font-size:13px;">Leads Perdidos</div>
                         </td>
                     </tr>
                 </table>
 
-                <h2 style="color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px;">Top 3 Asesores</h2>
-                <table style="width:100%;border-collapse:collapse;background:white;margin-bottom:24px;">
+                <!-- Top Asesores -->
+                <h2 style="color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px;">Top Asesores</h2>
+                <table style="width:100%;border-collapse:collapse;background:white;margin-bottom:24px;border-radius:8px;overflow:hidden;">
                     <thead><tr style="background:#1a56db;color:white;">
                         <th style="padding:10px;text-align:left;">Asesor</th>
                         <th style="padding:10px;text-align:center;">Ventas</th>
+                        <th style="padding:10px;text-align:right;">Ingresos</th>
+                        <th style="padding:10px;text-align:right;">Comisión</th>
                     </tr></thead>
                     <tbody>{advisors_html}</tbody>
                 </table>
 
+                <!-- Propiedades Vendidas -->
                 <h2 style="color:#1a56db;border-bottom:2px solid #1a56db;padding-bottom:8px;">Propiedades Vendidas</h2>
-                <table style="width:100%;border-collapse:collapse;background:white;margin-bottom:24px;">
+                <table style="width:100%;border-collapse:collapse;background:white;margin-bottom:24px;border-radius:8px;overflow:hidden;">
                     <thead><tr style="background:#1a56db;color:white;">
                         <th style="padding:10px;text-align:left;">Propiedad</th>
                         <th style="padding:10px;">Ciudad</th>
-                        <th style="padding:10px;">Precio</th>
-                        <th style="padding:10px;">Comisión</th>
+                        <th style="padding:10px;text-align:right;">Precio</th>
+                        <th style="padding:10px;text-align:right;">Comisión</th>
                     </tr></thead>
                     <tbody>{properties_html}</tbody>
                 </table>
@@ -676,7 +775,6 @@ class EstateDashboard(models.TransientModel):
                 'auto_delete': True,
             }).send()
 
-        import logging
         logging.getLogger(__name__).info(
             "Reporte mensual enviado para %s a %d destinatarios.", month_name, len(admins))
 

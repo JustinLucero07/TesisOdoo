@@ -24,6 +24,9 @@ class EstateReportWizard(models.TransientModel):
         ('agent_commissions', ' Desempeño y Comisiones de Asesores'),
         ('geographic_avm', '️ Análisis Geográfico y Mercado (AVM)'),
         ('marketing_roi', ' Retorno de Marketing (Origen Leads)'),
+        ('conversion_funnel', ' Embudo de Conversión'),
+        ('advisor_portfolio', ' Cartera por Asesor'),
+        ('occupancy_report', ' Ocupación de Arriendos'),
     ], string='Tipo de Reporte', required=True, default='available_properties')
 
     date_from = fields.Date(string='Desde')
@@ -136,6 +139,22 @@ class EstateReportWizard(models.TransientModel):
             records = self.env['crm.lead'].search(domain, order='source_id')
             data['records'] = records
             data['title'] = 'Retorno de Marketing (Orígenes)'
+
+        elif self.report_type == 'conversion_funnel':
+            data['title'] = 'Embudo de Conversión'
+            data['records'] = self.env['crm.lead']  # placeholder
+
+        elif self.report_type == 'advisor_portfolio':
+            data['title'] = 'Cartera por Asesor'
+            data['records'] = self.env['res.users'].search([
+                ('groups_id', 'in', [self.env.ref('estate_management.estate_group_agent', raise_if_not_found=False).id or 0])
+            ])
+
+        elif self.report_type == 'occupancy_report':
+            data['title'] = 'Ocupación de Arriendos'
+            data['records'] = self.env['estate.contract'].search([
+                ('contract_type', '=', 'rent'),
+            ], order='property_id')
 
         return data
 
@@ -649,6 +668,147 @@ class EstateReportWizard(models.TransientModel):
                 conversion = stats['won'] / stats['total'] if stats['total'] > 0 else 0
                 ws.write(row, 3, conversion, workbook.add_format({'border': 1, 'align': 'center', 'num_format': '0.0%'}))
                 ws.write(row, 4, stats['revenue'], money_fmt)
+                row += 1
+
+        # ==============================
+        # EMBUDO DE CONVERSIÓN
+        # ==============================
+        elif self.report_type == 'conversion_funnel':
+            Lead = self.env['crm.lead']
+            date_domain = []
+            if self.date_from:
+                date_domain.append(('create_date', '>=', self.date_from))
+            if self.date_to:
+                date_domain.append(('create_date', '<=', fields.Date.to_date(self.date_to) + timedelta(days=1)))
+
+            total_leads = Lead.search_count(date_domain)
+            visits_done = self.env['calendar.event'].search_count([
+                ('property_id', '!=', False), ('visit_state', '=', 'done'),
+            ] + ([('start', '>=', self.date_from)] if self.date_from else [])
+              + ([('start', '<=', fields.Date.to_date(self.date_to) + timedelta(days=1))] if self.date_to else []))
+            offers = self.env['estate.property.offer'].search_count(
+                [('create_date', '>=', self.date_from)] if self.date_from else [])
+            won = Lead.search_count(date_domain + [('stage_id.is_won', '=', True)])
+            lost = Lead.with_context(active_test=False).search_count(
+                date_domain + [('active', '=', False), ('probability', '=', 0)])
+
+            headers = ['Etapa del Embudo', 'Cantidad', '% del Total', '% Conversión a Siguiente']
+            col_count = len(headers)
+            ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
+            for col, h in enumerate(headers):
+                ws.write(row, col, h, header_fmt)
+            row += 1
+
+            funnel = [
+                ('Leads Nuevos', total_leads),
+                ('Visitas Realizadas', visits_done),
+                ('Ofertas Recibidas', offers),
+                ('Cerrados (Ganados)', won),
+                ('Perdidos', lost),
+            ]
+            pct_fmt = workbook.add_format({'border': 1, 'align': 'center', 'num_format': '0.0%'})
+            for i, (stage, count) in enumerate(funnel):
+                ws.write(row, 0, stage, cell_fmt)
+                ws.write(row, 1, count, number_fmt)
+                ws.write(row, 2, count / total_leads if total_leads else 0, pct_fmt)
+                if i < len(funnel) - 2 and funnel[i][1]:
+                    ws.write(row, 3, funnel[i + 1][1] / funnel[i][1], pct_fmt)
+                row += 1
+
+            # Funnel chart
+            chart_ws = workbook.add_worksheet('Gráfico Embudo')
+            for i, (stage, count) in enumerate(funnel[:4]):
+                chart_ws.write(i, 0, stage, cell_fmt)
+                chart_ws.write(i, 1, count, number_fmt)
+            chart = workbook.add_chart({'type': 'bar'})
+            chart.add_series({
+                'categories': ['Gráfico Embudo', 0, 0, 3, 0],
+                'values': ['Gráfico Embudo', 0, 1, 3, 1],
+                'fill': {'color': '#3b82f6'},
+            })
+            chart.set_title({'name': 'Embudo de Conversión'})
+            chart.set_size({'width': 600, 'height': 400})
+            chart.set_y_axis({'reverse': True})
+            chart_ws.insert_chart('D1', chart)
+
+        # ==============================
+        # CARTERA POR ASESOR
+        # ==============================
+        elif self.report_type == 'advisor_portfolio':
+            headers = ['Asesor', 'Propiedades Asignadas', 'Disponibles', 'Vendidas',
+                       'Leads Activos', 'Visitas (Mes)', 'Comisiones ($)', 'Ingresos ($)']
+            col_count = len(headers)
+            ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
+            for col, h in enumerate(headers):
+                ws.write(row, col, h, header_fmt)
+            row += 1
+
+            today = fields.Date.today()
+            first_day = today.replace(day=1)
+            Property = self.env['estate.property']
+            Lead = self.env['crm.lead']
+
+            users = data['records']
+            if not users:
+                users = self.env['res.users'].search([('share', '=', False)])
+
+            for user in users:
+                total_props = Property.search_count([('user_id', '=', user.id)])
+                avail = Property.search_count([('user_id', '=', user.id), ('state', '=', 'available')])
+                sold = Property.search_count([('user_id', '=', user.id), ('state', '=', 'sold')])
+                leads = Lead.search_count([('user_id', '=', user.id), ('type', '=', 'opportunity'),
+                                           ('probability', '>', 0), ('probability', '<', 100)])
+                visits = self.env['calendar.event'].search_count([
+                    ('user_id', '=', user.id), ('property_id', '!=', False),
+                    ('visit_state', '=', 'done'), ('start', '>=', first_day)])
+                sold_props = Property.search([('user_id', '=', user.id), ('state', '=', 'sold'),
+                                              ('date_sold', '>=', first_day)])
+                commissions = sum(sold_props.mapped('commission_amount'))
+                revenue = sum(sold_props.mapped('price'))
+
+                if total_props or leads:  # only show advisors with activity
+                    ws.write(row, 0, user.name, cell_fmt)
+                    ws.write(row, 1, total_props, number_fmt)
+                    ws.write(row, 2, avail, number_fmt)
+                    ws.write(row, 3, sold, number_fmt)
+                    ws.write(row, 4, leads, number_fmt)
+                    ws.write(row, 5, visits, number_fmt)
+                    ws.write(row, 6, commissions, money_fmt)
+                    ws.write(row, 7, revenue, money_fmt)
+                    row += 1
+
+        # ==============================
+        # OCUPACIÓN DE ARRIENDOS
+        # ==============================
+        elif self.report_type == 'occupancy_report':
+            headers = ['Propiedad', 'Ciudad', 'Estado', 'Inquilino', 'Renta Mensual',
+                       'Inicio Contrato', 'Fin Contrato', 'Días Restantes']
+            col_count = len(headers)
+            ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
+            for col, h in enumerate(headers):
+                ws.write(row, col, h, header_fmt)
+            row += 1
+
+            today = fields.Date.today()
+            green_fmt = workbook.add_format({'border': 1, 'bg_color': '#dcfce7', 'align': 'center'})
+            red_fmt = workbook.add_format({'border': 1, 'bg_color': '#fee2e2', 'align': 'center'})
+            yellow_fmt = workbook.add_format({'border': 1, 'bg_color': '#fef9c3', 'align': 'center'})
+
+            for contract in data['records']:
+                prop = contract.property_id
+                state = 'Ocupada' if prop.state == 'rented' else 'Vacante'
+                state_fmt = green_fmt if prop.state == 'rented' else red_fmt
+                days_left = (contract.date_end - today).days if contract.date_end else 0
+                days_fmt = red_fmt if days_left < 30 else (yellow_fmt if days_left < 60 else cell_fmt)
+
+                ws.write(row, 0, prop.title if prop else '-', cell_fmt)
+                ws.write(row, 1, prop.city or '-', cell_fmt)
+                ws.write(row, 2, state, state_fmt)
+                ws.write(row, 3, contract.partner_id.name if contract.partner_id else '-', cell_fmt)
+                ws.write(row, 4, contract.amount, money_fmt)
+                ws.write(row, 5, str(contract.date_start) if contract.date_start else '-', date_fmt)
+                ws.write(row, 6, str(contract.date_end) if contract.date_end else '-', date_fmt)
+                ws.write(row, 7, max(days_left, 0), days_fmt)
                 row += 1
 
         # --- Auto-size columns ---
