@@ -1,4 +1,5 @@
 import base64
+import json
 import logging
 import requests
 
@@ -26,45 +27,141 @@ class EstatePropertyPublish(models.Model):
             'ig_account_id': ICP.get_param('estate_social.instagram_account_id', ''),
         }
 
+    @staticmethod
+    def _decode_image(binary_val):
+        """
+        Devuelve (raw_bytes, mime_type, extension).
+        En Odoo 19 los campos Binary devuelven bytes que contienen base64.
+        Detecta si la imagen es PNG o JPEG por los magic bytes.
+        """
+        raw = base64.b64decode(binary_val)
+        if raw[:8] == b'\x89PNG\r\n\x1a\n':
+            return raw, 'image/png', 'png'
+        if raw[:2] == b'\xff\xd8':
+            return raw, 'image/jpeg', 'jpg'
+        if raw[:6] in (b'GIF87a', b'GIF89a'):
+            return raw, 'image/gif', 'gif'
+        if raw[:4] == b'RIFF' and raw[8:12] == b'WEBP':
+            return raw, 'image/webp', 'webp'
+        # Fallback: JPEG
+        return raw, 'image/jpeg', 'jpg'
+
     def action_publish_facebook(self):
-        """Publica la propiedad como foto en la página de Facebook via Graph API."""
+        """
+        Publica la propiedad en la página de Facebook via Graph API.
+
+        Lógica de imágenes:
+          - Varias imágenes (main + galería): álbum — sube cada foto con
+            published=false y luego crea el post con todas adjuntas.
+          - Solo image_main: sube esa foto directamente con la descripción.
+          - Sin imágenes: publica texto + link de WordPress.
+        """
         self.ensure_one()
         cfg = self._get_meta_config()
         if not cfg['page_id'] or not cfg['page_token']:
             raise UserError('Configura el Page ID y Page Token de Facebook en Ajustes → Redes Sociales.')
 
         caption = self._get_share_text()
-        ICP = self.env['ir.config_parameter'].sudo()
-        wp_url = ICP.get_param('estate_wp.url', '')
-        link = f"{wp_url.rstrip('/')}/?p={self.wp_post_id}" if (self.wp_post_id and wp_url) else ''
+        page_id = cfg['page_id']
+        token   = cfg['page_token']
 
-        post_data = {
-            'message': caption,
-            'access_token': cfg['page_token'],
-        }
-        if link:
-            post_data['link'] = link
+        # ── Recopilar imágenes (máximo 10) ────────────────────────────────────
+        raw_images = []
+        if self.image_main:
+            raw_images.append(self.image_main)
+        for img_rec in self.image_ids[:9]:
+            if img_rec.image:
+                raw_images.append(img_rec.image)
 
         try:
-            # Con Page Access Token se puede usar "me" directamente
-            resp = requests.post(
-                f'https://graph.facebook.com/{META_API_VERSION}/me/feed',
-                data=post_data,
-                timeout=30,
-            )
+            if len(raw_images) > 1:
+                # ── Álbum: subir cada foto sin publicar, luego crear el post ──
+                photo_ids = []
+                for idx, img_b64 in enumerate(raw_images):
+                    img_bytes, mime, ext = self._decode_image(img_b64)
+                    resp = requests.post(
+                        f'https://graph.facebook.com/{META_API_VERSION}/{page_id}/photos',
+                        data={'published': 'false', 'access_token': token},
+                        files={'source': (f'propiedad_{idx+1}.{ext}', img_bytes, mime)},
+                        timeout=60,
+                    )
+                    r = resp.json()
+                    if resp.status_code in (200, 201) and r.get('id'):
+                        photo_ids.append(r['id'])
+                    else:
+                        _logger.warning('FB foto %d error (%s): %s', idx + 1, resp.status_code, r)
+
+                if not photo_ids:
+                    raise UserError('No se pudieron subir las imágenes a Facebook. Revisa el token de la página.')
+
+                attached = {
+                    f'attached_media[{i}]': json.dumps({'media_fbid': pid})
+                    for i, pid in enumerate(photo_ids)
+                }
+                resp_post = requests.post(
+                    f'https://graph.facebook.com/{META_API_VERSION}/{page_id}/feed',
+                    data={'message': caption, 'access_token': token, **attached},
+                    timeout=30,
+                )
+                result = resp_post.json()
+                post_id = result.get('id')
+
+            elif len(raw_images) == 1:
+                # ── Una foto: subir sin publicar y crear el post en el feed ────
+                img_bytes, mime, ext = self._decode_image(raw_images[0])
+                resp = requests.post(
+                    f'https://graph.facebook.com/{META_API_VERSION}/{page_id}/photos',
+                    data={'published': 'false', 'access_token': token},
+                    files={'source': (f'propiedad.{ext}', img_bytes, mime)},
+                    timeout=60,
+                )
+                r = resp.json()
+                if resp.status_code not in (200, 201) or not r.get('id'):
+                    err = r.get('error', {}).get('message', str(r))
+                    raise UserError(f'No se pudo subir la imagen a Facebook: {err}')
+                resp_post = requests.post(
+                    f'https://graph.facebook.com/{META_API_VERSION}/{page_id}/feed',
+                    data={
+                        'message': caption,
+                        'access_token': token,
+                        'attached_media[0]': json.dumps({'media_fbid': r['id']}),
+                    },
+                    timeout=30,
+                )
+                result = resp_post.json()
+                post_id = result.get('id')
+
+            else:
+                # ── Sin imágenes: texto + link ─────────────────────────────────
+                ICP = self.env['ir.config_parameter'].sudo()
+                wp_url = ICP.get_param('estate_wp.url', '')
+                link = f"{wp_url.rstrip('/')}/?p={self.wp_post_id}" if (self.wp_post_id and wp_url) else ''
+                post_data = {'message': caption, 'access_token': token}
+                if link:
+                    post_data['link'] = link
+                resp = requests.post(
+                    f'https://graph.facebook.com/{META_API_VERSION}/{page_id}/feed',
+                    data=post_data, timeout=30,
+                )
+                result = resp.json()
+                post_id = result.get('id')
+
+        except UserError:
+            raise
         except Exception as e:
             raise UserError(f'Error de conexión con Facebook: {e}')
 
-        result = resp.json()
-        if resp.status_code == 200 and result.get('id'):
-            self.write({'fb_post_id': result['id'], 'fb_published': True})
-            self.message_post(body=f'Propiedad publicada en Facebook. Post ID: <b>{result["id"]}</b>')
+        if post_id:
+            self.write({'fb_post_id': post_id, 'fb_published': True})
+            n = len(raw_images)
+            img_txt = f' con {n} imagen{"es" if n > 1 else ""}' if n else ''
+            self.message_post(body=f'Publicado en Facebook{img_txt}. Post ID: <b>{post_id}</b>')
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Facebook',
-                    'message': 'Propiedad publicada correctamente en tu página de Facebook.',
+                    'message': f'Propiedad publicada en Facebook{img_txt}.',
                     'type': 'success',
                 },
             }

@@ -20,6 +20,13 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='estate_calendar.whatsapp_template_name',
         default='recordatorio_cita',
         help='Nombre exacto de la plantilla aprobada en Meta (ej: recordatorio_cita)')
+    whatsapp_contract_template = fields.Char(
+        string='Plantilla Contratos',
+        config_parameter='estate_management.whatsapp_contract_template',
+        default='recordatorio_contrato',
+        help='Nombre exacto de la plantilla en Meta para recordatorios de vencimiento de contratos. '
+             'Parámetros: {{1}} destinatario, {{2}} propiedad, {{3}} fecha vencimiento, {{4}} días restantes.')
+
     whatsapp_business_number = fields.Char(
         string='Número WhatsApp Business',
         config_parameter='estate_social.whatsapp_business_number',

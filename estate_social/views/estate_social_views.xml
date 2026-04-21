@@ -18,6 +18,11 @@
                                         type="object" class="btn btn-primary"
                                         confirm="¿Publicar esta propiedad en tu página de Facebook?"
                                         invisible="fb_published"/>
+                                <button name="action_publish_facebook"
+                                        string="🔄 Re-publicar en Facebook"
+                                        type="object" class="btn btn-outline-primary"
+                                        confirm="¿Crear una nueva publicación en Facebook? La publicación anterior seguirá en tu página."
+                                        invisible="not fb_published"/>
                                 <button name="action_unpublish_facebook"
                                         string="🗑️ Eliminar de Facebook"
                                         type="object" class="btn btn-outline-danger"

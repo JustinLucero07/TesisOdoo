@@ -118,7 +118,7 @@
                                     <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Área Total (m²)</td>
                                     <t t-foreach="props" t-as="prop">
                                         <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
-                                            <t t-out="'{:,.0f}'.format(prop.total_area or 0)"/>
+                                            <t t-out="'{:,.0f}'.format(prop.area or 0)"/>
                                         </td>
                                     </t>
                                 </tr>
@@ -136,8 +136,8 @@
                                     <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Precio / m²</td>
                                     <t t-foreach="props" t-as="prop">
                                         <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
-                                            <t t-if="prop.total_area and prop.total_area > 0">
-                                                $<t t-out="'{:,.2f}'.format(prop.price / prop.total_area)"/>
+                                            <t t-if="prop.area and prop.area > 0">
+                                                $<t t-out="'{:,.2f}'.format(prop.price / prop.area)"/>
                                             </t>
                                             <t t-else="">—</t>
                                         </td>

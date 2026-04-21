@@ -219,16 +219,13 @@ class EstateReportWizard(models.TransientModel):
         sheet_name = data['title'][:31]
         ws = workbook.add_worksheet(sheet_name)
 
-        # --- Title ---
+        # --- Title and subtitle merged per section below ---
         col_count = 7
-        ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
         date_info = ''
         if self.date_from:
             date_info += f"Desde: {self.date_from.strftime('%d/%m/%Y')}"
         if self.date_to:
             date_info += f"  Hasta: {self.date_to.strftime('%d/%m/%Y')}"
-        if date_info:
-            ws.merge_range(1, 0, 1, col_count - 1, date_info, subtitle_fmt)
 
         row = 3
 
@@ -238,6 +235,7 @@ class EstateReportWizard(models.TransientModel):
         if self.report_type == 'available_properties':
             headers = ['Ref.', 'Título', 'Tipo', 'Ciudad', 'Precio', 'Área (m²)', 'Habitaciones']
             col_count = len(headers)
+            ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
             for col, h in enumerate(headers):
                 ws.write(row, col, h, header_fmt)
             row += 1

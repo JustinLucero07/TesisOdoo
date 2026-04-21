@@ -24,9 +24,14 @@
                             <field name="whatsapp_access_token" password="True" placeholder="EAAx..."/>
                         </setting>
                         <setting id="whatsapp_template_name_setting"
-                                 string="Nombre de Plantilla"
-                                 help="Nombre exacto de la plantilla aprobada en Meta (ej: recordatorio_cita). Debe tener 4 parámetros: cita, hora, cliente, propiedad.">
+                                 string="Plantilla — Citas"
+                                 help="Nombre exacto de la plantilla aprobada en Meta para recordatorios de citas. Parámetros: {{1}} cita, {{2}} hora, {{3}} cliente, {{4}} propiedad.">
                             <field name="whatsapp_template_name" placeholder="recordatorio_cita"/>
+                        </setting>
+                        <setting id="whatsapp_contract_template_setting"
+                                 string="Plantilla — Contratos"
+                                 help="Nombre exacto de la plantilla aprobada en Meta para recordatorios de vencimiento de contratos. Parámetros: {{1}} destinatario, {{2}} propiedad, {{3}} fecha vencimiento, {{4}} días restantes.">
+                            <field name="whatsapp_contract_template" placeholder="recordatorio_contrato"/>
                         </setting>
                     </block>
                     <block title="WhatsApp Business — Redes Sociales" name="whatsapp_social_settings">

@@ -64,7 +64,7 @@
                                     <t t-out="lead.user_id.name or '—'"/>
                                 </div>
                                 <div style="margin-top: 4px;"><t t-out="lead.user_id.email or ''"/></div>
-                                <div><t t-out="lead.user_id.partner_id.mobile or lead.user_id.partner_id.phone or ''"/></div>
+                                <div><t t-out="(lead.user_id.partner_id.mobile or lead.user_id.partner_id.phone or '') if lead.user_id.partner_id else ''"/></div>
                                 <div style="margin-top: 6px; font-weight: 600;"><t t-out="company.name"/></div>
                             </div>
                         </div>
@@ -93,7 +93,7 @@
                                 </tr>
                                 <tr>
                                     <td style="background: #f8f9fa;"><strong>Área Total</strong></td>
-                                    <td><t t-out="'{:,.0f}'.format(prop.total_area or 0)"/> m²</td>
+                                    <td><t t-out="'{:,.0f}'.format(prop.area or 0)"/> m²</td>
                                 </tr>
                                 <t t-if="prop.bedrooms">
                                     <tr>

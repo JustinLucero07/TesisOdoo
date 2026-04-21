@@ -12,4 +12,10 @@
               parent="estate_menu_calendar_visits_root"
               action="estate_appointment_done_action"
               sequence="20"/>
+
+    <menuitem id="estate_menu_print_weekly"
+              name="Imprimir Agenda Semanal"
+              parent="estate_menu_calendar_visits_root"
+              action="action_calendar_print_wizard"
+              sequence="30"/>
 </odoo>

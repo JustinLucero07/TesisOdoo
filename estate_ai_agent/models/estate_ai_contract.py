@@ -69,9 +69,9 @@ INSTRUCCIONES DE FORMATO:
 
         try:
             # Use configured model with fallback
-            model_name = ICP.get_param('estate_ai.model', 'gemini-flash-latest')
-            if not model_name or model_name in ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-pro']:
-                model_name = 'gemini-flash-latest'
+            model_name = ICP.get_param('estate_ai.model', 'gemini-2.5-flash')
+            if not model_name or model_name in ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-pro', 'gemini-flash-latest']:
+                model_name = 'gemini-2.5-flash'
             
             if model_name.startswith('models/'):
                 model_name = model_name.replace('models/', '')

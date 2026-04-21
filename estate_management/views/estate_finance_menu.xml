@@ -77,13 +77,6 @@
                   action="estate_expense_action"
                   sequence="30"/>
 
-        <!-- Facturas -->
-        <menuitem id="estate_menu_finance_invoices"
-                  name="Facturas"
-                  parent="estate_menu_finance_root"
-                  action="estate_invoices_action"
-                  sequence="40"/>
-
         <!-- Comisiones -->
         <menuitem id="estate_menu_finance_commissions"
                   name="Comisiones"

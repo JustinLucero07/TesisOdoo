@@ -202,7 +202,12 @@
       "Bash(ls /home/justin/Documentos/Tesis/*.md /home/justin/Documentos/Tesis/*.py)",
       "Bash(ls /home/justin/Documentos/Tesis/*.md /home/justin/Documentos/Tesis/*.py /home/justin/Documentos/Tesis/estate_*/*.md)",
       "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf -d tesis_odoo19 -u estate_crm --stop-after-init)",
-      "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf -d tesis_odoo19 -u estate_crm,estate_calendar --stop-after-init)"
+      "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf -d tesis_odoo19 -u estate_crm,estate_calendar --stop-after-init)",
+      "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf -d tesis_odoo19 -u estate_social --stop-after-init)",
+      "Bash(curl -s http://localhost:8070/web/health)",
+      "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c odoo19.conf -d tesis_odoo19 -u estate_social --stop-after-init)",
+      "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf -d tesis_odoo19 -u estate_ai_agent --stop-after-init)",
+      "Bash(python /home/justin/Documentos/odoo19/odoo-bin:*)"
     ],
     "additionalDirectories": [
       "/tmp",

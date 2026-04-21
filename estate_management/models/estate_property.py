@@ -1,8 +1,12 @@
+import logging
 import qrcode
 import base64
+import requests
 from io import BytesIO
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 class EstateProperty(models.Model):
@@ -10,12 +14,25 @@ class EstateProperty(models.Model):
     _description = 'Propiedad Inmobiliaria'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'create_date desc'
+    _rec_name = 'title'
 
     name = fields.Char(
         string='Referencia', readonly=True, copy=False,
         default='Nuevo')
     title = fields.Char(string='Título', required=True, tracking=True)
     description = fields.Html(string='Descripción')
+
+    def name_get(self):
+        return [(rec.id, f"{rec.title} [{rec.name}]" if rec.name and rec.name != 'Nuevo' else rec.title or 'Nuevo')
+                for rec in self]
+
+    @api.model
+    def _name_search(self, name='', domain=None, operator='ilike', limit=100, order=None):
+        """Permite buscar por título o por referencia (PROP-0039)."""
+        domain = domain or []
+        if name:
+            domain = ['|', ('title', operator, name), ('name', operator, name)] + domain
+        return self._search(domain, limit=limit, order=order)
     property_type_id = fields.Many2one(
         'estate.property.type', string='Tipo de Propiedad',
         required=True, tracking=True)
@@ -902,17 +919,75 @@ class EstateProperty(models.Model):
         }
 
     # --- Cron: Recordatorio de Contratos ---
+    def _clean_phone(self, phone):
+        """Normaliza número a formato internacional sin + (ej: 593981112222)."""
+        clean = phone.replace(' ', '').replace('-', '').replace('+', '').replace('(', '').replace(')', '')
+        if clean.startswith('0') and len(clean) == 10:
+            clean = '593' + clean[1:]
+        elif not clean.startswith('593'):
+            clean = '593' + clean
+        return clean
+
+    def _send_contract_whatsapp_template(self, phone, prop_title, fecha_vencimiento, dias_restantes, destinatario):
+        """Envía recordatorio de contrato por WhatsApp con plantilla aprobada de Meta.
+        Plantilla: recordatorio_contrato
+        Parámetros: {{1}} destinatario, {{2}} propiedad, {{3}} fecha, {{4}} días restantes.
+        """
+        ICP = self.env['ir.config_parameter'].sudo()
+        phone_number_id = ICP.get_param('estate_calendar.whatsapp_phone_number_id', '')
+        access_token = ICP.get_param('estate_calendar.whatsapp_access_token', '')
+        template_name = ICP.get_param('estate_management.whatsapp_contract_template', 'recordatorio_contrato')
+        if not phone_number_id or not access_token or not phone:
+            return False
+        clean = self._clean_phone(phone)
+        try:
+            resp = requests.post(
+                f'https://graph.facebook.com/v25.0/{phone_number_id}/messages',
+                json={
+                    'messaging_product': 'whatsapp',
+                    'to': clean,
+                    'type': 'template',
+                    'template': {
+                        'name': template_name,
+                        'language': {'code': 'es'},
+                        'components': [{
+                            'type': 'body',
+                            'parameters': [
+                                {'type': 'text', 'text': destinatario},
+                                {'type': 'text', 'text': prop_title},
+                                {'type': 'text', 'text': fecha_vencimiento},
+                                {'type': 'text', 'text': str(dias_restantes)},
+                            ],
+                        }],
+                    },
+                },
+                headers={
+                    'Authorization': f'Bearer {access_token}',
+                    'Content-Type': 'application/json',
+                },
+                timeout=30,
+            )
+            if resp.status_code == 200:
+                _logger.info('WhatsApp contrato (plantilla) enviado a %s', clean)
+                return True
+            _logger.warning('WhatsApp contrato falló (%s): %s', resp.status_code, resp.text[:300])
+            return False
+        except Exception as e:
+            _logger.error('WhatsApp contrato error: %s', e)
+            return False
+
     @api.model
     def _cron_check_contract_expiry(self):
-        """Revisa contratos próximos a vencer y crea actividades de recordatorio."""
+        """Revisa contratos próximos a vencer: crea actividades + envía WhatsApp."""
         today = fields.Date.today()
         properties = self.search([
             ('contract_end_date', '!=', False),
             ('state', 'in', ['available', 'reserved', 'rented']),
         ])
-        activity_type = self.env.ref('mail.mail_activity_data_todo', raise_if_not_found=False)
         for prop in properties:
             days_left = (prop.contract_end_date - today).days
+            fecha_str = prop.contract_end_date.strftime('%d/%m/%Y')
+
             if 0 < days_left <= prop.contract_reminder_days:
                 existing = self.env['mail.activity'].search([
                     ('res_model', '=', 'estate.property'),
@@ -920,27 +995,46 @@ class EstateProperty(models.Model):
                     ('summary', 'ilike', 'Contrato por vencer'),
                 ], limit=1)
                 if not existing:
+                    # Actividad en Odoo
                     prop.activity_schedule(
                         'mail.mail_activity_data_todo',
                         date_deadline=prop.contract_end_date,
                         summary=f'⚠️ Contrato por vencer ({days_left} días)',
-                        note=f'El contrato de la propiedad "{prop.title}" vence el {prop.contract_end_date}. Quedan {days_left} días.',
+                        note=f'El contrato de la propiedad "{prop.title}" vence el {fecha_str}. Quedan {days_left} días.',
                         user_id=prop.user_id.id or self.env.uid,
                     )
+                    # WhatsApp al asesor (plantilla Meta)
+                    advisor = prop.user_id
+                    if advisor and advisor.partner_id.mobile:
+                        self._send_contract_whatsapp_template(
+                            advisor.partner_id.mobile,
+                            prop.title, fecha_str, days_left,
+                            advisor.name,
+                        )
+
             elif days_left <= 0:
                 existing = self.env['mail.activity'].search([
                     ('res_model', '=', 'estate.property'),
                     ('res_id', '=', prop.id),
-                    ('summary', 'ilike', 'Contrato por vencer'),
+                    ('summary', 'ilike', 'VENCIDO'),
                 ], limit=1)
                 if not existing:
+                    # Actividad en Odoo
                     prop.activity_schedule(
                         'mail.mail_activity_data_todo',
                         date_deadline=today,
-                        summary=' ¡Contrato VENCIDO!',
-                        note=f'El contrato de la propiedad "{prop.title}" VENCIÓ el {prop.contract_end_date}.',
+                        summary='❌ ¡Contrato VENCIDO!',
+                        note=f'El contrato de la propiedad "{prop.title}" VENCIÓ el {fecha_str}.',
                         user_id=prop.user_id.id or self.env.uid,
                     )
+                    # WhatsApp al asesor (plantilla Meta)
+                    advisor = prop.user_id
+                    if advisor and advisor.partner_id.mobile:
+                        self._send_contract_whatsapp_template(
+                            advisor.partner_id.mobile,
+                            prop.title, fecha_str, 0,
+                            advisor.name,
+                        )
 
     @api.model
     def _cron_price_alerts(self):

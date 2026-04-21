@@ -599,6 +599,32 @@ TOOLS_OPENAI = [
             "property_id": {"type": "integer", "description": "ID de la propiedad a cotizar (opcional, usa la asignada al lead)"},
         }},
     }},
+    # ── HERRAMIENTA UNIVERSAL: Consulta SQL directa (solo lectura) ─────────
+    {"type": "function", "function": {
+        "name": "query_database",
+        "description": (
+            "Ejecuta una consulta SQL de SOLO LECTURA contra la base de datos para responder "
+            "CUALQUIER pregunta sobre el sistema. Usa esta herramienta cuando ninguna otra "
+            "herramienta específica pueda responder la pregunta del usuario. "
+            "Tablas principales: estate_property (propiedades), crm_lead (leads/oportunidades), "
+            "calendar_event (visitas/citas), estate_contract (contratos), estate_payment (pagos), "
+            "estate_property_offer (ofertas), estate_commission (comisiones), "
+            "estate_property_expense (gastos), res_partner (contactos/clientes), res_users (usuarios/asesores), "
+            "estate_property_type (tipos de propiedad), estate_property_tag (etiquetas). "
+            "Relaciones importantes: estate_property.user_id → res_users.id (asesor), "
+            "estate_property.owner_id → res_partner.id (propietario), "
+            "calendar_event.property_id → estate_property.id, "
+            "calendar_event.user_id → res_users.id (asesor de la visita), "
+            "crm_lead.user_id → res_users.id (asesor del lead), "
+            "estate_contract.property_id → estate_property.id, "
+            "estate_contract.user_id → res_users.id. "
+            "SOLO SELECT permitido. Limita siempre a máximo 50 filas."
+        ),
+        "parameters": {"type": "object", "required": ["sql"], "properties": {
+            "sql": {"type": "string", "description": "Consulta SQL SELECT (solo lectura, máx 50 filas)"},
+            "explanation": {"type": "string", "description": "Breve explicación de qué busca esta consulta"},
+        }},
+    }},
 ]
 
 
@@ -611,30 +637,34 @@ DESTRUCTIVE_TOOLS = {
 
 # ── Modelos Gemini válidos en la API pública ──────────────────────────────────
 _VALID_GEMINI_MODELS = {
-    'gemini-flash-latest', 'gemini-2.0-flash', 'gemini-2.0-flash-lite',
+    'gemini-2.5-flash', 'gemini-2.5-pro-preview-03-25',
     'gemini-1.5-flash', 'gemini-1.5-flash-8b', 'gemini-1.5-pro',
-    'gemini-2.5-pro-preview-03-25',
 }
 
+# Modelo por defecto (el más rápido y económico disponible)
+_DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
+
 def _normalize_gemini_model(model):
-    """Return a valid Gemini model name. Falls back to gemini-2.0-flash for invalid names."""
+    """Return a valid Gemini model name. Falls back to gemini-2.5-flash for invalid names."""
     if not model:
-        return 'gemini-2.0-flash'
+        return _DEFAULT_GEMINI_MODEL
     model = model.replace('models/', '').strip()
     if model in _VALID_GEMINI_MODELS:
         return model
-    # Map old/common aliases
+    # Map old/deprecated aliases to current models
     _aliases = {
-        'gemini-flash': 'gemini-2.0-flash',
-        'gemini-flash-latest': 'gemini-2.0-flash',
+        'gemini-flash': _DEFAULT_GEMINI_MODEL,
+        'gemini-flash-latest': _DEFAULT_GEMINI_MODEL,
+        'gemini-2.0-flash': _DEFAULT_GEMINI_MODEL,
+        'gemini-2.0-flash-lite': _DEFAULT_GEMINI_MODEL,
+        'gemini-2.0-flash-exp': _DEFAULT_GEMINI_MODEL,
         'gemini-pro': 'gemini-1.5-pro',
-        'gemini-2.0-flash-exp': 'gemini-2.0-flash',
     }
     if model in _aliases:
         return _aliases[model]
     # Unknown model — log and fallback
-    _logger.warning("Modelo Gemini desconocido: '%s'. Usando gemini-2.0-flash.", model)
-    return 'gemini-2.0-flash'
+    _logger.warning("Modelo Gemini desconocido: '%s'. Usando %s.", model, _DEFAULT_GEMINI_MODEL)
+    return _DEFAULT_GEMINI_MODEL
 
 
 def _parse_gemini_error(err_str):
@@ -684,7 +714,7 @@ class EstateAIController(http.Controller):
 
         provider = ICP.get_param('estate_ai.provider', 'chatgpt')
         api_key = ICP.get_param('estate_ai.api_key', '')
-        model = _normalize_gemini_model(ICP.get_param('estate_ai.model', 'gemini-2.0-flash'))
+        model = _normalize_gemini_model(ICP.get_param('estate_ai.model', ''))
         
         temperature = float(ICP.get_param('estate_ai.temperature', '0.7'))
         max_tokens = int(ICP.get_param('estate_ai.max_tokens', '1500'))
@@ -720,6 +750,11 @@ class EstateAIController(http.Controller):
 Eres el Asistente Ejecutivo Inteligente de la Inmobiliaria. Tienes acceso COMPLETO al sistema.
 TU MISIÓN: Consultar, crear, actualizar y controlar el sistema inmobiliario desde esta conversación.
 
+REGLA ABSOLUTA: NUNCA digas 'no puedo', 'no tengo la capacidad', 'no tengo acceso' o 'no es posible'.
+Tienes la herramienta query_database que te permite ejecutar CUALQUIER consulta SQL SELECT
+contra toda la base de datos. Si ninguna otra herramienta sirve, usa query_database con un SQL
+apropiado. Tienes acceso a TODA la información del sistema sin excepción.
+
 DATOS ACTUALES DEL SISTEMA:
 {context_data}
 {memories_text}
@@ -734,6 +769,7 @@ CAPACIDADES COMPLETAS (usa las herramientas):
 - IA AVANZADA: analizar probabilidad de cierre, riesgo de churn, recalcular AVM, generar descripciones
 - MEMORIA: guardar preferencias/hechos con save_memory, consultar con recall_memory
 - REPORTES PDF: generate_pdf_report | generate_quote_pdf (cotización para cliente)
+- SQL DIRECTO: query_database — ejecuta cualquier SELECT contra la BD para responder lo que sea
 - OPERACIONES MASIVAS: batch_update_properties, batch_archive_leads
 
 DETECCIÓN DE INTENCIÓN — actúa directamente según lo que el usuario quiera:
@@ -758,12 +794,19 @@ INSTRUCCIONES DE RESPUESTA:
 1. Sé proactivo: si el usuario dice "crea un lead para Juan", HAZLO directamente con las herramientas.
 2. Confirma siempre las acciones realizadas con el ID creado/actualizado.
 3. Usa tablas Markdown para listados (columnas separadas por |).
-4. Si el usuario pide un REPORTE/GRÁFICO:
-   a. Llama PRIMERO a get_report_data con el report_type adecuado.
-   b. Con los datos recibidos usa el formato [GRAFICO:tipo,Label1:Valor1,...]:
-      - chart_hint=barra → [GRAFICO:barra,...] | chart_hint=circular → [GRAFICO:circular,...]
-   c. SIEMPRE incluye tabla Markdown con los mismos datos.
-5. report_types: properties_by_state, properties_by_type, sales_by_month, visits_by_property,
+4. REGLA OBLIGATORIA PARA REPORTES Y GRÁFICOS:
+   Cuando el usuario pida reporte, gráfico, estadística, resumen de datos, o use palabras como
+   "muéstrame", "cuántos hay por", "reporte de", "gráfico de", "estadísticas" → DEBES llamar
+   a la herramienta get_report_data. NUNCA respondas con solo texto cuando se pide un gráfico.
+   a. Llama SIEMPRE a get_report_data con el report_type correcto.
+   b. Con los datos recibidos genera el formato [GRAFICO:tipo,Label1:Valor1,Label2:Valor2,...]:
+      - chart_hint=barra → [GRAFICO:barra,Label1:Valor1,Label2:Valor2]
+      - chart_hint=circular → [GRAFICO:circular,Label1:Valor1,Label2:Valor2]
+      - chart_hint=linea → [GRAFICO:linea,Label1:Valor1,Label2:Valor2]
+   c. Después del gráfico, incluye tabla Markdown con los mismos datos.
+   d. Ejemplo: si get_report_data devuelve {"data":{"Disponibles":12,"Vendidas":9,"Alquiladas":3},"chart_hint":"circular"}
+      tu respuesta DEBE incluir: [GRAFICO:circular,Disponibles:12,Vendidas:9,Alquiladas:3]
+5. report_types disponibles: properties_by_state, properties_by_type, sales_by_month, visits_by_property,
    commissions_by_advisor, contracts_by_type, expenses_by_type, offers_by_state,
    leads_by_temperature, payments_by_method, days_on_market_by_type.
 6. ACCIONES DESTRUCTIVAS (archivar, cancelar, eliminar masivo): ANTES de ejecutar, responde con:
@@ -2046,6 +2089,38 @@ INSTRUCCIONES DE RESPUESTA:
                     'link': pdf_url,
                 }, ensure_ascii=False)
 
+            # ── HERRAMIENTA UNIVERSAL: SQL de solo lectura ──────────────────
+            elif tool_name == 'query_database':
+                sql = (args.get('sql') or '').strip()
+                if not sql:
+                    return json.dumps({'error': 'Se requiere una consulta SQL'})
+                # Security: only allow SELECT statements
+                sql_upper = sql.upper().lstrip()
+                forbidden = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE',
+                             'TRUNCATE', 'GRANT', 'REVOKE', 'EXECUTE', 'COPY']
+                if not sql_upper.startswith('SELECT') and not sql_upper.startswith('WITH'):
+                    return json.dumps({'error': 'Solo se permiten consultas SELECT (solo lectura)'})
+                for word in forbidden:
+                    # Check for forbidden keywords as whole words (not inside column names)
+                    import re
+                    if re.search(rf'\b{word}\b', sql_upper):
+                        return json.dumps({'error': f'Operación {word} no permitida. Solo SELECT.'})
+                # Force LIMIT if not present
+                if 'LIMIT' not in sql_upper:
+                    sql = sql.rstrip(';') + ' LIMIT 50'
+                try:
+                    env.cr.execute(sql)
+                    columns = [desc[0] for desc in env.cr.description] if env.cr.description else []
+                    rows = env.cr.dictfetchall()
+                    return json.dumps({
+                        'columns': columns,
+                        'rows': rows,
+                        'row_count': len(rows),
+                        'explanation': args.get('explanation', ''),
+                    }, ensure_ascii=False, default=str)
+                except Exception as sql_err:
+                    return json.dumps({'error': f'Error SQL: {str(sql_err)}'})
+
             return json.dumps({'error': f'Herramienta desconocida: {tool_name}'})
 
         except Exception as e:
@@ -2330,7 +2405,7 @@ INSTRUCCIONES DE RESPUESTA:
                     max_iterations = 4
                     for _ in range(max_iterations):
                         response = client.models.generate_content(
-                            model=model or 'gemini-flash-latest',
+                            model=model or _DEFAULT_GEMINI_MODEL,
                             contents=contents,
                             config=config,
                         )
@@ -2396,7 +2471,7 @@ INSTRUCCIONES DE RESPUESTA:
             # Agotados los reintentos 503
             return (
                 '❌ Gemini no disponible tras 3 intentos (alta demanda). '
-                'Prueba con **gemini-2.0-flash** o baja los tokens máximos en Ajustes → Agente IA.'
+                'Prueba con **gemini-2.5-flash** o baja los tokens máximos en Ajustes → Agente IA.'
             )
 
         return "❌ Error: SDK google-genai no disponible. Ejecute: pip install google-genai"
@@ -2443,19 +2518,22 @@ TOP 10 DISPONIBLES:
     # -----------------------------------------------------------------------
     def _classify_query(self, message):
         msg = message.lower()
-        if any(w in msg for w in ['propiedad', 'casa', 'departamento', 'terreno', 'oficina', 'inmueble',
-                                   'precio', 'área', 'habitacion', 'baño', 'duplica', 'archiva', 'elimina']):
-            return 'property'
-        elif any(w in msg for w in ['lead', 'prospecto', 'cliente', 'crm', 'oportunidad', 'temperatura',
-                                    'interaccion', 'matchmaker']):
-            return 'client'
-        elif any(w in msg for w in ['contrato', 'pago', 'cuota', 'vencid', 'arrendamiento', 'alquiler']):
-            return 'contract'
-        elif any(w in msg for w in ['reporte', 'informe', 'estadístic', 'dashboard', 'resumen',
-                                    'gráfico', 'grafico', 'comision', 'ingreso', 'venta']):
+        # Report keywords have HIGHEST priority (even if message also mentions "propiedad")
+        if any(w in msg for w in ['reporte', 'informe', 'estadístic', 'dashboard', 'resumen',
+                                    'gráfico', 'grafico', 'comision', 'ingreso', 'por estado',
+                                    'por tipo', 'por mes', 'por asesor', 'tendencia', 'cuántos hay',
+                                    'cuantos hay', 'desglose']):
             return 'report'
         elif any(w in msg for w in ['recuerda', 'memoria', 'anota', 'olvida', 'preferencia']):
             return 'memory'
+        elif any(w in msg for w in ['contrato', 'pago', 'cuota', 'vencid', 'arrendamiento', 'alquiler']):
+            return 'contract'
+        elif any(w in msg for w in ['lead', 'prospecto', 'cliente', 'crm', 'oportunidad', 'temperatura',
+                                    'interaccion', 'matchmaker']):
+            return 'client'
+        elif any(w in msg for w in ['propiedad', 'casa', 'departamento', 'terreno', 'oficina', 'inmueble',
+                                   'precio', 'área', 'habitacion', 'baño', 'duplica', 'archiva', 'elimina']):
+            return 'property'
         return 'general'
 
     # Smart tool selection — send only relevant tools based on query type to save tokens
@@ -2466,33 +2544,33 @@ TOP 10 DISPONIBLES:
             'archive_property', 'delete_property', 'duplicate_property', 'reserve_property',
             'sell_property', 'schedule_visit', 'get_market_stats', 'batch_update_properties',
             'recalculate_avm_ai', 'generate_and_apply_description', 'compare_properties',
-            'get_trend_analysis',
+            'get_trend_analysis', 'get_report_data', 'query_database',
         ],
         'client': [
             'get_leads', 'create_lead', 'update_lead', 'archive_lead', 'batch_archive_leads',
             'create_crm_activity', 'send_whatsapp_lead', 'schedule_visit', 'search_properties',
             'analyze_lead_probability', 'send_email', 'search_contacts', 'get_client_summary',
-            'generate_quote_pdf', 'get_upcoming_visits',
+            'generate_quote_pdf', 'get_upcoming_visits', 'query_database',
         ],
         'contract': [
             'get_payments_contracts', 'create_contract', 'update_contract', 'create_payment',
             'approve_payment', 'cancel_payment', 'create_offer', 'create_commission',
-            'approve_commission', 'analyze_churn_risk', 'generate_pdf_report',
+            'approve_commission', 'analyze_churn_risk', 'generate_pdf_report', 'query_database',
         ],
         'report': [
             'get_report_data', 'get_dashboard_summary', 'get_market_stats', 'get_payments_contracts',
             'get_leads', 'search_properties', 'generate_pdf_report', 'get_trend_analysis',
-            'get_upcoming_visits',
+            'get_upcoming_visits', 'query_database',
         ],
         'memory': [
-            'save_memory', 'recall_memory', 'get_leads', 'search_properties',
+            'save_memory', 'recall_memory', 'get_leads', 'search_properties', 'query_database',
         ],
         'general': [
             'search_properties', 'get_property_detail', 'get_leads', 'get_market_stats',
             'get_dashboard_summary', 'create_lead', 'create_property', 'update_property',
             'update_lead', 'schedule_visit', 'get_payments_contracts', 'save_memory', 'recall_memory',
             'search_contacts', 'get_client_summary', 'compare_properties', 'get_trend_analysis',
-            'get_upcoming_visits',
+            'get_upcoming_visits', 'get_report_data', 'query_database',
         ],
     }
 
@@ -2536,7 +2614,7 @@ TOP 10 DISPONIBLES:
         ICP = request.env['ir.config_parameter'].sudo()
         ai_active = ICP.get_param('estate_ai.active', 'True')
         api_key = ICP.get_param('estate_ai.api_key', '')
-        model = _normalize_gemini_model(ICP.get_param('estate_ai.model', 'gemini-2.0-flash'))
+        model = _normalize_gemini_model(ICP.get_param('estate_ai.model', ''))
         temperature = float(ICP.get_param('estate_ai.temperature', '0.7'))
         # Default 800 tokens — sufficient for most answers, avoids 503 overload
         max_tokens = int(ICP.get_param('estate_ai.max_tokens', '800'))
@@ -2555,6 +2633,30 @@ TOP 10 DISPONIBLES:
             "Puedes CONSULTAR, CREAR, ACTUALIZAR y CONTROLAR: propiedades, leads, visitas, contratos y más. "
             "Responde siempre en español, de forma concisa y profesional. "
             "Cuando el usuario pida crear, actualizar o gestionar algo, usa las herramientas disponibles y confirma con el ID resultante.\n\n"
+            "REGLA ABSOLUTA: NUNCA digas 'no puedo', 'no tengo la capacidad', 'no tengo acceso' o 'no es posible'. "
+            "Tienes la herramienta query_database que te permite ejecutar CUALQUIER consulta SQL SELECT "
+            "contra toda la base de datos. Si ninguna otra herramienta sirve, usa query_database con un SQL "
+            "apropiado para responder la pregunta. Tienes acceso a TODA la información del sistema.\n\n"
+            "REGLA OBLIGATORIA PARA REPORTES Y GRÁFICOS:\n"
+            "Cuando el usuario pida reporte, gráfico, estadística, resumen de datos, desglose, o use palabras como "
+            "'muéstrame por', 'cuántos hay por', 'reporte de', 'gráfico de' → DEBES llamar a get_report_data. "
+            "NUNCA respondas con solo texto cuando se pide un gráfico o reporte.\n"
+            "Con los datos recibidos SIEMPRE genera TODOS los gráficos posibles que apliquen.\n"
+            "Tipos de gráfico disponibles:\n"
+            "- [GRAFICO:barra,Label1:Valor1,Label2:Valor2,...] → barras horizontales (ideal para comparar cantidades)\n"
+            "- [GRAFICO:circular,Label1:Valor1,Label2:Valor2,...] → diagrama de torta/pie (ideal para proporciones/porcentajes)\n"
+            "- [GRAFICO:linea,Label1:Valor1,Label2:Valor2,...] → línea temporal (ideal para evolución en el tiempo)\n\n"
+            "REGLA: Elige automáticamente el MEJOR tipo de gráfico según los datos:\n"
+            "- Datos temporales (meses, años) → linea\n"
+            "- Proporciones/distribuciones (estados, tipos) → circular\n"
+            "- Comparaciones de cantidades/rankings → barra\n"
+            "- Si hay duda, usa barra (es el más versátil)\n"
+            "- Si los datos permiten más de una visualización útil, incluye MÚLTIPLES gráficos "
+            "(ej: uno circular para % y uno de barra para cantidades absolutas).\n"
+            "Después de los gráficos incluye una tabla Markdown con los mismos datos.\n"
+            "report_types: properties_by_state, properties_by_type, sales_by_month, visits_by_property, "
+            "commissions_by_advisor, contracts_by_type, expenses_by_type, offers_by_state, "
+            "leads_by_temperature, payments_by_method, days_on_market_by_type.\n\n"
             f"CONTEXTO ACTUAL:\n{context}"
         )
 
@@ -2640,6 +2742,7 @@ TOP 10 DISPONIBLES:
                 'generate_and_apply_description': '✍️ Generando descripción',
                 'send_email': '📧 Enviando email',
                 'get_report_data': '📊 Cargando datos',
+                'query_database': '🔍 Consultando base de datos',
             }
 
             last_err = None
@@ -2778,7 +2881,7 @@ TOP 10 DISPONIBLES:
                 # 3 intentos 503 fallidos
                 yield sse({'text': (
                     '❌ Gemini no disponible (alta demanda). '
-                    'Ve a **Ajustes → Agente IA** y cambia el modelo a `gemini-2.0-flash` '
+                    'Ve a **Ajustes → Agente IA** y cambia el modelo a `gemini-2.5-flash` '
                     'o baja los tokens máximos a 500.'
                 )})
 
@@ -3060,7 +3163,7 @@ TOP 10 DISPONIBLES:
             if GEMINI_AVAILABLE and (provider == 'gemini' or not OPENAI_AVAILABLE):
                 client = new_genai.Client(api_key=api_key)
                 response = client.models.generate_content(
-                    model='gemini-flash-latest',
+                    model=_DEFAULT_GEMINI_MODEL,
                     contents=[
                         {
                             'parts': [

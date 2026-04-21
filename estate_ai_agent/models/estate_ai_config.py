@@ -17,7 +17,7 @@ class EstateAIConfig(models.TransientModel):
     ai_model = fields.Char(
         string='Modelo',
         config_parameter='estate_ai.model',
-        default='gemini-flash-latest')
+        default='gemini-2.5-flash')
 
     ai_temperature = fields.Float(
         string='Temperatura (Creatividad)',

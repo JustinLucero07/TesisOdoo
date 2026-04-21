@@ -45,7 +45,7 @@ class EstateProperty(models.Model):
         ICP = self.env['ir.config_parameter'].sudo()
         api_key = ICP.get_param('estate_ai.api_key', '')
         if not api_key:
-            raise UserError(_("No se ha configurado la API Key de Gemini. Vaya a Configuración > Agente IA."))
+            raise UserError(_("No se ha configurado la API Key de Gemini. Vaya a Configuracion > Agente IA."))
 
         try:
             # Configure retries for transient errors (503, 429, etc.)
@@ -55,7 +55,7 @@ class EstateProperty(models.Model):
                 max_delay=30.0,
                 http_status_codes=[429, 500, 502, 503, 504]
             )
-            
+
             client = genai.Client(
                 api_key=api_key,
                 http_options=genai.types.HttpOptions(
@@ -63,44 +63,44 @@ class EstateProperty(models.Model):
                     retry_options=retry_options
                 ),
             )
-            
+
             # Prepare image for Gemini
             image_data = base64.b64decode(self.image_main)
-            
+
             prompt = """
-            Analiza esta imagen de una propiedad inmobiliaria y responde ÚNICAMENTE en formato JSON válido:
+            Analiza esta imagen de una propiedad inmobiliaria y responde UNICAMENTE en formato JSON valido:
             {
-                "description": "Descripción profesional y atractiva de máximo 3 frases",
+                "description": "Descripcion profesional y atractiva de maximo 3 frases",
                 "tags": ["Tag1", "Tag2", "Tag3"],
                 "condition": "excellent|good|regular|needs_renovation",
                 "red_flags": ["Problema visible 1 si existe"],
                 "staging_suggestions": ["Sugerencia concreta 1", "Sugerencia concreta 2"],
-                "room_type": "sala|cocina|dormitorio|baño|exterior|garaje|área_social|otro"
+                "room_type": "sala|cocina|dormitorio|bano|exterior|garaje|area_social|otro"
             }
 
-            Guías:
-            - condition: excellent=impecable, good=bien mantenido, regular=uso normal visible, needs_renovation=daños visibles
-            - red_flags: SOLO si hay problemas visibles (manchas, humedad, grietas, pintura deteriorada). Array vacío [] si no hay.
-            - staging_suggestions: 2-3 sugerencias concretas para mejorar la presentación en fotos/visitas.
+            Guias:
+            - condition: excellent=impecable, good=bien mantenido, regular=uso normal visible, needs_renovation=danos visibles
+            - red_flags: SOLO si hay problemas visibles (manchas, humedad, grietas, pintura deteriorada). Array vacio [] si no hay.
+            - staging_suggestions: 2-3 sugerencias concretas para mejorar la presentacion en fotos/visitas.
             - room_type: identifica el tipo de ambiente en la imagen.
             """
-            
+
             response = client.models.generate_content(
-                model='gemini-flash-latest',
+                model='gemini-2.5-flash',
                 contents=[
                     prompt,
                     genai.types.Part.from_bytes(data=image_data, mime_type='image/jpeg')
                 ]
             )
-            
+
             # Clean response (Gemini sometimes adds markdown blocks)
             raw_text = response.text.strip()
             if raw_text.startswith('```json'):
                 raw_text = raw_text.replace('```json', '').replace('```', '').strip()
-            
+
             import json
             result = json.loads(raw_text)
-            
+
             # Update description
             self.ai_vision_description = result.get('description', '')
 
@@ -132,7 +132,7 @@ class EstateProperty(models.Model):
             return {
                 'effect': {
                     'fadeout': 'slow',
-                    'message': '¡Imagen analizada con éxito!',
+                    'message': 'Imagen analizada con exito!',
                     'type': 'rainbow_man',
                 }
             }
@@ -142,38 +142,38 @@ class EstateProperty(models.Model):
             raise UserError(_("Error al conectar con Gemini Vision: %s") % str(e))
 
     def action_generate_ai_description(self):
-        """Mejora 3: Genera descripción comercial de marketing con IA (3 tonos)."""
+        """Mejora 3: Genera descripcion comercial de marketing con IA (3 tonos)."""
         self.ensure_one()
         if not GOOGLE_GENAI_AVAILABLE:
-            raise UserError(_("La librería 'google-genai' no está instalada."))
+            raise UserError(_("La libreria 'google-genai' no esta instalada."))
 
         ICP = self.env['ir.config_parameter'].sudo()
         api_key = ICP.get_param('estate_ai.api_key', '')
         if not api_key:
-            raise UserError(_("No se ha configurado la API Key. Vaya a Configuración > Agente IA."))
+            raise UserError(_("No se ha configurado la API Key. Vaya a Configuracion > Agente IA."))
 
         prop = self
         detalles = (
             f"Tipo: {prop.property_type_id.name if prop.property_type_id else 'Inmueble'}\n"
             f"Ciudad: {prop.city or ''} | Sector: {prop.street or ''}\n"
-            f"Área: {prop.area or 0} m² | Habitaciones: {prop.bedrooms or 0} | Baños: {prop.bathrooms or 0}\n"
+            f"Area: {prop.area or 0} m2 | Habitaciones: {prop.bedrooms or 0} | Banos: {prop.bathrooms or 0}\n"
             f"Precio: ${prop.price:,.2f}\n"
             f"Estado: {'En venta' if prop.offer_type == 'sale' else 'En arriendo'}\n"
-            f"Características adicionales: {prop.description or 'No especificadas'}"
+            f"Caracteristicas adicionales: {prop.description or 'No especificadas'}"
         )
 
         prompt = f"""
 Eres un experto en marketing inmobiliario de alto nivel. Con los datos de esta propiedad,
-genera una descripción comercial en TRES versiones, cada una para un público distinto.
-Responde ÚNICAMENTE en JSON válido con esta estructura:
+genera una descripcion comercial en TRES versiones, cada una para un publico distinto.
+Responde UNICAMENTE en JSON valido con esta estructura:
 
 {{
-  "formal": "Descripción de 3-4 oraciones para inversores o instituciones bancarias. Tono profesional, menciona rentabilidad y plusvalía.",
-  "emocional": "Descripción de 3-4 oraciones para familias. Evoca el hogar, la seguridad, el futuro.",
-  "directo": "Descripción de 2-3 oraciones para compradores rápidos. Destaca el valor y la urgencia.",
-  "headline_1": "Titular corto y potente (máx 8 palabras) — versión A",
-  "headline_2": "Titular corto y potente (máx 8 palabras) — versión B",
-  "headline_3": "Titular corto y potente (máx 8 palabras) — versión C"
+  "formal": "Descripcion de 3-4 oraciones para inversores o instituciones bancarias. Tono profesional, menciona rentabilidad y plusvalia.",
+  "emocional": "Descripcion de 3-4 oraciones para familias. Evoca el hogar, la seguridad, el futuro.",
+  "directo": "Descripcion de 2-3 oraciones para compradores rapidos. Destaca el valor y la urgencia.",
+  "headline_1": "Titular corto y potente (max 8 palabras) -- version A",
+  "headline_2": "Titular corto y potente (max 8 palabras) -- version B",
+  "headline_3": "Titular corto y potente (max 8 palabras) -- version C"
 }}
 
 DATOS DE LA PROPIEDAD:
@@ -196,13 +196,48 @@ DATOS DE LA PROPIEDAD:
                 ),
             )
             response = client.models.generate_content(
-                model='gemini-flash-latest',
+                model='gemini-2.5-flash',
                 contents=prompt,
                 config=genai.types.GenerateContentConfig(temperature=0.8, max_output_tokens=1500),
             )
             import json
+            import re
             raw = response.text.strip().replace('```json', '').replace('```', '').strip()
-            result = json.loads(raw)
+
+            # Robust JSON parsing: try direct parse first, then attempt repairs
+            result = None
+            try:
+                result = json.loads(raw)
+            except json.JSONDecodeError:
+                _logger.warning("JSON directo fallo, intentando reparar respuesta truncada de Gemini...")
+                # Attempt 1: fix unterminated strings and unclosed braces
+                repaired = raw
+                # If odd number of quotes, close the last open string
+                if repaired.count('"') % 2 != 0:
+                    repaired = repaired.rstrip().rstrip(',') + '"'
+                # Close any unclosed braces
+                open_braces = repaired.count('{') - repaired.count('}')
+                if open_braces > 0:
+                    repaired = repaired.rstrip().rstrip(',') + '}' * open_braces
+                try:
+                    result = json.loads(repaired)
+                    _logger.info("JSON reparado exitosamente (cierre de llaves/comillas).")
+                except json.JSONDecodeError:
+                    pass
+
+            # Attempt 2: regex extraction of individual fields
+            if result is None:
+                _logger.warning("Reparacion JSON fallo, extrayendo campos con regex...")
+                result = {}
+                for field_name in ('formal', 'emocional', 'directo', 'headline_1', 'headline_2', 'headline_3'):
+                    match = re.search(
+                        r'"' + field_name + r'"\s*:\s*"((?:[^"\\]|\\.)*)"',
+                        raw, re.DOTALL
+                    )
+                    if match:
+                        result[field_name] = match.group(1).replace('\\n', '\n').replace('\\"', '"')
+                if not any(result.values()):
+                    raise UserError(_("La IA devolvio una respuesta que no se pudo interpretar. Intente de nuevo."))
 
             formal = result.get('formal', '')
             emocional = result.get('emocional', '')
@@ -212,24 +247,29 @@ DATOS DE LA PROPIEDAD:
             h3 = result.get('headline_3', '')
 
             combined = (
-                f"--- VERSIÓN FORMAL (Inversores/Banco) ---\n{formal}\n\n"
-                f"--- VERSIÓN EMOCIONAL (Familias) ---\n{emocional}\n\n"
-                f"--- VERSIÓN DIRECTA (Cierre rápido) ---\n{directo}\n\n"
+                f"--- VERSION FORMAL (Inversores/Banco) ---\n{formal}\n\n"
+                f"--- VERSION EMOCIONAL (Familias) ---\n{emocional}\n\n"
+                f"--- VERSION DIRECTA (Cierre rapido) ---\n{directo}\n\n"
                 f"--- TITULARES PARA WORDPRESS/REDES ---\n"
                 f"A: {h1}\nB: {h2}\nC: {h3}"
             )
 
             prop.ai_marketing_description = combined
+
+            # Also save the formal description to the main Html description field
+            if formal:
+                prop.description = f"<p>{formal}</p>"
+
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': '¡Descripción generada!',
-                    'message': 'La descripción comercial IA fue creada. Revísala en la pestaña Inteligencia Artificial.',
+                    'title': 'Descripcion generada!',
+                    'message': 'La descripcion comercial IA fue creada. Revisala en la pestana Inteligencia Artificial.',
                     'type': 'success',
                     'sticky': False,
                 }
             }
         except Exception as e:
-            _logger.error("Error en generador de descripción IA: %s", str(e))
-            raise UserError(_("Error al generar descripción: %s") % str(e))
+            _logger.error("Error en generador de descripcion IA: %s", str(e))
+            raise UserError(_("Error al generar descripcion: %s") % str(e))
