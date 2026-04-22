@@ -60,7 +60,7 @@ class EstateProperty(models.Model):
         'res.currency', string='Moneda', 
         default=lambda self: self.env.company.currency_id)
     map_url = fields.Char(string='URL del Mapa', compute='_compute_map_url')
-    map_iframe = fields.Html(string='Vista de Mapa', compute='_compute_map_iframe')
+    map_iframe = fields.Html(string='Vista de Mapa', compute='_compute_map_iframe', sanitize=False)
 
     @api.depends('latitude', 'longitude')
     def _compute_map_iframe(self):
@@ -70,9 +70,13 @@ class EstateProperty(models.Model):
                 lng = rec.longitude
                 # Use OpenStreetMap embed format
                 url = f"https://www.openstreetmap.org/export/embed.html?bbox={lng-0.005}%2C{lat-0.005}%2C{lng+0.005}%2C{lat+0.005}&amp;layer=mapnik&amp;marker={lat}%2C{lng}"
-                rec.map_iframe = f'<iframe width="100%" height="300" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src="{url}" style="border: 1px solid #ddd; border-radius: 8px;"></iframe>'
+                rec.map_iframe = (
+                    f'<div style="position:relative; width:100%; padding-bottom:35%; border-radius:8px; border:1px solid #ddd; overflow:hidden;">'
+                    f'<iframe src="{url}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>'
+                    f'</div>'
+                )
             else:
-                rec.map_iframe = '<div style="height:300px; background:#f8f9fa; border:1px dashed #ccc; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#6c757d;"><i class="fa fa-map-marker fa-2x mr-2"></i> Indique Latitud y Longitud para visualizar el mapa</div>'
+                rec.map_iframe = '<div style="padding-bottom:25%; background:#f8f9fa; border:1px dashed #ccc; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#6c757d; gap:6px"><i class="fa fa-map-marker"></i><small>Haz clic en <b>Ubicar en Mapa</b></small></div>'
 
     @api.depends('street', 'city', 'state_id', 'country_id', 'latitude', 'longitude')
     def _compute_map_url(self):
@@ -96,12 +100,71 @@ class EstateProperty(models.Model):
                 'target': 'new',
             }
 
+    def action_geocode_address(self):
+        """Geocode the property address using Nominatim (OpenStreetMap) — free, no API key."""
+        self.ensure_one()
+        parts = [p for p in [self.street, self.city,
+                             self.state_id.name if self.state_id else None,
+                             self.country_id.name if self.country_id else None] if p]
+        if not parts:
+            raise UserError('Ingresa al menos la dirección y la ciudad para ubicar en el mapa.')
+        query = ', '.join(parts)
+        try:
+            resp = requests.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={'q': query, 'format': 'json', 'limit': 1},
+                headers={'User-Agent': 'OdooEstateApp/1.0'},
+                timeout=10,
+            )
+            data = resp.json()
+            if data:
+                lat = float(data[0]['lat'])
+                lon = float(data[0]['lon'])
+                self.write({'latitude': lat, 'longitude': lon})
+                display_name = data[0].get('display_name', query)
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Ubicación encontrada',
+                        'message': f'Coordenadas actualizadas: {lat:.5f}, {lon:.5f}\n{display_name}',
+                        'type': 'success',
+                        'sticky': False,
+                    }
+                }
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Dirección no encontrada',
+                        'message': f'No se pudo geocodificar: "{query}". Intenta con más detalles.',
+                        'type': 'warning',
+                        'sticky': False,
+                    }
+                }
+        except Exception as e:
+            _logger.error("Geocoding error: %s", e)
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Error de geocodificación',
+                    'message': str(e),
+                    'type': 'danger',
+                    'sticky': False,
+                }
+            }
+
     # --- Características ---
     price = fields.Float(string='Precio', tracking=True)
     area = fields.Float(string='Área (m²)')
     bedrooms = fields.Integer(string='Habitaciones', default=0)
     bathrooms = fields.Float(string='Baños', default=0.0)
     parking_spaces = fields.Integer(string='Parqueaderos', default=0)
+    vehicle_capacity = fields.Integer(
+        string='Capacidad Vehículos', default=0,
+        help='Número total de vehículos que caben en los parqueaderos.')
     floor = fields.Integer(string='Piso/Planta')
     year_built = fields.Integer(string='Año de Construcción')
     
@@ -442,6 +505,9 @@ class EstateProperty(models.Model):
     # --- Imágenes ---
     image_ids = fields.One2many(
         'estate.property.image', 'property_id', string='Imágenes')
+    gallery_ids = fields.Many2many(
+        'ir.attachment', string='Galería de Imágenes',
+        help='Arrastra imágenes aquí para subirlas directamente.')
     image_main = fields.Binary(string='Imagen Principal')
 
     # --- WordPress ---

@@ -42,9 +42,9 @@
                                 &#160;·&#160;
                                 Período:
                                 <strong>
-                                    <t t-out="date_from.strftime('%d/%m/%Y') if date_from else '—'"/>
+                                    <t t-if="date_from" t-out="date_from"/> <t t-if="not date_from">—</t>
                                     al
-                                    <t t-out="date_to.strftime('%d/%m/%Y') if date_to else '—'"/>
+                                    <t t-if="date_to" t-out="date_to"/> <t t-if="not date_to">—</t>
                                 </strong>
                                 &#160;·&#160;
                                 Generado: <t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>

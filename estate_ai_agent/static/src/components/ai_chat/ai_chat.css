@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
-   Agente IA Inmobiliario — Full-page Chat
-   Paleta Inmobi: #004274 (azul), #E53935 (rojo)
-   Sin gradientes — colores sólidos
+   InmoBot — Full-page Chat
+   Paleta: #004274 (azul), #E53935 (rojo acento)
+   Diseño minimalista, elegante, sin emojis
    ═══════════════════════════════════════════════════════════════ */
 
 .estate-ai-chat-container {
@@ -10,54 +10,102 @@
     height: calc(100vh - 60px);
     max-width: 900px;
     margin: 0 auto;
-    background: #f8f9fa;
-    border-radius: 12px;
+    background: #f9fafb;
+    border-radius: 16px;
     overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
 .estate-ai-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 16px 22px;
     background: #004274;
     color: white;
     border-bottom: 3px solid #E53935;
 }
 
 .estate-ai-header-title {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 17px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: .2px;
 }
+
+.estate-ai-header-icon {
+    width: 22px;
+    height: 22px;
+    fill: white;
+}
+
+.estate-ai-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: estateAiSpin .6s linear infinite;
+    vertical-align: middle;
+}
+
+.estate-ai-body .estate-ai-spinner,
+.estate-ai-input .estate-ai-spinner {
+    border-color: rgba(0,66,116,.2);
+    border-top-color: #004274;
+}
+
+@keyframes estateAiSpin { to { transform: rotate(360deg); } }
 
 .estate-ai-body {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 22px;
     scroll-behavior: smooth;
 }
 
 .estate-ai-welcome {
     text-align: center;
-    padding: 40px 20px;
+    padding: 44px 24px;
     color: #666;
 }
 
+.estate-ai-welcome-avatar {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 16px;
+    background: linear-gradient(135deg, #004274 0%, #0066a4 100%);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(0,66,116,.2);
+}
+
+.estate-ai-welcome-avatar svg {
+    width: 30px;
+    height: 30px;
+    fill: white;
+}
+
 .estate-ai-welcome h3 {
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     color: #004274;
+    font-weight: 700;
 }
 
 .estate-ai-message {
     display: flex;
-    gap: 10px;
-    margin-bottom: 16px;
+    gap: 12px;
+    margin-bottom: 18px;
     animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
@@ -66,42 +114,68 @@
 }
 
 .estate-ai-message-avatar {
-    font-size: 24px;
     flex-shrink: 0;
 }
 
+.estate-ai-avatar-svg {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    padding: 4px;
+}
+
+.estate-ai-avatar-bot {
+    fill: white;
+    background: linear-gradient(135deg, #004274, #0066a4);
+    box-shadow: 0 2px 8px rgba(0,66,116,.2);
+}
+
+.estate-ai-avatar-user {
+    fill: white;
+    background: linear-gradient(135deg, #546E7A, #78909C);
+    box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+
 .estate-ai-message-content {
-    max-width: 70%;
-    padding: 12px 16px;
-    border-radius: 12px;
-    line-height: 1.5;
+    max-width: 72%;
+    padding: 13px 18px;
+    border-radius: 18px;
+    line-height: 1.6;
     word-wrap: break-word;
+    font-size: 14px;
 }
 
 .estate-ai-message-user .estate-ai-message-content {
     background: #004274;
     color: white;
     border-bottom-right-radius: 4px;
+    box-shadow: 0 3px 12px rgba(0,66,116,.15);
 }
 
 .estate-ai-message-bot .estate-ai-message-content {
     background: white;
-    color: #333;
-    border: 1px solid #e0e0e0;
+    color: #2a2a2a;
+    border: 1px solid #eaecef;
     border-bottom-left-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
 }
 
 .estate-ai-message-content code {
-    background: rgba(0, 0, 0, 0.1);
-    padding: 2px 6px;
+    background: #f0f4f8;
+    padding: 1px 5px;
     border-radius: 4px;
-    font-size: 0.9em;
+    font-size: 0.85em;
+    color: #E53935;
+}
+
+.estate-ai-message-content strong {
+    color: #1a3a5c;
 }
 
 .estate-ai-message-time {
-    margin-top: 4px;
-    opacity: 0.6;
-    font-size: 0.8em;
+    margin-top: 5px;
+    opacity: 0.45;
+    font-size: 0.78em;
 }
 
 /* Typing indicator */
@@ -130,63 +204,80 @@
 
 /* Suggestions */
 .estate-ai-suggestions {
-    padding: 10px 20px;
+    padding: 10px 22px;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid #eef0f2;
     background: white;
 }
 
 .estate-ai-suggestion-btn {
-    border-radius: 20px !important;
-    font-size: 0.85em;
+    border-radius: 22px !important;
+    font-size: 0.84em;
     white-space: nowrap;
+    font-weight: 500;
 }
 
 /* Input */
 .estate-ai-input {
     display: flex;
     gap: 10px;
-    padding: 16px 20px;
+    padding: 16px 22px;
     background: white;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid #eef0f2;
     align-items: flex-end;
 }
 
 .estate-ai-input textarea {
-    border-radius: 8px;
+    border-radius: 14px;
     resize: none;
-    border: 1px solid #ddd;
+    border: 1.5px solid #d8dde3;
+    padding: 10px 16px;
+    font-size: 14px;
+    background: #fafbfc;
+    transition: border-color .2s, box-shadow .2s;
 }
 
 .estate-ai-input textarea:focus {
     border-color: #004274;
-    box-shadow: 0 0 0 2px rgba(0, 66, 116, 0.2);
+    box-shadow: 0 0 0 3px rgba(0, 66, 116, 0.08);
 }
 
 .estate-ai-send-btn {
-    border-radius: 8px !important;
-    padding: 8px 16px;
+    border-radius: 50% !important;
+    width: 42px;
     height: 42px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #E53935 !important;
+    border-color: #E53935 !important;
+    box-shadow: 0 3px 12px rgba(229,57,53,.3);
+    transition: transform .1s;
 }
 
-/* Streaming cursor blink animation */
+.estate-ai-send-btn:hover:not(:disabled) { transform: scale(1.08); }
+.estate-ai-send-btn:disabled { opacity: .4; box-shadow: none; }
+
+/* Streaming cursor */
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
 }
 
-/* Contextual chips row */
+/* Contextual chips */
 .estate-ai-chips {
-    padding: 6px 12px;
-    border-top: 1px solid #e8e8e8;
+    padding: 8px 14px;
+    border-top: 1px solid #eef0f2;
 }
 
 /* Copy button */
 .estate-ai-copy-btn {
     font-size: 11px;
     padding: 2px 8px;
+    border-radius: 6px;
 }
 
 /* Table inside chat */
@@ -199,6 +290,9 @@
 .estate-ai-status-dot {
     font-size: 12px;
     vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
 }
 
 /* OCR mode banner */
@@ -207,3 +301,8 @@
     border-radius: 0;
     margin: 0;
 }
+
+/* Scrollbar */
+.estate-ai-body::-webkit-scrollbar { width: 5px; }
+.estate-ai-body::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 4px; }
+.estate-ai-body::-webkit-scrollbar-thumb:hover { background: #aaa; }

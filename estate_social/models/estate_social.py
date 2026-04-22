@@ -88,49 +88,107 @@ class EstatePropertySocial(models.Model):
         tw_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(text)}"
         return {'type': 'ir.actions.act_url', 'url': tw_url, 'target': 'new'}
 
+    def _strip_html(self, html_text):
+        """Convierte HTML a texto plano limpio para redes sociales."""
+        import re
+        if not html_text:
+            return ''
+        # Remove HTML tags
+        text = re.sub(r'<br\s*/?>', '\n', html_text)
+        text = re.sub(r'</?(h[1-6]|p|div|li)[^>]*>', '\n', text)
+        text = re.sub(r'</?(ul|ol)[^>]*>', '', text)
+        text = re.sub(r'<[^>]+>', '', text)
+        # Clean up whitespace
+        text = re.sub(r'\n{3,}', '\n\n', text)
+        text = text.strip()
+        # Decode HTML entities
+        import html
+        text = html.unescape(text)
+        return text
+
     def _get_share_text(self):
-        """Texto de compartir para WhatsApp, Facebook y Twitter."""
+        """Texto de compartir para WhatsApp, Facebook y Twitter con descripción comercial."""
         ICP = self.env['ir.config_parameter'].sudo()
         wp_url = ICP.get_param('estate_wp.url', '')
         business_number = ICP.get_param('estate_social.whatsapp_business_number', '')
 
-        estado_map = {
-            'available': '✅ Disponible',
-            'reserved': '🔒 Reservado',
-            'sold': '🏆 Vendido',
-            'rented': '🔑 Alquilado',
-        }
+        # Descripción comercial IA (prioridad) o descripción general
+        desc_html = self.description or ''
+        desc_text = self._strip_html(desc_html)
+
+        # Si la descripción es muy larga, limitar para redes
+        if len(desc_text) > 1500:
+            desc_text = desc_text[:1500] + '...'
+
         link = f"\n🔗 {wp_url}/?p={self.wp_post_id}" if (self.wp_post_id and wp_url) else ''
         contact = f"\n📞 Contacto: wa.me/{business_number}" if business_number else ''
-        text = (
-            f"🏠 *{self.title}*\n"
-            f"📍 {self.city or 'Cuenca'}\n"
-            f"💰 ${self.price:,.2f}\n"
-            f"📐 {self.area} m²\n"
-            f"🛏️ {self.bedrooms} hab | 🚿 {self.bathrooms} baños\n"
-            f"{estado_map.get(self.state, '')}\n"
-            f"🏷️ {self.property_type_id.name}"
-            f"{link}"
-            f"{contact}\n"
-            f"✍️ ¡Contáctanos para más información!"
-        )
+
+        if desc_text:
+            # Publicar con la descripción comercial completa
+            text = (
+                f"{desc_text}\n"
+                f"{link}"
+                f"{contact}"
+            )
+        else:
+            # Fallback: formato básico si no hay descripción
+            estado_map = {
+                'available': '✅ Disponible',
+                'reserved': '🔒 Reservado',
+                'sold': '🏆 Vendido',
+                'rented': '🔑 Alquilado',
+            }
+            text = (
+                f"🏠 *{self.title}*\n"
+                f"📍 {self.city or 'Cuenca'}\n"
+                f"💰 ${self.price:,.2f}\n"
+                f"📐 {self.area} m²\n"
+                f"🛏️ {self.bedrooms} hab | 🚿 {self.bathrooms} baños\n"
+                f"{estado_map.get(self.state, '')}\n"
+                f"🏷️ {self.property_type_id.name}"
+                f"{link}"
+                f"{contact}\n"
+                f"✍️ ¡Contáctanos para más información!"
+            )
         return text
 
     def _get_instagram_caption(self):
-        """Caption optimizada para Instagram con hashtags."""
+        """Caption optimizada para Instagram con descripción comercial y hashtags."""
         ICP = self.env['ir.config_parameter'].sudo()
         city = (self.city or 'Cuenca').lower().replace(' ', '')
         ptype = (self.property_type_id.name or 'propiedad').lower().replace(' ', '')
         business_number = ICP.get_param('estate_social.whatsapp_business_number', '')
         contact_line = f"💬 WhatsApp: wa.me/{business_number}" if business_number else "💬 Escríbenos para más info"
-        caption = (
-            f"🏠 {self.title}\n\n"
-            f"📍 {self.city or 'Cuenca'}\n"
-            f"💰 ${self.price:,.2f}\n"
-            f"📐 {self.area} m²  |  🛏️ {self.bedrooms} hab  |  🚿 {self.bathrooms} baños\n\n"
-            f"{contact_line}\n"
-            f"Ref: {self.name}\n\n"
+
+        # Descripción comercial IA (prioridad) o descripción general
+        desc_html = self.description or ''
+        desc_text = self._strip_html(desc_html)
+
+        # Instagram permite 2200 chars — dejar espacio para hashtags (~200)
+        if len(desc_text) > 1800:
+            desc_text = desc_text[:1800] + '...'
+
+        hashtags = (
             f"#{ptype} #{city} #inmobiliaria #bienesraices #realestate "
             f"#casaenventa #propiedades #ecuador #inversioninmobiliaria"
         )
+
+        if desc_text:
+            caption = (
+                f"{desc_text}\n\n"
+                f"{contact_line}\n"
+                f"Ref: {self.name}\n\n"
+                f"{hashtags}"
+            )
+        else:
+            caption = (
+                f"🏠 {self.title}\n\n"
+                f"📍 {self.city or 'Cuenca'}\n"
+                f"💰 ${self.price:,.2f}\n"
+                f"📐 {self.area} m²  |  🛏️ {self.bedrooms} hab  |  🚿 {self.bathrooms} baños\n\n"
+                f"{contact_line}\n"
+                f"Ref: {self.name}\n\n"
+                f"{hashtags}"
+            )
         return caption
+

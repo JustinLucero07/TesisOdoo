@@ -5,14 +5,23 @@
         <field name="model">estate.property</field>
         <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
         <field name="arch" type="xml">
+            <!-- Move AI description button INTO the Description tab -->
+            <xpath expr="//page[@name='description']/field[@name='description']" position="before">
+                <div class="mb-3">
+                    <button name="action_generate_ai_description" type="object"
+                            string="  Generar Descripción Comercial con IA" class="btn-success btn-sm"
+                            icon="fa-magic" title="Genera una descripción comercial profesional con IA y la guarda aquí"/>
+                </div>
+            </xpath>
+
+            <!-- AI Vision analysis button stays in Geo/IA tab -->
             <xpath expr="//field[@name='ai_vision_description']" position="before">
                 <button name="action_analyze_image_ai" type="object"
                         string="Analizar Imagen con IA" class="btn-primary"
                         icon="fa-eye" title="Usa Gemini Vision para analizar la imagen principal"/>
-                <button name="action_generate_ai_description" type="object"
-                        string="Generar Descripción Comercial IA" class="btn-success"
-                        icon="fa-magic" title="Genera 3 versiones de descripción (formal, emocional, directa) + titulares"/>
             </xpath>
+
+            <!-- AI analysis attributes in Geo/IA tab -->
             <xpath expr="//group[@name='geo_ai']" position="inside">
                 <group string="Atributos Detectados (IA)">
                     <field name="ai_condition" widget="badge"/>
@@ -20,9 +29,9 @@
                     <field name="ai_red_flags" invisible="not ai_red_flags"/>
                     <field name="ai_staging_suggestions" invisible="not ai_staging_suggestions"/>
                 </group>
-                <group string="Descripción Comercial IA (Mejora 3)">
-                    <field name="ai_marketing_description" nolabel="1" widget="text"
-                           placeholder="Presiona 'Generar Descripción Comercial IA' para crear automáticamente 3 versiones de marketing..."/>
+                <group string="Copia de Descripción Comercial IA">
+                    <field name="ai_marketing_description" nolabel="1" widget="text" readonly="1"
+                           placeholder="La descripción comercial generada aparecerá aquí como respaldo..."/>
                 </group>
             </xpath>
         </field>

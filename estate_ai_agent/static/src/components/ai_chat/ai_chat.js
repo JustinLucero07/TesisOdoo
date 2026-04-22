@@ -4,11 +4,6 @@ import { registry } from "@web/core/registry";
 import { Component, useState, useRef, onMounted } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
 
-// Keywords that indicate a destructive/confirmation-required action
-const DESTRUCTIVE_KEYWORDS = [
-    'confirmo', 'sí confirmo', 'si confirmo', 'yes confirm', 'confirm',
-];
-
 // Contextual chips shown after first bot response
 const CONTEXTUAL_CHIPS = [
     '¿Cuántas propiedades disponibles hay?',
@@ -77,12 +72,13 @@ export class EstateAIChat extends Component {
         this.state.showChips = false;
         this.scrollToBottom();
 
-        // Placeholder bot message, updated live via SSE
+        // Placeholder bot message
         this.state.messages.push({
             type: "bot",
-            text: "🔍 Consultando base de datos...",
+            text: "",
             date: "Ahora",
             streaming: true,
+            statusPhase: "searching",
         });
         const botIdx = this.state.messages.length - 1;
         this.scrollToBottom();
@@ -121,25 +117,30 @@ export class EstateAIChat extends Component {
                         const chunk = JSON.parse(payload);
                         if (chunk.status && !accumulatedText) {
                             this.state.messages[botIdx].text = chunk.status;
+                            this.state.messages[botIdx].statusPhase = "processing";
                         } else if (chunk.text) {
                             accumulatedText += chunk.text;
                             this.state.messages[botIdx].text = accumulatedText;
+                            this.state.messages[botIdx].statusPhase = null;
                             this.scrollToBottom();
                         } else if (chunk.error) {
-                            this.state.messages[botIdx].text = `❌ ${chunk.error}`;
+                            this.state.messages[botIdx].text = chunk.error;
+                            this.state.messages[botIdx].isError = true;
                         }
                     } catch (_) {}
                 }
             }
 
             if (!accumulatedText) {
-                this.state.messages[botIdx].text = "Sin respuesta del asistente.";
+                this.state.messages[botIdx].text = this.state.messages[botIdx].text || "Sin respuesta del asistente.";
             }
             this.state.messages[botIdx].streaming = false;
+            this.state.messages[botIdx].statusPhase = null;
             this.state.messages[botIdx].copyable = true;
         } catch (e) {
-            this.state.messages[botIdx].text = "❌ Error de conexión con el agente IA.";
+            this.state.messages[botIdx].text = `Error de conexión con el agente IA: ${e.message}`;
             this.state.messages[botIdx].streaming = false;
+            this.state.messages[botIdx].isError = true;
         }
 
         this.state.loading = false;
@@ -193,14 +194,15 @@ export class EstateAIChat extends Component {
         this.state.ocrResult = null;
         this.state.messages.push({
             type: "user",
-            text: `📎 Archivo subido: ${file.name}`,
+            text: `Archivo subido: ${file.name}`,
             date: "Ahora",
         });
         this.state.messages.push({
             type: "bot",
-            text: "🔍 Analizando documento con IA...",
+            text: "",
             date: "Ahora",
             streaming: true,
+            statusPhase: "processing",
         });
         const botIdx = this.state.messages.length - 1;
         this.scrollToBottom();
@@ -222,16 +224,19 @@ export class EstateAIChat extends Component {
                     .map(([k, v]) => `**${k}**: ${v}`)
                     .join("\n");
                 this.state.messages[botIdx].text =
-                    `✅ **Datos extraídos de ${file.name}:**\n\n${lines}\n\n` +
+                    `**Datos extraídos de ${file.name}:**\n\n${lines}\n\n` +
                     `_¿Quieres que registre estos datos en el sistema? Dime qué hacer con ellos._`;
                 this.state.ocrResult = result.extracted;
             } else {
-                this.state.messages[botIdx].text = `❌ Error OCR: ${result.error || 'No se pudo procesar el archivo.'}`;
+                this.state.messages[botIdx].text = `Error OCR: ${result.error || 'No se pudo procesar el archivo.'}`;
+                this.state.messages[botIdx].isError = true;
             }
             this.state.messages[botIdx].streaming = false;
+            this.state.messages[botIdx].statusPhase = null;
         } catch (e) {
-            this.state.messages[botIdx].text = "❌ Error al subir el archivo.";
+            this.state.messages[botIdx].text = "Error al subir el archivo.";
             this.state.messages[botIdx].streaming = false;
+            this.state.messages[botIdx].isError = true;
         }
 
         this.state.loading = false;
@@ -249,24 +254,42 @@ export class EstateAIChat extends Component {
 
     formatResponse(text) {
         if (!text) return "";
+        let html = text;
+
         // Tables
-        let html = text.replace(/\|(.+)\|/g, (match) => {
-            const cells = match.split("|").filter(c => c.trim());
-            const isHeader = text.indexOf(match) < text.indexOf("---");
-            const tag = isHeader ? "th" : "td";
-            return `<tr>${cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join("")}</tr>`;
+        html = html.replace(/(?:\|.+\|\n?)+/g, match => {
+            const rows = match.trim().split('\n');
+            let table = '<div class="table-responsive my-2"><table class="table table-sm table-bordered estate-ai-table" style="background:white;border-radius:8px;overflow:hidden">';
+            let isFirst = true;
+            rows.forEach(row => {
+                if (row.includes('---')) { isFirst = false; return; }
+                const cols = row.split('|').filter((c,i,a)=>i>0&&i<a.length-1);
+                table += '<tr>' + cols.map(c => isFirst
+                    ? `<th style="background:#f0f4f8;font-weight:600;color:#004274;padding:8px 10px">${c.trim()}</th>`
+                    : `<td style="padding:7px 10px">${c.trim()}</td>`
+                ).join('') + '</tr>';
+                isFirst = false;
+            });
+            return table + '</table></div>';
         });
-        // Wrap table rows
-        if (html.includes("<tr>")) {
-            html = html.replace(/(<tr>.*?<\/tr>(\s*<tr>.*?<\/tr>)*)/gs,
-                '<table class="table table-sm table-bordered estate-ai-table">$1</table>');
-        }
+
+        // Headers
+        html = html.replace(/^####\s+(.+)$/gm, '<h6 style="color:#004274;font-weight:700;margin:10px 0 4px;font-size:.85em">$1</h6>');
+        html = html.replace(/^###\s+(.+)$/gm, '<h5 style="color:#004274;font-weight:700;margin:12px 0 6px;font-size:.92em">$1</h5>');
+        html = html.replace(/^##\s+(.+)$/gm, '<h4 style="color:#004274;font-weight:700;margin:14px 0 6px">$1</h4>');
+
+        // Lists
+        html = html.replace(/^\* (.+)$/gm, '<li style="margin-bottom:2px">$1</li>');
+        html = html.replace(/(<li.*<\/li>\n?)+/g, '<ul style="padding-left:18px;margin:6px 0">$&</ul>');
+
         // Bold, italic, code
         html = html
             .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
             .replace(/\*(.*?)\*/g, "<em>$1</em>")
             .replace(/`(.*?)`/g, "<code>$1</code>")
+            .replace(/\n\n/g, "<br/><br/>")
             .replace(/\n/g, "<br/>");
+
         return html;
     }
 

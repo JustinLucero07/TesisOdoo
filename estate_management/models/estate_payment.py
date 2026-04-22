@@ -222,8 +222,7 @@ class EstatePayment(models.Model):
             # WhatsApp al asesor responsable si el pago lleva 3+ días vencido
             if days_late >= 3:
                 agent_phone = (
-                    responsible.partner_id.mobile
-                    or responsible.partner_id.phone
+                    responsible.partner_id.phone
                     or ''
                 )
                 self._send_whatsapp_overdue(agent_phone, payment, days_late)

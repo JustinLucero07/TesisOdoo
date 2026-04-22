@@ -142,45 +142,86 @@ class EstateProperty(models.Model):
             raise UserError(_("Error al conectar con Gemini Vision: %s") % str(e))
 
     def action_generate_ai_description(self):
-        """Mejora 3: Genera descripcion comercial de marketing con IA (3 tonos)."""
+        """Genera descripción comercial profesional con IA y la guarda en el campo descripción."""
         self.ensure_one()
         if not GOOGLE_GENAI_AVAILABLE:
-            raise UserError(_("La libreria 'google-genai' no esta instalada."))
+            raise UserError(_("La librería 'google-genai' no está instalada."))
 
         ICP = self.env['ir.config_parameter'].sudo()
         api_key = ICP.get_param('estate_ai.api_key', '')
         if not api_key:
-            raise UserError(_("No se ha configurado la API Key. Vaya a Configuracion > Agente IA."))
+            raise UserError(_("No se ha configurado la API Key. Vaya a Configuración > Agente IA."))
 
         prop = self
+
+        # Gather advisor phone numbers
+        advisor_phones = []
+        if prop.user_id and prop.user_id.partner_id.phone:
+            advisor_phones.append(prop.user_id.partner_id.phone)
+        if prop.co_user_id and prop.co_user_id.partner_id.phone:
+            advisor_phones.append(prop.co_user_id.partner_id.phone)
+        phones_text = ' – '.join(advisor_phones) if advisor_phones else 'Consultar'
+
+        # Build property info
+        tipo = prop.property_type_id.name if prop.property_type_id else 'Inmueble'
+        operacion = 'EN VENTA' if prop.offer_type == 'sale' else 'EN ARRIENDO'
+        ciudad = prop.city or ''
+        sector = prop.street or ''
+        area_terreno = prop.area or 0
+        habitaciones = prop.bedrooms or 0
+        banos = prop.bathrooms or 0
+        parking = prop.parking_spaces or 0
+        vehiculos = prop.vehicle_capacity or 0
+        piso = prop.floor or 0
+        year_built = prop.year_built or 0
+        precio = f"${prop.price:,.2f}" if prop.price else 'Consultar'
+
+        # AI vision info if available
+        vision_info = ''
+        if prop.ai_vision_description:
+            vision_info = f"\nAnálisis visual IA de la propiedad: {prop.ai_vision_description}"
+
         detalles = (
-            f"Tipo: {prop.property_type_id.name if prop.property_type_id else 'Inmueble'}\n"
-            f"Ciudad: {prop.city or ''} | Sector: {prop.street or ''}\n"
-            f"Area: {prop.area or 0} m2 | Habitaciones: {prop.bedrooms or 0} | Banos: {prop.bathrooms or 0}\n"
-            f"Precio: ${prop.price:,.2f}\n"
-            f"Estado: {'En venta' if prop.offer_type == 'sale' else 'En arriendo'}\n"
-            f"Caracteristicas adicionales: {prop.description or 'No especificadas'}"
+            f"Tipo de propiedad: {tipo}\n"
+            f"Operación: {operacion}\n"
+            f"Ciudad: {ciudad} | Sector/Dirección: {sector}\n"
+            f"Área: {area_terreno} m²\n"
+            f"Habitaciones: {habitaciones} | Baños: {banos} | Parqueaderos: {parking} | Capacidad vehículos: {vehiculos}\n"
+            f"Piso/Planta: {piso} | Año de construcción: {year_built}\n"
+            f"Precio: {precio}\n"
+            f"Teléfonos asesores: {phones_text}"
+            f"{vision_info}"
         )
 
-        prompt = f"""
-Eres un experto en marketing inmobiliario de alto nivel. Con los datos de esta propiedad,
-genera una descripcion comercial en TRES versiones, cada una para un publico distinto.
-Responde UNICAMENTE en JSON valido con esta estructura:
+        prompt = f"""Eres un experto copywriter inmobiliario de Ecuador. Genera una descripción comercial
+ATRACTIVA y PROFESIONAL en formato HTML para publicar en portales inmobiliarios y redes sociales.
 
-{{
-  "formal": "Descripcion de 3-4 oraciones para inversores o instituciones bancarias. Tono profesional, menciona rentabilidad y plusvalia.",
-  "emocional": "Descripcion de 3-4 oraciones para familias. Evoca el hogar, la seguridad, el futuro.",
-  "directo": "Descripcion de 2-3 oraciones para compradores rapidos. Destaca el valor y la urgencia.",
-  "headline_1": "Titular corto y potente (max 8 palabras) -- version A",
-  "headline_2": "Titular corto y potente (max 8 palabras) -- version B",
-  "headline_3": "Titular corto y potente (max 8 palabras) -- version C"
-}}
+REGLAS OBLIGATORIAS:
+1. Empieza con un TITULAR llamativo con el tipo de operación (VENTA/ARRIENDO) y el nombre de la propiedad
+2. Sigue con un PÁRRAFO GANCHO emocional de 2-3 oraciones que enganche al lector
+3. Incluye SECCIONES con ESTOS emojis EXACTOS como encabezados (siempre estos, no otros):
+   - 🏠 Propiedad (tipo y descripción general)
+   - 📍 Ubicación (ciudad, sector, ventajas de la zona)
+   - 💰 Precio e Inversión
+   - 📐 Características (área, dimensiones, metros cuadrados)
+   - 🛏️ Distribución (habitaciones, baños, cocina, áreas sociales, parqueaderos)
+   - ✅ Acabados y Extras
+   - 🏷️ Tipo de Propiedad
+   - 📞 Contacto (teléfonos de asesores)
+4. Usa listas con ✅ o viñetas para las características
+5. Termina con un CTA (llamada a la acción) para agendar visita
+6. Los teléfonos de los asesores son: {phones_text}
+7. El HTML debe usar <h3>, <p>, <ul><li>, <b>, <br/> — NO uses CSS inline ni estilos
+8. Sé CREATIVO, VENDEDOR y usa lenguaje emocional pero profesional
+9. NO inventes datos que no estén en la información proporcionada
+10. Si algún dato es 0 o vacío, NO lo menciones
 
 DATOS DE LA PROPIEDAD:
 {detalles}
-"""
+
+Responde SOLO con el HTML de la descripción, sin bloques de código ni explicaciones."""
+
         try:
-            # Configure retries for transient errors (503, 429, etc.)
             retry_options = genai.types.HttpRetryOptions(
                 attempts=3,
                 initial_delay=2.0,
@@ -198,74 +239,32 @@ DATOS DE LA PROPIEDAD:
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
-                config=genai.types.GenerateContentConfig(temperature=0.8, max_output_tokens=1500),
-            )
-            import json
-            import re
-            raw = response.text.strip().replace('```json', '').replace('```', '').strip()
-
-            # Robust JSON parsing: try direct parse first, then attempt repairs
-            result = None
-            try:
-                result = json.loads(raw)
-            except json.JSONDecodeError:
-                _logger.warning("JSON directo fallo, intentando reparar respuesta truncada de Gemini...")
-                # Attempt 1: fix unterminated strings and unclosed braces
-                repaired = raw
-                # If odd number of quotes, close the last open string
-                if repaired.count('"') % 2 != 0:
-                    repaired = repaired.rstrip().rstrip(',') + '"'
-                # Close any unclosed braces
-                open_braces = repaired.count('{') - repaired.count('}')
-                if open_braces > 0:
-                    repaired = repaired.rstrip().rstrip(',') + '}' * open_braces
-                try:
-                    result = json.loads(repaired)
-                    _logger.info("JSON reparado exitosamente (cierre de llaves/comillas).")
-                except json.JSONDecodeError:
-                    pass
-
-            # Attempt 2: regex extraction of individual fields
-            if result is None:
-                _logger.warning("Reparacion JSON fallo, extrayendo campos con regex...")
-                result = {}
-                for field_name in ('formal', 'emocional', 'directo', 'headline_1', 'headline_2', 'headline_3'):
-                    match = re.search(
-                        r'"' + field_name + r'"\s*:\s*"((?:[^"\\]|\\.)*)"',
-                        raw, re.DOTALL
-                    )
-                    if match:
-                        result[field_name] = match.group(1).replace('\\n', '\n').replace('\\"', '"')
-                if not any(result.values()):
-                    raise UserError(_("La IA devolvio una respuesta que no se pudo interpretar. Intente de nuevo."))
-
-            formal = result.get('formal', '')
-            emocional = result.get('emocional', '')
-            directo = result.get('directo', '')
-            h1 = result.get('headline_1', '')
-            h2 = result.get('headline_2', '')
-            h3 = result.get('headline_3', '')
-
-            combined = (
-                f"--- VERSION FORMAL (Inversores/Banco) ---\n{formal}\n\n"
-                f"--- VERSION EMOCIONAL (Familias) ---\n{emocional}\n\n"
-                f"--- VERSION DIRECTA (Cierre rapido) ---\n{directo}\n\n"
-                f"--- TITULARES PARA WORDPRESS/REDES ---\n"
-                f"A: {h1}\nB: {h2}\nC: {h3}"
+                config=genai.types.GenerateContentConfig(temperature=0.85, max_output_tokens=2000),
             )
 
-            prop.ai_marketing_description = combined
+            html_desc = response.text.strip()
+            # Clean markdown code blocks if Gemini wraps it
+            if html_desc.startswith('```html'):
+                html_desc = html_desc.replace('```html', '').replace('```', '').strip()
+            elif html_desc.startswith('```'):
+                html_desc = html_desc.replace('```', '').strip()
+
+            # Save to main description field (HTML)
+            prop.description = html_desc
+            # Also keep copy in marketing field
+            prop.ai_marketing_description = html_desc
 
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': 'Descripcion generada!',
-                    'message': 'La descripcion comercial IA fue creada. Revisala en la pestana Inteligencia Artificial.',
+                    'title': '✨ Descripción generada',
+                    'message': 'La descripción comercial se ha generado y guardado exitosamente.',
                     'type': 'success',
                     'sticky': False,
                 }
             }
         except Exception as e:
-            _logger.error("Error en generador de descripcion IA: %s", str(e))
-            raise UserError(_("Error al generar descripcion: %s") % str(e))
+            _logger.error("Error en generador de descripción IA: %s", str(e))
+            raise UserError(_("Error al generar descripción: %s") % str(e))
+

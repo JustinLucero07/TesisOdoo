@@ -66,9 +66,9 @@
                                                 </td>
                                                 <td>
                                                     <t t-esc="ev.partner_id.name or '—'"/>
-                                                    <t t-if="ev.partner_id.mobile">
+                                                    <t t-if="ev.partner_id.phone">
                                                         <br/>
-                                                        <small class="text-muted"><t t-esc="ev.partner_id.mobile"/></small>
+                                                        <small class="text-muted"><t t-esc="ev.partner_id.phone"/></small>
                                                     </t>
                                                 </td>
                                                 <td><t t-esc="ev.user_id.name or '—'"/></td>
