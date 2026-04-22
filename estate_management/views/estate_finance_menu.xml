@@ -31,18 +31,7 @@
         </field>
     </record>
 
-    <!-- 3. Facturas Inmobiliarias (account.move) -->
-    <record id="estate_invoices_action" model="ir.actions.act_window">
-        <field name="name">Facturas Inmobiliarias</field>
-        <field name="res_model">account.move</field>
-        <field name="view_mode">list,form,pivot,graph</field>
-        <field name="domain">[('move_type', 'in', ('out_invoice', 'out_refund')), ('property_id', '!=', False)]</field>
-        <field name="context">{'default_move_type': 'out_invoice'}</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">Sin facturas registradas.</p>
-            <p>Facturas de venta vinculadas a propiedades del sistema.</p>
-        </field>
-    </record>
+    <!-- 3. (Eliminado: Facturas Inmobiliarias) -->
 
     <!-- 4. Gastos de Propiedad — usa la acción existente en estate_expense_views.xml -->
 

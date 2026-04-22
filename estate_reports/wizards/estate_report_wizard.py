@@ -261,13 +261,14 @@ class EstateReportWizard(models.TransientModel):
         elif self.report_type == 'active_clients':
             headers = ['Iniciativa', 'Contacto', 'Telef.', 'Email', 'Ingreso Esperado', 'Etapa', 'Asesor']
             col_count = len(headers)
+            ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
             for col, h in enumerate(headers):
                 ws.write(row, col, h, header_fmt)
             row += 1
             for rec in data['records']:
                 ws.write(row, 0, rec.name or '', cell_fmt)
                 ws.write(row, 1, rec.partner_name or rec.contact_name or '', cell_fmt)
-                ws.write(row, 2, rec.phone or rec.mobile or '', cell_fmt)
+                ws.write(row, 2, rec.phone or '', cell_fmt)
                 ws.write(row, 3, rec.email_from or '', cell_fmt)
                 ws.write(row, 4, rec.expected_revenue or 0, money_fmt)
                 ws.write(row, 5, rec.stage_id.name or 'Nuevo', cell_fmt)

@@ -525,7 +525,7 @@ class CrmLead(models.Model):
         """Open WhatsApp chat with pre-filled property message."""
         self.ensure_one()
         import urllib.parse
-        number = self.phone or (self.partner_id.mobile if self.partner_id else '')
+        number = self.phone or (self.partner_id.phone if self.partner_id else '')
         if not number:
             return {
                 'type': 'ir.actions.client',

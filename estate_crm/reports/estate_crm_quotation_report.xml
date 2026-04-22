@@ -47,7 +47,7 @@
                                 </div>
                                 <t t-if="lead.partner_id">
                                     <div style="margin-top: 4px;"><t t-out="lead.partner_id.email or ''"/></div>
-                                    <div><t t-out="lead.partner_id.phone or lead.partner_id.mobile or ''"/></div>
+                                    <div><t t-out="lead.partner_id.phone or ''"/></div>
                                     <div><t t-out="lead.partner_id.street or ''"/>
                                          <t t-if="lead.partner_id.city">, <t t-out="lead.partner_id.city"/></t>
                                     </div>
@@ -64,7 +64,7 @@
                                     <t t-out="lead.user_id.name or '—'"/>
                                 </div>
                                 <div style="margin-top: 4px;"><t t-out="lead.user_id.email or ''"/></div>
-                                <div><t t-out="(lead.user_id.partner_id.mobile or lead.user_id.partner_id.phone or '') if lead.user_id.partner_id else ''"/></div>
+                                <div><t t-out="(lead.user_id.partner_id.phone or '') if lead.user_id.partner_id else ''"/></div>
                                 <div style="margin-top: 6px; font-weight: 600;"><t t-out="company.name"/></div>
                             </div>
                         </div>

@@ -256,10 +256,6 @@ DATOS DE LA PROPIEDAD:
 
             prop.ai_marketing_description = combined
 
-            # Also save the formal description to the main Html description field
-            if formal:
-                prop.description = f"<p>{formal}</p>"
-
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
