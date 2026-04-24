@@ -114,6 +114,16 @@
                                 <field name="signature_date"/>
                             </group>
                         </page>
+                        <page string="Documentos y Anexos" name="documents">
+                            <group string="Contrato de Arras">
+                                <field name="earnest_money_contract" filename="earnest_money_filename"/>
+                                <field name="earnest_money_filename" invisible="1"/>
+                            </group>
+                            <group string="Contrato Final Firmado">
+                                <field name="signed_contract" filename="signed_contract_filename"/>
+                                <field name="signed_contract_filename" invisible="1"/>
+                            </group>
+                        </page>
                     </notebook>
                 </sheet>
                 <chatter>

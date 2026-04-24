@@ -40,6 +40,20 @@ class CrmLead(models.Model):
         string='Área Mínima (m²)')
     preferred_max_area = fields.Float(
         string='Área Máxima (m²)')
+        
+    client_needs = fields.Text(string='Necesidades Especiales / Demanda del Cliente', 
+                              help='Detalles específicos sobre lo que busca el cliente (ej. cerca de parques, aceptan mascotas, crédito pre-aprobado).')
+                              
+    # --- Cierre de Ventas ---
+    closing_payment_type = fields.Selection([
+        ('cash', 'Contado'),
+        ('credit', 'Con Crédito (Hipotecario)'),
+    ], string='Tipo de Cierre (Forma de Pago)', tracking=True)
+    
+    mortgage_time_estimated = fields.Char(string='Tiempo Estimado de Crédito', 
+                                         help='Ejemplo: 30 a 45 días')
+    promissory_note_time = fields.Char(string='Tiempo Promesa de Compra-Venta',
+                                      help='Ejemplo: 90 días')
 
     lead_score = fields.Selection([
         ('low', 'Básico (C)'),

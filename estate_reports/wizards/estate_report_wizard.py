@@ -147,7 +147,7 @@ class EstateReportWizard(models.TransientModel):
         elif self.report_type == 'advisor_portfolio':
             data['title'] = 'Cartera por Asesor'
             data['records'] = self.env['res.users'].search([
-                ('groups_id', 'in', [self.env.ref('estate_management.estate_group_agent', raise_if_not_found=False).id or 0])
+                ('group_ids', 'in', [self.env.ref('estate_management.estate_group_agent', raise_if_not_found=False).id or 0])
             ])
 
         elif self.report_type == 'occupancy_report':

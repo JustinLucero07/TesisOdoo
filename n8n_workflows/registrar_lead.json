@@ -1,0 +1,170 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "nombre",
+              "value": "={{ $json.nombre || 'Lead WhatsApp' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "telefono",
+              "value": "={{ $json.telefono || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "ciudad",
+              "value": "={{ $json.ciudad || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p4",
+              "name": "presupuesto",
+              "value": "={{ Number($json.presupuesto) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p5",
+              "name": "necesidades",
+              "value": "={{ $json.necesidades || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p6",
+              "name": "property_id",
+              "value": "={{ Number($json.property_id) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p7",
+              "name": "etapa",
+              "value": "={{ Number($json.etapa) || 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-params",
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"tesis_odoo19\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
+        "options": {}
+      },
+      "id": "auth-odoo",
+      "name": "Autenticar Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "uid1",
+              "name": "uid",
+              "value": "={{ $json.result }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-uid",
+      "name": "Extraer UID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"tesis_odoo19\",\n      {{ $json.uid }},\n      \"admin\",\n      \"crm.lead\",\n      \"create\",\n      [{\n        \"name\": \"WhatsApp: {{ $('Preparar Datos').item.json.nombre }}\",\n        \"contact_name\": \"{{ $('Preparar Datos').item.json.nombre }}\",\n        \"phone\": \"{{ $('Preparar Datos').item.json.telefono }}\",\n        \"type\": \"opportunity\",\n        \"lead_source\": \"whatsapp\",\n        \"stage_id\": {{ $('Preparar Datos').item.json.etapa === 1 ? 15 : $('Preparar Datos').item.json.etapa === 2 ? 16 : $('Preparar Datos').item.json.etapa === 3 ? 17 : 15 }},\n        \"client_budget\": {{ $('Preparar Datos').item.json.presupuesto }},\n        \"preferred_city\": \"{{ $('Preparar Datos').item.json.ciudad }}\",\n        \"client_needs\": \"{{ $('Preparar Datos').item.json.necesidades }}\",\n        \"target_property_id\": {{ $('Preparar Datos').item.json.property_id > 0 ? $('Preparar Datos').item.json.property_id : 'false' }}\n      }]\n    ]\n  },\n  \"id\": 2\n}",
+        "options": {}
+      },
+      "id": "create-lead",
+      "name": "Crear Lead en Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.result ? 'Lead creado exitosamente con ID: ' + $json.result + '. El cliente ' + $('Preparar Datos').item.json.nombre + ' ha sido registrado en el CRM como oportunidad vía WhatsApp.' : 'Error al crear el lead: ' + JSON.stringify($json.error || 'desconocido') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-response",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1300, 300]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [[{"node": "Preparar Datos", "type": "main", "index": 0}]]
+    },
+    "Preparar Datos": {
+      "main": [[{"node": "Autenticar Odoo", "type": "main", "index": 0}]]
+    },
+    "Autenticar Odoo": {
+      "main": [[{"node": "Extraer UID", "type": "main", "index": 0}]]
+    },
+    "Extraer UID": {
+      "main": [[{"node": "Crear Lead en Odoo", "type": "main", "index": 0}]]
+    },
+    "Crear Lead en Odoo": {
+      "main": [[{"node": "Formatear Respuesta", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "meta": {"templateCredsSetupCompleted": true}
+}

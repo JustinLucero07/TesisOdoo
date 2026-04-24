@@ -18,6 +18,7 @@ class EstatePropertyOffer(models.Model):
 
     # Montos
     asking_price = fields.Float(related='property_id.price', string='Precio Solicitado', readonly=True)
+    property_bottom_price = fields.Float(related='property_id.bottom_price', string='Precio Mínimo (Tope)', readonly=True)
     offer_amount = fields.Float(string='Monto Ofertado', required=True, tracking=True)
     counteroffer_amount = fields.Float(string='Contraoferta', tracking=True)
     final_agreed_amount = fields.Float(string='Precio Final Acordado', tracking=True)
@@ -87,7 +88,7 @@ class EstatePropertyOffer(models.Model):
     def action_submit(self):
         self.write({'state': 'submitted'})
         # Auto-avanzar lead a "Oferta Presentada"
-        self._advance_lead_stage('estate_crm.stage_lead5_estate')
+        self._advance_lead_stage('estate_crm.stage_lead4_estate_papeles')
         # Notificar al asesor de la propiedad
         for rec in self:
             if rec.property_id.user_id and rec.property_id.user_id != self.env.user:
@@ -100,7 +101,29 @@ class EstatePropertyOffer(models.Model):
     def action_counteroffer(self):
         self.write({'state': 'countered'})
         # Auto-avanzar lead a "En Negociación"
-        self._advance_lead_stage('estate_crm.stage_lead6_estate')
+        self._advance_lead_stage('estate_crm.stage_lead5_estate_avaluo')
+        
+    def action_simulate_counteroffer(self):
+        """Simula una contraoferta basada en el tope mínimo del propietario."""
+        for rec in self:
+            if rec.state not in ('draft', 'submitted'):
+                raise UserError('Solo se puede simular contraofertas en ofertas Nuevas o Presentadas.')
+            if not rec.property_bottom_price or rec.property_bottom_price == 0:
+                raise UserError('La propiedad no tiene definido un "Precio Tope" (mínimo) para poder simular.')
+                
+            if rec.offer_amount >= rec.asking_price:
+                # Si ofrece igual o más, lo ideal sería aceptar, pero podemos sólo igualarlo
+                rec.counteroffer_amount = rec.offer_amount
+                rec.message_post(body="La oferta supera o iguala el precio original. Se puede aceptar directamente.")
+            elif rec.offer_amount >= rec.property_bottom_price:
+                # Si está por encima del tope pero debajo del original, llegamos a un punto medio
+                middle = (rec.offer_amount + rec.asking_price) / 2
+                rec.counteroffer_amount = middle
+                rec.message_post(body=f"La oferta ({rec.offer_amount}) está por encima del tope ({rec.property_bottom_price}). Se sugiere contraofertar un punto medio: {middle}.")
+            else:
+                # Si está por debajo del tope mínimo
+                rec.counteroffer_amount = rec.property_bottom_price
+                rec.message_post(body=f"La oferta ({rec.offer_amount}) es MENOR al tope aceptable ({rec.property_bottom_price}). Se sugiere contraofertar al tope mínimo.")
 
     def action_accept(self):
         self.ensure_one()
@@ -108,7 +131,7 @@ class EstatePropertyOffer(models.Model):
             self.final_agreed_amount = self.counteroffer_amount or self.offer_amount
         self.write({'state': 'accepted'})
         # Auto-avanzar lead a "En Negociación" (si aún no está más avanzado)
-        self._advance_lead_stage('estate_crm.stage_lead6_estate')
+        self._advance_lead_stage('estate_crm.stage_lead6_estate_minuta')
         # Reservar la propiedad automáticamente
         self.property_id.write({'state': 'reserved', 'buyer_id': self.partner_id.id})
         # Rechazar otras ofertas activas sobre la misma propiedad

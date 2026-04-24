@@ -12,6 +12,7 @@
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="property_id"/>
                 <field name="estate_transaction_type"/>
+                <field name="closing_payment_type"/>
             </xpath>
             <xpath expr="//header" position="inside">
                 <button name="action_mark_property_from_invoice"

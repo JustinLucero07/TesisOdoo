@@ -52,6 +52,9 @@
                        decoration-info="type == 'rental'"
                        decoration-success="type == 'sale'"
                        decoration-warning="type == 'bonus'"/>
+                <field name="sale_amount" widget="monetary" string="Venta"
+                       options="{'currency_field': 'company_currency'}" optional="show"/>
+                <field name="commission_pct" string="%" optional="show"/>
                 <field name="amount" sum="Total Comisiones" widget="monetary"
                        options="{'currency_field': 'company_currency'}"/>
                 <field name="company_currency" column_invisible="1"/>
@@ -113,7 +116,10 @@
                             <field name="type"/>
                             <field name="date"/>
                         </group>
-                        <group string="Monto">
+                        <group string="Cálculo de Comisión">
+                            <field name="sale_amount" widget="monetary"
+                                   options="{'currency_field': 'company_currency'}"/>
+                            <field name="commission_pct" widget="percentage"/>
                             <field name="amount" widget="monetary"
                                    options="{'currency_field': 'company_currency'}"/>
                             <field name="company_currency"/>

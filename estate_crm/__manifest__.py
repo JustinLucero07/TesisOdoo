@@ -22,11 +22,11 @@
         'views/res_partner_views.xml',
         'views/estate_interaction_views.xml',
         'views/estate_property_match_views.xml',
+        'views/estate_crm_lead_views.xml',
         'views/estate_crm_actions.xml',
         'views/estate_crm_menus.xml',
         'data/estate_crm_stage_data.xml',
         'data/estate_email_templates.xml',
-        'views/estate_crm_lead_views.xml',
     ],
     'demo': [
         'data/estate_crm_leads_demo.xml',

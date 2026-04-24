@@ -1,0 +1,189 @@
+{
+  "name": "My workflow 5",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger-1",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "fecha",
+              "value": "={{ $json.fecha || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "hora",
+              "value": "={{ $json.hora || '10:00' }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "property_id",
+              "value": "={{ Number($json.property_id) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p4",
+              "name": "lead_id",
+              "value": "={{ Number($json.lead_id) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p5",
+              "name": "user_id",
+              "value": "={{ Number($json.user_id) || 2 }}",
+              "type": "number"
+            },
+            {
+              "id": "p6",
+              "name": "nombre_cliente",
+              "value": "={{ $json.nombre_cliente || 'Cliente' }}",
+              "type": "string"
+            },
+            {
+              "id": "p7",
+              "name": "nombre_propiedad",
+              "value": "={{ $json.nombre_propiedad || 'Propiedad' }}",
+              "type": "string"
+            },
+            {
+              "id": "p8",
+              "name": "duracion",
+              "value": "={{ Number($json.duracion) || 1.0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-params",
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"tesis_odoo19\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
+        "options": {}
+      },
+      "id": "auth-odoo",
+      "name": "Autenticar Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "uid1",
+              "name": "uid",
+              "value": "={{ $json.result }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-uid",
+      "name": "Extraer UID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse fecha (DD-MM-YYYY or YYYY-MM-DD) and hora (HH:MM)\nconst datos = $('Preparar Datos').item.json;\nconst uid = $input.item.json.uid;\n\nlet fecha = datos.fecha;\n// Convert DD-MM-YYYY to YYYY-MM-DD if needed\nif (fecha && fecha.match(/^\\d{2}-\\d{2}-\\d{4}$/)) {\n  const parts = fecha.split('-');\n  fecha = `${parts[2]}-${parts[1]}-${parts[0]}`;\n}\n\nconst hora = datos.hora || '10:00';\n// Build start datetime in Ecuador timezone (UTC-5)\nconst startLocal = `${fecha} ${hora}:00`;\nconst startDate = new Date(`${fecha}T${hora}:00-05:00`);\nconst duracionMs = (datos.duracion || 1) * 3600000;\nconst stopDate = new Date(startDate.getTime() + duracionMs);\n\n// Format as ISO for Odoo (UTC)\nconst startUTC = startDate.toISOString().replace('T', ' ').slice(0, 19);\nconst stopUTC = stopDate.toISOString().replace('T', ' ').slice(0, 19);\n\nreturn {\n  json: {\n    uid,\n    start: startUTC,\n    stop: stopUTC,\n    duration: datos.duracion || 1.0,\n    property_id: datos.property_id,\n    lead_id: datos.lead_id,\n    user_id: datos.user_id,\n    nombre_cliente: datos.nombre_cliente,\n    nombre_propiedad: datos.nombre_propiedad\n  }\n};"
+      },
+      "id": "build-datetime",
+      "name": "Calcular Fecha/Hora UTC",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Content-Type", "value": "application/json"}
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"tesis_odoo19\",\n      {{ $json.uid }},\n      \"admin\",\n      \"calendar.event\",\n      \"create\",\n      [{\n        \"name\": \"Visita: {{ $json.nombre_propiedad }} - {{ $json.nombre_cliente }}\",\n        \"start\": \"{{ $json.start }}\",\n        \"stop\": \"{{ $json.stop }}\",\n        \"duration\": {{ $json.duration }},\n        \"user_id\": {{ $json.user_id }},\n        \"property_id\": {{ $json.property_id > 0 ? $json.property_id : 'false' }},\n        \"lead_id\": {{ $json.lead_id > 0 ? $json.lead_id : 'false' }},\n        \"appointment_type\": \"visit\",\n        \"visit_state\": \"scheduled\"\n      }]\n    ]\n  },\n  \"id\": 3\n}",
+        "options": {}
+      },
+      "id": "create-event",
+      "name": "Crear Evento Calendario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.result ? 'Cita agendada exitosamente (ID: ' + $json.result + '). Visita programada para ' + $('Preparar Datos').item.json.fecha + ' a las ' + $('Preparar Datos').item.json.hora + ' con el asesor asignado. La propiedad: ' + $('Calcular Fecha/Hora UTC').item.json.nombre_propiedad : 'Error al agendar la cita: ' + JSON.stringify($json.error || 'desconocido') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "format-response",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1520, 300]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [[{"node": "Preparar Datos", "type": "main", "index": 0}]]
+    },
+    "Preparar Datos": {
+      "main": [[{"node": "Autenticar Odoo", "type": "main", "index": 0}]]
+    },
+    "Autenticar Odoo": {
+      "main": [[{"node": "Extraer UID", "type": "main", "index": 0}]]
+    },
+    "Extraer UID": {
+      "main": [[{"node": "Calcular Fecha/Hora UTC", "type": "main", "index": 0}]]
+    },
+    "Calcular Fecha/Hora UTC": {
+      "main": [[{"node": "Crear Evento Calendario", "type": "main", "index": 0}]]
+    },
+    "Crear Evento Calendario": {
+      "main": [[{"node": "Formatear Respuesta", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {"executionOrder": "v1"},
+  "meta": {"templateCredsSetupCompleted": true}
+}

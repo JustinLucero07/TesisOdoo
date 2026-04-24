@@ -33,10 +33,6 @@
                         class="oe_stat_button" icon="fa-file-text">
                         <field name="contract_count" widget="statinfo" string="Contratos"/>
                     </button>
-                    <button name="action_view_lead_sale_orders" type="object"
-                        class="oe_stat_button" icon="fa-shopping-cart">
-                        <field name="sale_order_count" widget="statinfo" string="Órdenes"/>
-                    </button>
                     <button name="action_view_documents" type="object"
                         class="oe_stat_button" icon="fa-folder-open-o"
                         invisible="estate_document_count == 0">
@@ -49,12 +45,6 @@
                 </div>
             </xpath>
             <xpath expr="//header/field[@name='stage_id']" position="before">
-                <button name="action_print_quotation" string="Cotización PDF" type="object"
-                    class="btn-secondary" icon="fa-download"
-                    invisible="type == 'lead'"/>
-                <button name="action_send_quotation_email" string="Enviar Cotización" type="object"
-                    class="btn-secondary" icon="fa-envelope"
-                    invisible="type == 'lead' or not partner_id"/>
                 <button name="action_ai_matchmaker" string=" AI Matchmaker" type="object" class="oe_highlight btn-info" icon="fa-magic"/>
                 <button name="action_send_whatsapp" string=" WhatsApp" type="object" class="btn-success" icon="fa-whatsapp"/>
                 <button name="action_create_offer_from_lead" string="Nueva Oferta" type="object"
@@ -63,9 +53,6 @@
                 <button name="action_reserve_property_from_lead" string="Reservar Propiedad" type="object"
                     class="btn-secondary" icon="fa-lock"
                     invisible="not target_property_id or type == 'lead'"/>
-                <button name="action_create_sale_order_from_lead" string="Crear Orden de Venta" type="object"
-                    class="btn-success" icon="fa-shopping-cart"
-                    invisible="type == 'lead'"/>
                 <button name="action_create_invoice_from_lead" string="Generar Factura" type="object"
                     class="btn-primary" icon="fa-file-text-o"
                     invisible="not target_property_id or type == 'lead'"/>
@@ -133,6 +120,14 @@
                     <field name="preferred_bedrooms"/>
                     <field name="preferred_min_area" string="Área Mín. (m²)"/>
                     <field name="preferred_max_area" string="Área Máx. (m²)"/>
+                    <field name="client_needs" placeholder="Ej. Cerca de parques, crédito pre-aprobado..."/>
+                </group>
+            </xpath>
+            <xpath expr="//group" position="after">
+                <group name="closing_details" string="Detalles de Cierre (Negociación)">
+                    <field name="closing_payment_type" widget="radio" options="{'horizontal': true}"/>
+                    <field name="mortgage_time_estimated" invisible="closing_payment_type != 'credit'"/>
+                    <field name="promissory_note_time" placeholder="Ej. 90 días..."/>
                 </group>
             </xpath>
         </field>
@@ -189,4 +184,82 @@
             </xpath>
         </field>
     </record>
+
+    <!-- Reportes CRM Fase 3 -->
+    <record id="estate_crm_lead_view_pivot_general" model="ir.ui.view">
+        <field name="name">estate.crm.lead.pivot.general</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis por Fuentes" sample="1">
+                <field name="lead_source" type="row"/>
+                <field name="stage_id" type="col"/>
+                <field name="expected_revenue" type="measure"/>
+                <field name="expected_commission" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="estate_crm_lead_view_graph_general" model="ir.ui.view">
+        <field name="name">estate.crm.lead.graph.general</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <graph string="Fuentes de Mayor Rentabilidad" type="bar" sample="1">
+                <field name="lead_source"/>
+                <field name="expected_revenue" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="estate_crm_lead_view_pivot_deals" model="ir.ui.view">
+        <field name="name">estate.crm.lead.pivot.deals</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <pivot string="Promedio y Total de Ventas por Asesor" sample="1" display_quantity="true">
+                <field name="user_id" type="row"/>
+                <field name="closing_payment_type" type="col"/>
+                <field name="expected_revenue" type="measure"/>
+                <field name="client_budget" type="measure"/>
+                <field name="expected_commission" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="estate_crm_lead_view_graph_deals" model="ir.ui.view">
+        <field name="name">estate.crm.lead.graph.deals</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <graph string="Ventas Promedio por Asesor" type="bar" sample="1">
+                <field name="user_id"/>
+                <field name="client_budget" type="measure"/>
+                <field name="expected_commission" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Reporte: Ventas por Fuente -->
+    <record id="estate_crm_lead_view_pivot_sources" model="ir.ui.view">
+        <field name="name">estate.crm.lead.pivot.sources</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <pivot string="Ventas por Fuente de Captación" sample="1" display_quantity="true">
+                <field name="lead_source" type="row"/>
+                <field name="closing_payment_type" type="col"/>
+                <field name="client_budget" type="measure"/>
+                <field name="expected_revenue" type="measure"/>
+                <field name="expected_commission" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="estate_crm_lead_view_graph_sources" model="ir.ui.view">
+        <field name="name">estate.crm.lead.graph.sources</field>
+        <field name="model">crm.lead</field>
+        <field name="arch" type="xml">
+            <graph string="Mejores Fuentes de Ventas" type="pie" sample="1">
+                <field name="lead_source"/>
+                <field name="client_budget" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
 </odoo>

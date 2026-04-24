@@ -58,6 +58,12 @@ class EstateContract(models.Model):
     
     customer_signature = fields.Binary(string='Firma del Cliente', copy=False, attachment=True)
     signature_date = fields.Datetime(string='Fecha de Firma', readonly=True)
+    earnest_money_filename = fields.Char(string='Nombre del Archivo de Arras')
+    earnest_money_contract = fields.Binary(string='Contrato de Arras', attachment=True,
+                                          help='Documento escaneado o PDF del Contrato de Arras firmado.')
+    signed_contract = fields.Binary(string='Contrato Firmado', attachment=True,
+                                    help='Documento escaneado o PDF del contrato final firmado por ambas partes.')
+    signed_contract_filename = fields.Char(string='Nombre del Contrato Firmado')
 
     payment_count = fields.Integer(
         string='# Pagos', compute='_compute_payment_count')
@@ -153,7 +159,7 @@ class EstateContract(models.Model):
                     'estate_management.mail_template_contract_activated', raise_if_not_found=False)
                 if template:
                     template.send_mail(rec.id, force_send=True)
-        self._advance_related_lead('estate_crm.stage_lead7_estate')
+        self._advance_related_lead('estate_crm.stage_lead7_estate_cierre')
 
     def action_cancel(self):
         self._check_state_transition('cancelled')

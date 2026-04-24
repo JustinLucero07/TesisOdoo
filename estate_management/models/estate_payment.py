@@ -23,6 +23,8 @@ class EstatePayment(models.Model):
         related='contract_id.property_id', string='Propiedad', store=True, readonly=True)
     partner_id = fields.Many2one(
         related='contract_id.partner_id', string='Cliente', store=True, readonly=True)
+    user_id = fields.Many2one(
+        related='contract_id.user_id', string='Asesor (Vendedor)', store=True, readonly=True)
 
     amount = fields.Float(string='Monto', required=True, tracking=True)
     currency_id = fields.Many2one(
@@ -44,6 +46,11 @@ class EstatePayment(models.Model):
         ('paid', 'Pagado'),
         ('cancelled', 'Anulado'),
     ], string='Estado', default='pending', tracking=True, required=True)
+
+    closing_payment_type = fields.Selection([
+        ('cash', 'Contado'),
+        ('credit', 'Con Crédito (Hipotecario)'),
+    ], string='Tipo de Cierre (Condición)')
 
     notes = fields.Text(string='Notas')
 
@@ -120,6 +127,8 @@ class EstatePayment(models.Model):
             invoice_vals['property_id'] = self.property_id.id
         if hasattr(self.env['account.move'], 'estate_transaction_type'):
             invoice_vals['estate_transaction_type'] = tx_type
+        if hasattr(self.env['account.move'], 'closing_payment_type') and self.closing_payment_type:
+            invoice_vals['closing_payment_type'] = self.closing_payment_type
 
         invoice = self.env['account.move'].create(invoice_vals)
         self.write({'invoice_id': invoice.id})

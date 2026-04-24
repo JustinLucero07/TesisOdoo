@@ -60,16 +60,70 @@
 
     <!-- ACCIONES REPORTES -->
     <record id="action_crm_reports_general" model="ir.actions.act_window">
-        <field name="name">Reporte General CRM</field>
+        <field name="name">Reporte General CRM (Fuentes)</field>
         <field name="res_model">crm.lead</field>
         <field name="view_mode">graph,pivot</field>
     </record>
+
+    <!-- Vincular Vista Graph a General -->
+    <record id="action_crm_reports_general_view_graph" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="estate_crm_lead_view_graph_general"/>
+        <field name="act_window_id" ref="action_crm_reports_general"/>
+    </record>
+
+    <!-- Vincular Vista Pivot a General -->
+    <record id="action_crm_reports_general_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="estate_crm_lead_view_pivot_general"/>
+        <field name="act_window_id" ref="action_crm_reports_general"/>
+    </record>
     
     <record id="action_crm_reports_deals" model="ir.actions.act_window">
-        <field name="name">Negocios Realizados</field>
+        <field name="name">Promedio y Ventas por Asesor</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">pivot,graph,list</field>
+        <field name="domain">[('stage_id.is_won', '=', True)]</field>
+    </record>
+
+    <!-- Vincular Vista Pivot a Deals -->
+    <record id="action_crm_reports_deals_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="estate_crm_lead_view_pivot_deals"/>
+        <field name="act_window_id" ref="action_crm_reports_deals"/>
+    </record>
+
+    <!-- Vincular Vista Graph a Deals -->
+    <record id="action_crm_reports_deals_view_graph" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="estate_crm_lead_view_graph_deals"/>
+        <field name="act_window_id" ref="action_crm_reports_deals"/>
+    </record>
+
+    <!-- Reporte Ventas por Fuente -->
+    <record id="action_crm_reports_sources" model="ir.actions.act_window">
+        <field name="name">Ventas por Fuente de Captación</field>
         <field name="res_model">crm.lead</field>
         <field name="view_mode">graph,pivot,list</field>
         <field name="domain">[('stage_id.is_won', '=', True)]</field>
+    </record>
+
+    <record id="action_crm_reports_sources_view_graph" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">graph</field>
+        <field name="view_id" ref="estate_crm_lead_view_graph_sources"/>
+        <field name="act_window_id" ref="action_crm_reports_sources"/>
+    </record>
+
+    <record id="action_crm_reports_sources_view_pivot" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">pivot</field>
+        <field name="view_id" ref="estate_crm_lead_view_pivot_sources"/>
+        <field name="act_window_id" ref="action_crm_reports_sources"/>
     </record>
 
     <record id="action_report_property_visits" model="ir.actions.act_window">

@@ -124,7 +124,7 @@ class EstateAIChatHistory(models.Model):
         admin_group = self.env.ref('estate_management.estate_group_admin', raise_if_not_found=False)
         group_ids = [g.id for g in [manager_group, admin_group] if g]
         if group_ids:
-            users = self.env['res.users'].search([('groups_id', 'in', group_ids)])
+            users = self.env['res.users'].search([('group_ids', 'in', group_ids)])
         else:
             users = self.env['res.users']
         partners = users.mapped('partner_id')

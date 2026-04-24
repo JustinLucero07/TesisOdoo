@@ -12,7 +12,12 @@ class EstateCommission(models.Model):
     property_id = fields.Many2one('estate.property', string='Propiedad', required=True)
     user_id = fields.Many2one('res.users', string='Asesor', required=True, default=lambda self: self.env.user)
 
-    amount = fields.Float(string='Monto de Comisión', required=True)
+    sale_amount = fields.Float(string='Monto de la Venta/Renta',
+                               help='Valor total de la transacción que genera esta comisión.')
+    commission_pct = fields.Float(string='Porcentaje de Comisión (%)', default=5.0,
+                                  help='Porcentaje aplicado sobre el monto de la venta.')
+    amount = fields.Float(string='Monto de Comisión', required=True,
+                          compute='_compute_commission_amount', store=True, readonly=False)
     company_currency = fields.Many2one(
         'res.currency', string='Moneda',
         default=lambda self: self.env.company.currency_id)
@@ -23,6 +28,12 @@ class EstateCommission(models.Model):
         ('rental', 'Alquiler'),
         ('bonus', 'Bono/Premio')
     ], string='Tipo de Comisión', required=True, default='sale')
+
+    @api.depends('sale_amount', 'commission_pct')
+    def _compute_commission_amount(self):
+        for rec in self:
+            if rec.sale_amount and rec.commission_pct:
+                rec.amount = rec.sale_amount * (rec.commission_pct / 100.0)
 
     state = fields.Selection([
         ('draft', 'Borrador'),

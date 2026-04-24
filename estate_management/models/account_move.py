@@ -19,6 +19,11 @@ class AccountMove(models.Model):
         ('commission', 'Comisión'),
         ('other', 'Otro')
     ], string='Tipo de Transacción Inmobiliaria', default='other')
+    
+    closing_payment_type = fields.Selection([
+        ('cash', 'Contado'),
+        ('credit', 'Con Crédito (Hipotecario)'),
+    ], string='Tipo de Cierre (Condición de Pago)')
 
     def write(self, vals):
         result = super().write(vals)

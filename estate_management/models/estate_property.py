@@ -158,6 +158,7 @@ class EstateProperty(models.Model):
 
     # --- Características ---
     price = fields.Float(string='Precio', tracking=True)
+    bottom_price = fields.Float(string='Precio Tope (Mínimo)', tracking=True, help='El precio mínimo que el propietario está dispuesto a aceptar en una negociación.')
     area = fields.Float(string='Área (m²)')
     bedrooms = fields.Integer(string='Habitaciones', default=0)
     bathrooms = fields.Float(string='Baños', default=0.0)
@@ -234,7 +235,20 @@ class EstateProperty(models.Model):
         string='Puntuación de la Propiedad', compute='_compute_property_score', store=True,
         help='Puntuación 0-100 que mide completitud y atractivo del expediente.')
     property_score_label = fields.Char(
-        string='Nivel', compute='_compute_property_score', store=True)
+        string='Nivel de Puntuación', compute='_compute_property_score', store=True)
+
+    # --- Fase 1: Captación y Exclusividad ---
+    capture_sheet = fields.Binary(
+        string='Hoja de Captación', attachment=True,
+        help='Documento escaneado o PDF de la hoja de captación original.')
+    capture_sheet_filename = fields.Char(string='Nombre del Archivo de Captación')
+    is_exclusive = fields.Boolean(
+        string='En Exclusividad', default=False, tracking=True,
+        help='Indica si la propiedad fue captada bajo contrato de exclusividad.')
+    exclusive_user_id = fields.Many2one(
+        'res.users', string='Asesor Responsable (Captador)', tracking=True,
+        help='El asesor que captó la exclusividad de esta propiedad.')
+
 
     @api.depends('avm_comparable_count')
     def _compute_avm_confidence(self):
@@ -356,14 +370,18 @@ class EstateProperty(models.Model):
             elif rec.avm_status == 'low':
                 score += 43
             elif rec.avm_status == 'high':
-                score -= 10
-            score += min(len(rec.image_ids) * 5, 25)
-            if rec.image_main:
+               if rec.document_ids:
+                score += min(len(rec.document_ids) * 5, 15)
+            # Bonuses
+            if rec.tour_360_active:
+                score += 10
+            if rec.capture_sheet:
                 score += 5
-            if rec.description:
-                text = re.sub(r'<[^>]+>', '', rec.description or '')
-                if len(text) > 200:
-                    score += 10
+            
+            score = min(score, 100)
+            text = re.sub(r'<[^>]+>', '', rec.description or '')
+            if len(text) > 200:
+                score += 10
             if rec.wp_published:
                 score += 10
             score += min(rec.meeting_count * 5, 15)

@@ -74,6 +74,12 @@
               action="action_crm_reports_deals"
               sequence="15"/>
 
+    <menuitem id="estate_menu_crm_reports_sources"
+              name="Ventas por Fuente"
+              parent="crm.crm_menu_report"
+              action="action_crm_reports_sources"
+              sequence="18"/>
+
     <menuitem id="estate_menu_crm_reports_visits"
               name="Visitas por Inmueble (Analytics)"
               parent="crm.crm_menu_report"

@@ -1,34 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="0">
-        <!-- Pipeline inmobiliario — 7 etapas secuenciales -->
-        <record id="stage_lead1_estate" model="crm.stage">
-            <field name="name">Primer Contacto</field>
+        <!-- Pipeline Inmobiliario Oficial -->
+        <record id="stage_lead1_estate_nuevo" model="crm.stage">
+            <field name="name">1. Nuevo / Contacto Inicial</field>
             <field name="sequence">1</field>
         </record>
-        <record id="stage_lead2_estate" model="crm.stage">
-            <field name="name">Pre-calificado</field>
+        <record id="stage_lead2_estate_captacion" model="crm.stage">
+            <field name="name">2. Captación y Calificación</field>
             <field name="sequence">2</field>
         </record>
-        <record id="stage_lead3_estate" model="crm.stage">
-            <field name="name">Visita Agendada</field>
+        <record id="stage_lead3_estate_visita" model="crm.stage">
+            <field name="name">3. Visita Realizada</field>
             <field name="sequence">3</field>
         </record>
-        <record id="stage_lead4_estate" model="crm.stage">
-            <field name="name">Visita Realizada</field>
+        <record id="stage_lead3b_estate_seguimiento" model="crm.stage">
+            <field name="name">4. Seguimiento</field>
             <field name="sequence">4</field>
         </record>
-        <record id="stage_lead5_estate" model="crm.stage">
-            <field name="name">Oferta Presentada</field>
+        <record id="stage_lead4_estate_papeles" model="crm.stage">
+            <field name="name">5. Entrega de Papeles</field>
             <field name="sequence">5</field>
+            <field name="is_won">False</field>
         </record>
-        <record id="stage_lead6_estate" model="crm.stage">
-            <field name="name">En Negociación</field>
+        <record id="stage_lead5_estate_avaluo" model="crm.stage">
+            <field name="name">6. Avalúo Realizado</field>
             <field name="sequence">6</field>
         </record>
-        <record id="stage_lead7_estate" model="crm.stage">
-            <field name="name">Cierre / Contrato</field>
+        <record id="stage_lead6_estate_minuta" model="crm.stage">
+            <field name="name">7. Minuta Firmada</field>
             <field name="sequence">7</field>
+        </record>
+        <record id="stage_lead7_estate_cierre" model="crm.stage">
+            <field name="name">8. Cierre Ganado</field>
+            <field name="sequence">8</field>
             <field name="is_won">True</field>
         </record>
 

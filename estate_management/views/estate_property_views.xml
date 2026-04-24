@@ -90,6 +90,7 @@
                             <field name="property_type_id" readonly="state in ('sold', 'rented')"/>
                             <field name="offer_type" widget="radio" options="{'horizontal': true}" readonly="state in ('sold', 'rented')"/>
                             <field name="price" widget="monetary" readonly="state in ('sold', 'rented')"/>
+                            <field name="bottom_price" widget="monetary" readonly="state in ('sold', 'rented')"/>
                             <field name="commission_percentage" readonly="state in ('sold', 'rented')"/>
                             <field name="commission_amount" widget="monetary"/>
                             <field name="area" readonly="state in ('sold', 'rented')"/>
@@ -99,6 +100,11 @@
                             <field name="co_user_id" widget="many2one_avatar_user"/>
                             <field name="commission_split_pct" invisible="not co_user_id"/>
                             <field name="active" invisible="1"/>
+                        </group>
+                        <group string="Captación y Exclusividad">
+                            <field name="capture_sheet" filename="capture_sheet_filename"/>
+                            <field name="is_exclusive" widget="boolean_toggle"/>
+                            <field name="exclusive_user_id" widget="many2one_avatar_user" invisible="not is_exclusive"/>
                         </group>
                         <group string="Características">
                             <field name="bedrooms"/>

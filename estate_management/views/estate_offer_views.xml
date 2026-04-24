@@ -36,6 +36,9 @@
                 <header>
                     <button name="action_submit" string="Presentar Oferta" type="object"
                             class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_simulate_counteroffer" string="Simular Contraoferta" type="object"
+                            class="btn-info" invisible="state not in ('draft', 'submitted')"
+                            title="Auto-calcula una contraoferta óptima basada en el Precio Tope del propietario"/>
                     <button name="action_counteroffer" string="Enviar Contraoferta" type="object"
                             class="btn-warning" invisible="state != 'submitted'"/>
                     <button name="action_accept" string="Aceptar" type="object"
@@ -73,6 +76,7 @@
                     <group>
                         <group string="Precios">
                             <field name="asking_price" widget="monetary" readonly="1"/>
+                            <field name="property_bottom_price" widget="monetary" invisible="1"/>
                             <field name="offer_amount" widget="monetary"/>
                             <field name="discount_pct" widget="percentage" readonly="1"/>
                             <field name="currency_id" invisible="1"/>

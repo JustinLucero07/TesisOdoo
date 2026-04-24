@@ -761,7 +761,7 @@ class EstateDashboard(models.TransientModel):
         """
 
         admins = self.env['res.users'].search([
-            ('groups_id', 'in', [self.env.ref('base.group_system').id]),
+            ('group_ids', 'in', [self.env.ref('base.group_system').id]),
             ('email', '!=', False),
         ])
         if not admins:
