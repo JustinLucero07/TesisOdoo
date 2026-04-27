@@ -163,9 +163,6 @@ class EstateProperty(models.Model):
     bedrooms = fields.Integer(string='Habitaciones', default=0)
     bathrooms = fields.Float(string='Baños', default=0.0)
     parking_spaces = fields.Integer(string='Parqueaderos', default=0)
-    vehicle_capacity = fields.Integer(
-        string='Capacidad Vehículos', default=0,
-        help='Número total de vehículos que caben en los parqueaderos.')
     floor = fields.Integer(string='Piso/Planta')
     year_built = fields.Integer(string='Año de Construcción')
     
@@ -203,14 +200,19 @@ class EstateProperty(models.Model):
         help='Ingreso neto mensual estimado (renta - mantenimiento estimado 15%).')
 
     # --- AVM (Automated Valuation Model) ---
-    avm_estimated_price = fields.Float(string='Valor M. Estimado (AVM)', readonly=True, tracking=True)
-    avm_last_calculated = fields.Datetime(string='Último AVM', readonly=True)
+    avm_estimated_price = fields.Float(
+        string='Valor M. Estimado (AVM)', readonly=True, tracking=True,
+        help='Precio estimado por el Modelo Automático de Valoración (AVM) basado en ventas comparables en la misma ciudad y tipo de propiedad.')
+    avm_last_calculated = fields.Datetime(
+        string='Último AVM', readonly=True,
+        help='Fecha y hora en que se calculó por última vez el valor estimado.')
     avm_status = fields.Selection([
         ('fair', 'Justo (Alineado al Mercado)'),
         ('high', 'Sobrevalorado'),
         ('low', 'Subestimado/Oportunidad'),
         ('insufficient', 'Datos Insuficientes')
-    ], string='Estado AVM', compute='_compute_avm_status', store=True)
+    ], string='Estado AVM', compute='_compute_avm_status', store=True,
+        help='Compara el precio de publicación con el valor estimado por el AVM. "Justo" = diferencia < 10%, "Sobrevalorado" = precio > AVM en más del 10%, "Subestimado" = precio < AVM en más del 10%.')
     # Mejora 6: AVM con comparables
     avm_comparable_count = fields.Integer(
         string='Comparables AVM', readonly=True,
@@ -233,9 +235,10 @@ class EstateProperty(models.Model):
     # --- Property Score (0-100) ---
     property_score = fields.Integer(
         string='Puntuación de la Propiedad', compute='_compute_property_score', store=True,
-        help='Puntuación 0-100 que mide completitud y atractivo del expediente.')
+        help='Puntuación de 0 a 100 que evalúa la calidad del expediente. Factores: precio alineado al mercado (+30), imágenes cargadas (+20), descripción completa (+10), precio mínimo definido (+10), propiedad visitada (+15), días en mercado razonables (+15). Mayor puntaje = más atractiva para compradores.')
     property_score_label = fields.Char(
-        string='Nivel de Puntuación', compute='_compute_property_score', store=True)
+        string='Nivel de Puntuación', compute='_compute_property_score', store=True,
+        help='Clasificación del puntaje: Excelente (80+), Buena (60-79), Regular (40-59), Débil (<40).')
 
     # --- Fase 1: Captación y Exclusividad ---
     capture_sheet = fields.Binary(
@@ -846,6 +849,30 @@ class EstateProperty(models.Model):
 
         return properties
 
+    @api.constrains('year_built')
+    def _check_year_built(self):
+        import datetime
+        current_year = datetime.date.today().year
+        for rec in self:
+            if rec.year_built and rec.year_built > current_year:
+                raise UserError(f'El año de construcción ({rec.year_built}) no puede ser mayor al año actual ({current_year}).')
+            if rec.year_built and rec.year_built < 1800:
+                raise UserError(f'El año de construcción ({rec.year_built}) no es válido.')
+
+    @api.constrains('bottom_price', 'price')
+    def _check_bottom_price(self):
+        for rec in self:
+            if rec.bottom_price and rec.price and rec.bottom_price >= rec.price:
+                raise UserError(
+                    f'El precio mínimo aceptable (${rec.bottom_price:,.2f}) debe ser menor al precio de publicación (${rec.price:,.2f}).'
+                )
+
+    @api.constrains('commission_split_pct')
+    def _check_commission_split(self):
+        for rec in self:
+            if not (0 <= rec.commission_split_pct <= 100):
+                raise UserError('El porcentaje de split del Co-Asesor debe estar entre 0% y 100%.')
+
     def write(self, vals):
         res = super().write(vals)
         # Sincronizar actualizaciones hacia product.template
@@ -929,35 +956,74 @@ class EstateProperty(models.Model):
         )
 
     def action_set_reserved(self):
+        for prop in self:
+            if prop.state != 'available':
+                raise UserError(
+                    f'"{prop.title}" solo puede reservarse cuando está Disponible (estado actual: {dict(prop._fields["state"].selection)[prop.state]}).'
+                )
         self.write({'state': 'reserved'})
 
     def action_set_sold(self):
         self.ensure_one()
+        if self.state not in ('available', 'reserved'):
+            raise UserError('Solo se puede marcar como Vendida una propiedad Disponible o Reservada.')
         vals = {'state': 'sold', 'offer_type': 'sale'}
         if not self.date_sold:
             vals['date_sold'] = fields.Date.today()
         if not self.sold_by:
             vals['sold_by'] = 'agency'
         self.write(vals)
-        self.env['estate.commission'].create({
-            'property_id': self.id,
-            'user_id': self.user_id.id,
-            'amount': self.commission_amount,
-            'type': 'sale',
-            'date': fields.Date.today(),
-        })
+        self._create_commission_records('sale', self.commission_amount, self.price, self.commission_percentage)
 
     def action_set_rented(self):
         self.ensure_one()
+        if self.state not in ('available', 'reserved'):
+            raise UserError('Solo se puede marcar como Alquilada una propiedad Disponible o Reservada.')
         self.write({'state': 'rented', 'offer_type': 'rent'})
-        # Para alquileres, asumimos una comisión del 50% del precio (ajustable) o según porcentaje
-        self.env['estate.commission'].create({
-            'property_id': self.id,
-            'user_id': self.user_id.id,
-            'amount': self.commission_amount or (self.price * 0.5), # Ejemplo: medio mes de alquiler
-            'type': 'rental',
-            'date': fields.Date.today(),
-        })
+        commission_amt = self.commission_amount or (self.price * 0.5)
+        self._create_commission_records('rental', commission_amt, self.price, self.commission_percentage)
+
+    def _create_commission_records(self, commission_type, total_amount, sale_price, pct):
+        """Crea registros de comisión, dividiendo entre asesor y co-asesor si aplica."""
+        today = fields.Date.today()
+        if self.co_user_id and 0 < self.commission_split_pct < 100:
+            co_ratio = self.commission_split_pct / 100.0
+            co_amount = total_amount * co_ratio
+            main_amount = total_amount * (1.0 - co_ratio)
+            self.env['estate.commission'].create({
+                'property_id': self.id,
+                'user_id': self.user_id.id,
+                'sale_amount': sale_price,
+                'commission_pct': pct * (1.0 - co_ratio),
+                'amount': main_amount,
+                'type': commission_type,
+                'date': today,
+            })
+            self.env['estate.commission'].create({
+                'property_id': self.id,
+                'user_id': self.co_user_id.id,
+                'sale_amount': sale_price,
+                'commission_pct': pct * co_ratio,
+                'amount': co_amount,
+                'type': commission_type,
+                'date': today,
+            })
+            self.message_post(
+                body=f'Comisión de ${total_amount:,.2f} dividida: '
+                     f'{self.user_id.name} ${main_amount:,.2f} ({100-self.commission_split_pct:.0f}%) / '
+                     f'{self.co_user_id.name} ${co_amount:,.2f} ({self.commission_split_pct:.0f}%)',
+                message_type='comment', subtype_xmlid='mail.mt_note',
+            )
+        else:
+            self.env['estate.commission'].create({
+                'property_id': self.id,
+                'user_id': self.user_id.id,
+                'sale_amount': sale_price,
+                'commission_pct': pct,
+                'amount': total_amount,
+                'type': commission_type,
+                'date': today,
+            })
 
     def action_create_invoice(self):
         self.ensure_one()

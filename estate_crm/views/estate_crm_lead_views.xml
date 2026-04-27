@@ -56,6 +56,10 @@
                 <button name="action_create_invoice_from_lead" string="Generar Factura" type="object"
                     class="btn-primary" icon="fa-file-text-o"
                     invisible="not target_property_id or type == 'lead'"/>
+                <button name="action_create_contract_from_lead" string="Crear Contrato" type="object"
+                    class="oe_highlight" icon="fa-file-text"
+                    invisible="not target_property_id or type == 'lead' or contract_count &gt; 0"
+                    confirm="¿Crear un contrato para este lead con la propiedad seleccionada?"/>
             </xpath>
             <!-- Pestañas: Ubicación GPS y Documentos Internos -->
             <xpath expr="//notebook" position="inside">

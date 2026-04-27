@@ -6,7 +6,9 @@ class CrmLead(models.Model):
 
     target_property_id = fields.Many2one('estate.property', string='Propiedad de Interés')
     client_budget = fields.Float(string='Presupuesto del Cliente', tracking=True)
-    match_percentage = fields.Integer(string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True)
+    match_percentage = fields.Integer(
+        string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True,
+        help='Porcentaje de compatibilidad entre el presupuesto/preferencias del cliente y la propiedad de interés. 100% = perfectamente alineado. Factores: precio vs presupuesto (50%), ciudad (20%), tipo de propiedad (15%), habitaciones (10%), área (5%).')
 
     # --- Canal de captación ---
     lead_source = fields.Selection([
@@ -59,14 +61,16 @@ class CrmLead(models.Model):
         ('low', 'Básico (C)'),
         ('medium', 'Cualificado (B)'),
         ('high', 'Prioritario (A)')
-    ], string='Puntuación del Lead', compute='_compute_lead_scoring', store=True, tracking=True)
+    ], string='Puntuación del Lead', compute='_compute_lead_scoring', store=True, tracking=True,
+        help='Clasificación automática del lead: A (Prioritario) = presupuesto ≥ precio, match ≥ 90%, contacto completo. B (Cualificado) = match ≥ 60%. C (Básico) = resto.')
 
     lead_temperature = fields.Selection([
         ('cold', 'Frío'),
         ('warm', 'Tibio'),
         ('hot', 'Caliente'),
         ('boiling', '¡Hirviendo!')
-    ], string='Temperatura del Lead', compute='_compute_lead_scoring', store=True)
+    ], string='Temperatura del Lead', compute='_compute_lead_scoring', store=True,
+        help='Indica la urgencia de atención: Hirviendo = acción inmediata, Caliente = alta prioridad, Tibio = hacer seguimiento, Frío = lead sin actividad reciente.')
 
     expected_revenue = fields.Float(string='Comisión Planificada', compute='_compute_financials', store=True)
     expected_commission = fields.Float(string='Comisión Esperada', compute='_compute_financials', store=True)
@@ -154,6 +158,32 @@ class CrmLead(models.Model):
         SaleOrder = self.env['sale.order']
         for lead in self:
             lead.sale_order_count = SaleOrder.search_count([('lead_id', '=', lead.id)])
+
+    def action_create_contract_from_lead(self):
+        """Crea un contrato directamente desde el lead y lo abre en formulario."""
+        self.ensure_one()
+        if not self.partner_id:
+            raise UserError('Asigna un cliente al lead antes de crear el contrato.')
+        contract_type = 'sale'
+        if self.target_property_id and self.target_property_id.offer_type == 'rent':
+            contract_type = 'rent'
+        vals = {
+            'partner_id': self.partner_id.id,
+            'contract_type': contract_type,
+            'user_id': self.user_id.id,
+        }
+        if self.target_property_id:
+            vals['property_id'] = self.target_property_id.id
+            vals['amount'] = self.target_property_id.price
+        contract = self.env['estate.contract'].create(vals)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Contrato — {self.partner_id.name}',
+            'res_model': 'estate.contract',
+            'res_id': contract.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
 
     def action_view_lead_contracts(self):
         self.ensure_one()

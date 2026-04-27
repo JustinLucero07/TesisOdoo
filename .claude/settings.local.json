@@ -208,7 +208,10 @@
       "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c odoo19.conf -d tesis_odoo19 -u estate_social --stop-after-init)",
       "Bash(python /home/justin/Documentos/odoo19/odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf -d tesis_odoo19 -u estate_ai_agent --stop-after-init)",
       "Bash(python /home/justin/Documentos/odoo19/odoo-bin:*)",
-      "Bash(find /home/justin/Documentos/Tesis/estate_management -name *menu*.xml -o -name *view*.xml)"
+      "Bash(find /home/justin/Documentos/Tesis/estate_management -name *menu*.xml -o -name *view*.xml)",
+      "Bash(grep -n \"TODO\\\\|FIXME\\\\|XXX\\\\|HACK\\\\|BUG\" /home/justin/Documentos/Tesis/estate_management/models/*.py /home/justin/Documentos/Tesis/estate_crm/models/*.py /home/justin/Documentos/Tesis/estate_ai_agent/models/*.py)",
+      "Bash(grep -rn \"raise NotImplementedError\\\\|pass$\\\\|^\\\\s*#\" /home/justin/Documentos/Tesis/estate_management/models/estate_offer.py)",
+      "Bash(grep -n \"class EstateAppraisal\\\\|class EstateExpense\\\\|class EstatePayment\" /home/justin/Documentos/Tesis/estate_management/models/*.py)"
     ],
     "additionalDirectories": [
       "/tmp",

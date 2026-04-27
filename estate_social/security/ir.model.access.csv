@@ -1,1 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_estate_instagram_stats_user,estate.instagram.stats user,estate_social.model_estate_instagram_stats,base.group_user,1,1,1,0
+access_estate_instagram_stats_manager,estate.instagram.stats manager,estate_social.model_estate_instagram_stats,base.group_system,1,1,1,1

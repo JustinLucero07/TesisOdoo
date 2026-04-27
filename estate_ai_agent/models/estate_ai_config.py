@@ -34,7 +34,7 @@ class EstateAIConfig(models.TransientModel):
         config_parameter='estate_ai.active',
         default=True)
 
-    ai_system_prompt = fields.Char(
+    ai_system_prompt = fields.Text(
         string='Prompt del Sistema',
         config_parameter='estate_ai.system_prompt',
         default="""Eres un asistente inteligente para un sistema de gestión inmobiliaria. 

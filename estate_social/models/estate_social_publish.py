@@ -3,7 +3,7 @@ import json
 import logging
 import requests
 
-from odoo import models, fields
+from odoo import models, fields, api
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -220,6 +220,11 @@ class EstatePropertyPublish(models.Model):
             if resp2.status_code == 200 and r2.get('id'):
                 self.write({'ig_post_id': r2['id'], 'ig_published': True})
                 self.message_post(body=f'Propiedad publicada en Instagram. Post ID: <b>{r2["id"]}</b>')
+                # Crear registro de estadísticas (las métricas tardan ~24h en estar disponibles)
+                self.env['estate.instagram.stats'].create({
+                    'property_id': self.id,
+                    'ig_post_id': r2['id'],
+                })
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
@@ -316,6 +321,40 @@ class EstatePropertyPublish(models.Model):
                 _logger.warning('Error subiendo imagen a WordPress Media: %s', e)
 
         return ''
+
+    def action_view_instagram_stats(self):
+        """Abre (o crea) el registro de estadísticas de Instagram de esta propiedad."""
+        self.ensure_one()
+        StatsModel = self.env['estate.instagram.stats']
+        stats = StatsModel.search([('property_id', '=', self.id)], limit=1)
+        if not stats:
+            if not self.ig_post_id:
+                raise UserError('Esta propiedad no tiene una publicación de Instagram. Publícala primero.')
+            stats = StatsModel.create({
+                'property_id': self.id,
+                'ig_post_id': self.ig_post_id,
+            })
+            stats._fetch_stats()
+        else:
+            stats._fetch_stats()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Stats Instagram — {self.title}',
+            'res_model': 'estate.instagram.stats',
+            'res_id': stats.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_view_instagram_stats_global(self):
+        """Abre la vista de lista con todas las estadísticas de Instagram."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Estadísticas de Instagram',
+            'res_model': 'estate.instagram.stats',
+            'view_mode': 'list,form',
+            'target': 'current',
+        }
 
     def action_unpublish_facebook(self):
         """Elimina el post de Facebook y marca como no publicado."""

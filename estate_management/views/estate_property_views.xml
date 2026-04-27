@@ -32,8 +32,7 @@
                 <header>
                     <button name="action_open_map" string=" Ver en Mapa" type="object" class="btn-info" invisible="not map_url"/>
                     <button name="action_calculate_avm" string=" Calcular Precio AVM" type="object" class="btn-warning" invisible="state in ('sold', 'rented')"/>
-                    <button name="action_create_sale_order" string="Crear Orden de Venta" type="object" class="btn-success" icon="fa-shopping-cart" invisible="state in ('sold', 'rented')"/>
-                    <button name="action_create_invoice" string="Generar Factura Directa" type="object" class="btn-primary" invisible="state in ('sold', 'rented')"/>
+                    <button name="action_create_invoice" string="Generar Factura" type="object" class="btn-primary" icon="fa-file-text-o" invisible="state in ('sold', 'rented')"/>
                     <button name="%(estate_reports.action_report_ficha_tecnica)d" string="Descargar Ficha PDF" type="action" class="btn-secondary" icon="fa-download"/>
                     <button name="action_set_available" string="Disponible" type="object" class="oe_highlight" invisible="state == 'available'"/>
                     <button name="action_set_reserved" string="Reservar" type="object" invisible="state in ('sold', 'rented')"/>
@@ -75,16 +74,34 @@
                                 invisible="price_history_count == 0">
                             <field name="price_history_count" string="Cambios Precio" widget="statinfo"/>
                         </button>
-                        <button name="action_view_sale_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart"
-                                invisible="sale_count == 0">
-                            <field name="sale_count" string="Ventas" widget="statinfo"/>
-                        </button>
                         <button name="action_view_property_invoices" type="object" class="oe_stat_button" icon="fa-file-text-o"
                                 invisible="property_invoice_count == 0">
                             <field name="property_invoice_count" string="Facturas" widget="statinfo"/>
                         </button>
                     </div>
                     <field name="map_url" invisible="1"/>
+                    <!-- Barra de progreso del expediente -->
+                    <div class="alert alert-success mb-2 py-2 px-3"
+                         style="border-radius:8px; font-size:0.88em;"
+                         invisible="property_score == 0 or property_score &lt; 80">
+                        <i class="fa fa-check-circle"/> <strong>Expediente completo</strong> —
+                        <field name="property_score" readonly="1"/>% (<field name="property_score_label" readonly="1"/>)
+                        <field name="avm_status" widget="badge" class="ms-2"/>
+                    </div>
+                    <div class="alert alert-warning mb-2 py-2 px-3"
+                         style="border-radius:8px; font-size:0.88em;"
+                         invisible="property_score == 0 or property_score &lt; 60 or property_score &gt;= 80">
+                        <i class="fa fa-exclamation-circle"/> <strong>Expediente incompleto</strong> —
+                        <field name="property_score" readonly="1"/>% (<field name="property_score_label" readonly="1"/>)
+                        — Agrega imágenes y descripción para mejorar el puntaje.
+                    </div>
+                    <div class="alert alert-danger mb-2 py-2 px-3"
+                         style="border-radius:8px; font-size:0.88em;"
+                         invisible="property_score == 0 or property_score &gt;= 60">
+                        <i class="fa fa-times-circle"/> <strong>Expediente débil</strong> —
+                        <field name="property_score" readonly="1"/>% (<field name="property_score_label" readonly="1"/>)
+                        — Completa descripción, imágenes y precio AVM para publicar con mejor alcance.
+                    </div>
                     <group>
                         <group string="Información General">
                             <field name="property_type_id" readonly="state in ('sold', 'rented')"/>
@@ -110,7 +127,6 @@
                             <field name="bedrooms"/>
                             <field name="bathrooms"/>
                             <field name="parking_spaces"/>
-                            <field name="vehicle_capacity"/>
                             <field name="floor"/>
                             <field name="year_built"/>
                         </group>

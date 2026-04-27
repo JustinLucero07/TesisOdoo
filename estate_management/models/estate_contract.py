@@ -95,11 +95,22 @@ class EstateContract(models.Model):
             if vals.get('name', 'Nuevo') == 'Nuevo':
                 vals['name'] = self.env['ir.sequence'].next_by_code('estate.contract') or 'Nuevo'
         contracts = super().create(vals_list)
-        # Auto-etiquetado: el partner de un contrato es Cliente Activo
         for contract in contracts:
             if contract.partner_id:
                 contract.partner_id._apply_estate_category('estate_management.partner_category_client')
+            # Sincronizar fecha de vencimiento con la propiedad
+            if contract.date_end and contract.property_id:
+                contract.property_id.sudo().contract_end_date = contract.date_end
         return contracts
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Si cambia la fecha de vencimiento, actualizar en la propiedad vinculada
+        if 'date_end' in vals:
+            for rec in self:
+                if rec.property_id and vals['date_end']:
+                    rec.property_id.sudo().contract_end_date = vals['date_end']
+        return res
 
     @api.depends('name', 'property_id', 'partner_id')
     def _compute_display_name(self):
