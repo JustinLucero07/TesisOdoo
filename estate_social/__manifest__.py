@@ -18,6 +18,7 @@
         'views/estate_social_views.xml',
         'views/estate_social_config_views.xml',
         'views/estate_instagram_stats_views.xml',
+        'views/estate_facebook_stats_views.xml',
     ],
     'installable': True,
     'auto_install': False,

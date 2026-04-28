@@ -9,6 +9,21 @@
             <field name="arch" type="xml">
                 <xpath expr="//form" position="inside">
                     <app data-string="Integración WordPress" string="Integración WordPress" name="estate_wordpress">
+                        <block title="Importar desde WordPress" name="wp_import">
+                            <setting string="Importar Catálogo" help="Trae todas las propiedades publicadas en WordPress a Odoo, incluyendo imágenes y datos completos.">
+                                <div>
+                                    <p class="text-muted small mb-2">
+                                        Importa propiedades desde tu sitio WordPress/Houzez directamente al catálogo de Odoo.
+                                        Se crean automáticamente los tipos de propiedad y se descargan las imágenes.
+                                    </p>
+                                    <button name="action_open_wp_import_wizard"
+                                            string="Importar Propiedades desde WordPress"
+                                            type="object"
+                                            class="btn-primary"/>
+                                </div>
+                            </setting>
+                        </block>
+
                         <block title="Conexión WordPress" name="wp_connection">
                             <setting string="Activar Integración" help="Habilitar la publicación en WordPress">
                                 <field name="wp_active"/>

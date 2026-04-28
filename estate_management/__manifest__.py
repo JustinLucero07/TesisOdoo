@@ -34,6 +34,7 @@
         'views/estate_appraisal_views.xml',
         'views/estate_account_views.xml',
         'report/estate_contract_report.xml',
+        'report/estate_capture_sheet_report.xml',
         'views/estate_sale_views.xml',
         'views/res_partner_views.xml',
         'data/estate_contract_cron.xml',

@@ -145,6 +145,16 @@ class EstateWordPressConfig(models.TransientModel):
         except Exception as e:
             return self._msg('Error de Conexión', str(e))
 
+    def action_open_wp_import_wizard(self):
+        """Abre el wizard para importar propiedades desde WordPress."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Importar Propiedades desde WordPress',
+            'res_model': 'estate.wordpress.import.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
     def _msg(self, title, message):
         return {
             'type': 'ir.actions.client',

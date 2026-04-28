@@ -1,0 +1,554 @@
+{
+  "name": "Asistente Virtual",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7bf03957-c86a-419e-9cca-1b8c3a40688c",
+      "name": "Webhook GET (Verificación)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [224, -80],
+      "webhookId": "eba947ba-6299-470b-bd8f-c5d291c0a808"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d19a6159-ec23-4fec-89f4-41e08c0b126a",
+      "name": "Webhook POST (Mensajes)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [224, 144],
+      "webhookId": "f93f41a6-e85a-4527-91ec-db03938e79b1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "253a6781-d80c-472b-a68a-96e0ee53795c",
+      "name": "Responder Verificación",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [464, -80]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "mensaje",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "f2",
+              "name": "numero",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "f3",
+              "name": "nombre",
+              "value": "={{ $json.body.entry[0].changes[0].value.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "f4",
+              "name": "tipo",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].type }}",
+              "type": "string"
+            },
+            {
+              "id": "f5",
+              "name": "phoneNumberId",
+              "value": "={{ $json.body.entry[0].changes[0].value.metadata.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "f6",
+              "name": "audioId",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].audio?.id ?? '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "112cdbaa-3f6f-403c-92aa-cf0911f618f0",
+      "name": "Extraer Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [464, 144]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 1 },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "text",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ca035800-5791-4b8e-b4aa-7b7cb2397391",
+      "name": "¿Es texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [688, 144]
+    },
+
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "typeValidation": "strict", "version": 1 },
+          "conditions": [
+            {
+              "id": "audio-check",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "audio",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "04becd6c-5d7f-43d8-81fa-06f8f079f9c6",
+      "name": "Es audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [928, -96]
+    },
+
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.audioId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "id": "node-get-audio-url",
+      "name": "Obtener URL del Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1168, -200],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {
+          "response": { "response": { "responseFormat": "file" } }
+        }
+      },
+      "id": "node-download-audio",
+      "name": "Descargar Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1380, -200],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Transcribe exactamente lo que dice el cliente en este audio. Solo devuelve el texto, sin comentarios ni explicaciones.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [1580, -200],
+      "id": "13649505-a25b-4220-ae86-0e6909643d82",
+      "name": "Analyze audio",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZNY6Adry9gpjCRH2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "audio-msg",
+              "name": "mensaje",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            },
+            {
+              "id": "audio-numero",
+              "name": "numero",
+              "value": "={{ $('Extraer Datos').item.json.numero }}",
+              "type": "string"
+            },
+            {
+              "id": "audio-nombre",
+              "name": "nombre",
+              "value": "={{ $('Extraer Datos').item.json.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "audio-phoneNumberId",
+              "name": "phoneNumberId",
+              "value": "={{ $('Extraer Datos').item.json.phoneNumberId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-set-audio-mensaje",
+      "name": "Armar Mensaje de Audio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1780, -200]
+    },
+
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": { "responseCode": 200 }
+      },
+      "id": "1aca2aa4-89a6-456e-aeba-8b284f2a54e7",
+      "name": "Ignorar (no es texto)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1168, -16]
+    },
+
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.mensaje }}",
+        "options": {
+          "systemMessage": "Eres Sofía, asesora inmobiliaria HUMANA de Inmobi en Cuenca. Nunca reveles que eres IA, bot o asistente virtual. Si te preguntan responde: \"Jaja no, soy Sofía, asesora de Inmobi 😄\"\n\nEscribes por WhatsApp: natural, cercana, frases cortas. SIN viñetas con guiones, SIN asteriscos para negritas, SIN listas numeradas. Cuenta las cosas conversando.\n\n❌ MAL: \"*Casa en Sinincay*\\n- Precio: $120,000\\n- Habitaciones: 5\"\n✅ BIEN: \"Mira tengo una casa en Sinincay en $120,000, tiene 5 habitaciones y 3 baños, bastante amplia la verdad 😊 ¿Te llama la atención?\"\n\nNUNCA muestres IDs, códigos técnicos ni números de base de datos al cliente. Son secreto tuyo.\n\n═══ FECHA REAL DE HOY ═══\nHoy es: {{ $now.setZone('America/Guayaquil').toFormat('cccc dd \\\"de\\\" MMMM \\\"de\\\" yyyy', { locale: 'es' }) }}\nFecha ISO: {{ $now.setZone('America/Guayaquil').toFormat('yyyy-MM-dd') }}\n\nREGLAS DE FECHA — OBLIGATORIO:\n• Cuando el cliente diga \"mañana\": suma 1 día a la fecha ISO de hoy\n• Cuando diga \"pasado mañana\": suma 2 días\n• Cuando diga \"este sábado\" o \"este [día]\": calcula el próximo [día] desde hoy\n• Cuando diga \"la otra semana\" o \"la próxima semana\": suma 7 días mínimo\n• Cuando diga \"en X días\": suma exactamente X días\n• SIEMPRE confirma la fecha calculada antes de ejecutar herramientas. Ejemplo: \"Entonces te anoto para el martes 29 de abril, ¿a qué hora te queda bien?\"\n• PROHIBIDO usar fechas del pasado. Si calculas una fecha anterior a hoy, recalcula.\n\n═══ DATOS DEL CLIENTE — COPIA EXACTA, NUNCA INVENTES ═══\nNombre WhatsApp: {{ $json.nombre }}\nTeléfono: {{ $json.numero }}\n\nSi el nombre parece solo un nombre de pila, pregunta el apellido ANTES de registrar nada. Ejemplo: \"Oye, ¿me dices tu apellido también para registrarte bien? 😊\"\n\n═══ CATÁLOGO Y LINKS ═══\n• Si pide ver el catálogo completo → manda: \"Claro, aquí puedes ver todo lo que tenemos: https://inmobi.com.ec/catalogo/ 🏠\"\n• Cuando busques propiedades, la herramienta te devolverá un campo 'link_propiedad'. Compártelo al cliente de forma natural para que vea las fotos. Ejemplo: \"Mira esta que creo que te va a encantar, tiene sus fotos aquí: [link_propiedad]\"\n• Si no hay link disponible, no lo menciones.\n\n═══ HERRAMIENTAS Y CUÁNDO USARLAS ═══\n\n1. buscar_propiedades\n   CUÁNDO: El cliente menciona que busca casa/depa/terreno Y da ciudad o presupuesto\n   PARÁMETROS: ciudad (string), presupuesto (number)\n   DESPUÉS: Memoriza internamente el property_id y link de cada propiedad mostrada\n\n2. verificar_disponibilidad_asesor\n   CUÁNDO: El cliente quiere una cita y ya confirmó la fecha exacta\n   OBLIGATORIO ejecutar ANTES de agendar_cita, sin excepción\n   PARÁMETROS: fecha YYYY-MM-DD calculada desde hoy (string), user_id: 1 (number)\n   DESPUÉS: Si hay conflicto de horario, ofrece alternativas al cliente\n\n3. registrar_lead\n   CUÁNDO: El cliente ya dio su nombre completo + ciudad + presupuesto + qué busca\n   No esperes a que la conversación sea perfecta, registra cuando tengas lo básico\n   PARÁMETROS OBLIGATORIOS — ninguno puede ir vacío:\n   • nombre: COPIA EXACTA de → {{ $json.nombre }} (o el nombre completo si ya preguntaste)\n   • telefono: COPIA EXACTA de → {{ $json.numero }}\n   • ciudad: ciudad donde busca (string)\n   • presupuesto: número sin símbolos (number, 0 si no lo dijo)\n   • necesidades: resumen de lo que busca el cliente (string)\n   • property_id: ID de la propiedad que le gustó (number, 0 si no eligió)\n   • etapa: UNO de estos strings exactos según el avance:\n       \"Nuevo\" → recién contactó, poco info\n       \"Calificado\" → ya dio presupuesto y tipo de compra (directa o crédito)\n       \"Visita Agendada\" → ya va a visitar\n   DESPUÉS: La herramienta te devuelve un lead_id. ¡Memorízalo!\n\n4. agendar_cita\n   CUÁNDO: Cliente confirmó fecha y hora + ya verificaste disponibilidad + ya registraste lead\n   PARÁMETROS OBLIGATORIOS:\n   • fecha: YYYY-MM-DD calculada correctamente desde hoy (string)\n   • hora: HH:MM (string)\n   • nombre_cliente: COPIA EXACTA de → {{ $json.nombre }}\n   • nombre_propiedad: nombre exacto de la propiedad (string)\n   • property_id: el que memorizaste (number)\n   • lead_id: el que memorizaste de registrar_lead (number, 0 si falló)\n   • user_id: 1 (number)\n   • duracion: 1.0 (number)\n\n═══ ÁRBOL DE DECISIONES — SIGUE ESTE ORDEN SIEMPRE ═══\n\n¿El cliente saluda o pregunta por propiedades?\n→ Saluda, pregunta qué tipo de propiedad busca\n\n¿Ya sé qué busca pero no tengo ciudad o presupuesto?\n→ Pregunta lo que falta antes de buscar\n\n¿Ya tengo ciudad y presupuesto?\n→ Ejecuta buscar_propiedades → muestra resultados con link → memoriza property_id\n\n¿El cliente mostró interés en una propiedad?\n→ Pregunta: ¿la compra sería directa o con crédito hipotecario?\n→ Si el nombre está incompleto, pide apellido\n→ Ejecuta registrar_lead con etapa \"Calificado\" → memoriza lead_id\n\n¿El cliente quiere agendar visita?\n→ Pregunta qué día y hora prefiere\n→ Calcula la fecha exacta desde hoy y confírmala\n→ Ejecuta verificar_disponibilidad_asesor\n→ Si está libre: ejecuta agendar_cita + actualiza lead a etapa \"Visita Agendada\"\n→ Si está ocupado: ofrece otro horario disponible\n\n¿El cliente pregunta por fotos o detalles?\n→ Manda el link_propiedad que memorizaste\n→ Si no tienes el link, ofrece agendar visita para verla en persona\n\n═══ CADENA SILENCIOSA AL AGENDAR ═══\nCuando el cliente confirme fecha y hora para la cita:\n1. Ejecuta registrar_lead (si no lo hiciste antes) → captura lead_id\n2. Inmediatamente ejecuta agendar_cita con ese lead_id\n3. Solo DESPUÉS de que ambas herramientas respondan exitosamente, escribe la confirmación al cliente\n\nResponde siempre en español. Sé Sofía, no un robot."
+        }
+      },
+      "id": "66feaa9f-9b66-4cd1-b32f-9855783c40a4",
+      "name": "AI Agent Inmobiliario",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [912, 144]
+    },
+
+    {
+      "parameters": { "options": {} },
+      "id": "87593472-fca4-4aae-8a28-117a64b8a96b",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [752, 368],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZNY6Adry9gpjCRH2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "buscar_propiedades",
+        "description": "Busca propiedades disponibles según ciudad y presupuesto. Devuelve título, precio, habitaciones, baños, metraje, link_propiedad y property_id.",
+        "workflowId": {
+          "__rl": true,
+          "value": "jS5q7vdhxYFzHoi4",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/jS5q7vdhxYFzHoi4",
+          "cachedResultName": "Propiedades"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "presupuesto": "={{ $fromAI('presupuesto', 'Presupuesto maximo del cliente en numero', 'number') }}",
+            "ciudad": "={{ $fromAI('ciudad', 'Ciudad donde busca la propiedad', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "ciudad", "displayName": "ciudad", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "presupuesto", "displayName": "presupuesto", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "da980903-e91a-4ee2-ab50-e3b3bc76744f",
+      "name": "Tool: Buscar Propiedades",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [1072, 368]
+    },
+    {
+      "parameters": {
+        "name": "verificar_disponibilidad_asesor",
+        "description": "Verifica si el asesor tiene disponibilidad en una fecha. Devuelve horarios ocupados.",
+        "workflowId": {
+          "__rl": true,
+          "value": "ziMsQY3SZhzZqi3w",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ziMsQY3SZhzZqi3w",
+          "cachedResultName": "Horarios"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $fromAI('fecha', 'Fecha a verificar en formato YYYY-MM-DD', 'string') }}",
+            "user_id": "={{ $fromAI('user_id', 'ID del asesor, usar 1 por defecto', 'number') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "fecha", "displayName": "fecha", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "user_id", "displayName": "user_id", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "1d029322-f590-4835-9d22-392d6fc0d0cb",
+      "name": "Tool: Verificar Disponibilidad",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [1248, 368]
+    },
+    {
+      "parameters": {
+        "name": "registrar_lead",
+        "description": "Registra al cliente como lead en Odoo. Usar cuando tenga nombre, teléfono, ciudad, presupuesto y necesidades.",
+        "workflowId": {
+          "__rl": true,
+          "value": "yvpl7RX9b8y4Mafu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yvpl7RX9b8y4Mafu",
+          "cachedResultName": "My workflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $fromAI('nombre', 'Nombre completo del cliente', 'string') }}",
+            "telefono": "={{ $fromAI('telefono', 'Numero de telefono del cliente', 'string') }}",
+            "ciudad": "={{ $fromAI('ciudad', 'Ciudad donde busca', 'string') }}",
+            "presupuesto": "={{ $fromAI('presupuesto', 'Presupuesto en numero', 'number') }}",
+            "necesidades": "={{ $fromAI('necesidades', 'Resumen de lo que busca el cliente', 'string') }}",
+            "property_id": "={{ $fromAI('property_id', 'ID numerico Odoo de la propiedad elegida, 0 si no eligio', 'number') }}",
+            "etapa": "={{ $fromAI('etapa', 'Etapa del lead. Valores exactos permitidos: Nuevo, Calificado, Visita Agendada', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "nombre", "displayName": "nombre", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "telefono", "displayName": "telefono", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "ciudad", "displayName": "ciudad", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "presupuesto", "displayName": "presupuesto", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false },
+            { "id": "necesidades", "displayName": "necesidades", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "property_id", "displayName": "property_id", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false },
+            { "id": "etapa", "displayName": "etapa", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "7f9b2c34-b5cd-487a-aa27-0e54f3556671",
+      "name": "Tool: Registrar Lead",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [1440, 384]
+    },
+    {
+      "parameters": {
+        "name": "agendar_cita",
+        "description": "Agenda una cita en Odoo vinculada al lead. Ejecutar SOLO después de verificar disponibilidad y registrar lead.",
+        "workflowId": {
+          "__rl": true,
+          "value": "5uu5FgIDZOxYIkfF",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/5uu5FgIDZOxYIkfF",
+          "cachedResultName": "My workflow 5"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $fromAI('fecha', 'Fecha de la cita en formato YYYY-MM-DD', 'string') }}",
+            "hora": "={{ $fromAI('hora', 'Hora de la cita en formato HH:MM', 'string') }}",
+            "nombre_cliente": "={{ $fromAI('nombre_cliente', 'Nombre del cliente', 'string') }}",
+            "nombre_propiedad": "={{ $fromAI('nombre_propiedad', 'Titulo de la propiedad a visitar', 'string') }}",
+            "property_id": "={{ $fromAI('property_id', 'ID numerico Odoo de la propiedad', 'number') }}",
+            "lead_id": "={{ $fromAI('lead_id', 'ID del lead en CRM. 0 si no existe', 'number') }}",
+            "user_id": "={{ $fromAI('user_id', 'ID del asesor. Usar 1', 'number') }}",
+            "duracion": "={{ $fromAI('duracion', 'Duracion en horas. Usar 1.0', 'number') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "fecha", "displayName": "fecha", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "hora", "displayName": "hora", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "property_id", "displayName": "property_id", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false },
+            { "id": "lead_id", "displayName": "lead_id", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false },
+            { "id": "user_id", "displayName": "user_id", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false },
+            { "id": "nombre_cliente", "displayName": "nombre_cliente", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "nombre_propiedad", "displayName": "nombre_propiedad", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "string", "removed": false },
+            { "id": "duracion", "displayName": "duracion", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true, "type": "number", "removed": false }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "11355a5d-fb74-4572-83b5-4474676f07e3",
+      "name": "Tool: Agendar Cita",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [1632, 384]
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('Extraer Datos').item.json.phoneNumberId }}",
+        "recipientPhoneNumber": "={{ $('Extraer Datos').item.json.numero }}",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "id": "de067274-69dc-4be6-93cf-42a8e3b17c70",
+      "name": "Enviar Respuesta WhatsApp",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [1264, 144],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": { "responseCode": 200 }
+      },
+      "id": "28c7fa1a-970a-467f-b4a3-257e4154fbd8",
+      "name": "Responder OK a Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1472, 144]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Extraer Datos').item.json.numero }}",
+        "contextWindowLength": 20
+      },
+      "id": "16d58bb4-51f7-42a6-ab7d-3d4dc87bd140",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [912, 368]
+    }
+  ],
+  "connections": {
+    "Webhook GET (Verificación)": {
+      "main": [[{ "node": "Responder Verificación", "type": "main", "index": 0 }]]
+    },
+    "Webhook POST (Mensajes)": {
+      "main": [[{ "node": "Extraer Datos", "type": "main", "index": 0 }]]
+    },
+    "Extraer Datos": {
+      "main": [[{ "node": "¿Es texto?", "type": "main", "index": 0 }]]
+    },
+    "¿Es texto?": {
+      "main": [
+        [{ "node": "AI Agent Inmobiliario", "type": "main", "index": 0 }],
+        [{ "node": "Es audio?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Es audio?": {
+      "main": [
+        [{ "node": "Obtener URL del Audio", "type": "main", "index": 0 }],
+        [{ "node": "Ignorar (no es texto)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Obtener URL del Audio": {
+      "main": [[{ "node": "Descargar Audio", "type": "main", "index": 0 }]]
+    },
+    "Descargar Audio": {
+      "main": [[{ "node": "Analyze audio", "type": "main", "index": 0 }]]
+    },
+    "Analyze audio": {
+      "main": [[{ "node": "Armar Mensaje de Audio", "type": "main", "index": 0 }]]
+    },
+    "Armar Mensaje de Audio": {
+      "main": [[{ "node": "AI Agent Inmobiliario", "type": "main", "index": 0 }]]
+    },
+    "AI Agent Inmobiliario": {
+      "main": [[{ "node": "Enviar Respuesta WhatsApp", "type": "main", "index": 0 }]]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [[{ "node": "AI Agent Inmobiliario", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [[{ "node": "AI Agent Inmobiliario", "type": "ai_memory", "index": 0 }]]
+    },
+    "Tool: Buscar Propiedades": {
+      "ai_tool": [[{ "node": "AI Agent Inmobiliario", "type": "ai_tool", "index": 0 }]]
+    },
+    "Tool: Verificar Disponibilidad": {
+      "ai_tool": [[{ "node": "AI Agent Inmobiliario", "type": "ai_tool", "index": 0 }]]
+    },
+    "Tool: Registrar Lead": {
+      "ai_tool": [[{ "node": "AI Agent Inmobiliario", "type": "ai_tool", "index": 0 }]]
+    },
+    "Tool: Agendar Cita": {
+      "ai_tool": [[{ "node": "AI Agent Inmobiliario", "type": "ai_tool", "index": 0 }]]
+    },
+    "Enviar Respuesta WhatsApp": {
+      "main": [[{ "node": "Responder OK a Meta", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "927c09be-a58d-476b-90f8-08ac1adf5962",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "6S8u4Rni4mZ8Lz3a",
+  "tags": []
+}

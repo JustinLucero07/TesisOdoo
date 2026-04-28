@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ============================================================ -->
+        <!-- Wizard: Importar Propiedades desde WordPress                  -->
+        <!-- ============================================================ -->
+        <record id="estate_wp_import_wizard_view_form" model="ir.ui.view">
+            <field name="name">estate.wordpress.import.wizard.form</field>
+            <field name="model">estate.wordpress.import.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Importar Propiedades desde WordPress">
+
+                    <!-- ======= PANTALLA CONFIGURACIÓN ======= -->
+                    <group invisible="import_state != 'draft'">
+                        <group string="Opciones de Importación">
+                            <field name="max_properties"/>
+                            <field name="import_images"
+                                   help="Activa esto para descargar imagen principal y galería. Tarda más tiempo."/>
+                            <field name="update_existing"
+                                   help="Si está activo, las propiedades ya existentes (por Post ID de WP) serán actualizadas."/>
+                        </group>
+                        <group string="Información">
+                            <div class="text-muted">
+                                <p>
+                                    Se conectará a tu WordPress configurado en
+                                    <b>Ajustes → Integración WordPress</b>
+                                    y descargará las propiedades via REST API.
+                                </p>
+                                <p>
+                                    Las propiedades nuevas se crearán en
+                                    <b>Inmobiliaria → Propiedades</b>.
+                                </p>
+                                <p class="text-warning">
+                                    Si activas <b>Importar Imágenes</b>, el proceso puede tardar
+                                    varios minutos dependiendo de la cantidad de fotos.
+                                </p>
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- ======= PANTALLA RESULTADOS ======= -->
+                    <group invisible="import_state != 'done'">
+                        <group string="Resultado de la Importación">
+                            <field name="imported_count" string="Propiedades nuevas importadas"/>
+                            <field name="updated_count"  string="Propiedades actualizadas"/>
+                            <field name="skipped_count"  string="Propiedades omitidas (ya existían)"/>
+                        </group>
+                        <group string=" " invisible="not error_log">
+                            <field name="error_log" string="Errores encontrados" widget="text"
+                                   readonly="1" nolabel="1"/>
+                        </group>
+                        <group string=" " invisible="error_log">
+                            <div class="text-success">
+                                <b>Importación completada sin errores.</b>
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- Campo oculto de estado -->
+                    <field name="import_state" invisible="1"/>
+
+                    <footer>
+                        <!-- Botones en pantalla de configuración -->
+                        <button name="action_import"
+                                string="Iniciar Importación"
+                                type="object"
+                                class="btn-primary"
+                                invisible="import_state != 'draft'"/>
+                        <button string="Cancelar"
+                                class="btn-secondary"
+                                special="cancel"
+                                invisible="import_state != 'draft'"/>
+
+                        <!-- Botones en pantalla de resultados -->
+                        <button name="action_view_imported_properties"
+                                string="Ver Propiedades Importadas"
+                                type="object"
+                                class="btn-primary"
+                                invisible="import_state != 'done'"/>
+                        <button string="Cerrar"
+                                class="btn-secondary"
+                                special="cancel"
+                                invisible="import_state != 'done'"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción para abrir el wizard -->
+        <record id="action_estate_wp_import_wizard" model="ir.actions.act_window">
+            <field name="name">Importar desde WordPress</field>
+            <field name="res_model">estate.wordpress.import.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

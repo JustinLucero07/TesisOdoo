@@ -10,8 +10,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">estate_crm.report_crm_quotation_template</field>
         <field name="report_file">estate_crm.report_crm_quotation_template</field>
-        <field name="binding_model_id" ref="crm.model_crm_lead"/>
-        <field name="binding_type">report</field>
+        <!-- binding desactivado: cotización no aparece en menú Imprimir -->
     </record>
 
     <template id="report_crm_quotation_template">

@@ -378,3 +378,23 @@ class EstatePropertyPublish(models.Model):
             raise
         except Exception as e:
             raise UserError(f'Error: {e}')
+
+    def action_view_fb_stats(self):
+        """Abre o crea el registro de estadísticas de Facebook para esta propiedad."""
+        self.ensure_one()
+        FbStats = self.env['estate.facebook.stats']
+        stats = FbStats.search([('property_id', '=', self.id)], limit=1)
+        if not stats:
+            stats = FbStats.create({
+                'property_id': self.id,
+                'fb_post_id': self.fb_post_id,
+            })
+            stats._fetch_stats()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Estadísticas Facebook — {self.title or self.name}',
+            'res_model': 'estate.facebook.stats',
+            'view_mode': 'form',
+            'res_id': stats.id,
+            'target': 'new',
+        }

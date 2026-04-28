@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Estadísticas de Facebook por Propiedad
+    ============================================================ -->
+
+    <record id="estate_facebook_stats_view_list" model="ir.ui.view">
+        <field name="name">estate.facebook.stats.list</field>
+        <field name="model">estate.facebook.stats</field>
+        <field name="arch" type="xml">
+            <list string="Estadísticas Facebook" default_order="stats_date desc">
+                <field name="property_id"/>
+                <field name="fb_post_id" optional="hide"/>
+                <field name="stats_date"/>
+                <field name="impressions" sum="Total"/>
+                <field name="reach" sum="Total"/>
+                <field name="clicks" sum="Total"/>
+                <field name="total_reactions" sum="Total"/>
+                <field name="shares" sum="Total"/>
+                <field name="engagement_rate" widget="percentage" avg="Promedio"/>
+                <field name="ctr" widget="percentage" avg="Promedio"/>
+                <field name="fetch_error" optional="hide" decoration-danger="fetch_error"/>
+                <button name="action_refresh" string="Actualizar" type="object" icon="fa-refresh"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_facebook_stats_view_form" model="ir.ui.view">
+        <field name="name">estate.facebook.stats.form</field>
+        <field name="model">estate.facebook.stats</field>
+        <field name="arch" type="xml">
+            <form string="Estadísticas Facebook">
+                <header>
+                    <button name="action_refresh" string="Actualizar desde Meta API"
+                            type="object" class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert" invisible="not fetch_error">
+                        <strong>Error al obtener datos:</strong>
+                        <field name="fetch_error" readonly="1" nolabel="1"/>
+                    </div>
+                    <group>
+                        <group string="Identificación">
+                            <field name="property_id"/>
+                            <field name="fb_post_id"/>
+                            <field name="stats_date"/>
+                        </group>
+                        <group string="Métricas Calculadas">
+                            <field name="engagement_rate" widget="percentage"/>
+                            <field name="ctr" widget="percentage"/>
+                            <field name="total_reactions"/>
+                        </group>
+                    </group>
+                    <group string="Alcance">
+                        <group>
+                            <field name="impressions"/>
+                            <field name="reach"/>
+                            <field name="clicks"/>
+                        </group>
+                        <group>
+                            <field name="shares"/>
+                        </group>
+                    </group>
+                    <group string="Reacciones">
+                        <group>
+                            <field name="likes"/>
+                            <field name="loves"/>
+                        </group>
+                        <group>
+                            <field name="hahas"/>
+                            <field name="wows"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="estate_facebook_stats_view_graph" model="ir.ui.view">
+        <field name="name">estate.facebook.stats.graph</field>
+        <field name="model">estate.facebook.stats</field>
+        <field name="arch" type="xml">
+            <graph string="Estadísticas Facebook" type="bar" sample="1">
+                <field name="property_id"/>
+                <field name="impressions" type="measure"/>
+                <field name="reach" type="measure"/>
+                <field name="total_reactions" type="measure"/>
+                <field name="clicks" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Acción de ventana -->
+    <record id="action_estate_facebook_stats" model="ir.actions.act_window">
+        <field name="name">Estadísticas Facebook</field>
+        <field name="res_model">estate.facebook.stats</field>
+        <field name="view_mode">list,graph,form</field>
+    </record>
+
+    <!-- Botón en la propiedad: ver estadísticas FB -->
+    <record id="estate_property_fb_stats_button" model="ir.ui.view">
+        <field name="name">estate.property.fb.stats.button</field>
+        <field name="model">estate.property</field>
+        <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_publish_facebook']" position="after">
+                <button name="action_view_fb_stats" type="object"
+                        class="oe_stat_button" icon="fa-bar-chart"
+                        invisible="not fb_published">
+                    <span>Stats FB</span>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

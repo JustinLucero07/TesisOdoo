@@ -211,7 +211,10 @@
       "Bash(find /home/justin/Documentos/Tesis/estate_management -name *menu*.xml -o -name *view*.xml)",
       "Bash(grep -n \"TODO\\\\|FIXME\\\\|XXX\\\\|HACK\\\\|BUG\" /home/justin/Documentos/Tesis/estate_management/models/*.py /home/justin/Documentos/Tesis/estate_crm/models/*.py /home/justin/Documentos/Tesis/estate_ai_agent/models/*.py)",
       "Bash(grep -rn \"raise NotImplementedError\\\\|pass$\\\\|^\\\\s*#\" /home/justin/Documentos/Tesis/estate_management/models/estate_offer.py)",
-      "Bash(grep -n \"class EstateAppraisal\\\\|class EstateExpense\\\\|class EstatePayment\" /home/justin/Documentos/Tesis/estate_management/models/*.py)"
+      "Bash(grep -n \"class EstateAppraisal\\\\|class EstateExpense\\\\|class EstatePayment\" /home/justin/Documentos/Tesis/estate_management/models/*.py)",
+      "Bash(find /home/justin/Documentos/Tesis/estate_ai_agent -name \"*.pyc\" -delete)",
+      "Bash(find /home/justin/Documentos/Tesis -name *quotation* -o -name *cotizacion*)",
+      "Bash(xargs ls:*)"
     ],
     "additionalDirectories": [
       "/tmp",
