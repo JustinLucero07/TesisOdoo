@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="estate_social.FacebookInsightsDashboard">
+        <div class="o_fb_insights_dashboard">
+
+            <!-- ── KPIs principales ──────────────────────────────── -->
+            <div class="o_fbi_kpi_row">
+                <div class="o_fbi_kpi_card">
+                    <i class="fa fa-eye"/>
+                    <div class="o_fbi_kpi_value" t-esc="formatNumber(state.data.summary.impressions)"/>
+                    <div class="o_fbi_kpi_label">Visualizaciones</div>
+                </div>
+                <div class="o_fbi_kpi_card">
+                    <i class="fa fa-users"/>
+                    <div class="o_fbi_kpi_value" t-esc="formatNumber(state.data.summary.reach)"/>
+                    <div class="o_fbi_kpi_label">Espectadores</div>
+                </div>
+                <div class="o_fbi_kpi_card o_fbi_highlight">
+                    <i class="fa fa-bolt"/>
+                    <div class="o_fbi_kpi_value" t-esc="formatNumber(state.data.summary.interactions)"/>
+                    <div class="o_fbi_kpi_label">Interacciones</div>
+                </div>
+                <div class="o_fbi_kpi_card">
+                    <i class="fa fa-mouse-pointer"/>
+                    <div class="o_fbi_kpi_value" t-esc="formatNumber(state.data.summary.clicks)"/>
+                    <div class="o_fbi_kpi_label">Clics</div>
+                </div>
+                <div class="o_fbi_kpi_card">
+                    <i class="fa fa-percent"/>
+                    <div class="o_fbi_kpi_value">
+                        <t t-esc="state.data.summary.engagement_rate || 0"/>%
+                    </div>
+                    <div class="o_fbi_kpi_label">Engagement</div>
+                </div>
+            </div>
+
+            <!-- ── Gráfico evolución temporal ────────────────────── -->
+            <div class="o_fbi_section" t-if="hasEvolution">
+                <div class="o_fbi_section_header">
+                    <h3>Visualizaciones en el tiempo</h3>
+                    <div class="o_fbi_section_meta">
+                        <span class="o_fbi_total"><t t-esc="formatNumber(state.data.summary.impressions)"/> visualizaciones</span>
+                        <span class="o_fbi_total_sub"><t t-esc="formatNumber(state.data.summary.reach)"/> espectadores</span>
+                    </div>
+                </div>
+                <div class="o_fbi_chart_wrap">
+                    <canvas t-ref="lineChart"/>
+                </div>
+            </div>
+            <div class="o_fbi_section o_fbi_empty" t-else="">
+                <div class="o_fbi_section_header">
+                    <h3>Visualizaciones en el tiempo</h3>
+                </div>
+                <div class="o_fbi_empty_msg">
+                    <i class="fa fa-line-chart"/>
+                    <p>Aún no hay snapshots de evolución. Pulsa <b>Actualizar desde Meta API</b> varias veces (cada actualización guarda un punto en el tiempo).</p>
+                </div>
+            </div>
+
+            <!-- ── Reacción por tipo (estilo Facebook) ───────────── -->
+            <div class="o_fbi_section">
+                <div class="o_fbi_section_header">
+                    <h3><t t-esc="state.data.summary.interactions"/> Interacción</h3>
+                </div>
+
+                <div class="o_fbi_breakdown_row">
+                    <div class="o_fbi_breakdown_item">
+                        <div class="o_fbi_breakdown_value" t-esc="state.data.summary.reactions"/>
+                        <div class="o_fbi_breakdown_label">Reacciones</div>
+                    </div>
+                    <div class="o_fbi_breakdown_item">
+                        <div class="o_fbi_breakdown_value" t-esc="state.data.summary.clicks"/>
+                        <div class="o_fbi_breakdown_label">Clics</div>
+                    </div>
+                    <div class="o_fbi_breakdown_item">
+                        <div class="o_fbi_breakdown_value" t-esc="state.data.summary.comments"/>
+                        <div class="o_fbi_breakdown_label">Comentarios</div>
+                    </div>
+                    <div class="o_fbi_breakdown_item">
+                        <div class="o_fbi_breakdown_value" t-esc="state.data.summary.shares"/>
+                        <div class="o_fbi_breakdown_label">Veces compartido</div>
+                    </div>
+                </div>
+
+                <h4 class="o_fbi_subheader">Reacción por tipo</h4>
+                <div class="o_fbi_reactions_row">
+                    <div class="o_fbi_reaction">
+                        <span class="o_fbi_emoji o_fbi_like">👍</span>
+                        <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.likes"/>
+                    </div>
+                    <div class="o_fbi_reaction">
+                        <span class="o_fbi_emoji o_fbi_love">❤️</span>
+                        <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.loves"/>
+                    </div>
+                    <div class="o_fbi_reaction">
+                        <span class="o_fbi_emoji">🤗</span>
+                        <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.hahas"/>
+                    </div>
+                    <div class="o_fbi_reaction">
+                        <span class="o_fbi_emoji">😮</span>
+                        <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.wows"/>
+                    </div>
+                    <div class="o_fbi_reaction">
+                        <span class="o_fbi_emoji">😢</span>
+                        <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.sads"/>
+                    </div>
+                    <div class="o_fbi_reaction">
+                        <span class="o_fbi_emoji o_fbi_angry">😡</span>
+                        <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.angries"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Audiencia + Tráfico (lado a lado) ─────────────── -->
+            <div class="o_fbi_grid_2">
+                <div class="o_fbi_section">
+                    <div class="o_fbi_section_header">
+                        <h3>Seguidores frente a no seguidores</h3>
+                    </div>
+                    <div class="o_fbi_chart_wrap o_fbi_chart_pie" t-if="hasAudience">
+                        <canvas t-ref="audienceChart"/>
+                    </div>
+                    <div class="o_fbi_empty_msg" t-else="">
+                        <i class="fa fa-pie-chart"/>
+                        <p>Sin datos de audiencia. Requiere permiso <b>read_insights</b> en el Page Token.</p>
+                        <canvas t-ref="audienceChart" style="display:none"/>
+                    </div>
+                </div>
+
+                <div class="o_fbi_section">
+                    <div class="o_fbi_section_header">
+                        <h3>Cómo te encuentran</h3>
+                    </div>
+                    <div class="o_fbi_chart_wrap o_fbi_chart_pie" t-if="hasTraffic">
+                        <canvas t-ref="trafficChart"/>
+                    </div>
+                    <div class="o_fbi_empty_msg" t-else="">
+                        <i class="fa fa-search"/>
+                        <p>Sin datos de tráfico (orgánico / pagado / viral). Requiere <b>read_insights</b>.</p>
+                        <canvas t-ref="trafficChart" style="display:none"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Demografía edad/sexo ──────────────────────────── -->
+            <div class="o_fbi_section">
+                <div class="o_fbi_section_header">
+                    <h3>Quién ha visto tu contenido</h3>
+                    <div class="o_fbi_section_meta">
+                        <span class="o_fbi_legend_dot" style="background:#1877F2"/> Hombres
+                        <span class="o_fbi_legend_dot ms-2" style="background:#42A5F5"/> Mujeres
+                    </div>
+                </div>
+                <div class="o_fbi_chart_wrap o_fbi_chart_demo" t-if="hasDemographics">
+                    <canvas t-ref="demoChart"/>
+                </div>
+                <div class="o_fbi_empty_msg" t-else="">
+                    <i class="fa fa-bar-chart"/>
+                    <p>Sin datos demográficos. Requiere <b>read_insights</b> y volumen mínimo de espectadores.</p>
+                    <canvas t-ref="demoChart" style="display:none"/>
+                </div>
+            </div>
+
+        </div>
+    </t>
+
+</templates>

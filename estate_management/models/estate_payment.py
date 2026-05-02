@@ -68,6 +68,16 @@ class EstatePayment(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('estate.payment') or 'Nuevo'
         return super().create(vals_list)
 
+    # ------------------------------------------------------------------
+    # Validaciones de integridad de datos
+    # ------------------------------------------------------------------
+
+    @api.constrains('amount')
+    def _check_amount(self):
+        for rec in self:
+            if rec.amount <= 0:
+                raise UserError('El monto del pago debe ser mayor a cero.')
+
     def action_confirm(self):
         for rec in self:
             if rec.state != 'pending':

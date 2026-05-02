@@ -1,0 +1,183 @@
+.o_fb_insights_dashboard {
+    --fb-blue: #1877F2;
+    --fb-blue-light: #42A5F5;
+    --fb-blue-dark: #0B5394;
+    --fb-bg: #F0F2F5;
+    --fb-card: #FFFFFF;
+    --fb-text: #1c1e21;
+    --fb-muted: #65676B;
+    --fb-border: #DADDE1;
+    background: var(--fb-bg);
+    padding: 16px;
+    border-radius: 8px;
+    width: 100%;
+
+    h3 { font-size: 17px; font-weight: 600; margin: 0; color: var(--fb-text); }
+    h4 { font-size: 14px; font-weight: 600; color: var(--fb-text); }
+
+    // ── KPI cards ──────────────────────────────
+    .o_fbi_kpi_row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .o_fbi_kpi_card {
+        background: var(--fb-card);
+        padding: 16px;
+        border-radius: 8px;
+        text-align: center;
+        border: 1px solid var(--fb-border);
+        transition: transform 0.15s;
+        &:hover { transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        i {
+            color: var(--fb-blue);
+            font-size: 22px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        &.o_fbi_highlight {
+            background: var(--fb-blue);
+            color: white;
+            i, .o_fbi_kpi_value, .o_fbi_kpi_label { color: white; }
+        }
+    }
+    .o_fbi_kpi_value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--fb-text);
+        line-height: 1;
+    }
+    .o_fbi_kpi_label {
+        font-size: 13px;
+        color: var(--fb-muted);
+        margin-top: 4px;
+    }
+
+    // ── Sections ───────────────────────────────
+    .o_fbi_section {
+        background: var(--fb-card);
+        padding: 16px 20px;
+        border-radius: 8px;
+        border: 1px solid var(--fb-border);
+        margin-bottom: 16px;
+    }
+    .o_fbi_section_header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .o_fbi_section_meta {
+        font-size: 13px;
+        color: var(--fb-muted);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .o_fbi_total {
+        font-weight: 600;
+        color: var(--fb-text);
+        font-size: 15px;
+    }
+    .o_fbi_total_sub { font-size: 13px; }
+
+    .o_fbi_subheader {
+        margin: 16px 0 8px;
+        padding-top: 12px;
+        border-top: 1px solid var(--fb-border);
+    }
+
+    .o_fbi_grid_2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+        @media (max-width: 768px) { grid-template-columns: 1fr; }
+        .o_fbi_section { margin-bottom: 0; }
+    }
+
+    // ── Chart wrappers ─────────────────────────
+    .o_fbi_chart_wrap {
+        position: relative;
+        height: 280px;
+        width: 100%;
+    }
+    .o_fbi_chart_pie { height: 240px; }
+    .o_fbi_chart_demo { height: 320px; }
+
+    // ── Breakdown row (Reacciones, Clics, Comentarios, Compartidos) ──
+    .o_fbi_breakdown_row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        @media (max-width: 600px) { grid-template-columns: repeat(2, 1fr); }
+    }
+    .o_fbi_breakdown_item {
+        background: #F7F8FA;
+        padding: 14px;
+        border-radius: 6px;
+        text-align: left;
+    }
+    .o_fbi_breakdown_value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--fb-text);
+    }
+    .o_fbi_breakdown_label {
+        font-size: 13px;
+        color: var(--fb-muted);
+        margin-top: 2px;
+    }
+
+    // ── Reacciones por tipo (emojis) ───────────
+    .o_fbi_reactions_row {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 8px;
+        @media (max-width: 600px) { grid-template-columns: repeat(3, 1fr); }
+    }
+    .o_fbi_reaction {
+        text-align: center;
+        padding: 12px 4px;
+        background: #F7F8FA;
+        border-radius: 6px;
+    }
+    .o_fbi_emoji {
+        font-size: 28px;
+        display: block;
+        margin-bottom: 4px;
+        line-height: 1;
+    }
+    .o_fbi_reaction_value {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--fb-text);
+    }
+
+    // ── Empty states ───────────────────────────
+    .o_fbi_empty .o_fbi_section_header h3 { color: var(--fb-muted); }
+    .o_fbi_empty_msg {
+        text-align: center;
+        padding: 32px 16px;
+        color: var(--fb-muted);
+        i {
+            font-size: 36px;
+            color: var(--fb-blue-light);
+            margin-bottom: 12px;
+            display: block;
+        }
+        p { margin: 0; font-size: 14px; }
+        b { color: var(--fb-text); }
+    }
+
+    .o_fbi_legend_dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 4px;
+    }
+}

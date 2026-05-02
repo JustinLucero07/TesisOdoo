@@ -187,67 +187,180 @@ class EstateWordpressImportWizard(models.TransientModel):
     # PARSEO DE META Y TAXONOMÍAS
     # =========================================================================
 
+    def _fetch_meta_via_xmlrpc(self, cfg, wp_post_id):
+        """
+        Obtiene TODOS los custom fields de un post via WordPress XML-RPC.
+        XML-RPC está activo por defecto en WordPress y devuelve todos los meta
+        sin necesidad de register_meta() — a diferencia de la REST API.
+        """
+        if not cfg.get('auth'):
+            return {}
+        try:
+            from xmlrpc.client import ServerProxy
+            user, pwd = cfg['auth']
+            if not user or not pwd:
+                return {}
+
+            xmlrpc_url = f"{cfg['url']}/xmlrpc.php"
+            server = ServerProxy(xmlrpc_url, allow_none=True)
+            # blog_id=1, username, password, post_id, fields
+            post = server.wp.getPost(1, user, pwd, int(wp_post_id), ['custom_fields'])
+
+            meta = {}
+            for field in (post.get('custom_fields') or []):
+                key = field.get('key', '')
+                val = field.get('value', '')
+                # Excluir campos internos de WP (prefijo _) y vacíos
+                if key and not key.startswith('_') and val not in ('', None):
+                    meta[key] = val
+
+            _logger.info(
+                "XML-RPC: post %s → %d custom fields obtenidos",
+                wp_post_id, len(meta))
+            return meta
+        except Exception as e:
+            _logger.debug("XML-RPC meta fetch falló para post %s: %s", wp_post_id, e)
+            return {}
+
     def _fetch_single_post_meta(self, cfg, wp_post_id):
         """
-        Intenta obtener los meta de un post individual por varias rutas.
-        Retorna dict con todos los meta encontrados (puede estar vacío).
+        Estrategia en cascada para obtener los meta de un post Houzez.
+        Usa las MISMAS llaves que _build_houzez_meta() del sync:
+          fave_property_price, fave_property_size, fave_property_land,
+          fave_property_bedrooms, fave_property_rooms, fave_property_bathrooms,
+          fave_property_garage, fave_property_year, fave_property_id,
+          fave_property_address, fave_property_zip,
+          houzez_geolocation_lat, houzez_geolocation_long,
+          fave_property_map_address, fave_property_location
         """
-        post_type = cfg['post_type']
         combined = {}
+        KEY_FIELDS = ('fave_property_price', 'fave_property_size', 'fave_property_bedrooms')
 
-        # Ruta 1: individual con context=edit y campos explícitos
+        def _has_key_data():
+            return any(
+                combined.get(k) and str(combined[k]).strip() not in ('', '0', '0.0')
+                for k in KEY_FIELDS
+            )
+
+        # === Estrategia 1: XML-RPC (siempre devuelve custom fields en WP) ===
+        xmlrpc_meta = self._fetch_meta_via_xmlrpc(cfg, wp_post_id)
+        if xmlrpc_meta:
+            combined.update(xmlrpc_meta)
+            _logger.info(
+                "Import meta post %s — XML-RPC: %d campos. price=%s, size=%s, beds=%s",
+                wp_post_id, len(xmlrpc_meta),
+                xmlrpc_meta.get('fave_property_price', '?'),
+                xmlrpc_meta.get('fave_property_size', '?'),
+                xmlrpc_meta.get('fave_property_bedrooms', '?'))
+            if _has_key_data():
+                return combined
+
+        # === Estrategia 2: Endpoint custom odoo-houzez (el MISMO que usamos para GUARDAR) ===
+        try:
+            meta_url = f"{cfg['url']}/wp-json/odoo-houzez/v1/meta/{wp_post_id}"
+            resp = requests.get(
+                meta_url, auth=cfg['auth'], headers=cfg['headers'], timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, dict):
+                    # El endpoint puede devolver los meta directamente o bajo una clave
+                    meta_data = data.get('meta', data)
+                    if isinstance(meta_data, dict):
+                        for k, v in meta_data.items():
+                            if v not in (None, '', []):
+                                combined.setdefault(k, v)
+                    _logger.info(
+                        "Import meta post %s — odoo-houzez endpoint: price=%s, size=%s",
+                        wp_post_id,
+                        combined.get('fave_property_price', '?'),
+                        combined.get('fave_property_size', '?'))
+                    if _has_key_data():
+                        return combined
+        except Exception as e:
+            _logger.debug("odoo-houzez meta endpoint no disponible para post %s: %s", wp_post_id, e)
+
+        # === Estrategia 3: REST individual con context=edit ===
+        post_type = cfg['post_type']
         try:
             url = f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_post_id}"
             resp = requests.get(
                 url,
-                params={'context': 'edit', '_fields': 'id,meta,acf'},
+                params={'context': 'edit'},
                 auth=cfg['auth'], headers=cfg['headers'],
                 timeout=20,
             )
             if resp.status_code == 200:
                 data = resp.json()
-                combined.update(data.get('meta', {}) or {})
-                combined.update(data.get('acf', {}) or {})
+                # Extraer meta registrado
+                rest_meta = data.get('meta', {}) or {}
+                rest_acf = data.get('acf', {}) or {}
+                for source in (rest_meta, rest_acf):
+                    for k, v in source.items():
+                        if v not in (None, '', [], False):
+                            combined.setdefault(k, v)
+                # Houzez a veces expone campos a primer nivel con prefijo fave_ o houzez_
+                for key, val in data.items():
+                    if key.startswith(('fave_', 'houzez_')) and val not in (None, '', [], False):
+                        combined.setdefault(key, val)
+                _logger.info(
+                    "Import meta post %s — REST edit: price=%s, size=%s, beds=%s",
+                    wp_post_id,
+                    combined.get('fave_property_price', '?'),
+                    combined.get('fave_property_size', '?'),
+                    combined.get('fave_property_bedrooms', '?'))
+                if _has_key_data():
+                    return combined
         except Exception as e:
-            _logger.debug("Meta individual fetch (ruta 1) falló para post %s: %s", wp_post_id, e)
+            _logger.debug("REST individual fetch falló para post %s: %s", wp_post_id, e)
 
-        # Ruta 2: endpoint custom Houzez si existe
-        houzez_routes = [
-            f"{cfg['url']}/wp-json/houzez/v1/property-meta/{wp_post_id}",
-            f"{cfg['url']}/wp-json/houzez/v1/properties/{wp_post_id}",
-        ]
-        for route in houzez_routes:
-            try:
-                resp = requests.get(
-                    route, auth=cfg['auth'], headers=cfg['headers'], timeout=10)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if isinstance(data, dict):
-                        combined.update({k: v for k, v in data.items() if v not in (None, '')})
-                    break
-            except Exception:
-                pass
+        # === Estrategia 4: endpoints custom Houzez (tema) ===
+        if not _has_key_data():
+            for route in [
+                f"{cfg['url']}/wp-json/houzez/v1/property-meta/{wp_post_id}",
+                f"{cfg['url']}/wp-json/houzez/v1/properties/{wp_post_id}",
+            ]:
+                try:
+                    resp = requests.get(
+                        route, auth=cfg['auth'], headers=cfg['headers'], timeout=10)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        if isinstance(data, dict):
+                            if 'data' in data and isinstance(data['data'], dict):
+                                for k, v in data['data'].items():
+                                    if v not in (None, ''):
+                                        combined.setdefault(k, v)
+                            for k, v in data.items():
+                                if k != 'data' and v not in (None, '', {}, []):
+                                    combined.setdefault(k, v)
+                        _logger.info(
+                            "Import meta post %s — Houzez endpoint %s: price=%s",
+                            wp_post_id, route.split('/')[-2],
+                            combined.get('fave_property_price', '?'))
+                        if _has_key_data():
+                            break
+                except Exception:
+                    pass
 
-        # Ruta 3: /wp-json/wp/v2/{post_type}/{id} con _fields=meta solo
-        if not combined:
+        # === Estrategia 5: REST individual SIN context=edit (público) ===
+        if not _has_key_data():
             try:
                 url = f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_post_id}"
                 resp = requests.get(
-                    url,
-                    params={'context': 'edit'},
-                    auth=cfg['auth'], headers=cfg['headers'],
-                    timeout=20,
-                )
+                    url, auth=cfg['auth'], headers=cfg['headers'], timeout=20)
                 if resp.status_code == 200:
                     data = resp.json()
-                    combined.update(data.get('meta', {}) or {})
-                    combined.update(data.get('acf', {}) or {})
-                    # A veces los meta vienen a primer nivel con prefijo fave_
                     for key, val in data.items():
-                        if key.startswith(('fave_', 'houzez_', 'property_')):
+                        if key.startswith(('fave_', 'houzez_')) and val not in (None, '', [], False):
                             combined.setdefault(key, val)
-            except Exception as e:
-                _logger.debug("Meta individual fetch (ruta 3) falló para post %s: %s", wp_post_id, e)
+            except Exception:
+                pass
+
+        # Log final si seguimos sin datos
+        if not _has_key_data():
+            _logger.warning(
+                "Import meta post %s: NO SE ENCONTRARON DATOS después de 5 estrategias. "
+                "Llaves encontradas: %s",
+                wp_post_id, list(combined.keys())[:20])
 
         return combined
 
@@ -255,11 +368,15 @@ class EstateWordpressImportWizard(models.TransientModel):
         """Retorna una función para obtener campos meta con fallback a acf y extra_meta."""
         meta = wp_prop.get('meta', {}) or {}
         acf = wp_prop.get('acf', {}) or {}
+        # Houzez a veces inyecta meta directamente en la respuesta principal o en 'houzez_meta'
+        h_meta = wp_prop.get('houzez_meta', {}) or {}
         extra = extra_meta or {}
 
         def get_meta(key, default=''):
-            # Prioridad: meta directo → acf → extra_meta (fetch individual)
-            for source in (meta, acf, extra):
+            # Prioridad: meta directo → acf → houzez_meta → extra_meta (fetch individual) → raíz del post
+            for source in (meta, acf, h_meta, extra, wp_prop):
+                if not isinstance(source, dict):
+                    continue
                 val = source.get(key)
                 if val is not None:
                     if isinstance(val, list):
@@ -271,13 +388,28 @@ class EstateWordpressImportWizard(models.TransientModel):
         return get_meta
 
     def _get_taxonomy_term_ids(self, wp_prop, taxonomy_name):
-        """Extrae IDs de términos de una taxonomía desde _embedded."""
+        """Extrae IDs de términos de una taxonomía desde _embedded (soporta - y _)."""
+        alt_name = taxonomy_name.replace('-', '_') if '-' in taxonomy_name else taxonomy_name.replace('_', '-')
         try:
             terms_groups = wp_prop.get('_embedded', {}).get('wp:term', [])
             for group in terms_groups:
-                for term in group:
-                    if term.get('taxonomy') == taxonomy_name:
-                        return [t['id'] for t in group if t.get('taxonomy') == taxonomy_name]
+                # Verificar si el grupo pertenece a la taxonomía buscada
+                first_term = group[0] if group else {}
+                if first_term.get('taxonomy') in (taxonomy_name, alt_name):
+                    return [t['id'] for t in group]
+        except Exception:
+            pass
+        return []
+
+    def _get_taxonomy_term_names(self, wp_prop, taxonomy_name):
+        """Extrae NOMBRES de términos de una taxonomía desde _embedded."""
+        alt_name = taxonomy_name.replace('-', '_') if '-' in taxonomy_name else taxonomy_name.replace('_', '-')
+        try:
+            terms_groups = wp_prop.get('_embedded', {}).get('wp:term', [])
+            for group in terms_groups:
+                first_term = group[0] if group else {}
+                if first_term.get('taxonomy') in (taxonomy_name, alt_name):
+                    return [t['name'] for t in group if t.get('name')]
         except Exception:
             pass
         return []
@@ -288,15 +420,30 @@ class EstateWordpressImportWizard(models.TransientModel):
 
     @staticmethod
     def _safe_float(val, default=0.0):
+        if not val:
+            return default
         try:
-            return float(str(val).replace(',', '.').strip()) if val else default
+            # Limpiar símbolos de moneda y caracteres no numéricos excepto coma/punto
+            clean_val = re.sub(r'[^\d,.]', '', str(val)).strip()
+            # Manejar formato europeo/latino: 1.000,50 -> 1000.50
+            if ',' in clean_val and '.' in clean_val:
+                if clean_val.rfind(',') > clean_val.rfind('.'):
+                    clean_val = clean_val.replace('.', '').replace(',', '.')
+                else:
+                    clean_val = clean_val.replace(',', '')
+            elif ',' in clean_val:
+                clean_val = clean_val.replace(',', '.')
+            return float(clean_val)
         except Exception:
             return default
 
     @staticmethod
     def _safe_int(val, default=0):
+        if not val:
+            return default
         try:
-            return int(float(str(val).strip())) if val else default
+            clean_val = re.sub(r'[^\d]', '', str(val)).strip()
+            return int(clean_val) if clean_val else default
         except Exception:
             return default
 
@@ -320,7 +467,16 @@ class EstateWordpressImportWizard(models.TransientModel):
         return True
 
     def _map_wp_to_vals(self, wp_prop, extra_meta=None):
-        """Convierte un dict de propiedad WP a vals para estate.property."""
+        """Convierte un dict de propiedad WP a vals para estate.property.
+        
+        Campos leídos — SIMÉTRICOS con _build_houzez_meta() del sync:
+          fave_property_price, fave_property_size, fave_property_land,
+          fave_property_bedrooms, fave_property_rooms, fave_property_bathrooms,
+          fave_property_garage, fave_property_year, fave_property_id,
+          fave_property_address, fave_property_zip,
+          fave_property_map_address, fave_property_location,
+          houzez_geolocation_lat, houzez_geolocation_long
+        """
         get_meta = self._get_meta_getter(wp_prop, extra_meta)
 
         # --- Título ---
@@ -330,21 +486,44 @@ class EstateWordpressImportWizard(models.TransientModel):
         # --- Descripción (HTML conservado) ---
         description = wp_prop.get('content', {}).get('rendered', '')
 
-        # --- Campos numéricos ---
+        # --- Campos numéricos (mismas llaves que _build_houzez_meta) ---
         price = self._safe_float(get_meta('fave_property_price'))
-        area = self._safe_float(get_meta('fave_property_size'))
-        bedrooms = self._safe_int(get_meta('fave_property_bedrooms'))
+        area = self._safe_float(
+            get_meta('fave_property_size')
+            or get_meta('fave_property_land'))
+        bedrooms = self._safe_int(
+            get_meta('fave_property_bedrooms')
+            or get_meta('fave_property_rooms'))
         bathrooms = self._safe_float(get_meta('fave_property_bathrooms'))
         parking = self._safe_int(get_meta('fave_property_garage'))
         year_raw = self._safe_int(get_meta('fave_property_year'))
 
-        # --- Ubicación ---
+        # --- Ubicación (mismas llaves que _build_houzez_meta) ---
         street = get_meta('fave_property_address')
+        if not street:
+            street = get_meta('fave_property_map_address')
         zip_code = get_meta('fave_property_zip')
-        lat = (self._safe_float(get_meta('houzez_geolocation_lat'))
-               or self._safe_float(get_meta('fave_latitude')))
-        lng = (self._safe_float(get_meta('houzez_geolocation_long'))
-               or self._safe_float(get_meta('fave_longitude')))
+
+        # GPS: primero houzez_geolocation_*, luego fave_property_location ("lat,lng,zoom")
+        lat = self._safe_float(get_meta('houzez_geolocation_lat'))
+        lng = self._safe_float(get_meta('houzez_geolocation_long'))
+
+        if not (lat and lng):
+            location_str = get_meta('fave_property_location')
+            if location_str and ',' in str(location_str):
+                parts = str(location_str).split(',')
+                if len(parts) >= 2:
+                    lat = lat or self._safe_float(parts[0])
+                    lng = lng or self._safe_float(parts[1])
+
+        # Log detallado de lo que se extrajo
+        _logger.info(
+            "Mapeo WP→Odoo [%s]: price=%s, area=%s, beds=%s, baths=%s, "
+            "parking=%s, street=%s, city_tax=%s, lat=%s, lng=%s",
+            title[:40], price, area, bedrooms, bathrooms,
+            parking, (street or '')[:30],
+            self._get_taxonomy_term_ids(wp_prop, 'property-city'),
+            lat, lng)
 
         # --- Taxonomías ---
         type_tax_ids = self._get_taxonomy_term_ids(wp_prop, 'property-type')
@@ -359,6 +538,18 @@ class EstateWordpressImportWizard(models.TransientModel):
                 odoo_state = WP_STATUS_TO_STATE[tid]
                 offer_type = WP_STATUS_TO_OFFER_TYPE[tid]
                 break
+        
+        # Fallback por nombre de estado si el ID no está mapeado
+        if odoo_state == 'available' and not status_tax_ids:
+            status_names = self._get_taxonomy_term_names(wp_prop, 'property-status')
+            for sname in status_names:
+                sname_l = sname.lower()
+                if 'venta' in sname_l:
+                    odoo_state, offer_type = 'available', 'sale'
+                    break
+                elif any(x in sname_l for x in ('renta', 'alquiler', 'arriendo')):
+                    odoo_state, offer_type = 'available', 'rent'
+                    break
 
         # Mapear tipo de propiedad desde taxonomía WP
         property_type_id = False
@@ -367,20 +558,18 @@ class EstateWordpressImportWizard(models.TransientModel):
             if type_name:
                 property_type_id = self._get_or_create_property_type(type_name).id
                 break
-
-        # Fallback 1: detectar tipo desde el nombre del término de taxonomía
+        
+        # Fallback por nombre de término para Tipo de Propiedad
+        if not property_type_id:
+            type_names = self._get_taxonomy_term_names(wp_prop, 'property-type')
+            if type_names:
+                property_type_id = self._get_or_create_property_type(type_names[0]).id
+        
+        # Fallback 1: detectar tipo desde el nombre del término de taxonomía (ya cubierto arriba, pero mantenemos por seguridad)
         if not property_type_id:
             try:
-                terms_groups = wp_prop.get('_embedded', {}).get('wp:term', [])
-                for group in terms_groups:
-                    for term in group:
-                        if term.get('taxonomy') == 'property-type':
-                            term_name = term.get('name', '').strip()
-                            if term_name:
-                                property_type_id = self._get_or_create_property_type(term_name).id
-                                break
-                    if property_type_id:
-                        break
+                # El código anterior usaba una búsqueda manual en _embedded, la nueva _get_taxonomy_term_names es más limpia.
+                pass
             except Exception:
                 pass
 
@@ -410,6 +599,13 @@ class EstateWordpressImportWizard(models.TransientModel):
             city = WP_CITY_TO_ODOO.get(tid, '')
             if city:
                 break
+        
+        # Fallback por nombre de término si el ID no está mapeado
+        if not city:
+            city_names = self._get_taxonomy_term_names(wp_prop, 'property-city')
+            if city_names:
+                city = city_names[0]
+        
         if not city:
             city = get_meta('fave_property_city', '')
 
@@ -566,7 +762,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                 'No se encontraron propiedades en WordPress.\n'
                 'Verifica la URL, credenciales y que el post type sea correcto.')
 
-        Property = self.env['estate.property']
+        Property = self.env['estate.property'].with_context(no_wp_sync=True)
         imported = updated = skipped = 0
         errors = []
 
@@ -577,12 +773,13 @@ class EstateWordpressImportWizard(models.TransientModel):
 
             try:
                 with self.env.cr.savepoint():
-                    # Si los meta del bulk-fetch parecen vacíos, pedir el post individualmente
-                    extra_meta = {}
-                    if wp_id and self._meta_looks_empty(wp_prop):
-                        extra_meta = self._fetch_single_post_meta(cfg, wp_id)
-
+                    # Siempre enriquecer con meta individual (XML-RPC garantiza todos los campos)
+                    extra_meta = self._fetch_single_post_meta(cfg, wp_id) if wp_id else {}
                     vals = self._map_wp_to_vals(wp_prop, extra_meta)
+
+                    # Log de depuración para campos numéricos
+                    if vals.get('price') == 0:
+                        _logger.info("Importación: [%s] El precio resultó en 0. Revisar metadatos.", display_title)
 
                     existing = (
                         Property.search([('wp_post_id', '=', wp_id)], limit=1)

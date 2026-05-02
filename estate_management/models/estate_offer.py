@@ -85,6 +85,22 @@ class EstatePropertyOffer(models.Model):
             if lead:
                 lead._advance_lead_to_stage(xmlid)
 
+    # ------------------------------------------------------------------
+    # Validaciones de integridad de datos
+    # ------------------------------------------------------------------
+
+    @api.constrains('offer_amount')
+    def _check_offer_amount(self):
+        for rec in self:
+            if rec.offer_amount <= 0:
+                raise UserError('El monto ofertado debe ser mayor a cero.')
+
+    @api.constrains('date', 'date_expiry')
+    def _check_dates(self):
+        for rec in self:
+            if rec.date_expiry and rec.date and rec.date_expiry < rec.date:
+                raise UserError('La fecha de vencimiento de la oferta no puede ser anterior a la fecha de oferta.')
+
     def action_submit(self):
         self.write({'state': 'submitted'})
         # Auto-avanzar lead a "Oferta Presentada"

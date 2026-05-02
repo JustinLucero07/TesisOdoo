@@ -1,104 +1,211 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ============================================================
-         Estadísticas de Facebook por Propiedad
-    ============================================================ -->
+    <!-- ═══════════════════════════════════════════════════════
+         HISTORIAL
+    ═══════════════════════════════════════════════════════════ -->
+
+    <record id="fb_stats_history_view_graph" model="ir.ui.view">
+        <field name="name">estate.facebook.stats.history.graph</field>
+        <field name="model">estate.facebook.stats.history</field>
+        <field name="arch" type="xml">
+            <graph string="Visualizaciones en el tiempo" type="line" sample="1">
+                <field name="snapshot_date" type="row" interval="day"/>
+                <field name="impressions"        type="measure" string="Visualizaciones"/>
+                <field name="reach"              type="measure" string="Espectadores"/>
+                <field name="total_interactions" type="measure" string="Interacciones"/>
+                <field name="total_reactions"    type="measure" string="Reacciones"/>
+                <field name="clicks"             type="measure" string="Clics"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="fb_stats_history_view_list" model="ir.ui.view">
+        <field name="name">estate.facebook.stats.history.list</field>
+        <field name="model">estate.facebook.stats.history</field>
+        <field name="arch" type="xml">
+            <list string="Historial de snapshots" default_order="snapshot_date asc">
+                <field name="snapshot_date"      string="Fecha"/>
+                <field name="impressions"        sum="Total" string="Visualizaciones"/>
+                <field name="reach"              sum="Total" string="Espectadores"/>
+                <field name="clicks"             sum="Total" string="Clics"/>
+                <field name="total_reactions"    sum="Total" string="Reacciones"/>
+                <field name="comments"           sum="Total" string="Comentarios"/>
+                <field name="shares"             sum="Total" string="Compartidos"/>
+                <field name="total_interactions" sum="Total" string="Interacciones"/>
+                <field name="engagement_rate"    widget="percentage" avg="Promedio"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_fb_stats_history" model="ir.actions.act_window">
+        <field name="name">Evolución en el tiempo</field>
+        <field name="res_model">estate.facebook.stats.history</field>
+        <field name="view_mode">graph,list</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ACCIÓN SERVIDOR: Importar publicaciones
+    ═══════════════════════════════════════════════════════════ -->
+
+    <record id="action_import_fb_posts" model="ir.actions.server">
+        <field name="name">Importar publicaciones de Facebook</field>
+        <field name="model_id" ref="estate_social.model_estate_facebook_stats"/>
+        <field name="binding_model_id" ref="estate_social.model_estate_facebook_stats"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = model.action_import_from_facebook(limit=10)</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         VISTA LISTA
+    ═══════════════════════════════════════════════════════════ -->
 
     <record id="estate_facebook_stats_view_list" model="ir.ui.view">
         <field name="name">estate.facebook.stats.list</field>
         <field name="model">estate.facebook.stats</field>
         <field name="arch" type="xml">
-            <list string="Estadísticas Facebook" default_order="stats_date desc">
-                <field name="property_id"/>
-                <field name="fb_post_id" optional="hide"/>
-                <field name="stats_date"/>
-                <field name="impressions" sum="Total"/>
-                <field name="reach" sum="Total"/>
-                <field name="clicks" sum="Total"/>
-                <field name="total_reactions" sum="Total"/>
-                <field name="shares" sum="Total"/>
-                <field name="engagement_rate" widget="percentage" avg="Promedio"/>
-                <field name="ctr" widget="percentage" avg="Promedio"/>
-                <field name="fetch_error" optional="hide" decoration-danger="fetch_error"/>
+            <list string="Facebook Insights" default_order="stats_date desc"
+                  decoration-warning="not property_id"
+                  decoration-danger="fetch_error">
+                <field name="property_id"        optional="show"/>
+                <field name="fb_message"         string="Publicación" optional="show"/>
+                <field name="fb_post_id"         optional="hide"/>
+                <field name="stats_date"         string="Actualizado"/>
+                <field name="impressions"        sum="Total" string="Visualizaciones"/>
+                <field name="reach"              sum="Total" string="Espectadores"/>
+                <field name="total_interactions" sum="Total" string="Interacciones"/>
+                <field name="total_reactions"    sum="Total" string="Reacciones"/>
+                <field name="clicks"             sum="Total"/>
+                <field name="comments"           sum="Total"/>
+                <field name="shares"             sum="Total"/>
+                <field name="engagement_rate"    widget="percentage" avg="Promedio"/>
+                <field name="fetch_error"        optional="hide"/>
                 <button name="action_refresh" string="Actualizar" type="object" icon="fa-refresh"/>
             </list>
         </field>
     </record>
 
+    <!-- ═══════════════════════════════════════════════════════
+         VISTA FORMULARIO — estilo Facebook Insights
+    ═══════════════════════════════════════════════════════════ -->
+
     <record id="estate_facebook_stats_view_form" model="ir.ui.view">
         <field name="name">estate.facebook.stats.form</field>
         <field name="model">estate.facebook.stats</field>
         <field name="arch" type="xml">
-            <form string="Estadísticas Facebook">
+            <form string="Facebook Insights">
                 <header>
                     <button name="action_refresh" string="Actualizar desde Meta API"
-                            type="object" class="btn-primary"/>
+                            type="object" class="btn-primary" icon="fa-refresh"/>
+                    <button name="action_view_history" type="object"
+                            string="Ver evolución completa" icon="fa-line-chart"
+                            invisible="history_count &lt; 2"/>
                 </header>
                 <sheet>
-                    <div class="alert alert-warning" role="alert" invisible="not fetch_error">
-                        <strong>Error al obtener datos:</strong>
+
+                    <!-- Error -->
+                    <div class="alert alert-danger mb-3" role="alert" invisible="not fetch_error">
+                        <i class="fa fa-exclamation-triangle me-1" title="Error"/>
+                        <strong>Error: </strong>
                         <field name="fetch_error" readonly="1" nolabel="1"/>
                     </div>
+
+                    <!-- ── Datos del post ────────────────────────── -->
+                    <div class="oe_title">
+                        <label for="fb_post_id" string="Insights de la publicación"/>
+                        <h2>
+                            <field name="property_id" placeholder="(sin propiedad asignada)"/>
+                        </h2>
+                        <div class="text-muted small">
+                            <field name="fb_message" readonly="1" nolabel="1"/>
+                        </div>
+                    </div>
+
                     <group>
-                        <group string="Identificación">
-                            <field name="property_id"/>
+                        <group>
                             <field name="fb_post_id"/>
+                            <field name="fb_permalink" widget="url" string="Ver en Facebook"/>
+                        </group>
+                        <group>
                             <field name="stats_date"/>
-                        </group>
-                        <group string="Métricas Calculadas">
-                            <field name="engagement_rate" widget="percentage"/>
-                            <field name="ctr" widget="percentage"/>
-                            <field name="total_reactions"/>
+                            <field name="history_count" string="Snapshots guardados"/>
                         </group>
                     </group>
-                    <group string="Alcance">
-                        <group>
-                            <field name="impressions"/>
-                            <field name="reach"/>
-                            <field name="clicks"/>
-                        </group>
-                        <group>
-                            <field name="shares"/>
-                        </group>
-                    </group>
-                    <group string="Reacciones">
-                        <group>
-                            <field name="likes"/>
-                            <field name="loves"/>
-                        </group>
-                        <group>
-                            <field name="hahas"/>
-                            <field name="wows"/>
-                        </group>
-                    </group>
+
+                    <!-- ── Dashboard custom OWL ──────────────────── -->
+                    <field name="dashboard_json" widget="fb_insights_dashboard" nolabel="1"/>
+
                 </sheet>
             </form>
         </field>
     </record>
 
+    <!-- ═══════════════════════════════════════════════════════
+         VISTA GRÁFICO
+    ═══════════════════════════════════════════════════════════ -->
+
     <record id="estate_facebook_stats_view_graph" model="ir.ui.view">
         <field name="name">estate.facebook.stats.graph</field>
         <field name="model">estate.facebook.stats</field>
         <field name="arch" type="xml">
-            <graph string="Estadísticas Facebook" type="bar" sample="1">
+            <graph string="Comparación entre publicaciones" type="bar" sample="1">
                 <field name="property_id"/>
-                <field name="impressions" type="measure"/>
-                <field name="reach" type="measure"/>
-                <field name="total_reactions" type="measure"/>
-                <field name="clicks" type="measure"/>
+                <field name="impressions"        type="measure" string="Visualizaciones"/>
+                <field name="reach"              type="measure" string="Espectadores"/>
+                <field name="total_interactions" type="measure" string="Interacciones"/>
+                <field name="total_reactions"    type="measure" string="Reacciones"/>
+                <field name="clicks"             type="measure"/>
+                <field name="comments"           type="measure"/>
+                <field name="shares"             type="measure"/>
             </graph>
         </field>
     </record>
 
-    <!-- Acción de ventana -->
-    <record id="action_estate_facebook_stats" model="ir.actions.act_window">
-        <field name="name">Estadísticas Facebook</field>
-        <field name="res_model">estate.facebook.stats</field>
-        <field name="view_mode">list,graph,form</field>
+    <!-- ═══════════════════════════════════════════════════════
+         VISTA PIVOT
+    ═══════════════════════════════════════════════════════════ -->
+
+    <record id="estate_facebook_stats_view_pivot" model="ir.ui.view">
+        <field name="name">estate.facebook.stats.pivot</field>
+        <field name="model">estate.facebook.stats</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Insights" sample="1">
+                <field name="property_id"        type="row"/>
+                <field name="impressions"        type="measure" string="Visualizaciones"/>
+                <field name="reach"              type="measure" string="Espectadores"/>
+                <field name="total_interactions" type="measure" string="Interacciones"/>
+                <field name="total_reactions"    type="measure" string="Reacciones"/>
+                <field name="clicks"             type="measure"/>
+                <field name="comments"           type="measure"/>
+                <field name="shares"             type="measure"/>
+                <field name="engagement_rate"    type="measure"/>
+            </pivot>
+        </field>
     </record>
 
-    <!-- Botón en la propiedad: ver estadísticas FB -->
+    <!-- ═══════════════════════════════════════════════════════
+         ACCIÓN VENTANA PRINCIPAL
+    ═══════════════════════════════════════════════════════════ -->
+
+    <record id="action_estate_facebook_stats" model="ir.actions.act_window">
+        <field name="name">Facebook Insights</field>
+        <field name="res_model">estate.facebook.stats</field>
+        <field name="view_mode">list,graph,pivot,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aún no hay estadísticas de Facebook importadas.
+            </p>
+            <p>
+                Usa <b>Acción &#8594; Importar publicaciones de Facebook</b> para empezar.
+            </p>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         BOTÓN EN FORMULARIO DE PROPIEDAD
+    ═══════════════════════════════════════════════════════════ -->
+
     <record id="estate_property_fb_stats_button" model="ir.ui.view">
         <field name="name">estate.property.fb.stats.button</field>
         <field name="model">estate.property</field>
@@ -113,5 +220,16 @@
             </xpath>
         </field>
     </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         MENÚ
+    ═══════════════════════════════════════════════════════════ -->
+
+    <menuitem id="menu_facebook_stats"
+              name="Stats Facebook"
+              parent="estate_reports.estate_menu_reports_root"
+              action="action_estate_facebook_stats"
+              sequence="26"
+              groups="base.group_user"/>
 
 </odoo>

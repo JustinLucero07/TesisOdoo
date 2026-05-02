@@ -78,6 +78,22 @@ class EstateContract(models.Model):
         for rec in self:
             rec.invoice_count = len(rec.payment_ids.mapped('invoice_id'))
 
+    # ------------------------------------------------------------------
+    # Validaciones de integridad de datos
+    # ------------------------------------------------------------------
+
+    @api.constrains('amount')
+    def _check_amount(self):
+        for rec in self:
+            if rec.amount < 0:
+                raise UserError('El monto del contrato no puede ser negativo.')
+
+    @api.constrains('date_start', 'date_end')
+    def _check_dates(self):
+        for rec in self:
+            if rec.date_end and rec.date_start and rec.date_end < rec.date_start:
+                raise UserError('La fecha de vencimiento no puede ser anterior a la fecha de inicio.')
+
     def action_view_invoices(self):
         self.ensure_one()
         invoice_ids = self.payment_ids.mapped('invoice_id').ids

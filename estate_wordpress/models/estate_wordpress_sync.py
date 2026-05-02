@@ -535,3 +535,16 @@ class EstatePropertyWordPress(models.Model):
                 'type': 'info',
             }
         }
+
+    def action_unlink_wordpress(self):
+        """Desvincula la propiedad de WordPress en Odoo sin borrar el post en el sitio remoto."""
+        self.ensure_one()
+        self.write({
+            'wp_published': False,
+            'wp_post_id': 0
+        })
+        return self._show_notification(
+            'Propiedad Desvinculada', 
+            'Se ha quitado el vínculo con WordPress. El post sigue existiendo en tu sitio web.'
+        )
+

@@ -20,7 +20,6 @@
         'contacts',
         'digest',
         'phone_validation',
-        'estate_management',
     ],
     'data': [
         'security/crm_security.xml',

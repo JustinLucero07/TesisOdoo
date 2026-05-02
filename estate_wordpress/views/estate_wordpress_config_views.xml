@@ -94,6 +94,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//header/button[@name='action_set_available']" position="before">
                     <button name="action_publish_wordpress" string=" Publicar en WordPress" type="object" class="btn-secondary" invisible="wp_published == True"/>
+                    <button name="action_unlink_wordpress" string=" Desvincular (sin borrar en WP)" type="object" class="btn-link" invisible="wp_published != True"/>
                     <button name="action_unpublish_wordpress" string=" Quitar de WordPress" type="object" class="btn-secondary" invisible="wp_published != True"/>
                 </xpath>
             </field>

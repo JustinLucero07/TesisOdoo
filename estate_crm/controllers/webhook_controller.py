@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
+import hmac
 import json
 import logging
-import hmac
-import hashlib
 
 from odoo import http
 from odoo.http import request
@@ -42,7 +41,10 @@ class EstateLeadWebhookController(http.Controller):
         """Verifica que el token del request coincide con el configurado."""
         configured = self._get_webhook_token()
         if not configured:
-            return True  # Sin token configurado → acceso libre (desarrollo)
+            _logger.warning(
+                "estate_crm.webhook_token no configurado — webhook abierto sin autenticación. "
+                "Configure el token en Ajustes > Parámetros técnicos.")
+            return True  # Sin token configurado → acceso libre (solo desarrollo)
         return hmac.compare_digest(str(configured), str(req_token or ''))
 
     @http.route(

@@ -8,11 +8,27 @@ _logger = logging.getLogger(__name__)
 
 class EstateWordpressController(http.Controller):
 
+    def _verify_wp_token(self, data):
+        """Verifica token secreto configurado en estate_wp.webhook_secret."""
+        ICP = request.env['ir.config_parameter'].sudo()
+        expected = ICP.get_param('estate_wp.webhook_secret', '')
+        if not expected:
+            _logger.warning(
+                "estate_wp.webhook_secret no configurado — endpoint público sin protección")
+            return True
+        incoming = (
+            data.get('secret')
+            or request.httprequest.headers.get('X-WP-Secret', '')
+        )
+        import hmac as _hmac
+        return _hmac.compare_digest(str(expected), str(incoming))
+
     @http.route('/estate_wordpress/lead/create', type='jsonrpc', auth='public', methods=['POST'], csrf=False)
     def create_lead_from_external(self, **post):
         """
         Endpoint para recibir leads desde WordPress o WhatsApp.
         JSON Esperado: {
+            "secret": "token_configurado_en_ajustes",
             "name": "Nombre Cliente",
             "email": "email@test.com",
             "phone": "0999999999",
@@ -20,6 +36,10 @@ class EstateWordpressController(http.Controller):
             "message": "Me interesa esta casa"
         }
         """
+        if not self._verify_wp_token(post):
+            _logger.warning("create_lead_from_external: token inválido desde %s",
+                            request.httprequest.remote_addr)
+            return {'status': 'error', 'message': 'Token inválido'}
         try:
             name = post.get('name', 'Consulta Web')
             email = post.get('email')

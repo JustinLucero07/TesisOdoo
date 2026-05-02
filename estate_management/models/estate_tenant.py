@@ -106,6 +106,30 @@ class EstateContractDeposit(models.Model):
         for rec in self:
             rec.balance = rec.amount_received - (rec.amount_returned or 0) - (rec.deductions or 0)
 
+    # ------------------------------------------------------------------
+    # Validaciones de integridad de datos
+    # ------------------------------------------------------------------
+
+    @api.constrains('amount_received')
+    def _check_amount_received(self):
+        for rec in self:
+            if rec.amount_received < 0:
+                raise UserError('El depósito recibido no puede ser negativo.')
+
+    @api.constrains('deductions', 'amount_received')
+    def _check_deductions(self):
+        for rec in self:
+            if rec.deductions and rec.deductions > rec.amount_received:
+                raise UserError('Las deducciones no pueden superar el depósito recibido.')
+
+    @api.constrains('amount_returned', 'deductions', 'amount_received')
+    def _check_return_total(self):
+        for rec in self:
+            total = (rec.amount_returned or 0) + (rec.deductions or 0)
+            if total > rec.amount_received:
+                raise UserError(
+                    'La suma de devolución y deducciones no puede superar el depósito recibido.')
+
     def action_return_full(self):
         """Devolver depósito completo al inquilino."""
         for rec in self:

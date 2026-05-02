@@ -29,7 +29,7 @@
                     <!-- Alerta de error -->
                     <div class="alert alert-warning" role="alert"
                          invisible="not fetch_error">
-                        <i class="fa fa-exclamation-triangle"/> <field name="fetch_error" readonly="1"/>
+                        <i class="fa fa-exclamation-triangle" title="Error"/> <field name="fetch_error" readonly="1"/>
                         <div class="mt-1 small text-muted">
                             Nota: Instagram solo entrega métricas de posts publicados hace más de 24 horas
                             y de cuentas Business/Creator con el token correcto.

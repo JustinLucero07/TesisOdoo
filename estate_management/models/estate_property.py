@@ -887,7 +887,7 @@ class EstateProperty(models.Model):
                     prop.product_id.sudo().write(product_vals)
         # Auto-sync price/title change to WordPress if already published
         # hasattr guard: estate_wordpress es módulo opcional (R4 fix)
-        if 'price' in vals or 'title' in vals or 'description' in vals:
+        if ('price' in vals or 'title' in vals or 'description' in vals) and not self.env.context.get('no_wp_sync'):
             for prop in self:
                 wp_pub = getattr(prop, 'wp_published', False)
                 wp_id = getattr(prop, 'wp_post_id', 0)

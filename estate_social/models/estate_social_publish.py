@@ -153,6 +153,16 @@ class EstatePropertyPublish(models.Model):
 
         if post_id:
             self.write({'fb_post_id': post_id, 'fb_published': True})
+
+            # Crear/actualizar registro de stats y obtener métricas iniciales
+            FbStats = self.env['estate.facebook.stats']
+            stats = FbStats.search([('property_id', '=', self.id)], limit=1)
+            if not stats:
+                stats = FbStats.create({'property_id': self.id, 'fb_post_id': post_id})
+            else:
+                stats.fb_post_id = post_id
+            stats._fetch_stats()
+
             n = len(raw_images)
             img_txt = f' con {n} imagen{"es" if n > 1 else ""}' if n else ''
             self.message_post(body=f'Publicado en Facebook{img_txt}. Post ID: <b>{post_id}</b>')
@@ -161,7 +171,7 @@ class EstatePropertyPublish(models.Model):
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Facebook',
-                    'message': f'Propiedad publicada en Facebook{img_txt}.',
+                    'message': f'Propiedad publicada en Facebook{img_txt}. Las estadísticas ya están disponibles.',
                     'type': 'success',
                 },
             }

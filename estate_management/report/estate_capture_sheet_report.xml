@@ -35,7 +35,7 @@
                                         <p style="color: #555; margin: 4px 0 0 0; font-size: 13px;">
                                             Referencia: <strong><t t-esc="prop.name"/></strong>
                                             &#160;|&#160;
-                                            Fecha: <strong><t t-esc="context_today().strftime('%d/%m/%Y')"/></strong>
+                                            Fecha: <strong><t t-esc="time.strftime('%d/%m/%Y')"/></strong>
                                         </p>
                                     </td>
                                     <td width="30%" style="text-align: right; vertical-align: top;">

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Importar automáticamente las últimas publicaciones de Facebook (cada 6 horas) -->
+    <record id="cron_import_facebook_posts" model="ir.cron">
+        <field name="name">Importar publicaciones de Facebook</field>
+        <field name="model_id" ref="estate_social.model_estate_facebook_stats"/>
+        <field name="state">code</field>
+        <field name="code">model.action_import_from_facebook(limit=10)</field>
+        <field name="interval_number">6</field>
+        <field name="interval_type">hours</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Refrescar estadísticas de Facebook existentes (diario) -->
+    <record id="cron_refresh_facebook_stats" model="ir.cron">
+        <field name="name">Actualizar estadísticas Facebook</field>
+        <field name="model_id" ref="estate_social.model_estate_facebook_stats"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_refresh_all_stats()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- Refrescar estadísticas de Instagram existentes (diario) -->
+    <record id="cron_refresh_instagram_stats" model="ir.cron">
+        <field name="name">Actualizar estadísticas Instagram</field>
+        <field name="model_id" ref="estate_social.model_estate_instagram_stats"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_refresh_all_stats()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+
+</odoo>
