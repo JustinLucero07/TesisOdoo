@@ -214,7 +214,16 @@
       "Bash(grep -n \"class EstateAppraisal\\\\|class EstateExpense\\\\|class EstatePayment\" /home/justin/Documentos/Tesis/estate_management/models/*.py)",
       "Bash(find /home/justin/Documentos/Tesis/estate_ai_agent -name \"*.pyc\" -delete)",
       "Bash(find /home/justin/Documentos/Tesis -name *quotation* -o -name *cotizacion*)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(grep -E \"class|pass|^\\\\s*$\")",
+      "Bash(grep -v \"\\\\s*'$\")",
+      "Bash(find /home/justin/Documentos/Tesis/estate_* -name \"*.py\" -type f)",
+      "Bash(xargs -I {} sh -c 'wc -l \"{}\" | awk \"{print \\\\$1, \\\\\"{}\\\\\"}\"')",
+      "Bash(find /home/justin/Documentos/Tesis/estate_* -name \"__pycache__\")",
+      "Bash(git -C /home/justin/Documentos/Tesis check-ignore __pycache__)",
+      "Bash(grep -E \"\\(__pycache__|\\\\.pyc$\\)\")",
+      "Bash(awk -F: '{print $1, $2}')",
+      "Bash(awk '$1 < 2900 && $1 > 2600')"
     ],
     "additionalDirectories": [
       "/tmp",

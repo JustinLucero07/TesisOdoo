@@ -11,15 +11,7 @@ META_API_VERSION = 'v25.0'
 
 class CalendarEventWhatsApp(models.Model):
     _inherit = 'calendar.event'
-
-    def _clean_phone(self, phone):
-        """Normaliza número a formato internacional sin + (ej: 593981112222)."""
-        clean = phone.replace(' ', '').replace('-', '').replace('+', '').replace('(', '').replace(')', '')
-        if clean.startswith('0') and len(clean) == 10:
-            clean = '593' + clean[1:]
-        elif not clean.startswith('593'):
-            clean = '593' + clean
-        return clean
+    # _clean_phone() heredado de estate.phone.mixin (aplicado en calendar_event.py)
 
     def _send_whatsapp(self, phone, event_name, time_str, client_name, property_name):
         """

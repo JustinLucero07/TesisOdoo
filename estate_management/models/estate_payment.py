@@ -10,7 +10,7 @@ _logger = logging.getLogger(__name__)
 class EstatePayment(models.Model):
     _name = 'estate.payment'
     _description = 'Pago Inmobiliario'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.phone.mixin']
     _order = 'date desc, id desc'
 
     name = fields.Char(
@@ -152,14 +152,7 @@ class EstatePayment(models.Model):
             'target': 'current',
         }
 
-    def _clean_phone(self, phone):
-        """Normaliza número a formato internacional sin + (ej: 593981112222)."""
-        clean = phone.replace(' ', '').replace('-', '').replace('+', '').replace('(', '').replace(')', '')
-        if clean.startswith('0') and len(clean) == 10:
-            clean = '593' + clean[1:]
-        elif not clean.startswith('593'):
-            clean = '593' + clean
-        return clean
+    # _clean_phone() heredado de estate.phone.mixin
 
     def _send_whatsapp_overdue(self, phone, payment, days_late):
         """Envía alerta WhatsApp via Meta Cloud API para pago vencido."""

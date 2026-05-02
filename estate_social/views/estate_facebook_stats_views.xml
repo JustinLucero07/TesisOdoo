@@ -101,6 +101,8 @@
                     <button name="action_view_history" type="object"
                             string="Ver evolución completa" icon="fa-line-chart"
                             invisible="history_count &lt; 2"/>
+                    <button name="action_check_token_permissions" type="object"
+                            string="Verificar permisos del token" icon="fa-key"/>
                 </header>
                 <sheet>
 

@@ -684,6 +684,18 @@ def _normalize_gemini_model(model):
     return _DEFAULT_GEMINI_MODEL
 
 
+def _redact(text, *secrets):
+    """Devuelve text con cualquier ocurrencia de secrets reemplazada por [REDACTED].
+    Úsese antes de loguear strings que puedan contener API keys o tokens."""
+    if not text:
+        return text
+    s = str(text)
+    for sec in secrets:
+        if sec and len(str(sec)) >= 8:
+            s = s.replace(str(sec), '[REDACTED]')
+    return s
+
+
 def _parse_gemini_error(err_str):
     """
     Parse a Gemini API error string and return (error_type, message, retry_seconds).
@@ -850,8 +862,9 @@ INSTRUCCIONES DE RESPUESTA:
             else:
                 response = '❌ Proveedor de IA no soportado.'
         except Exception as e:
-            _logger.error("Error en agente IA: %s", str(e))
-            response = f'❌ Error al procesar la consulta: {str(e)}'
+            err_safe = _redact(str(e), api_key)
+            _logger.error("Error en agente IA: %s", err_safe)
+            response = f'❌ Error al procesar la consulta: {err_safe}'
 
         processing_time = time.time() - start_time
         request.env['estate.ai.chat.history'].sudo().create({
@@ -2470,7 +2483,7 @@ INSTRUCCIONES DE RESPUESTA:
 
                 except Exception as e:
                     last_error = e
-                    err_str = str(e)
+                    err_str = _redact(str(e), api_key)
                     etype, emsg, esecs = _parse_gemini_error(err_str)
                     if etype == '429':
                         # Cuota agotada — no reintentar, devolver mensaje claro
@@ -2878,7 +2891,7 @@ TOP 10 DISPONIBLES:
 
                 except Exception as e:
                     last_err = e
-                    err_str = str(e)
+                    err_str = _redact(str(e), api_key)
                     etype, emsg, esecs = _parse_gemini_error(err_str)
                     if etype == '429':
                         _logger.warning("Gemini 429 cuota agotada (streaming)")
@@ -3245,8 +3258,9 @@ TOP 10 DISPONIBLES:
             )
 
         except Exception as e:
-            _logger.error("OCR error: %s", str(e))
+            err_safe = _redact(str(e), api_key if 'api_key' in dir() else '')
+            _logger.error("OCR error: %s", err_safe)
             return request.make_response(
-                json.dumps({'error': str(e)}),
+                json.dumps({'error': err_safe}),
                 headers=[('Content-Type', 'application/json')]
             )

@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+build/
+dist/
+develop-eggs/
+.eggs/
+*.manifest
+*.spec
+
+# Entornos virtuales
+venv/
+venv*/
+env/
+ENV/
+.venv/
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Odoo
+*.log
+*.log.*
+filestore/
+sessions/
+.odoorc
+.openerp_serverrc
+
+# Credenciales y secretos
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+credentials.json
+service_account.json
+
+# Backups y temporales
+*.bak
+*.old
+*.tmp
+*.orig
+*.rej
+*.swap
+
+# Cobertura de tests
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.hypothesis/
+
+# Sistema
+nohup.out
+.cache/

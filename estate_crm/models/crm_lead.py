@@ -80,13 +80,16 @@ class CrmLead(models.Model):
     
     lead_velocity_days = fields.Integer(string='Velocidad del Lead (Días)', compute='_compute_lead_velocity', store=True)
     
-    smart_negotiation_tips = fields.Text(string='Tips de Negociación IA', compute='_compute_negotiation_strategy')
-    
+    smart_negotiation_tips = fields.Text(
+        string='Tips de Negociación IA',
+        compute='_compute_negotiation_strategy', store=True)
+
     closing_difficulty = fields.Selection([
         ('easy', 'Fácil'),
         ('moderate', 'Moderada'),
         ('hard', 'Difícil')
-    ], string='Dificultad de Cierre', compute='_compute_negotiation_strategy')
+    ], string='Dificultad de Cierre',
+        compute='_compute_negotiation_strategy', store=True)
 
     completed_visits_count = fields.Integer(
         string='Visitas Realizadas', compute='_compute_completed_visits', store=True,

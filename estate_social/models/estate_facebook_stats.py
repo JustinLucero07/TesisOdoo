@@ -205,6 +205,61 @@ class EstateFacebookStats(models.Model):
             'domain': [('stats_id', '=', self.id)],
         }
 
+    def action_check_token_permissions(self):
+        """Consulta /me/permissions para mostrar qué permisos tiene el token actual."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        token = ICP.get_param('estate_social.facebook_page_token', '')
+        if not token:
+            raise UserError('No hay Page Access Token configurado.')
+
+        try:
+            resp = requests.get(
+                f'https://graph.facebook.com/{META_API_VERSION}/me/permissions',
+                params={'access_token': token},
+                timeout=15,
+            )
+            data = resp.json()
+        except Exception as e:
+            raise UserError(f'Error consultando permisos: {e}')
+
+        if 'error' in data:
+            raise UserError(
+                f'Error de Facebook: {data["error"].get("message", str(data))}')
+
+        granted = []
+        declined = []
+        for p in data.get('data', []):
+            name = p.get('permission', '')
+            if p.get('status') == 'granted':
+                granted.append(name)
+            else:
+                declined.append(name)
+
+        critical = ['read_insights', 'pages_read_engagement', 'pages_manage_posts', 'pages_show_list']
+        missing_critical = [p for p in critical if p not in granted]
+
+        msg_parts = []
+        msg_parts.append(f'<b>Permisos otorgados ({len(granted)}):</b>')
+        msg_parts.append(', '.join(granted) if granted else '(ninguno)')
+        if declined:
+            msg_parts.append(f'<br/><b>Rechazados:</b> {", ".join(declined)}')
+        if missing_critical:
+            msg_parts.append(
+                f'<br/><b style="color:red">⚠ FALTAN críticos:</b> {", ".join(missing_critical)}')
+        else:
+            msg_parts.append('<br/><b style="color:green">✓ Todos los permisos críticos están activos</b>')
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Permisos del Page Access Token',
+                'message': '<br/>'.join(msg_parts),
+                'type': 'warning' if missing_critical else 'success',
+                'sticky': True,
+            },
+        }
+
     def _fetch_stats(self):
         ICP = self.env['ir.config_parameter'].sudo()
         token = ICP.get_param('estate_social.facebook_page_token', '')
@@ -252,8 +307,13 @@ class EstateFacebookStats(models.Model):
                 params={'metric': FB_INSIGHTS_METRICS, 'period': 'lifetime', 'access_token': token},
                 timeout=15,
             )
-            if ins_resp.status_code == 200:
-                for item in ins_resp.json().get('data', []):
+            ins_payload = {}
+            try:
+                ins_payload = ins_resp.json()
+            except Exception:
+                pass
+            if ins_resp.status_code == 200 and 'data' in ins_payload:
+                for item in ins_payload.get('data', []):
                     name = item.get('name', '')
                     values = item.get('values') or [{}]
                     val = values[-1].get('value', 0)
@@ -280,8 +340,17 @@ class EstateFacebookStats(models.Model):
                 if reach and fan_reach:
                     non_fan_reach = max(reach - fan_reach, 0)
             else:
-                _logger.info(
-                    'Insights no disponibles para %s — agrega read_insights al token', post_id)
+                err_msg = ins_payload.get('error', {}).get('message', '')
+                err_code = ins_payload.get('error', {}).get('code', '')
+                err_sub = ins_payload.get('error', {}).get('error_subcode', '')
+                _logger.warning(
+                    'Insights FALLÓ para %s — HTTP %s · code=%s subcode=%s · %s',
+                    post_id, ins_resp.status_code, err_code, err_sub, err_msg or ins_resp.text[:200])
+                if err_msg:
+                    self.fetch_error = (
+                        f'Insights no disponibles (HTTP {ins_resp.status_code}, '
+                        f'code {err_code}): {err_msg}'
+                    )
 
             self.write({
                 'fb_post_id':       post_id,

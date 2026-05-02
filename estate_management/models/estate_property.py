@@ -12,7 +12,7 @@ _logger = logging.getLogger(__name__)
 class EstateProperty(models.Model):
     _name = 'estate.property'
     _description = 'Propiedad Inmobiliaria'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.phone.mixin']
     _order = 'create_date desc'
     _rec_name = 'title'
 
@@ -1069,14 +1069,7 @@ class EstateProperty(models.Model):
         }
 
     # --- Cron: Recordatorio de Contratos ---
-    def _clean_phone(self, phone):
-        """Normaliza número a formato internacional sin + (ej: 593981112222)."""
-        clean = phone.replace(' ', '').replace('-', '').replace('+', '').replace('(', '').replace(')', '')
-        if clean.startswith('0') and len(clean) == 10:
-            clean = '593' + clean[1:]
-        elif not clean.startswith('593'):
-            clean = '593' + clean
-        return clean
+    # _clean_phone() heredado de estate.phone.mixin
 
     def _send_contract_whatsapp_template(self, phone, prop_title, fecha_vencimiento, dias_restantes, destinatario):
         """Envía recordatorio de contrato por WhatsApp con plantilla aprobada de Meta.

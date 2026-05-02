@@ -9,13 +9,16 @@ _logger = logging.getLogger(__name__)
 class EstateWordpressController(http.Controller):
 
     def _verify_wp_token(self, data):
-        """Verifica token secreto configurado en estate_wp.webhook_secret."""
+        """Verifica token secreto configurado en estate_wp.webhook_secret.
+        Si no hay secreto configurado, RECHAZA la petición (fail-closed)."""
         ICP = request.env['ir.config_parameter'].sudo()
         expected = ICP.get_param('estate_wp.webhook_secret', '')
         if not expected:
-            _logger.warning(
-                "estate_wp.webhook_secret no configurado — endpoint público sin protección")
-            return True
+            _logger.error(
+                "estate_wp.webhook_secret no configurado — rechazando webhook desde %s. "
+                "Configure el secreto en Ajustes → Parámetros del Sistema.",
+                request.httprequest.remote_addr)
+            return False
         incoming = (
             data.get('secret')
             or request.httprequest.headers.get('X-WP-Secret', '')
@@ -102,12 +105,9 @@ class EstateWordpressController(http.Controller):
         except Exception:
             data = kwargs
 
-        # Validar token secreto
-        ICP = request.env['ir.config_parameter'].sudo()
-        expected_secret = ICP.get_param('estate_wp.webhook_secret', '')
-        if expected_secret and data.get('secret') != expected_secret:
-            _logger.warning("WordPress webhook /contact: token inválido desde %s", request.httprequest.remote_addr)
-            return {'success': False, 'error': 'Token inválido'}
+        # Validar token secreto (fail-closed)
+        if not self._verify_wp_token(data):
+            return {'success': False, 'error': 'Token inválido o no configurado'}
 
         name = data.get('name', 'Contacto WordPress')
         email = data.get('email', '')
@@ -214,12 +214,9 @@ class EstateWordpressController(http.Controller):
                 headers=[('Content-Type', 'application/json')]
             )
 
-        # Validar token
-        ICP = request.env['ir.config_parameter'].sudo()
-        expected = ICP.get_param('estate_wp.webhook_secret', '')
-        if expected and data.get('secret') != expected:
-            _logger.warning("Houzez inquiry: token inválido desde %s", request.httprequest.remote_addr)
-            return _resp(False, error='Token inválido')
+        # Validar token (fail-closed)
+        if not self._verify_wp_token(data):
+            return _resp(False, error='Token inválido o no configurado')
 
         name           = data.get('name', 'Contacto Houzez')
         email          = data.get('email', '')

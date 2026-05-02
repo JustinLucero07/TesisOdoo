@@ -163,6 +163,7 @@ class MetaWebhookController(http.Controller):
         Payload: entry[].changes[].value.messages[]
         """
         env = request.env
+        Dedup = env['estate.meta.webhook.event'].sudo()
         for entry in data.get('entry', []):
             for change in entry.get('changes', []):
                 value    = change.get('value', {})
@@ -173,12 +174,17 @@ class MetaWebhookController(http.Controller):
                     if msg.get('type') != 'text':
                         continue  # Solo texto; ignora audio/imagen por ahora
 
+                    msg_id = msg.get('id', '')
+                    if msg_id and Dedup.is_already_processed(msg_id):
+                        _logger.info('Meta webhook WhatsApp: msg %s ya procesado — skip', msg_id)
+                        continue
+
                     phone = msg.get('from', '')
                     text  = msg.get('text', {}).get('body', '')
                     name  = (contacts[0].get('profile', {}).get('name', '')
                              if contacts else '') or phone
 
-                    self._create_lead(
+                    lead = self._create_lead(
                         env,
                         source='whatsapp',
                         name=name,
@@ -186,6 +192,9 @@ class MetaWebhookController(http.Controller):
                         message=text,
                         sender_id=phone,
                     )
+                    if msg_id:
+                        Dedup.register(msg_id, channel='whatsapp', lead=lead,
+                                       summary=f'{phone}: {text[:80]}')
 
     def _handle_facebook(self, data):
         """
@@ -193,6 +202,7 @@ class MetaWebhookController(http.Controller):
         Payload: entry[].messaging[].message.text
         """
         env = request.env
+        Dedup = env['estate.meta.webhook.event'].sudo()
         for entry in data.get('entry', []):
             for event in entry.get('messaging', []):
                 sender  = event.get('sender', {})
@@ -201,18 +211,24 @@ class MetaWebhookController(http.Controller):
                 if not message or message.get('is_echo'):
                     continue  # Ignorar mensajes enviados por la página
 
+                mid = message.get('mid', '')
+                if mid and Dedup.is_already_processed(mid):
+                    _logger.info('Meta webhook Messenger: mid %s ya procesado — skip', mid)
+                    continue
+
                 psid = sender.get('id', '')
                 text = message.get('text', '')
 
-                # Facebook no da nombre ni teléfono directamente en el webhook;
-                # usamos el PSID como identificador.
-                self._create_lead(
+                lead = self._create_lead(
                     env,
                     source='facebook',
                     name=f'FB-{psid}',
                     message=text,
                     sender_id=psid,
                 )
+                if mid:
+                    Dedup.register(mid, channel='facebook', lead=lead,
+                                   summary=f'{psid}: {text[:80]}')
 
     def _handle_instagram(self, data):
         """
@@ -220,6 +236,7 @@ class MetaWebhookController(http.Controller):
         Payload idéntico a Facebook Messenger pero con objeto 'instagram'.
         """
         env = request.env
+        Dedup = env['estate.meta.webhook.event'].sudo()
         for entry in data.get('entry', []):
             for event in entry.get('messaging', []):
                 sender  = event.get('sender', {})
@@ -228,13 +245,21 @@ class MetaWebhookController(http.Controller):
                 if not message or message.get('is_echo'):
                     continue
 
+                mid = message.get('mid', '')
+                if mid and Dedup.is_already_processed(mid):
+                    _logger.info('Meta webhook Instagram: mid %s ya procesado — skip', mid)
+                    continue
+
                 igsid = sender.get('id', '')
                 text  = message.get('text', '')
 
-                self._create_lead(
+                lead = self._create_lead(
                     env,
                     source='instagram',
                     name=f'IG-{igsid}',
                     message=text,
                     sender_id=igsid,
                 )
+                if mid:
+                    Dedup.register(mid, channel='instagram', lead=lead,
+                                   summary=f'{igsid}: {text[:80]}')

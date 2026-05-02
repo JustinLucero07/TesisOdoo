@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 
 
 class CalendarEvent(models.Model):
-    _inherit = 'calendar.event'
+    _inherit = ['calendar.event', 'estate.phone.mixin']
 
     partner_id = fields.Many2one(
         'res.partner', string='Cliente')
