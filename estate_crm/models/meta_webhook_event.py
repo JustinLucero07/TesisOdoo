@@ -42,19 +42,21 @@ class MetaWebhookEvent(models.Model):
 
     @api.model
     def register(self, event_id, channel='other', lead=None, summary=''):
-        """Registra el evento. Si ya existe (race condition), retorna False."""
+        """Registra el evento. Si ya existe (idempotencia o race), retorna False."""
         from psycopg2 import IntegrityError
         if not event_id:
             return False
+        # Check rápido: evita savepoint en el caso común
+        if self.is_already_processed(event_id):
+            return False
         try:
-            with self.env.cr.savepoint():
-                rec = self.sudo().create({
-                    'event_id': event_id,
-                    'channel': channel,
-                    'lead_id': lead.id if lead else False,
-                    'payload_summary': (summary or '')[:255],
-                })
-                return rec
+            return self.sudo().create({
+                'event_id': event_id,
+                'channel': channel,
+                'lead_id': lead.id if lead else False,
+                'payload_summary': (summary or '')[:255],
+            })
         except IntegrityError:
-            # Otro request ya lo registró entre el check y el create
+            # Race condition: otro request lo creó entre el check y el create
+            self.env.cr.rollback()
             return False

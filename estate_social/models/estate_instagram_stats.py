@@ -1,8 +1,8 @@
 import logging
-import requests
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+from odoo.addons.estate_management.tools.http_retry import request_with_retry
 
 _logger = logging.getLogger(__name__)
 
@@ -102,13 +102,14 @@ class EstateInstagramStats(models.Model):
             return
 
         try:
-            resp = requests.get(
+            resp = request_with_retry(
+                'GET',
                 f'https://graph.facebook.com/{META_API_VERSION}/{post_id}/insights',
                 params={
                     'metric': IG_MEDIA_METRICS,
                     'access_token': token,
                 },
-                timeout=15,
+                timeout=15, retries=3,
             )
             data = resp.json()
 

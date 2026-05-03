@@ -532,7 +532,8 @@ class EstateProperty(models.Model):
     image_main = fields.Binary(string='Imagen Principal')
 
     # --- WordPress ---
-    wp_post_id = fields.Integer(string='WordPress Post ID', readonly=True)
+    wp_post_id = fields.Integer(
+        string='WordPress Post ID', readonly=True, index='btree_not_null')
     wp_published = fields.Boolean(string='Publicado en WordPress', default=False)
 
     # --- Relaciones y Ventas ---

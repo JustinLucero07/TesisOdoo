@@ -14,9 +14,11 @@ META_API_VERSION = 'v25.0'
 class EstatePropertyPublish(models.Model):
     _inherit = 'estate.property'
 
-    fb_post_id = fields.Char(string='Facebook Post ID', readonly=True, copy=False)
+    fb_post_id = fields.Char(
+        string='Facebook Post ID', readonly=True, copy=False, index='btree_not_null')
     fb_published = fields.Boolean(string='Publicado en Facebook', default=False, copy=False)
-    ig_post_id = fields.Char(string='Instagram Post ID', readonly=True, copy=False)
+    ig_post_id = fields.Char(
+        string='Instagram Post ID', readonly=True, copy=False, index='btree_not_null')
     ig_published = fields.Boolean(string='Publicado en Instagram', default=False, copy=False)
 
     def _get_meta_config(self):

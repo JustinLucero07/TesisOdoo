@@ -4,7 +4,8 @@ from odoo.exceptions import UserError
 class CrmLead(models.Model):
     _inherit = 'crm.lead'
 
-    target_property_id = fields.Many2one('estate.property', string='Propiedad de Interés')
+    target_property_id = fields.Many2one(
+        'estate.property', string='Propiedad de Interés', index=True)
     client_budget = fields.Float(string='Presupuesto del Cliente', tracking=True)
     match_percentage = fields.Integer(
         string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True,
@@ -699,41 +700,62 @@ class CrmLead(models.Model):
 
     @api.model
     def _cron_proactive_matchmaking(self):
-        """Busca cruces entre propiedades disponibles y leads activos y notifica al vendedor."""
-        leads = self.search([('type', '=', 'lead'), ('stage_id.is_won', '=', False), ('probability', '>', 0)])
+        """Busca cruces entre propiedades disponibles y leads activos y notifica al vendedor.
+        Optimizado: prefetch de actividades existentes en una sola query (evita N+1)."""
+        leads = self.search([
+            ('type', '=', 'lead'),
+            ('stage_id.is_won', '=', False),
+            ('probability', '>', 0),
+            ('client_budget', '>', 0),
+        ], limit=500)
+        if not leads:
+            return
+
+        # ── Prefetch: una sola query para todas las actividades de estos leads ──
+        all_activities = self.env['mail.activity'].search([
+            ('res_model', '=', 'crm.lead'),
+            ('res_id', 'in', leads.ids),
+        ])
+        summaries_by_lead = {}
+        for act in all_activities:
+            summaries_by_lead.setdefault(act.res_id, []).append((act.summary or '').lower())
+
+        # Cache referencias usadas en el loop
+        activity_type_id = self.env.ref('mail.mail_activity_data_todo').id
+        crm_lead_model_id = self.env['ir.model']._get_id('crm.lead')
+        Activity = self.env['mail.activity']
+
         for lead in leads:
-            # Skip if no budget
-            if not lead.client_budget or lead.client_budget == 0:
-                continue
-                
             domain = [
                 ('state', '=', 'available'),
-                ('price', '<=', lead.client_budget * 1.05), # Up to 5% stretch budget
-                ('price', '>=', lead.client_budget * 0.70)
+                ('price', '<=', lead.client_budget * 1.05),  # 5% stretch
+                ('price', '>=', lead.client_budget * 0.70),
             ]
             if lead.city:
                 domain.append(('city', 'ilike', lead.city))
-                
+
             matches = self.env['estate.property'].search(domain, limit=3)
-            
-            # Para no molestar con la misma propiedad, revisar si ya se la enviamos por notas o actividades
-            if matches:
-                for match in matches:
-                    # Check if an activity already exists for this match
-                    existing_activity = self.env['mail.activity'].search([
-                        ('res_model', '=', 'crm.lead'),
-                        ('res_id', '=', lead.id),
-                        ('summary', 'ilike', match.name)
-                    ])
-                    if not existing_activity:
-                        self.env['mail.activity'].create({
-                            'res_id': lead.id,
-                            'res_model_id': self.env['ir.model']._get_id('crm.lead'),
-                            'activity_type_id': self.env.ref('mail.mail_activity_data_todo').id,
-                            'summary': f"Matchmaking Oportunidad: {match.name} - {match.title}",
-                            'note': f"La IA ha detectado una coincidencia. La propiedad {match.title} en {match.city} está a la venta por ${match.price:,.2f}, encajando en el presupuesto del Lead (${lead.client_budget:,.2f}). Considere agendar visita.",
-                            'user_id': lead.user_id.id if lead.user_id else self.env.user.id,
-                        })
+            if not matches:
+                continue
+
+            existing = summaries_by_lead.get(lead.id, [])
+            for match in matches:
+                # Evitar duplicados consultando la lista en memoria
+                if any(match.name and match.name.lower() in s for s in existing):
+                    continue
+                Activity.create({
+                    'res_id': lead.id,
+                    'res_model_id': crm_lead_model_id,
+                    'activity_type_id': activity_type_id,
+                    'summary': f"Matchmaking Oportunidad: {match.name} - {match.title}",
+                    'note': (
+                        f"La IA ha detectado una coincidencia. La propiedad {match.title} en "
+                        f"{match.city} está a la venta por ${match.price:,.2f}, encajando en el "
+                        f"presupuesto del Lead (${lead.client_budget:,.2f}). Considere agendar visita."
+                    ),
+                    'user_id': lead.user_id.id if lead.user_id else self.env.user.id,
+                })
+                existing.append(f"matchmaking oportunidad: {match.name} - {match.title}".lower())
 
 
     @api.model
@@ -757,79 +779,111 @@ class CrmLead(models.Model):
 
     @api.model
     def _cron_drip_followup(self):
-        """Mejora 4: Secuencia drip automática — crea actividades a los 2, 7 y 14 días."""
-        from datetime import timedelta
+        """Mejora 4: Secuencia drip automática — crea actividades a los 2, 7 y 14 días.
+        Optimizado: prefetch de actividades drip existentes en una sola query."""
         today = fields.Date.today()
-        leads = self.search([
-            ('type', '=', 'lead'),
-            ('stage_id.is_won', '=', False),
-            ('probability', '>', 0),
-            ('active', '=', True),
-        ])
         drip_steps = [
             (2, '📩 Seguimiento Día 2', 'Contactar al cliente para confirmar su interés y resolver dudas iniciales.'),
             (7, '📞 Seguimiento Día 7', 'Segunda llamada: explorar objeciones y proponer visita si no se ha concretado.'),
             (14, '🚨 Seguimiento Día 14 — Último intento', 'Ultimo intento de recuperación: ofrecer alternativas o cerrar el lead.'),
         ]
+        leads = self.search([
+            ('type', '=', 'lead'),
+            ('stage_id.is_won', '=', False),
+            ('probability', '>', 0),
+            ('active', '=', True),
+        ], limit=500)
+        if not leads:
+            return
+
+        # Prefetch: actividades existentes con summary de drip para todos los leads
+        drip_summaries = [s for _, s, _ in drip_steps]
+        existing_activities = self.env['mail.activity'].sudo().search([
+            ('res_model', '=', 'crm.lead'),
+            ('res_id', 'in', leads.ids),
+            ('summary', 'in', drip_summaries),
+        ])
+        existing_keys = {(a.res_id, a.summary) for a in existing_activities}
+
+        activity_type_call_id = self.env.ref('mail.mail_activity_data_call').id
+        crm_lead_model_id = self.env['ir.model'].sudo()._get_id('crm.lead')
+        Activity = self.env['mail.activity'].sudo()
+
         for lead in leads:
             if not lead.create_date:
                 continue
             days_old = (today - lead.create_date.date()).days
             for threshold, summary, note in drip_steps:
-                if days_old == threshold:
-                    existing = self.env['mail.activity'].search([
-                        ('res_model', '=', 'crm.lead'),
-                        ('res_id', '=', lead.id),
-                        ('summary', '=', summary),
-                    ], limit=1)
-                    if not existing:
-                        self.env['mail.activity'].sudo().create({
-                            'res_id': lead.id,
-                            'res_model_id': self.env['ir.model'].sudo()._get_id('crm.lead'),
-                            'activity_type_id': self.env.ref('mail.mail_activity_data_call').id,
-                            'summary': summary,
-                            'note': note,
-                            'date_deadline': today,
-                            'user_id': lead.user_id.id if lead.user_id else self.env.uid,
-                        })
+                if days_old != threshold:
+                    continue
+                if (lead.id, summary) in existing_keys:
+                    continue
+                Activity.create({
+                    'res_id': lead.id,
+                    'res_model_id': crm_lead_model_id,
+                    'activity_type_id': activity_type_call_id,
+                    'summary': summary,
+                    'note': note,
+                    'date_deadline': today,
+                    'user_id': lead.user_id.id if lead.user_id else self.env.uid,
+                })
+                existing_keys.add((lead.id, summary))
 
     @api.model
     def _cron_hot_lead_no_response_alert(self):
-        """Mejora 8: Alerta si un lead HIRVIENDO lleva 48h sin actividad."""
-        from datetime import timedelta, datetime
+        """Mejora 8: Alerta si un lead HIRVIENDO lleva 48h sin actividad.
+        Optimizado: prefetch de actividades en 1 query (era 2 queries por lead)."""
+        from datetime import timedelta
         now = fields.Datetime.now()
         cutoff = now - timedelta(hours=48)
         hot_leads = self.search([
             ('lead_temperature', '=', 'boiling'),
             ('stage_id.is_won', '=', False),
             ('active', '=', True),
-        ])
+        ], limit=500)
+        if not hot_leads:
+            return
+
+        # ── Prefetch: una query para todas las actividades de estos leads ──
+        all_activities = self.env['mail.activity'].sudo().search([
+            ('res_model', '=', 'crm.lead'),
+            ('res_id', 'in', hot_leads.ids),
+        ], order='create_date desc')
+        latest_by_lead = {}
+        alert_set = set()  # leads que ya tienen el alerta
+        ALERT_TAG = 'lead hirviendo sin respuesta'
+        for act in all_activities:
+            # latest_by_lead retiene la primera (más reciente por orden desc)
+            if act.res_id not in latest_by_lead:
+                latest_by_lead[act.res_id] = act.create_date
+            if ALERT_TAG in (act.summary or '').lower():
+                alert_set.add(act.res_id)
+
+        activity_type_id = self.env.ref('mail.mail_activity_data_todo').id
+        crm_lead_model_id = self.env['ir.model'].sudo()._get_id('crm.lead')
+        Activity = self.env['mail.activity'].sudo()
+        today = fields.Date.today()
+
         for lead in hot_leads:
-            latest_activity = self.env['mail.activity'].search([
-                ('res_model', '=', 'crm.lead'),
-                ('res_id', '=', lead.id),
-            ], order='create_date desc', limit=1)
-            last_touch = latest_activity.create_date if latest_activity else lead.create_date
-            if last_touch and last_touch < cutoff:
-                existing = self.env['mail.activity'].search([
-                    ('res_model', '=', 'crm.lead'),
-                    ('res_id', '=', lead.id),
-                    ('summary', 'ilike', 'Lead HIRVIENDO sin respuesta'),
-                ], limit=1)
-                if not existing:
-                    self.env['mail.activity'].sudo().create({
-                        'res_id': lead.id,
-                        'res_model_id': self.env['ir.model'].sudo()._get_id('crm.lead'),
-                        'activity_type_id': self.env.ref('mail.mail_activity_data_todo').id,
-                        'summary': f'🔥 Lead HIRVIENDO sin respuesta (48h+)',
-                        'note': (
-                            f'El lead "{lead.partner_id.name or lead.contact_name or "Cliente"}" '
-                            f'tiene temperatura HIRVIENDO pero no ha tenido actividad en 48+ horas. '
-                            f'Contactar URGENTE antes de que se enfríe.'
-                        ),
-                        'date_deadline': fields.Date.today(),
-                        'user_id': lead.user_id.id if lead.user_id else self.env.uid,
-                    })
+            if lead.id in alert_set:
+                continue  # ya alertado
+            last_touch = latest_by_lead.get(lead.id) or lead.create_date
+            if not last_touch or last_touch >= cutoff:
+                continue
+            Activity.create({
+                'res_id': lead.id,
+                'res_model_id': crm_lead_model_id,
+                'activity_type_id': activity_type_id,
+                'summary': f'🔥 Lead HIRVIENDO sin respuesta (48h+)',
+                'note': (
+                    f'El lead "{lead.partner_id.name or lead.contact_name or "Cliente"}" '
+                    f'tiene temperatura HIRVIENDO pero no ha tenido actividad en 48+ horas. '
+                    f'Contactar URGENTE antes de que se enfríe.'
+                ),
+                'date_deadline': today,
+                'user_id': lead.user_id.id if lead.user_id else self.env.uid,
+            })
+            alert_set.add(lead.id)
 
 
     @api.model

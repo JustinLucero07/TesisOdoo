@@ -4,6 +4,11 @@ from odoo import models, fields, api
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
+    # --- Índices en campos heredados (búsqueda frecuente en webhooks) ---
+    phone = fields.Char(index='btree_not_null')
+    mobile = fields.Char(index='btree_not_null')
+    email = fields.Char(index='btree_not_null')
+
     # --- Campos de rol inmobiliario ---
     is_property_owner = fields.Boolean(
         string='Es Propietario',

@@ -1,9 +1,9 @@
 import json
 import logging
-import requests
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+from odoo.addons.estate_management.tools.http_retry import request_with_retry
 
 _logger = logging.getLogger(__name__)
 
@@ -213,10 +213,11 @@ class EstateFacebookStats(models.Model):
             raise UserError('No hay Page Access Token configurado.')
 
         try:
-            resp = requests.get(
+            resp = request_with_retry(
+                'GET',
                 f'https://graph.facebook.com/{META_API_VERSION}/me/permissions',
                 params={'access_token': token},
-                timeout=15,
+                timeout=15, retries=2,
             )
             data = resp.json()
         except Exception as e:
@@ -274,10 +275,11 @@ class EstateFacebookStats(models.Model):
 
         try:
             # ── Reacciones, comentarios, compartidos ──────────────────────────
-            post_resp = requests.get(
+            post_resp = request_with_retry(
+                'GET',
                 f'https://graph.facebook.com/{META_API_VERSION}/{post_id}',
                 params={'fields': FB_POST_FIELDS, 'access_token': token},
-                timeout=15,
+                timeout=15, retries=3,
             )
             post_data = post_resp.json()
 
@@ -302,16 +304,18 @@ class EstateFacebookStats(models.Model):
             organic_reach = paid_reach = viral_reach = 0
             gender_age_raw = {}
 
-            ins_resp = requests.get(
+            ins_resp = request_with_retry(
+                'GET',
                 f'https://graph.facebook.com/{META_API_VERSION}/{post_id}/insights',
                 params={'metric': FB_INSIGHTS_METRICS, 'period': 'lifetime', 'access_token': token},
-                timeout=15,
+                timeout=15, retries=3,
             )
             ins_payload = {}
             try:
                 ins_payload = ins_resp.json()
             except Exception:
                 pass
+            insights_error_msg = False
             if ins_resp.status_code == 200 and 'data' in ins_payload:
                 for item in ins_payload.get('data', []):
                     name = item.get('name', '')
@@ -345,9 +349,10 @@ class EstateFacebookStats(models.Model):
                 err_sub = ins_payload.get('error', {}).get('error_subcode', '')
                 _logger.warning(
                     'Insights FALLÓ para %s — HTTP %s · code=%s subcode=%s · %s',
-                    post_id, ins_resp.status_code, err_code, err_sub, err_msg or ins_resp.text[:200])
+                    post_id, ins_resp.status_code, err_code, err_sub,
+                    err_msg or (getattr(ins_resp, 'text', '') or '')[:200])
                 if err_msg:
-                    self.fetch_error = (
+                    insights_error_msg = (
                         f'Insights no disponibles (HTTP {ins_resp.status_code}, '
                         f'code {err_code}): {err_msg}'
                     )
@@ -373,7 +378,7 @@ class EstateFacebookStats(models.Model):
                 'viral_reach':      viral_reach,
                 'gender_age_data':  json.dumps(gender_age_raw) if gender_age_raw else False,
                 'stats_date':       fields.Datetime.now(),
-                'fetch_error':      False,
+                'fetch_error':      insights_error_msg,
             })
 
             # ── Snapshot de historial ─────────────────────────────────────────
@@ -408,14 +413,15 @@ class EstateFacebookStats(models.Model):
             raise UserError('Configure el Page ID de Facebook en Ajustes → Redes Sociales.')
 
         try:
-            resp = requests.get(
+            resp = request_with_retry(
+                'GET',
                 f'https://graph.facebook.com/{META_API_VERSION}/{page_id}/posts',
                 params={
                     'fields': 'id,message,created_time,permalink_url,full_picture',
                     'limit': limit,
                     'access_token': token,
                 },
-                timeout=20,
+                timeout=20, retries=3,
             )
             data = resp.json()
         except Exception as e:
