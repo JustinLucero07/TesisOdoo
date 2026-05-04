@@ -874,6 +874,38 @@ class EstateProperty(models.Model):
             if not (0 <= rec.commission_split_pct <= 100):
                 raise UserError('El porcentaje de split del Co-Asesor debe estar entre 0% y 100%.')
 
+    # ── Onchange warnings (avisan al usuario antes del guardado) ──────────────
+    @api.onchange('year_built')
+    def _onchange_year_built_warn(self):
+        import datetime
+        current_year = datetime.date.today().year
+        if self.year_built and (self.year_built > current_year or self.year_built < 1800):
+            return {'warning': {
+                'title': 'Año de construcción inválido',
+                'message': f'El año {self.year_built} no será aceptado al guardar. '
+                           f'Debe estar entre 1800 y {current_year}.',
+            }}
+
+    @api.onchange('bottom_price', 'price')
+    def _onchange_bottom_price_warn(self):
+        if self.bottom_price and self.price and self.bottom_price >= self.price:
+            return {'warning': {
+                'title': 'Precio mínimo inválido',
+                'message': (
+                    f'El precio mínimo aceptable (${self.bottom_price:,.2f}) debe ser '
+                    f'MENOR al precio de publicación (${self.price:,.2f}). '
+                    f'Ajuste el valor antes de guardar.'
+                ),
+            }}
+
+    @api.onchange('commission_split_pct')
+    def _onchange_commission_split_warn(self):
+        if self.commission_split_pct and not (0 <= self.commission_split_pct <= 100):
+            return {'warning': {
+                'title': 'Comisión fuera de rango',
+                'message': 'El % de split del Co-Asesor debe estar entre 0 y 100.',
+            }}
+
     def write(self, vals):
         res = super().write(vals)
         # Sincronizar actualizaciones hacia product.template

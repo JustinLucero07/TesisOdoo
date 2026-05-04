@@ -1,0 +1,36 @@
+# Pre-commit hooks para el proyecto.
+# Instalación local: `pip install pre-commit && pre-commit install`
+# Ejecución manual: `pre-commit run --all-files`
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: check-yaml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  # Bloquea commits accidentales de cachés de Python
+  - repo: local
+    hooks:
+      - id: forbid-pycache
+        name: Bloquear __pycache__ y .pyc
+        entry: bash -c 'if git diff --cached --name-only | grep -E "(__pycache__|\.pyc$)"; then echo "ERROR: hay archivos compilados en el commit. Use .gitignore."; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      - id: forbid-bak-files
+        name: Bloquear archivos .bak / .orig / .swp
+        entry: bash -c 'if git diff --cached --name-only | grep -E "\.(bak|orig|swp|swo)$"; then echo "ERROR: hay archivos de backup en el commit."; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      - id: forbid-credentials
+        name: Bloquear archivos de credenciales
+        entry: bash -c 'if git diff --cached --name-only | grep -E "(credentials\.json|service_account\.json|\.env$|\.pem$|\.key$)"; then echo "ERROR: posibles credenciales en el commit."; exit 1; fi'
+        language: system
+        pass_filenames: false

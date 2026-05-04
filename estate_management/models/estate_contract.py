@@ -94,6 +94,22 @@ class EstateContract(models.Model):
             if rec.date_end and rec.date_start and rec.date_end < rec.date_start:
                 raise UserError('La fecha de vencimiento no puede ser anterior a la fecha de inicio.')
 
+    @api.onchange('amount')
+    def _onchange_contract_amount_warn(self):
+        if self.amount is not False and self.amount < 0:
+            return {'warning': {
+                'title': 'Monto inválido',
+                'message': 'El monto del contrato no puede ser negativo.',
+            }}
+
+    @api.onchange('date_start', 'date_end')
+    def _onchange_contract_dates_warn(self):
+        if self.date_end and self.date_start and self.date_end < self.date_start:
+            return {'warning': {
+                'title': 'Fechas incoherentes',
+                'message': 'La fecha de vencimiento no puede ser anterior a la fecha de inicio.',
+            }}
+
     def action_view_invoices(self):
         self.ensure_one()
         invoice_ids = self.payment_ids.mapped('invoice_id').ids

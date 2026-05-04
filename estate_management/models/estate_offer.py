@@ -101,6 +101,22 @@ class EstatePropertyOffer(models.Model):
             if rec.date_expiry and rec.date and rec.date_expiry < rec.date:
                 raise UserError('La fecha de vencimiento de la oferta no puede ser anterior a la fecha de oferta.')
 
+    @api.onchange('offer_amount')
+    def _onchange_offer_amount_warn(self):
+        if self.offer_amount and self.offer_amount <= 0:
+            return {'warning': {
+                'title': 'Monto inválido',
+                'message': 'El monto ofertado debe ser mayor a cero.',
+            }}
+
+    @api.onchange('date', 'date_expiry')
+    def _onchange_offer_dates_warn(self):
+        if self.date_expiry and self.date and self.date_expiry < self.date:
+            return {'warning': {
+                'title': 'Fechas incoherentes',
+                'message': 'La fecha de vencimiento no puede ser anterior a la fecha de oferta.',
+            }}
+
     def action_submit(self):
         self.write({'state': 'submitted'})
         # Auto-avanzar lead a "Oferta Presentada"

@@ -15,7 +15,13 @@
                 <field name="price" widget="monetary"/>
                 <field name="area"/>
                 <field name="bedrooms"/>
-                <field name="days_on_market" optional="show"/>
+                <field name="days_on_market" optional="show"
+                       decoration-warning="days_on_market &gt; 60"
+                       decoration-danger="days_on_market &gt; 120"/>
+                <field name="avm_status" optional="hide" widget="badge"
+                       decoration-success="avm_status == 'fair'"
+                       decoration-warning="avm_status == 'high'"
+                       decoration-danger="avm_status == 'low'"/>
                 <field name="sold_by" optional="hide"/>
                 <field name="contract_end_date" optional="hide"/>
                 <field name="state" widget="badge" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-info="state == 'rented'" decoration-warning="state == 'reserved'"/>

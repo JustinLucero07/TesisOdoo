@@ -6,6 +6,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A modular ERP suite for real estate management built on **Odoo 19 Community Edition** (Python/PostgreSQL backend, OWL JavaScript frontend). This is a graduate thesis project ("Tesis de Grado").
 
+## Architecture
+
+```mermaid
+graph TD
+    EM[estate_management<br/>Núcleo: propiedades, contratos, pagos, AVM]
+    CRM[estate_crm<br/>Lead matching, scoring, webhooks Meta]
+    CAL[estate_calendar<br/>Visitas, WhatsApp reminders]
+    DOC[estate_document<br/>Documentos vinculados]
+    REP[estate_reports<br/>Dashboard, KPIs, PDF, Excel]
+    SOC[estate_social<br/>Facebook/Instagram publish + insights]
+    WP[estate_wordpress<br/>Sync sitio + Houzez webhook]
+    POR[estate_portal<br/>Portal de propietario]
+    AI[estate_ai_agent<br/>OWL chat + Gemini/OpenAI]
+    
+    EM --> CRM
+    EM --> CAL
+    EM --> DOC
+    EM --> REP
+    EM --> SOC
+    EM --> WP
+    EM --> POR
+    CRM --> AI
+    EM -.phone.mixin.-> CAL
+    EM -.phone.mixin.-> SOC
+    
+    WP -.webhook.-> CRM
+    SOC -.webhook.-> CRM
+    EM -.tools/http_retry.-> SOC
+    EM -.tools/http_retry.-> WP
+
+    style EM fill:#1877F2,color:#fff
+    style CRM fill:#42A5F5,color:#fff
+    style AI fill:#E4405F,color:#fff
+```
+
+**Documentación por módulo:** ver `estate_<modulo>/README.md` (estate_management, estate_crm, estate_social, estate_wordpress, estate_ai_agent).
+
+**Plan de mejoras:** [PLAN_MEJORAS.md](PLAN_MEJORAS.md) — estado de las 5 fases (seguridad, calidad, performance, tests, UX/docs).
+
 ## Running the Server
 
 ```bash

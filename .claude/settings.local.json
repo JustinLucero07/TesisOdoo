@@ -223,7 +223,10 @@
       "Bash(git -C /home/justin/Documentos/Tesis check-ignore __pycache__)",
       "Bash(grep -E \"\\(__pycache__|\\\\.pyc$\\)\")",
       "Bash(awk -F: '{print $1, $2}')",
-      "Bash(awk '$1 < 2900 && $1 > 2600')"
+      "Bash(awk '$1 < 2900 && $1 > 2600')",
+      "Bash(find /home/justin/Documentos/Tesis/estate_*/README.md)",
+      "Bash(git mv *)",
+      "Bash(chmod +x /home/justin/Documentos/Tesis/install.sh)"
     ],
     "additionalDirectories": [
       "/tmp",

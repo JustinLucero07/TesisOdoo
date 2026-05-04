@@ -266,4 +266,30 @@
         </field>
     </record>
 
+    <!-- Heredar list view del CRM para añadir decoraciones de temperatura -->
+    <record id="crm_lead_view_tree_inherit_estate" model="ir.ui.view">
+        <field name="name">crm.lead.tree.inherit.estate</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_tree_view_oppor"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="decoration-danger">lead_temperature == 'boiling'</attribute>
+                <attribute name="decoration-warning">lead_temperature == 'hot'</attribute>
+                <attribute name="decoration-info">lead_temperature == 'warm'</attribute>
+                <attribute name="decoration-muted">lead_temperature == 'cold'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="lead_temperature" optional="show"
+                       widget="badge"
+                       decoration-danger="lead_temperature == 'boiling'"
+                       decoration-warning="lead_temperature == 'hot'"
+                       decoration-info="lead_temperature == 'warm'"/>
+                <field name="match_percentage" optional="hide" widget="progressbar"/>
+                <field name="lead_score" optional="hide" widget="badge"
+                       decoration-danger="lead_score == 'high'"
+                       decoration-warning="lead_score == 'medium'"/>
+            </xpath>
+        </field>
+    </record>
+
 </odoo>
