@@ -89,7 +89,11 @@
                     <field name="document_ids" nolabel="1">
                         <list string="Documentos del Lead" editable="bottom">
                             <field name="name"/>
-                            <field name="document_type" widget="badge"/>
+                            <field name="type_id"/>
+                            <field name="state" widget="badge"
+                                   decoration-info="state == 'received'"
+                                   decoration-success="state == 'verified'"
+                                   decoration-danger="state == 'rejected'"/>
                             <field name="date"/>
                             <field name="file" widget="binary" filename="filename"/>
                             <field name="filename" invisible="1"/>

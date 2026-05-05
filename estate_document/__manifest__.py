@@ -12,10 +12,11 @@
     """,
     'author': 'Tesis - Sistema Inmobiliario',
     'license': 'LGPL-3',
-    'depends': ['estate_management', 'crm'],
+    'depends': ['estate_management', 'crm', 'mail'],
     'data': [
         'security/ir.model.access.csv',
         'security/estate_document_security.xml',
+        'data/document_types_data.xml',
         'views/estate_document_views.xml',
         'views/estate_document_menus.xml',
     ],

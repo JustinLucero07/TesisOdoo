@@ -324,21 +324,30 @@ estate_reports/
 
 ## 10. Tareas concretas (~30 tickets)
 
-### Frente 2 - Documentos (12 tareas, 4-5 días)
+### Frente 2 - Documentos ✅ *completado*
 ```
-[ ] D1.  Crear modelo estate.document.type con campos name, category, icon, color
-[ ] D2.  Migrar Selection a M2O en estate.document.type_id
-[ ] D3.  Seed XML con ~25 tipos por categoría
-[ ] D4.  Añadir campo state al estate.document (5 estados)
-[ ] D5.  Añadir campos verified_by, verified_date, action_verify
-[ ] D6.  Añadir campo confidentiality + ir.rule
-[ ] D7.  Añadir contract_id (M2O estate.contract)
-[ ] D8.  Auto-creación de docs al activar contrato
-[ ] D9.  Vista list con statusbar y decoraciones por estado
-[ ] D10. Vista kanban agrupada por categoría
-[ ] D11. Botón "Carpeta completa" en res.partner
-[ ] D12. Tests: ciclo de vida + confidencialidad + auto-creación
+[x] D1.  Modelo estate.document.type con name, code, category, icon, color, sequence
+[x] D2.  Selection → M2O type_id en estate.document
+[x] D3.  Seed XML con 26 tipos en 6 categorías (contract, identity, property, financial, legal, other)
+[x] D4.  Campo state (pending → received → verified → rejected → archived)
+[x] D5.  Campos verified_by, verified_date, action_verify (solo manager)
+[x] D6.  Campo confidentiality + ir.rule fail-closed (public/internal/restricted/confidential)
+[x] D7.  contract_id (M2O estate.contract) con index
+[x] D8.  Auto-creación de placeholders al action_activate del contrato
+[x] D9.  Vista list con statusbar y decoraciones por estado/confidencialidad
+[x] D10. Vista kanban agrupada por type_category con badges
+[x] D11. Botón "📂 Carpeta completa" en res.partner (action_view_full_folder)
+[x] D12. Tests: 24 tests verdes (lifecycle + confidentiality + contract integration)
 ```
+
+**Bonus añadidos durante implementación:**
+- Modelos extraídos en archivos separados (estate_document_type.py, estate_property.py, crm_lead.py, res_partner.py, estate_contract.py)
+- Wizard de rechazo de documento con razón obligatoria
+- Auto-transición pending → received al subir archivo
+- Heredada `mail.thread` para chatter en documentos
+- Campo `expiration_date` para certificados con vencimiento
+- Filtro "Expira en 30 días" en search view
+- Permisos para `estate.document.type` (gestionable solo por managers)
 
 ### Frente 1 - Contratos (10 tareas, 3-4 días)
 ```

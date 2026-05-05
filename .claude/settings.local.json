@@ -226,7 +226,11 @@
       "Bash(awk '$1 < 2900 && $1 > 2600')",
       "Bash(find /home/justin/Documentos/Tesis/estate_*/README.md)",
       "Bash(git mv *)",
-      "Bash(chmod +x /home/justin/Documentos/Tesis/install.sh)"
+      "Bash(chmod +x /home/justin/Documentos/Tesis/install.sh)",
+      "Bash(psql tesis_odoo19 -c \"SELECT id, name, model_id, domain_force FROM ir_rule WHERE model_id IN \\(SELECT id FROM ir_model WHERE model = 'estate.document'\\);\")",
+      "Bash(psql tesis_odoo19 -c \"SELECT module, name, res_id, noupdate FROM ir_model_data WHERE model = 'ir.rule' AND module = 'estate_document';\")",
+      "Bash(psql tesis_odoo19 -c \"UPDATE ir_model_data SET noupdate = false WHERE model = 'ir.rule' AND module = 'estate_document';\")",
+      "Bash(psql tesis_odoo19 -c \"SELECT name, noupdate FROM ir_model_data WHERE model = 'ir.rule' AND module = 'estate_document';\")"
     ],
     "additionalDirectories": [
       "/tmp",

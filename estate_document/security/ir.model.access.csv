@@ -2,3 +2,7 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_estate_document_agent,estate.document.agent,model_estate_document,estate_management.estate_group_agent,1,1,1,0
 access_estate_document_manager,estate.document.manager,model_estate_document,estate_management.estate_group_manager,1,1,1,1
 access_estate_document_admin,estate.document.admin,model_estate_document,estate_management.estate_group_admin,1,1,1,1
+access_estate_document_type_agent,estate.document.type.agent,model_estate_document_type,estate_management.estate_group_agent,1,0,0,0
+access_estate_document_type_manager,estate.document.type.manager,model_estate_document_type,estate_management.estate_group_manager,1,1,1,0
+access_estate_document_type_admin,estate.document.type.admin,model_estate_document_type,estate_management.estate_group_admin,1,1,1,1
+access_estate_document_reject_wizard,estate.document.reject.wizard,model_estate_document_reject_wizard,estate_management.estate_group_agent,1,1,1,1

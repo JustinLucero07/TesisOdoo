@@ -10,4 +10,11 @@
               parent="estate_menu_document_root"
               action="estate_document_action"
               sequence="10"/>
+
+    <menuitem id="estate_menu_document_types"
+              name="Tipos de Documento"
+              parent="estate_menu_document_root"
+              action="action_estate_document_type"
+              sequence="20"
+              groups="estate_management.estate_group_manager"/>
 </odoo>

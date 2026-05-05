@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+
+    <!-- ═══════════════════════════════════════════════════════
+         CATEGORÍA: CONTRATO
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="doc_type_contract_signed" model="estate.document.type">
+        <field name="name">Contrato Firmado</field>
+        <field name="code">contract_signed</field>
+        <field name="category">contract</field>
+        <field name="icon">fa-file-text</field>
+        <field name="color">10</field>
+        <field name="sequence">10</field>
+        <field name="description">Contrato de venta o alquiler firmado por ambas partes.</field>
+    </record>
+
+    <record id="doc_type_earnest_money" model="estate.document.type">
+        <field name="name">Acuerdo de Arras / Reserva</field>
+        <field name="code">earnest_money</field>
+        <field name="category">contract</field>
+        <field name="icon">fa-handshake-o</field>
+        <field name="color">10</field>
+        <field name="sequence">15</field>
+        <field name="description">Documento de reserva o señal con compromiso de compra.</field>
+    </record>
+
+    <record id="doc_type_addendum" model="estate.document.type">
+        <field name="name">Adenda al Contrato</field>
+        <field name="code">contract_addendum</field>
+        <field name="category">contract</field>
+        <field name="icon">fa-file-o</field>
+        <field name="color">10</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="doc_type_nda" model="estate.document.type">
+        <field name="name">Acuerdo de Confidencialidad (NDA)</field>
+        <field name="code">nda</field>
+        <field name="category">contract</field>
+        <field name="icon">fa-lock</field>
+        <field name="color">10</field>
+        <field name="sequence">25</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CATEGORÍA: IDENTIDAD
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="doc_type_id_card" model="estate.document.type">
+        <field name="name">Cédula de Identidad</field>
+        <field name="code">client_id_card</field>
+        <field name="category">identity</field>
+        <field name="icon">fa-id-card</field>
+        <field name="color">3</field>
+        <field name="sequence">10</field>
+        <field name="description">Documento nacional de identidad (anverso y reverso).</field>
+    </record>
+
+    <record id="doc_type_passport" model="estate.document.type">
+        <field name="name">Pasaporte</field>
+        <field name="code">passport</field>
+        <field name="category">identity</field>
+        <field name="icon">fa-id-badge</field>
+        <field name="color">3</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="doc_type_ruc" model="estate.document.type">
+        <field name="name">RUC / Identificación Fiscal</field>
+        <field name="code">ruc</field>
+        <field name="category">identity</field>
+        <field name="icon">fa-id-badge</field>
+        <field name="color">3</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CATEGORÍA: PROPIEDAD
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="doc_type_deed" model="estate.document.type">
+        <field name="name">Escritura de Propiedad</field>
+        <field name="code">property_deed</field>
+        <field name="category">property</field>
+        <field name="icon">fa-scroll</field>
+        <field name="color">5</field>
+        <field name="sequence">10</field>
+        <field name="description">Escritura pública inscrita en el Registro de la Propiedad.</field>
+    </record>
+
+    <record id="doc_type_predial" model="estate.document.type">
+        <field name="name">Comprobante Impuesto Predial</field>
+        <field name="code">property_tax</field>
+        <field name="category">property</field>
+        <field name="icon">fa-money</field>
+        <field name="color">5</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="doc_type_cadastre" model="estate.document.type">
+        <field name="name">Registro Catastral</field>
+        <field name="code">cadastre_record</field>
+        <field name="category">property</field>
+        <field name="icon">fa-map</field>
+        <field name="color">5</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="doc_type_habitability" model="estate.document.type">
+        <field name="name">Certificado de Habitabilidad</field>
+        <field name="code">habitability_cert</field>
+        <field name="category">property</field>
+        <field name="icon">fa-home</field>
+        <field name="color">5</field>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="doc_type_construction" model="estate.document.type">
+        <field name="name">Licencia de Construcción</field>
+        <field name="code">construction_license</field>
+        <field name="category">property</field>
+        <field name="icon">fa-building</field>
+        <field name="color">5</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="doc_type_blueprints" model="estate.document.type">
+        <field name="name">Planos / Layouts</field>
+        <field name="code">blueprints</field>
+        <field name="category">property</field>
+        <field name="icon">fa-pencil-ruler</field>
+        <field name="color">5</field>
+        <field name="sequence">60</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CATEGORÍA: FINANCIERO
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="doc_type_payment_receipt" model="estate.document.type">
+        <field name="name">Comprobante de Pago</field>
+        <field name="code">payment_receipt</field>
+        <field name="category">financial</field>
+        <field name="icon">fa-receipt</field>
+        <field name="color">2</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="doc_type_appraisal" model="estate.document.type">
+        <field name="name">Avalúo Inmobiliario</field>
+        <field name="code">appraisal</field>
+        <field name="category">financial</field>
+        <field name="icon">fa-balance-scale</field>
+        <field name="color">2</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="doc_type_bank_appraisal" model="estate.document.type">
+        <field name="name">Tasación Bancaria</field>
+        <field name="code">bank_appraisal</field>
+        <field name="category">financial</field>
+        <field name="icon">fa-university</field>
+        <field name="color">2</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="doc_type_credit_letter" model="estate.document.type">
+        <field name="name">Carta de Crédito / Pre-aprobación</field>
+        <field name="code">credit_letter</field>
+        <field name="category">financial</field>
+        <field name="icon">fa-credit-card</field>
+        <field name="color">2</field>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="doc_type_bank_statement" model="estate.document.type">
+        <field name="name">Estado de Cuenta Bancario</field>
+        <field name="code">bank_statement</field>
+        <field name="category">financial</field>
+        <field name="icon">fa-bank</field>
+        <field name="color">2</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CATEGORÍA: LEGAL
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="doc_type_power_of_attorney" model="estate.document.type">
+        <field name="name">Poder Notarial</field>
+        <field name="code">power_of_attorney</field>
+        <field name="category">legal</field>
+        <field name="icon">fa-gavel</field>
+        <field name="color">7</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="doc_type_marriage_cert" model="estate.document.type">
+        <field name="name">Certificado de Matrimonio</field>
+        <field name="code">marriage_cert</field>
+        <field name="category">legal</field>
+        <field name="icon">fa-heart</field>
+        <field name="color">7</field>
+        <field name="sequence">20</field>
+    </record>
+
+    <record id="doc_type_succession" model="estate.document.type">
+        <field name="name">Sucesión / Herencia</field>
+        <field name="code">succession</field>
+        <field name="category">legal</field>
+        <field name="icon">fa-sitemap</field>
+        <field name="color">7</field>
+        <field name="sequence">30</field>
+    </record>
+
+    <record id="doc_type_no_debt" model="estate.document.type">
+        <field name="name">Certificado de No Adeudo</field>
+        <field name="code">no_debt_cert</field>
+        <field name="category">legal</field>
+        <field name="icon">fa-check-square</field>
+        <field name="color">7</field>
+        <field name="sequence">40</field>
+    </record>
+
+    <record id="doc_type_court_order" model="estate.document.type">
+        <field name="name">Orden Judicial / Embargo</field>
+        <field name="code">court_order</field>
+        <field name="category">legal</field>
+        <field name="icon">fa-gavel</field>
+        <field name="color">1</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         CATEGORÍA: OTRO
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="doc_type_photos" model="estate.document.type">
+        <field name="name">Fotografías</field>
+        <field name="code">photos</field>
+        <field name="category">other</field>
+        <field name="icon">fa-camera</field>
+        <field name="color">0</field>
+        <field name="sequence">10</field>
+    </record>
+
+    <record id="doc_type_other" model="estate.document.type">
+        <field name="name">Otro</field>
+        <field name="code">other</field>
+        <field name="category">other</field>
+        <field name="icon">fa-file-o</field>
+        <field name="color">0</field>
+        <field name="sequence">99</field>
+    </record>
+
+</odoo>
