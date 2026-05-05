@@ -214,15 +214,31 @@ class EstatePropertyOffer(models.Model):
             body=f'📄 Contrato <b>{contract.name}</b> creado para <b>{self.partner_id.name}</b> '
                  f'(Oferta: {self.name}, Monto: ${contract.amount:,.2f}).')
         if self.lead_id:
+            # Mensaje destacado en el chatter del lead con link directo al contrato
             self.lead_id.message_post(
-                body=f'📄 Contrato <b>{contract.name}</b> generado para la propiedad '
-                     f'<b>{self.property_id.title}</b>.')
+                body=(
+                    f'<div class="alert alert-success" role="alert">'
+                    f'<strong>📄 Contrato generado</strong><br/>'
+                    f'Se creó el contrato <b>{contract.name}</b> para la propiedad '
+                    f'<b>{self.property_id.title}</b> · Monto: ${contract.amount:,.2f}.<br/>'
+                    f'<a href="/odoo/action-base.action_view_contract/{contract.id}">'
+                    f'👉 Abrir contrato</a>'
+                    f'</div>'
+                ),
+                subject=f'Contrato {contract.name} generado'
+            )
+        # Notificación al usuario actual con botón "Abrir contrato"
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Contrato Generado',
+            'name': f'📄 Contrato {contract.name} generado',
             'res_model': 'estate.contract',
             'view_mode': 'form',
             'res_id': contract.id,
+            'target': 'current',
+            'context': {
+                'show_contract_creation_banner': True,
+                'default_offer_id': self.id,
+            },
         }
 
     def action_create_sale_order(self):

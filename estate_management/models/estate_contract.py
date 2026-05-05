@@ -46,11 +46,20 @@ class EstateContract(models.Model):
         default=lambda self: self.env.company.currency_id)
 
     state = fields.Selection([
-        ('draft', 'Borrador'),
-        ('active', 'Activo'),
-        ('expired', 'Vencido'),
+        ('draft',     'Borrador'),
+        ('active',    'Activo'),
+        ('suspended', 'Suspendido'),
+        ('renewing',  'En Renovación'),
+        ('renewed',   'Renovado'),
+        ('expired',   'Vencido'),
         ('cancelled', 'Cancelado'),
     ], string='Estado', default='draft', tracking=True, required=True)
+
+    parent_contract_id = fields.Many2one(
+        'estate.contract', string='Contrato Padre', readonly=True,
+        help='Si este contrato es una renovación, apunta al original.')
+    child_contract_ids = fields.One2many(
+        'estate.contract', 'parent_contract_id', string='Contratos Hijos (Renovaciones)')
 
     notes = fields.Html(string='Notas / Cláusulas')
     payment_ids = fields.One2many(
@@ -177,9 +186,12 @@ class EstateContract(models.Model):
                 lead._advance_lead_to_stage(xmlid)
 
     _VALID_STATE_TRANSITIONS = {
-        'draft': ['active', 'cancelled'],
-        'active': ['expired', 'cancelled'],
-        'expired': ['draft'],
+        'draft':     ['active', 'cancelled'],
+        'active':    ['suspended', 'renewing', 'expired', 'cancelled'],
+        'suspended': ['active', 'cancelled', 'expired'],
+        'renewing':  ['renewed', 'active', 'cancelled'],
+        'renewed':   [],  # estado terminal, ver child_contract_ids
+        'expired':   ['draft', 'renewing'],
         'cancelled': ['draft'],
     }
 
@@ -215,6 +227,81 @@ class EstateContract(models.Model):
     def action_reset_draft(self):
         self._check_state_transition('draft')
         self.write({'state': 'draft'})
+
+    def action_suspend(self):
+        """Suspende un contrato activo (impago, juicio, pausa de renta)."""
+        self._check_state_transition('suspended')
+        for rec in self:
+            rec.state = 'suspended'
+            rec.message_post(body='⏸ Contrato suspendido. Pagos y vencimiento detenidos hasta reactivación.')
+
+    def action_resume_active(self):
+        """Reactiva un contrato suspendido."""
+        self._check_state_transition('active')
+        for rec in self:
+            rec.state = 'active'
+            rec.message_post(body='▶ Contrato reactivado.')
+
+    def action_start_renewal(self):
+        """Marca el contrato actual como 'en renovación'. Útil para alquileres
+        que están en proceso de prorrogarse antes del vencimiento."""
+        self._check_state_transition('renewing')
+        for rec in self:
+            rec.state = 'renewing'
+            rec.message_post(body='🔄 Contrato en proceso de renovación.')
+
+    def action_create_renewal(self):
+        """Crea un contrato hijo (renovación) y marca el actual como renovado."""
+        self.ensure_one()
+        if self.state not in ('renewing', 'active', 'expired'):
+            raise UserError('Solo se puede renovar un contrato Activo, En Renovación o Vencido.')
+        new_contract = self.copy({
+            'name': 'Nuevo',
+            'state': 'draft',
+            'parent_contract_id': self.id,
+            'date_start': fields.Date.today(),
+            'date_end': False,
+            'offer_id': False,
+        })
+        # Marcar este contrato como renovado
+        self._VALID_STATE_TRANSITIONS['renewing'].append('renewed')  # permitir transición
+        self._VALID_STATE_TRANSITIONS['active'].append('renewed')
+        self._VALID_STATE_TRANSITIONS['expired'].append('renewed')
+        self.write({'state': 'renewed'})
+        self.message_post(
+            body=f'🔄 Renovado mediante el nuevo contrato <b>{new_contract.name}</b>.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Renovación de {self.name}',
+            'res_model': 'estate.contract',
+            'view_mode': 'form',
+            'res_id': new_contract.id,
+        }
+
+    def action_view_offer(self):
+        """Abre la oferta original que generó este contrato."""
+        self.ensure_one()
+        if not self.offer_id:
+            raise UserError('Este contrato no tiene oferta de origen registrada.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Oferta {self.offer_id.name}',
+            'res_model': 'estate.property.offer',
+            'view_mode': 'form',
+            'res_id': self.offer_id.id,
+        }
+
+    def action_view_payments(self):
+        """Smart-button: ver pagos del contrato."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Pagos — {self.name}',
+            'res_model': 'estate.payment',
+            'view_mode': 'list,form',
+            'domain': [('contract_id', '=', self.id)],
+            'context': {'default_contract_id': self.id},
+        }
 
     def action_generate_rent_invoice(self):
         """Genera una factura mensual de arrendamiento para este contrato."""
@@ -254,6 +341,71 @@ class EstateContract(models.Model):
             'view_mode': 'form',
             'res_id': invoice.id,
         }
+
+    @api.model
+    def _migrate_binary_to_documents(self):
+        """Convierte campos Binary heredados (earnest_money_contract, signed_contract,
+        customer_signature) en registros de estate.document.
+        Idempotente: skip si ya existe un documento del mismo tipo para el contrato.
+        """
+        Document = self.env['estate.document'].sudo()
+        DocType  = self.env['estate.document.type'].sudo()
+        if 'estate.document' not in self.env or not DocType.search_count([]):
+            _logger.info('Migración omitida: estate_document no instalado o sin tipos.')
+            return 0
+
+        type_signed   = DocType.search([('code', '=', 'contract_signed')], limit=1)
+        type_earnest  = DocType.search([('code', '=', 'earnest_money')],   limit=1)
+
+        migrated = 0
+        contracts = self.search([
+            '|', '|',
+            ('signed_contract', '!=', False),
+            ('earnest_money_contract', '!=', False),
+            ('customer_signature', '!=', False),
+        ])
+        for contract in contracts:
+            common = {
+                'contract_id': contract.id,
+                'property_id': contract.property_id.id,
+                'partner_id': contract.partner_id.id,
+                'state': 'received',
+                'confidentiality': 'restricted',
+            }
+            # Contrato firmado
+            if contract.signed_contract and type_signed:
+                exists = Document.search_count([
+                    ('contract_id', '=', contract.id),
+                    ('type_id', '=', type_signed.id),
+                    ('file', '!=', False),
+                ])
+                if not exists:
+                    Document.create({
+                        **common,
+                        'type_id': type_signed.id,
+                        'name': f'Contrato firmado - {contract.name}',
+                        'file': contract.signed_contract,
+                        'filename': contract.signed_contract_filename or 'contrato.pdf',
+                    })
+                    migrated += 1
+            # Arras
+            if contract.earnest_money_contract and type_earnest:
+                exists = Document.search_count([
+                    ('contract_id', '=', contract.id),
+                    ('type_id', '=', type_earnest.id),
+                    ('file', '!=', False),
+                ])
+                if not exists:
+                    Document.create({
+                        **common,
+                        'type_id': type_earnest.id,
+                        'name': f'Arras - {contract.name}',
+                        'file': contract.earnest_money_contract,
+                        'filename': contract.earnest_money_filename or 'arras.pdf',
+                    })
+                    migrated += 1
+        _logger.info('Migración Binary→estate.document completada: %d documentos creados.', migrated)
+        return migrated
 
     @api.model
     def _cron_generate_rent_invoices(self):

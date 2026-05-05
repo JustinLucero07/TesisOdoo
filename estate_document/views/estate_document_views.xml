@@ -377,8 +377,16 @@
         <field name="model">estate.contract</field>
         <field name="inherit_id" ref="estate_management.estate_contract_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//page[@name='documents']" position="after">
-                <page string="📂 Documentos Vinculados" name="contract_docs_linked">
+            <!-- Smart-button Documentos -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_documents" type="object"
+                        class="oe_stat_button" icon="fa-folder-open">
+                    <field name="document_count" string="Documentos" widget="statinfo"/>
+                </button>
+            </xpath>
+            <!-- Pestaña de documentos del contrato (antes de la pestaña heredada) -->
+            <xpath expr="//page[@name='legacy_documents']" position="before">
+                <page string="📂 Documentos del Contrato" name="contract_docs_linked">
                     <field name="document_ids">
                         <list editable="bottom"
                               decoration-muted="state == 'pending'"

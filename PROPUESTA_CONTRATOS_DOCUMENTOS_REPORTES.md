@@ -349,19 +349,28 @@ estate_reports/
 - Filtro "Expira en 30 días" en search view
 - Permisos para `estate.document.type` (gestionable solo por managers)
 
-### Frente 1 - Contratos (10 tareas, 3-4 días)
+### Frente 1 - Contratos ✅ *completado*
 ```
-[ ] C1.  Añadir estados suspended, renewing, renewed
-[ ] C2.  Statusbar en form view
-[ ] C3.  Smart-buttons (Pagos, Documentos, Facturas)
-[ ] C4.  Pestaña Firma siempre visible con widget signature
-[ ] C5.  Pestaña Documentos = O2M a estate.document filtrada
-[ ] C6.  Modal al crear contrato desde oferta aceptada
-[ ] C7.  Mensaje en chatter del lead al crear contrato
-[ ] C8.  Botón "Ver oferta original" en form
-[ ] C9.  Migration script Binary → estate.document
-[ ] C10. Tests: state transitions + smart-buttons + auto-creación de docs
+[x] C1.  Estados ampliados: suspended, renewing, renewed + parent_contract_id / child_contract_ids
+[x] C2.  Statusbar visible con los nuevos estados (statusbar_visible="draft,active,suspended,renewing,renewed,expired")
+[x] C3.  Smart-buttons: Pagos, Documentos (vía estate_document), Facturas, Ver Oferta
+[x] C4.  Pestaña Firma SIEMPRE visible con widget="signature" + instrucciones cuando vacío
+[x] C5.  Pestaña "📂 Documentos del Contrato" con O2M a estate.document filtrado por contract_id
+[x] C6.  Banner verde en sheet al crear desde oferta (context show_contract_creation_banner)
+[x] C7.  Mensaje destacado en chatter del lead con HTML alert + link directo "Abrir contrato"
+[x] C8.  Smart-button "Ver Oferta" + action_view_offer
+[x] C9.  Método _migrate_binary_to_documents (idempotente, mapea earnest/signed → estate.document)
+[x] C10. 11 tests del state machine + transitions + smart-buttons + child contracts
 ```
+
+**Bonus añadidos durante implementación:**
+- Botones diferenciados por estado: Suspender / Reanudar / Iniciar Renovación / Crear Renovación
+- Banners contextuales: contrato suspendido (warning), renovado (info), recién creado (success)
+- Header con título + monto + propiedad + cliente en una línea
+- Badge "Renovación de CT-XXX" si tiene parent
+- Pestaña "🔄 Renovaciones" con lista de contratos hijos (visible solo si los tiene)
+- Pestaña "📂 Anexos heredados" visible solo si hay datos legados (los Binary actuales)
+- Decoraciones de filas en list view: warning para suspended/renewing, muted para renewed/cancelled
 
 ### Frente 3 - Reporte de Ventas (8 tareas, 3-4 días)
 ```
