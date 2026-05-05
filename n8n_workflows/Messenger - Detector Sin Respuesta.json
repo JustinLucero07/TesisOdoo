@@ -1,0 +1,219 @@
+{
+  "name": "Messenger - Detector Sin Respuesta",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours"
+            }
+          ]
+        }
+      },
+      "id": "cb159279-5198-4fcf-92b3-e96da848c2dc",
+      "name": "Cada 1 hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://graph.facebook.com/v19.0/me/conversations",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "messages.limit(5){message,from,created_time,id},participants"
+            },
+            {
+              "name": "access_token",
+              "value": "EAAlMlqo9IXcBRVZCjRRdA9zwn3ZC3054vPbwB5G6nzvzxMuXaNztIGYZAGCkRxOLR2YeGMV6K43vXRNbQw3fIj8AMsiIOh7loP5kY6P21ChTmTltVNcPZAfMIuzR8O6F8JdSjtddNB6UpDjpYhuKvnTeuymZCJ8tvuiikEEsFT7PDQdwBPuK5r8wtYYhMgaWREyUmnuUu9WtGZC9nLhPE1OQn1CjJj4ZB2zqAmGHa7zLo5T3qUliX3lG5jExe4v"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "30d6bef4-628c-45c5-af38-3c3f01c167c1",
+      "name": "Obtener Conversaciones",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -640,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst PAGE_ID = '1589374304639993'; // Reemplaza con tu Page ID\n/*const HORAS_LIMITE = 5 / 60;\nconst ahora = Date.now();\nconst limite = HORAS_LIMITE * 60 * 60 * 1000;\n\nconst conversations = $input.first().json.data || [];\n\nconst sinRespuesta = [];\n\nfor (const conv of conversations) {\n  const mensajes = conv.messages?.data || [];\n  if (mensajes.length === 0) continue;\n\n  // El mensaje más reciente\n  const ultimoMsg = mensajes[0];\n  const ultimoTiempo = new Date(ultimoMsg.created_time).getTime();\n  const antiguedad = ahora - ultimoTiempo;\n\n  // Es del cliente (no de la página)\n  const esDelCliente = ultimoMsg.from?.id !== PAGE_ID;\n\n  // Sin respuesta por más de X horas\n  if (esDelCliente && antiguedad > limite) {\n    const participantes = conv.participants?.data || [];\n    const cliente = participantes.find(p => p.id !== PAGE_ID);\n    \n    sinRespuesta.push({\n      json: {\n        conversation_id: conv.id,\n        psid: cliente?.id,\n        nombre: cliente?.name || 'Cliente',\n        ultimo_mensaje: ultimoMsg.message,\n        horas_sin_respuesta: Math.floor(antiguedad / 60000) + ' minutos'\n      }\n    });\n  }\n}\n\nif (sinRespuesta.length === 0) return [{ json: { total: 0, skip: true } }];\nreturn sinRespuesta;*/\n\nconst MINUTOS_LIMITE = 5;\nconst ahora = Date.now();\nconst limite = MINUTOS_LIMITE * 60 * 1000;\n\nconst conversations = $input.first().json.data || [];\nconst sinRespuesta = [];\n\nfor (const conv of conversations) {\n  const mensajes = conv.messages?.data || [];\n  if (mensajes.length === 0) continue;\n\n  // El primer elemento es el más reciente\n  const ultimoMsg = mensajes[0];\n  const ultimoTiempo = new Date(ultimoMsg.created_time).getTime();\n  const antiguedad = ahora - ultimoTiempo;\n\n  // Solo nos interesan conversaciones donde el ÚLTIMO mensaje\n  // es del CLIENTE (la página no ha respondido aún)\n  const esDelCliente = String(ultimoMsg.from?.id) !== String(PAGE_ID);\n\n  // Debug: lo puedes ver en el output para verificar\n  console.log(`Conv: ${conv.id} | Último from: ${ultimoMsg.from?.id} | PAGE_ID: ${PAGE_ID} | esDelCliente: ${esDelCliente} | antigüedad: ${Math.floor(antiguedad/60000)} min`);\n\n  if (esDelCliente && antiguedad >= limite) {\n    const participantes = conv.participants?.data || [];\n    const cliente = participantes.find(p => String(p.id) !== String(PAGE_ID));\n\n    sinRespuesta.push({\n      json: {\n        conversation_id: conv.id,\n        psid: cliente?.id,\n        nombre: cliente?.name || 'Cliente',\n        ultimo_mensaje: ultimoMsg.message,\n        minutos_sin_respuesta: Math.floor(antiguedad / 60000)\n      }\n    });\n  }\n}\n\nif (sinRespuesta.length === 0) return [{ json: { total: 0, skip: true } }];\nreturn sinRespuesta;"
+      },
+      "id": "151f62bd-aa84-4ddd-99a3-0150180c5f6f",
+      "name": "Filtrar Sin Respuesta +5h",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -416,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.minutos_sin_respuesta }}",
+              "rightValue": 8,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "20e19b3d-664a-41b2-848b-aebc8dae5153",
+      "name": "¿Hay mensajes pendientes?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -224,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "d6d2c952-8d8b-4837-9727-7fbce9522698",
+      "name": "Procesar uno a uno",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/me/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "recipient",
+              "value": "={{ JSON.stringify({id: $json.psid}) }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ JSON.stringify({text: 'Hola ' + $json.nombre + '! Vi que nos escribiste hace un momento. Para ayudarte mejor, ¿podrías compartirme tu número de teléfono?'}) }}"
+            },
+            {
+              "name": "access_token",
+              "value": "EAAlMlqo9IXcBRVZCjRRdA9zwn3ZC3054vPbwB5G6nzvzxMuXaNztIGYZAGCkRxOLR2YeGMV6K43vXRNbQw3fIj8AMsiIOh7loP5kY6P21ChTmTltVNcPZAfMIuzR8O6F8JdSjtddNB6UpDjpYhuKvnTeuymZCJ8tvuiikEEsFT7PDQdwBPuK5r8wtYYhMgaWREyUmnuUu9WtGZC9nLhPE1OQn1CjJj4ZB2zqAmGHa7zLo5T3qUliX3lG5jExe4v"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "32d0a6f5-ee18-4502-8798-27341addc2ad",
+      "name": "Pedir Número por Messenger",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        256,
+        -16
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Cada 1 hora": {
+      "main": [
+        [
+          {
+            "node": "Obtener Conversaciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Conversaciones": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Sin Respuesta +5h",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Sin Respuesta +5h": {
+      "main": [
+        [
+          {
+            "node": "¿Hay mensajes pendientes?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Hay mensajes pendientes?": {
+      "main": [
+        [
+          {
+            "node": "Procesar uno a uno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar uno a uno": {
+      "main": [
+        [
+          {
+            "node": "Pedir Número por Messenger",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pedir Número por Messenger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e952f069-74a6-458b-b11a-1cdec3d81fcb",
+  "meta": {
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "j4RCEjG7xPRHRu6M",
+  "tags": []
+}

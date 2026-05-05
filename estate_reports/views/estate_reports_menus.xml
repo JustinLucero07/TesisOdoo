@@ -34,6 +34,12 @@
                   action="estate_visitor_report_action"
                   sequence="30"/>
 
+        <menuitem id="estate_menu_sales_report"
+                  name="📊 Promedio de Ventas"
+                  parent="estate_menu_reports_root"
+                  action="action_estate_sales_report_wizard"
+                  sequence="40"/>
+
     <!-- 3. Sub-menú: Análisis (gráficos/pivots) — ya definido en estate_analytics_views.xml -->
     <!-- estate_menu_analytics_root con sus 7 sub-items vive en analytics_views.xml -->
 

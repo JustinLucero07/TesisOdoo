@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ACCIÓN DEL REPORTE
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="action_report_avg_sales" model="ir.actions.report">
+        <field name="name">Reporte de Promedio de Ventas</field>
+        <field name="model">estate.sales.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_avg_sales_template</field>
+        <field name="report_file">estate_reports.report_avg_sales_template</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         TEMPLATE DEL REPORTE
+    ═══════════════════════════════════════════════════════════ -->
+    <template id="report_avg_sales_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <style>
+                            .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr);
+                                        gap: 12px; margin: 16px 0; }
+                            .kpi-card { background: #F0F2F5; border-radius: 8px; padding: 16px;
+                                        text-align: center; }
+                            .kpi-value { font-size: 22pt; font-weight: bold; color: #1877F2; }
+                            .kpi-label { font-size: 9pt; color: #65676B; margin-top: 4px; }
+                            .kpi-delta { font-size: 8pt; margin-top: 6px; }
+                            .kpi-delta.up { color: #42B72A; }
+                            .kpi-delta.down { color: #E94235; }
+                            .section-title { background: #1877F2; color: white;
+                                             padding: 8px 12px; margin: 24px 0 12px;
+                                             border-radius: 4px; font-weight: bold; font-size: 12pt; }
+                            table.detail { width: 100%; border-collapse: collapse; font-size: 8pt; }
+                            table.detail th { background: #E4E6EB; padding: 6px; text-align: left; }
+                            table.detail td { padding: 5px 6px; border-bottom: 1px solid #DADDE1; }
+                        </style>
+
+                        <!-- Encabezado -->
+                        <h1 style="color: #1877F2; margin-bottom: 4px;">
+                            📊 Reporte de Promedio de Ventas
+                        </h1>
+                        <p style="color: #65676B; margin: 0 0 16px 0;">
+                            Período:
+                            <strong>
+                                <t t-set="d_from_to" t-value="o._get_period_range()"/>
+                                <span t-esc="d_from_to[0]"/> &amp;mdash; <span t-esc="d_from_to[1]"/>
+                            </strong>
+                            &amp;nbsp;·&amp;nbsp;
+                            <span t-esc="dict(o._fields['operation_type'].selection).get(o.operation_type)"/>
+                            &amp;nbsp;·&amp;nbsp;
+                            Generado por <span t-esc="user.name"/> el
+                            <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                        </p>
+
+                        <!-- Filtros aplicados -->
+                        <div style="background: #F7F8FA; padding: 8px 12px; border-radius: 4px;
+                                    margin-bottom: 16px; font-size: 9pt;">
+                            <strong>Filtros aplicados:</strong>
+                            <span t-if="o.city">Ciudad: <em t-esc="o.city"/> ·</span>
+                            <span t-if="o.property_type_ids">
+                                Tipos: <em t-esc="', '.join(o.property_type_ids.mapped('name'))"/> ·
+                            </span>
+                            <span t-if="o.user_ids">
+                                Asesores: <em t-esc="', '.join(o.user_ids.mapped('name'))"/> ·
+                            </span>
+                            <span t-if="not o.city and not o.property_type_ids and not o.user_ids">
+                                Ningún filtro adicional (todos los datos)
+                            </span>
+                        </div>
+
+                        <!-- KPI Cards -->
+                        <div class="section-title">Indicadores Clave</div>
+                        <div class="kpi-grid">
+                            <div class="kpi-card">
+                                <div class="kpi-value">
+                                    $<span t-esc="'%.0f' % o.kpi_avg_price"/>
+                                </div>
+                                <div class="kpi-label">Precio promedio</div>
+                                <div t-if="o.pct_change_avg"
+                                     t-att-class="'kpi-delta ' + ('up' if o.pct_change_avg &gt; 0 else 'down')">
+                                    <span t-if="o.pct_change_avg &gt; 0">↑</span>
+                                    <span t-if="o.pct_change_avg &lt; 0">↓</span>
+                                    <span t-esc="'%.1f%%' % abs(o.pct_change_avg)"/>
+                                    vs anterior
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-value">
+                                    <span t-esc="'%.0f' % o.kpi_avg_days"/>
+                                </div>
+                                <div class="kpi-label">Días promedio en mercado</div>
+                                <div t-if="o.pct_change_days"
+                                     t-att-class="'kpi-delta ' + ('up' if o.pct_change_days &lt; 0 else 'down')">
+                                    <span t-esc="'%.0f' % abs(o.pct_change_days)"/> días
+                                    <span t-if="o.pct_change_days &lt; 0"> menos</span>
+                                    <span t-if="o.pct_change_days &gt; 0"> más</span>
+                                </div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-value">
+                                    <span t-esc="'%.1f%%' % o.kpi_pct_vs_listed"/>
+                                </div>
+                                <div class="kpi-label">% vs precio listado</div>
+                            </div>
+                            <div class="kpi-card">
+                                <div class="kpi-value">
+                                    <span t-esc="'%.1f%%' % o.kpi_close_rate"/>
+                                </div>
+                                <div class="kpi-label">Tasa de cierre</div>
+                            </div>
+                        </div>
+
+                        <!-- Detalle estadístico -->
+                        <div class="section-title">Estadísticos</div>
+                        <table class="detail">
+                            <tr>
+                                <th>Métrica</th>
+                                <th style="text-align: right;">Valor</th>
+                            </tr>
+                            <tr>
+                                <td>Total de operaciones</td>
+                                <td style="text-align: right;"><strong t-esc="o.kpi_count"/></td>
+                            </tr>
+                            <tr>
+                                <td>Precio promedio</td>
+                                <td style="text-align: right;">
+                                    $<span t-esc="'{:,.2f}'.format(o.kpi_avg_price)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mediana de precio</td>
+                                <td style="text-align: right;">
+                                    $<span t-esc="'{:,.2f}'.format(o.kpi_median_price)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mínimo</td>
+                                <td style="text-align: right;">
+                                    $<span t-esc="'{:,.2f}'.format(o.kpi_min_price)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Máximo</td>
+                                <td style="text-align: right;">
+                                    $<span t-esc="'{:,.2f}'.format(o.kpi_max_price)"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Período anterior — promedio</td>
+                                <td style="text-align: right; color: #65676B;">
+                                    $<span t-esc="'{:,.2f}'.format(o.prev_avg_price)"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Top ciudades / asesores (si chart_data tiene info) -->
+                        <t t-if="o.chart_data and o.chart_data != '{}'">
+                            <t t-set="cd" t-value="json.loads(o.chart_data)"/>
+
+                            <div class="section-title" t-if="cd.get('top_cities')">
+                                Top Ciudades por Volumen
+                            </div>
+                            <table class="detail" t-if="cd.get('top_cities')">
+                                <tr>
+                                    <th>Ciudad</th>
+                                    <th style="text-align: right;">Volumen</th>
+                                </tr>
+                                <tr t-foreach="cd.get('top_cities', [])" t-as="row">
+                                    <td t-esc="row[0]"/>
+                                    <td style="text-align: right;">
+                                        $<span t-esc="'{:,.0f}'.format(row[1])"/>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div class="section-title" t-if="cd.get('top_users')">
+                                Ranking de Asesores
+                            </div>
+                            <table class="detail" t-if="cd.get('top_users')">
+                                <tr>
+                                    <th>Asesor</th>
+                                    <th style="text-align: right;">Volumen</th>
+                                </tr>
+                                <tr t-foreach="cd.get('top_users', [])" t-as="row">
+                                    <td t-esc="row[0]"/>
+                                    <td style="text-align: right;">
+                                        $<span t-esc="'{:,.0f}'.format(row[1])"/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

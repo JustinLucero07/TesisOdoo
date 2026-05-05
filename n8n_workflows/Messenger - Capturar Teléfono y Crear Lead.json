@@ -1,0 +1,595 @@
+{
+  "name": "Messenger - Capturar Teléfono y Crear Lead",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "psid",
+              "value": "={{ $json.body.entry[0].messaging[0].sender.id }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "mensaje",
+              "value": "={{ $json.body.entry[0].messaging[0].message?.text ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "tipo",
+              "value": "={{ $json.body.entry[0].messaging[0].message?.text ? 'text' : 'other' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1c47deab-ac3f-443b-9015-1ec8807292ba",
+      "name": "Extraer Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c0",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f41265a1-2573-4f8c-9824-1b7163db76a7",
+      "name": "¿Es texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        288,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "d94969c3-c371-4641-a8ac-ae7150bad51c",
+      "name": "Ignorar (no texto)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        512,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.psid }}",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "name"
+            },
+            {
+              "name": "access_token",
+              "value": "EAAlMlqo9IXcBRVZCjRRdA9zwn3ZC3054vPbwB5G6nzvzxMuXaNztIGYZAGCkRxOLR2YeGMV6K43vXRNbQw3fIj8AMsiIOh7loP5kY6P21ChTmTltVNcPZAfMIuzR8O6F8JdSjtddNB6UpDjpYhuKvnTeuymZCJ8tvuiikEEsFT7PDQdwBPuK5r8wtYYhMgaWREyUmnuUu9WtGZC9nLhPE1OQn1CjJj4ZB2zqAmGHa7zLo5T3qUliX3lG5jExe4v"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7a574855-8ae5-479e-9ca2-c331bcfedb33",
+      "name": "Obtener Nombre del Usuario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m1",
+              "name": "psid",
+              "value": "={{ $('Extraer Datos').item.json.psid }}",
+              "type": "string"
+            },
+            {
+              "id": "m2",
+              "name": "mensaje",
+              "value": "={{ $('Extraer Datos').item.json.mensaje }}",
+              "type": "string"
+            },
+            {
+              "id": "m3",
+              "name": "nombre",
+              "value": "={{ $json.name ?? 'Cliente Messenger' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d8fcf384-59b7-4f44-a25a-2bb1358aabe3",
+      "name": "Unir Nombre y Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const texto = $input.first().json.mensaje || '';\n\n// Regex para detectar número ecuatoriano\nconst regexTelefono = /(?:\\+?593|0)?[\\s\\-]?(?:9[0-9]{8}|[2-7][0-9]{6,7})/g;\nconst matches = texto.replace(/[()\\s\\-\\.]/g, '').match(regexTelefono);\n\nconst telefono = matches ? matches[0].replace(/[^0-9+]/g, '') : null;\n\nreturn [{\n  json: {\n    ...$input.first().json,\n    telefono_encontrado: telefono,\n    tiene_telefono: telefono !== null\n  }\n}];"
+      },
+      "id": "0b7226d7-22c2-4512-915b-cb0a1fd7ea8c",
+      "name": "Extraer Teléfono",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.tiene_telefono }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "2b8b4da7-21f9-488d-9689-a242dde6a88a",
+      "name": "¿Tiene teléfono?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1184,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/me/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "recipient",
+              "value": "={{ JSON.stringify({id: $json.psid}) }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ JSON.stringify({text: 'Perfecto ' + $json.nombre + ', ya tengo tu número guardado. Un asesor de Inmobi te va a contactar pronto.'}) }}"
+            },
+            {
+              "name": "access_token",
+              "value": "EAAlMlqo9IXcBRVZCjRRdA9zwn3ZC3054vPbwB5G6nzvzxMuXaNztIGYZAGCkRxOLR2YeGMV6K43vXRNbQw3fIj8AMsiIOh7loP5kY6P21ChTmTltVNcPZAfMIuzR8O6F8JdSjtddNB6UpDjpYhuKvnTeuymZCJ8tvuiikEEsFT7PDQdwBPuK5r8wtYYhMgaWREyUmnuUu9WtGZC9nLhPE1OQn1CjJj4ZB2zqAmGHa7zLo5T3qUliX3lG5jExe4v"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "593831dd-a6c7-47de-abb9-78aebe45502f",
+      "name": "Confirmar al Cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"tesis_odoo19\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
+        "options": {}
+      },
+      "id": "8949154d-0f87-4a7b-b314-dc8e2e8f5d2f",
+      "name": "Autenticar Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1632,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "uid1",
+              "name": "uid",
+              "value": "={{ $json.result }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8eb65f96-d1ad-44e9-b846-d55b4abb6b69",
+      "name": "Extraer UID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1856,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"tesis_odoo19\",\n      {{ $json.uid }},\n      \"admin\",\n      \"crm.lead\",\n      \"create\",\n      [{\n        \"name\": \"Messenger: {{ $('Unir Nombre y Datos').item.json.nombre }}\",\n        \"contact_name\": \"{{ $('Unir Nombre y Datos').item.json.nombre }}\",\n        \"phone\": \"{{ $('Extraer Teléfono').item.json.telefono_encontrado }}\",\n        \"type\": \"opportunity\",\n        \"stage_id\": 15,\n        \"client_needs\": \"Lead capturado desde Messenger. Mensaje: {{ $('Unir Nombre y Datos').item.json.mensaje }}\"\n      }]\n    ]\n  },\n  \"id\": 2\n}",
+        "options": {}
+      },
+      "id": "1034880b-1a93-4b12-acd1-48490b2391ca",
+      "name": "Crear Lead en Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2080,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "525e6cf5-9ee4-41a0-b697-78d828b8ff00",
+      "name": "Responder OK a Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        2304,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v19.0/me/messages",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "recipient",
+              "value": "={{ JSON.stringify({id: $json.psid}) }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ JSON.stringify({text: 'Hola ' + $json.nombre + ', gracias por escribirnos. Para poder contactarte, me podrías dar tu número de celular?'}) }}"
+            },
+            {
+              "name": "access_token",
+              "value": "EAAlMlqo9IXcBRVZCjRRdA9zwn3ZC3054vPbwB5G6nzvzxMuXaNztIGYZAGCkRxOLR2YeGMV6K43vXRNbQw3fIj8AMsiIOh7loP5kY6P21ChTmTltVNcPZAfMIuzR8O6F8JdSjtddNB6UpDjpYhuKvnTeuymZCJ8tvuiikEEsFT7PDQdwBPuK5r8wtYYhMgaWREyUmnuUu9WtGZC9nLhPE1OQn1CjJj4ZB2zqAmGHa7zLo5T3qUliX3lG5jExe4v"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a474d727-3082-4a68-9f29-46f7432764da",
+      "name": "Pedir Número",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "03f1d8d1-1692-4b58-87bf-6c42e7404b28",
+      "name": "Responder OK (pedir número)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "messenger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b7efd39c-c057-4e30-a64c-f3adc2ddc60c",
+      "name": "Webhook POST (Mensajes)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        80
+      ],
+      "webhookId": "45cfad28-c067-47ed-b6f3-12740a786bfe"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "fac2f181-a849-4de9-8ee1-8e1fca77e146",
+      "name": "Responder Verificación",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "path": "messenger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7a449f2b-cd21-4870-aef9-90a43d61e0d9",
+      "name": "Webhook GET (Verificación)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        -144
+      ],
+      "webhookId": "96c97e21-6836-4b33-9dc5-eab8731a2155"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extraer Datos": {
+      "main": [
+        [
+          {
+            "node": "¿Es texto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es texto?": {
+      "main": [
+        [
+          {
+            "node": "Obtener Nombre del Usuario",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignorar (no texto)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Nombre del Usuario": {
+      "main": [
+        [
+          {
+            "node": "Unir Nombre y Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unir Nombre y Datos": {
+      "main": [
+        [
+          {
+            "node": "Extraer Teléfono",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Teléfono": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene teléfono?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene teléfono?": {
+      "main": [
+        [
+          {
+            "node": "Confirmar al Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pedir Número",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confirmar al Cliente": {
+      "main": [
+        [
+          {
+            "node": "Autenticar Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autenticar Odoo": {
+      "main": [
+        [
+          {
+            "node": "Extraer UID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer UID": {
+      "main": [
+        [
+          {
+            "node": "Crear Lead en Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Lead en Odoo": {
+      "main": [
+        [
+          {
+            "node": "Responder OK a Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedir Número": {
+      "main": [
+        [
+          {
+            "node": "Responder OK (pedir número)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Mensajes)": {
+      "main": [
+        [
+          {
+            "node": "Extraer Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook GET (Verificación)": {
+      "main": [
+        [
+          {
+            "node": "Responder Verificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "e965d677-6ba9-461d-a10c-4ba324ac305c",
+  "meta": {
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "NRewQ4cWIo6B5UVx",
+  "tags": []
+}

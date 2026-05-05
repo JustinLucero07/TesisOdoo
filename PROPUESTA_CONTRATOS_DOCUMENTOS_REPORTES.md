@@ -372,17 +372,26 @@ estate_reports/
 - Pestaña "📂 Anexos heredados" visible solo si hay datos legados (los Binary actuales)
 - Decoraciones de filas en list view: warning para suspended/renewing, muted para renewed/cancelled
 
-### Frente 3 - Reporte de Ventas (8 tareas, 3-4 días)
+### Frente 3 - Reporte de Ventas ✅ *completado*
 ```
-[ ] R1.  Modelo estate.sales.report (TransientModel)
-[ ] R2.  Filtros: período, tipo, ciudad, asesor, operación
-[ ] R3.  Compute de los 8 KPIs (con read_group agregado)
-[ ] R4.  Comparación con período anterior
-[ ] R5.  Vista wizard con 4 tabs
-[ ] R6.  PDF QWeb template
-[ ] R7.  Export Excel xlsxwriter
-[ ] R8.  Tests: cálculo de promedios + dataset fixture + export
+[x] R1.  Modelo estate.sales.report.wizard (TransientModel) en wizards/estate_sales_report_wizard.py
+[x] R2.  Filtros: período (5 opciones), tipo M2M, ciudad, asesores M2M, operación (sale/rent/both)
+[x] R3.  9 KPIs: avg_price, avg_listed, pct_vs_listed, avg_days, median, min, max, close_rate, count
+[x] R4.  Comparación con período anterior: prev_avg_price, pct_change_avg, prev_avg_days, pct_change_days
+[x] R5.  Vista wizard con 4 tabs (Resumen, Detalle, Datos crudos, Exportar)
+[x] R6.  PDF QWeb template con KPI cards visuales + estadísticos + top ciudades/asesores
+[x] R7.  Export Excel xlsxwriter (2 hojas: KPIs + Detalle) con controlador HTTP de descarga
+[x] R8.  14 tests: cálculo correcto, filtros, period validation, chart data, export xlsx
 ```
+
+**Bonus añadidos:**
+- Banner amigable cuando no hay datos en el período
+- Botón "Ver propiedades del período" que abre la lista filtrada
+- Filtros aplicados visibles en el PDF (ciudad, tipos, asesores)
+- KPI cards con flecha ↑/↓ y % de cambio vs período anterior
+- Datos chart_data agregados (top cities, top users, types) listos para gráficos
+- Mensaje de error claro si xlsxwriter no está instalado
+- Pestaña "Datos crudos" oculta para usuarios normales (solo dev mode)
 
 ---
 

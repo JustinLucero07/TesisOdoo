@@ -1,0 +1,144 @@
+{
+    "name": "Messenger - Extractor de Leads Directo",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 10
+                        }
+                    ]
+                }
+            },
+            "id": "trigger-id",
+            "name": "Cada 10 minutos",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                400,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://graph.facebook.com/v19.0/me/conversations",
+                "sendQuery": true,
+                "queryParameters": {
+                    "parameters": [
+                        {
+                            "name": "fields",
+                            "value": "messages.limit(1){message,from,created_time},participants"
+                        },
+                        {
+                            "name": "access_token",
+                            "value": "TU_TOKEN_AQUÍ"
+                        }
+                    ]
+                }
+            },
+            "id": "get-convs",
+            "name": "Obtener Conversaciones",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                620,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "const PAGE_ID = '1589374304639993'; // Tu ID de página\nconst conversations = $input.first().json.data || [];\nconst leadsEncontrados = [];\n\nfor (const conv of conversations) {\n  const mensajes = conv.messages?.data || [];\n  if (mensajes.length === 0) continue;\n\n  const ultimoMsg = mensajes[0];\n  const texto = ultimoMsg.message || '';\n  \n  // Regex para teléfono\n  const regexTelefono = /(?:\\+?593|0)?[\\s\\-]?(?:9[0-9]{8}|[2-7][0-9]{6,7})/g;\n  const matches = texto.replace(/[()\\s\\-\\.]/g, '').match(regexTelefono);\n\n  if (matches) {\n    const participantes = conv.participants?.data || [];\n    const cliente = participantes.find(p => String(p.id) !== String(PAGE_ID));\n    \n    leadsEncontrados.push({\n      json: {\n        psid: cliente?.id,\n        nombre: cliente?.name || 'Cliente Messenger',\n        telefono: matches[0],\n        mensaje_original: texto,\n        conversation_id: conv.id\n      }\n    });\n  }\n}\n\nreturn leadsEncontrados;"
+            },
+            "id": "extract-code",
+            "name": "Buscar Teléfonos en Mensajes",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                840,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://127.0.0.1:8070/jsonrpc",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"tesis_odoo19\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}"
+            },
+            "id": "odoo-auth",
+            "name": "Autenticar Odoo",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1060,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "http://127.0.0.1:8070/jsonrpc",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"tesis_odoo19\",\n      {{ $json.result }},\n      \"admin\",\n      \"crm.lead\",\n      \"create\",\n      [{\n        \"name\": \"Lead API: {{ $('Buscar Teléfonos en Mensajes').item.json.nombre }}\",\n        \"contact_name\": \"{{ $('Buscar Teléfonos en Mensajes').item.json.nombre }}\",\n        \"phone\": \"{{ $('Buscar Teléfonos en Mensajes').item.json.telefono }}\",\n        \"type\": \"opportunity\",\n        \"client_needs\": \"Capturado vía API directa. Mensaje: {{ $('Buscar Teléfonos en Mensajes').item.json.mensaje_original }}\"\n      }]\n    ]\n  },\n  \"id\": 2\n}"
+            },
+            "id": "odoo-create",
+            "name": "Crear Lead en Odoo",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                1280,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Cada 10 minutos": {
+            "main": [
+                [
+                    {
+                        "node": "Obtener Conversaciones",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Obtener Conversaciones": {
+            "main": [
+                [
+                    {
+                        "node": "Buscar Teléfonos en Mensajes",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Buscar Teléfonos en Mensajes": {
+            "main": [
+                [
+                    {
+                        "node": "Autenticar Odoo",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Autenticar Odoo": {
+            "main": [
+                [
+                    {
+                        "node": "Crear Lead en Odoo",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}
