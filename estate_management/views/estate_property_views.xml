@@ -24,6 +24,8 @@
                        decoration-danger="avm_status == 'low'"/>
                 <field name="sold_by" optional="hide"/>
                 <field name="contract_end_date" optional="hide"/>
+                <field name="wp_published" string="WP" optional="show" widget="boolean"
+                       decoration-success="wp_published == True"/>
                 <field name="state" widget="badge" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-info="state == 'rented'" decoration-warning="state == 'reserved'"/>
             </list>
         </field>
@@ -324,6 +326,9 @@
                 <filter name="filter_sale" string="En Venta" domain="[('offer_type', '=', 'sale')]"/>
                 <filter name="filter_rent" string="En Arriendo" domain="[('offer_type', '=', 'rent')]"/>
                 <separator/>
+                <filter name="filter_wp_linked" string="🔗 Enlazadas con WordPress" domain="[('wp_published', '=', True)]"/>
+                <filter name="filter_wp_unlinked" string="⛓️‍💥 Desvinculadas de WordPress" domain="[('wp_unlinked', '=', True)]"/>
+                <filter name="filter_wp_never" string="🌐 Sin publicar en WordPress" domain="[('wp_published', '=', False), ('wp_unlinked', '=', False)]"/>
                 <group>
                     <filter name="group_type" string="Tipo" context="{'group_by': 'property_type_id'}"/>
                     <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>

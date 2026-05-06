@@ -55,6 +55,23 @@ WP_CITY_TO_ODOO = {
 }
 
 
+class EstateWordpressImportLine(models.TransientModel):
+    _name = 'estate.wordpress.import.line'
+    _description = 'Línea de Preview de Importación WordPress'
+
+    wizard_id = fields.Many2one('estate.wordpress.import.wizard', ondelete='cascade')
+    selected = fields.Boolean('Importar', default=True)
+    wp_post_id = fields.Integer('Post ID')
+    title = fields.Char('Título')
+    price = fields.Float('Precio')
+    area = fields.Float('Área m²')
+    bedrooms = fields.Integer('Habitaciones')
+    city = fields.Char('Ciudad')
+    status = fields.Char('Estado WP')
+    already_exists = fields.Boolean('Ya existe en Odoo')
+    odoo_property_id = fields.Many2one('estate.property', string='Propiedad en Odoo')
+
+
 class EstateWordpressImportWizard(models.TransientModel):
     _name = 'estate.wordpress.import.wizard'
     _description = 'Importar Propiedades desde WordPress'
@@ -73,8 +90,14 @@ class EstateWordpressImportWizard(models.TransientModel):
     # --- Estado del wizard ---
     import_state = fields.Selection([
         ('draft', 'Configuración'),
+        ('preview', 'Selección'),
         ('done', 'Completado'),
     ], default='draft', string='Estado')
+
+    # --- Preview lines ---
+    preview_line_ids = fields.One2many(
+        'estate.wordpress.import.line', 'wizard_id', string='Propiedades encontradas')
+    preview_total = fields.Integer('Total encontradas', readonly=True)
 
     # --- Resultados ---
     imported_count = fields.Integer('Importadas', readonly=True)
@@ -192,13 +215,17 @@ class EstateWordpressImportWizard(models.TransientModel):
         Obtiene TODOS los custom fields de un post via WordPress XML-RPC.
         XML-RPC está activo por defecto en WordPress y devuelve todos los meta
         sin necesidad de register_meta() — a diferencia de la REST API.
+
+        NOTA: XML-RPC usa usuario+contraseña directamente (no JWT).
+        Por eso leemos las credenciales desde ICP, sin depender de cfg['auth'].
         """
-        if not cfg.get('auth'):
-            return {}
         try:
             from xmlrpc.client import ServerProxy
-            user, pwd = cfg['auth']
+            ICP = self.env['ir.config_parameter'].sudo()
+            user = ICP.get_param('estate_wp.username', '')
+            pwd = ICP.get_param('estate_wp.app_password', '')
             if not user or not pwd:
+                _logger.debug("XML-RPC: sin credenciales configuradas, saltando.")
                 return {}
 
             xmlrpc_url = f"{cfg['url']}/xmlrpc.php"
@@ -215,11 +242,14 @@ class EstateWordpressImportWizard(models.TransientModel):
                     meta[key] = val
 
             _logger.info(
-                "XML-RPC: post %s → %d custom fields obtenidos",
-                wp_post_id, len(meta))
+                "XML-RPC: post %s → %d custom fields obtenidos (price=%s, size=%s, beds=%s)",
+                wp_post_id, len(meta),
+                meta.get('fave_property_price', '?'),
+                meta.get('fave_property_size', '?'),
+                meta.get('fave_property_bedrooms', '?'))
             return meta
         except Exception as e:
-            _logger.debug("XML-RPC meta fetch falló para post %s: %s", wp_post_id, e)
+            _logger.warning("XML-RPC meta fetch falló para post %s: %s", wp_post_id, e)
             return {}
 
     def _fetch_single_post_meta(self, cfg, wp_post_id):
@@ -255,7 +285,29 @@ class EstateWordpressImportWizard(models.TransientModel):
             if _has_key_data():
                 return combined
 
-        # === Estrategia 2: Endpoint custom odoo-houzez (el MISMO que usamos para GUARDAR) ===
+        # === Estrategia 2: Plugin odoo-meta-reader (GET, lee TODOS los meta) ===
+        try:
+            meta_url = f"{cfg['url']}/wp-json/odoo-meta/v1/read/{wp_post_id}"
+            resp = requests.get(
+                meta_url, auth=cfg['auth'], headers=cfg['headers'], timeout=15)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, dict):
+                    for k, v in data.items():
+                        if v not in (None, '', []):
+                            combined.setdefault(k, v)
+                    _logger.info(
+                        "Import meta post %s — odoo-meta-reader: %d campos. price=%s, size=%s, beds=%s",
+                        wp_post_id, len(data),
+                        combined.get('fave_property_price', '?'),
+                        combined.get('fave_property_size', '?'),
+                        combined.get('fave_property_bedrooms', '?'))
+                    if _has_key_data():
+                        return combined
+        except Exception as e:
+            _logger.debug("odoo-meta-reader endpoint no disponible para post %s: %s", wp_post_id, e)
+
+        # === Estrategia 3: Endpoint custom odoo-houzez (el MISMO que usamos para GUARDAR) ===
         try:
             meta_url = f"{cfg['url']}/wp-json/odoo-houzez/v1/meta/{wp_post_id}"
             resp = requests.get(
@@ -263,7 +315,6 @@ class EstateWordpressImportWizard(models.TransientModel):
             if resp.status_code == 200:
                 data = resp.json()
                 if isinstance(data, dict):
-                    # El endpoint puede devolver los meta directamente o bajo una clave
                     meta_data = data.get('meta', data)
                     if isinstance(meta_data, dict):
                         for k, v in meta_data.items():
@@ -744,8 +795,8 @@ class EstateWordpressImportWizard(models.TransientModel):
     # ACCIÓN PRINCIPAL
     # =========================================================================
 
-    def action_import(self):
-        """Importa propiedades desde WordPress y crea/actualiza registros en Odoo."""
+    def action_preview(self):
+        """Paso 1: Busca propiedades en WordPress y las muestra para selección."""
         self.ensure_one()
         cfg = self._get_wp_cfg()
 
@@ -754,37 +805,166 @@ class EstateWordpressImportWizard(models.TransientModel):
                 'La integración WordPress no está activa.\n'
                 'Actívala en Ajustes → Integración WordPress.')
         if not cfg['url']:
-            raise UserError('Falta configurar la URL de WordPress en Ajustes → Integración WordPress.')
+            raise UserError('Falta configurar la URL de WordPress.')
 
         wp_props = self._fetch_all_wp_properties(cfg)
         if not wp_props:
             raise UserError(
                 'No se encontraron propiedades en WordPress.\n'
-                'Verifica la URL, credenciales y que el post type sea correcto.')
+                'Verifica la URL, credenciales y post type.')
 
-        Property = self.env['estate.property'].with_context(no_wp_sync=True)
-        imported = updated = skipped = 0
-        errors = []
+        # Limpiar líneas anteriores
+        self.preview_line_ids.unlink()
+
+        Property = self.env['estate.property']
+        lines = []
 
         for wp_prop in wp_props:
             wp_id = wp_prop.get('id', 0)
             raw_title = wp_prop.get('title', {}).get('rendered', f'Post {wp_id}')
-            display_title = re.sub(r'<[^>]+>', '', raw_title).strip()
+            title = re.sub(r'<[^>]+>', '', raw_title).strip() or 'Sin título'
 
+            # Obtener meta — intentar endpoint GET primero, luego REST rápido
+            meta = wp_prop.get('meta', {}) or {}
+            acf = wp_prop.get('acf', {}) or {}
+
+            # Intentar endpoint GET para tener datos reales en el preview
+            try:
+                meta_url = f"{cfg['url']}/wp-json/odoo-houzez/v1/meta/{wp_id}"
+                resp = requests.get(
+                    meta_url, auth=cfg['auth'], headers=cfg['headers'], timeout=10)
+                if resp.status_code == 200:
+                    extra = resp.json()
+                    if isinstance(extra, dict):
+                        meta.update(extra)
+                        _logger.info("Preview: post %s meta GET OK, %d campos", wp_id, len(extra))
+            except Exception:
+                pass
+
+            price = self._safe_float(
+                meta.get('fave_property_price') or acf.get('fave_property_price'))
+            area = self._safe_float(
+                meta.get('fave_property_size') or acf.get('fave_property_size'))
+            beds = self._safe_int(
+                meta.get('fave_property_bedrooms') or acf.get('fave_property_bedrooms'))
+
+            # Extraer ciudad desde taxonomías
+            city = ''
+            city_ids = self._get_taxonomy_term_ids(wp_prop, 'property-city')
+            for tid in city_ids:
+                city = WP_CITY_TO_ODOO.get(tid, '')
+                if city:
+                    break
+            if not city:
+                city_names = self._get_taxonomy_term_names(wp_prop, 'property-city')
+                city = city_names[0] if city_names else ''
+
+            # Status
+            status = wp_prop.get('status', 'publish')
+
+            # ¿Ya existe en Odoo?
+            existing = Property.search([('wp_post_id', '=', wp_id)], limit=1) if wp_id else False
+
+            lines.append({
+                'wizard_id': self.id,
+                'selected': not bool(existing),  # Desmarcar las que ya existen
+                'wp_post_id': wp_id,
+                'title': title[:200],
+                'price': price,
+                'area': area,
+                'bedrooms': beds,
+                'city': city,
+                'status': status,
+                'already_exists': bool(existing),
+                'odoo_property_id': existing.id if existing else False,
+            })
+
+        self.env['estate.wordpress.import.line'].create(lines)
+
+        self.write({
+            'import_state': 'preview',
+            'preview_total': len(lines),
+        })
+
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.wordpress.import.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_select_all(self):
+        """Marcar todas las líneas como seleccionadas."""
+        self.preview_line_ids.write({'selected': True})
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_select_none(self):
+        """Desmarcar todas las líneas."""
+        self.preview_line_ids.write({'selected': False})
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_select_new_only(self):
+        """Seleccionar solo las que NO existen en Odoo."""
+        for line in self.preview_line_ids:
+            line.selected = not line.already_exists
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_import(self):
+        """Paso 2: Importa las propiedades SELECCIONADAS desde WordPress."""
+        self.ensure_one()
+        cfg = self._get_wp_cfg()
+
+        selected_lines = self.preview_line_ids.filtered('selected')
+        if not selected_lines:
+            raise UserError('No seleccionaste ninguna propiedad para importar.')
+
+        # Necesitamos re-fetch los datos completos de WP para cada propiedad seleccionada
+        Property = self.env['estate.property'].with_context(no_wp_sync=True)
+        imported = updated = skipped = 0
+        errors = []
+
+        for line in selected_lines:
+            wp_id = line.wp_post_id
             try:
                 with self.env.cr.savepoint():
-                    # Siempre enriquecer con meta individual (XML-RPC garantiza todos los campos)
-                    extra_meta = self._fetch_single_post_meta(cfg, wp_id) if wp_id else {}
+                    # Fetch del post individual con embed
+                    post_type = cfg['post_type']
+                    api_url = f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_id}"
+                    resp = requests.get(
+                        api_url,
+                        params={'_embed': 1, 'context': 'edit'},
+                        auth=cfg['auth'], headers=cfg['headers'], timeout=30)
+
+                    if resp.status_code != 200:
+                        errors.append(f"[{line.title}]: HTTP {resp.status_code}")
+                        continue
+
+                    wp_prop = resp.json()
+
+                    # Fetch meta completo (XML-RPC + cascada)
+                    extra_meta = self._fetch_single_post_meta(cfg, wp_id)
                     vals = self._map_wp_to_vals(wp_prop, extra_meta)
 
-                    # Log de depuración para campos numéricos
-                    if vals.get('price') == 0:
-                        _logger.info("Importación: [%s] El precio resultó en 0. Revisar metadatos.", display_title)
-
-                    existing = (
-                        Property.search([('wp_post_id', '=', wp_id)], limit=1)
-                        if wp_id else False
-                    )
+                    existing = Property.search([('wp_post_id', '=', wp_id)], limit=1) if wp_id else False
 
                     if existing and not self.update_existing:
                         skipped += 1
@@ -802,7 +982,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                         self._import_images_for_property(prop, wp_prop, cfg)
 
             except Exception as e:
-                errors.append(f"[{display_title}]: {str(e)}")
+                errors.append(f"[{line.title}]: {str(e)}")
                 _logger.error(f"Error importando WP post {wp_id}: {e}", exc_info=True)
 
         self.write({
@@ -813,7 +993,6 @@ class EstateWordpressImportWizard(models.TransientModel):
             'error_log': '\n'.join(errors) if errors else False,
         })
 
-        # Reabrir el wizard para mostrar resultados
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'estate.wordpress.import.wizard',
@@ -832,3 +1011,4 @@ class EstateWordpressImportWizard(models.TransientModel):
             'domain': [('wp_published', '=', True)],
             'target': 'current',
         }
+

@@ -537,14 +537,145 @@ class EstatePropertyWordPress(models.Model):
         }
 
     def action_unlink_wordpress(self):
-        """Desvincula la propiedad de WordPress en Odoo sin borrar el post en el sitio remoto."""
+        """Desvincula la propiedad de WordPress en Odoo sin borrar el post en el sitio remoto.
+        Guarda el Post ID en backup para poder re-enlazar después."""
         self.ensure_one()
+        backup_id = self.wp_post_id or 0
         self.write({
             'wp_published': False,
-            'wp_post_id': 0
+            'wp_post_id': 0,
+            'wp_post_id_backup': backup_id if backup_id else self.wp_post_id_backup,
+            'wp_unlinked': True,
         })
         return self._show_notification(
-            'Propiedad Desvinculada', 
-            'Se ha quitado el vínculo con WordPress. El post sigue existiendo en tu sitio web.'
+            '⛓️‍💥 Propiedad Desvinculada',
+            f'Se ha quitado el vínculo con WordPress. El post (ID: {backup_id}) sigue existiendo en tu sitio web. '
+            f'Puedes re-enlazar esta propiedad en cualquier momento desde el botón "Re-enlazar".'
         )
 
+    def action_relink_wordpress(self):
+        """Restaura el vínculo con WordPress usando el Post ID guardado en backup."""
+        self.ensure_one()
+        if not self.wp_post_id_backup:
+            return self._show_notification(
+                '⚠️ Sin referencia',
+                'No hay Post ID de WordPress guardado. Usa el botón "Enlazar Manualmente" para vincular con un post específico.')
+
+        # Verificar que el post aún existe en WordPress
+        cfg = self._get_wp_config()
+        post_exists = False
+        post_title = ''
+        try:
+            api_url = f"{cfg['url']}/wp-json/wp/v2/{cfg['post_type']}/{self.wp_post_id_backup}"
+            headers = dict(cfg['headers'])
+            resp = __import__('requests').get(
+                api_url, auth=cfg['auth'], headers=headers, timeout=15)
+            if resp.status_code == 200:
+                post_exists = True
+                data = resp.json()
+                post_title = data.get('title', {}).get('rendered', '')
+        except Exception as e:
+            _logger.warning(f"WP relink check failed: {e}")
+
+        self.write({
+            'wp_post_id': self.wp_post_id_backup,
+            'wp_published': True,
+            'wp_unlinked': False,
+        })
+
+        if post_exists:
+            msg = f'Propiedad re-enlazada al post WordPress ID: {self.wp_post_id_backup}'
+            if post_title:
+                msg += f' ("{post_title}")'
+            msg += '. No se modificó nada en WordPress.'
+        else:
+            msg = (f'Se restauró el enlace al Post ID {self.wp_post_id_backup}, '
+                   f'pero no se pudo verificar que el post aún existe en WordPress. '
+                   f'Verifica manualmente en tu sitio.')
+
+        return self._show_notification('🔗 Re-enlazado a WordPress', msg)
+
+    def action_pull_from_wordpress(self):
+        """Trae los datos actuales desde WordPress y actualiza esta propiedad en Odoo.
+        NO modifica nada en WordPress — solo lee y actualiza Odoo."""
+        self.ensure_one()
+
+        if not self.wp_post_id:
+            return self._show_notification(
+                '⚠️ Sin enlace',
+                'Esta propiedad no está enlazada a un post de WordPress.')
+
+        cfg = self._get_wp_config()
+        if cfg['active'] != 'True':
+            return self._show_notification(
+                '⚠️ Integración desactivada', 'Activar en Ajustes → WordPress')
+
+        try:
+            # Usar el wizard de importación para aprovechar la cascada de meta
+            ImportWizard = self.env['estate.wordpress.import.wizard']
+            wizard = ImportWizard.create({'max_properties': 1})
+
+            # Fetch post data desde la REST API
+            post_type = cfg['post_type']
+            api_url = f"{cfg['url']}/wp-json/wp/v2/{post_type}/{self.wp_post_id}"
+            params = {'_embed': 1, 'context': 'edit'}
+            resp = __import__('requests').get(
+                api_url, params=params,
+                auth=cfg['auth'], headers=cfg['headers'], timeout=30)
+
+            if resp.status_code != 200:
+                return self._show_notification(
+                    '❌ Error al leer WordPress',
+                    f'No se pudo obtener el post ID {self.wp_post_id}. Código: {resp.status_code}')
+
+            wp_prop = resp.json()
+
+            # Obtener meta completo usando la cascada de estrategias
+            extra_meta = wizard._fetch_single_post_meta(cfg, self.wp_post_id)
+
+            # Mapear a vals de Odoo
+            vals = wizard._map_wp_to_vals(wp_prop, extra_meta)
+
+            # Preservar campos de enlace WP (no sobrescribir)
+            vals.pop('wp_post_id', None)
+            vals.pop('wp_published', None)
+
+            # Registrar qué cambió para el chatter
+            changes = []
+            field_labels = {
+                'price': 'Precio', 'area': 'Área', 'bedrooms': 'Habitaciones',
+                'bathrooms': 'Baños', 'parking_spaces': 'Parqueaderos',
+                'street': 'Dirección', 'city': 'Ciudad', 'title': 'Título',
+            }
+            for key, label in field_labels.items():
+                old_val = getattr(self, key, None)
+                new_val = vals.get(key)
+                if new_val is not None and str(old_val) != str(new_val):
+                    if isinstance(old_val, float) and isinstance(new_val, float):
+                        if abs(old_val - new_val) < 0.01:
+                            continue
+                    changes.append(f"• {label}: {old_val} → {new_val}")
+
+            if not changes:
+                return self._show_notification(
+                    '✅ Sin cambios',
+                    'Los datos de WordPress coinciden con los de Odoo. No se actualizó nada.')
+
+            # Aplicar cambios con contexto no_wp_sync para evitar loop infinito
+            self.with_context(no_wp_sync=True).write(vals)
+
+            # Registrar en chatter
+            change_text = '\n'.join(changes)
+            self.message_post(
+                body=f'<p><strong>📥 Datos actualizados desde WordPress (Post ID: {self.wp_post_id})</strong></p>'
+                     f'<pre>{change_text}</pre>',
+                message_type='notification',
+            )
+
+            return self._show_notification(
+                '📥 Datos traídos de WordPress',
+                f'Se actualizaron {len(changes)} campo(s) desde WordPress:\n' + '\n'.join(changes[:5]))
+
+        except Exception as e:
+            _logger.error(f"WordPress pull error: {str(e)}")
+            return self._show_notification('❌ Error de conexión', str(e))

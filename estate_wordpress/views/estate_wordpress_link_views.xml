@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ============================================================ -->
+        <!-- Wizard: Enlazar Propiedad con WordPress                      -->
+        <!-- ============================================================ -->
+        <record id="estate_wp_link_wizard_view_form" model="ir.ui.view">
+            <field name="name">estate.wordpress.link.wizard.form</field>
+            <field name="model">estate.wordpress.link.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Enlazar Propiedad con WordPress">
+
+                    <!-- ======= PASO 1: SELECCIÓN ======= -->
+                    <group invisible="wizard_state != 'select'">
+                        <group string="🔗 Vincular Propiedad Existente">
+                            <field name="property_id"
+                                   options="{'no_create': True}"
+                                   placeholder="Buscar propiedad por título o referencia..."/>
+                            <field name="wp_post_id"
+                                   placeholder="Ej: 1234"/>
+                        </group>
+                        <group string="Información">
+                            <div class="text-muted">
+                                <p>
+                                    Este asistente vincula una propiedad <b>que ya existe en Odoo</b>
+                                    con un post <b>que ya existe en WordPress</b>.
+                                </p>
+                                <p>
+                                    <b>¿Dónde encuentro el Post ID?</b><br/>
+                                    En WordPress, edita la propiedad. La URL contendrá
+                                    <code>?post=1234</code> — ese número (1234) es el Post ID.
+                                </p>
+                                <p class="text-info">
+                                    <i class="fa fa-shield"/> Este proceso <b>NO modifica nada</b>
+                                    en WordPress. Solo marca la relación en Odoo.
+                                </p>
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- ======= PASO 2: PREVIEW Y COMPARACIÓN ======= -->
+                    <group invisible="wizard_state != 'preview'">
+                        <group string="📊 Comparación: Odoo vs WordPress" col="3">
+                            <separator string="Campo" colspan="1"/>
+                            <separator string="Odoo" colspan="1"/>
+                            <separator string="WordPress" colspan="1"/>
+
+                            <span>Título</span>
+                            <field name="odoo_title" nolabel="1"/>
+                            <field name="wp_title" nolabel="1"/>
+
+                            <span>Precio</span>
+                            <field name="odoo_price" nolabel="1" widget="monetary"/>
+                            <field name="wp_price" nolabel="1" widget="monetary"/>
+
+                            <span>Área (m²)</span>
+                            <field name="odoo_area" nolabel="1"/>
+                            <field name="wp_area" nolabel="1"/>
+
+                            <span>Habitaciones</span>
+                            <field name="odoo_bedrooms" nolabel="1"/>
+                            <field name="wp_bedrooms" nolabel="1"/>
+                        </group>
+
+                        <group string="Opciones de Enlace">
+                            <field name="sync_data" widget="radio"/>
+                            <div class="text-muted small mt-2">
+                                <p><b>Solo vincular:</b> Marca la relación Odoo ↔ WP sin cambiar datos de la propiedad en Odoo.</p>
+                                <p><b>Vincular + Importar:</b> Además actualiza los datos de Odoo con los valores actuales de WordPress (precio, área, habitaciones, etc.).</p>
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- ======= PASO 3: RESULTADO ======= -->
+                    <group invisible="wizard_state != 'done'">
+                        <group string="✅ Enlace Completado">
+                            <field name="result_message" nolabel="1" widget="text" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Campo oculto de estado -->
+                    <field name="wizard_state" invisible="1"/>
+                    <field name="wp_preview_loaded" invisible="1"/>
+                    <field name="wp_status" invisible="1"/>
+
+                    <footer>
+                        <!-- Paso 1: Buscar -->
+                        <button name="action_preview"
+                                string="🔍 Buscar en WordPress"
+                                type="object"
+                                class="btn-primary"
+                                invisible="wizard_state != 'select'"/>
+                        <button string="Cancelar"
+                                class="btn-secondary"
+                                special="cancel"
+                                invisible="wizard_state != 'select'"/>
+
+                        <!-- Paso 2: Enlazar -->
+                        <button name="action_link"
+                                string="🔗 Enlazar"
+                                type="object"
+                                class="btn-primary"
+                                invisible="wizard_state != 'preview'"/>
+                        <button name="action_back_to_select"
+                                string="← Volver"
+                                type="object"
+                                class="btn-secondary"
+                                invisible="wizard_state != 'preview'"/>
+
+                        <!-- Paso 3: Cerrar -->
+                        <button string="Cerrar"
+                                class="btn-primary"
+                                special="cancel"
+                                invisible="wizard_state != 'done'"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Acción para abrir el wizard de enlace -->
+        <record id="action_estate_wp_link_wizard" model="ir.actions.act_window">
+            <field name="name">Enlazar con WordPress</field>
+            <field name="res_model">estate.wordpress.link.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

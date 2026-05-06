@@ -17,6 +17,7 @@
         'security/ir.model.access.csv',
         'views/estate_wordpress_config_views.xml',
         'views/estate_wordpress_import_views.xml',
+        'views/estate_wordpress_link_views.xml',
         'views/estate_wordpress_menus.xml',
         'views/res_users_views.xml',
     ],

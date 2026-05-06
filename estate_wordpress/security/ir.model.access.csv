@@ -2,3 +2,5 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_estate_wp_agent,access.estate.wp.agent,model_estate_wp_agent,estate_management.estate_group_agent,1,1,1,0
 access_estate_wp_agent_manager,access.estate.wp.agent.manager,model_estate_wp_agent,estate_management.estate_group_manager,1,1,1,1
 access_estate_wp_import_wizard,access.estate.wordpress.import.wizard,model_estate_wordpress_import_wizard,estate_management.estate_group_manager,1,1,1,1
+access_estate_wp_import_line,access.estate.wordpress.import.line,model_estate_wordpress_import_line,estate_management.estate_group_manager,1,1,1,1
+access_estate_wp_link_wizard,access.estate.wordpress.link.wizard,model_estate_wordpress_link_wizard,estate_management.estate_group_manager,1,1,1,1

@@ -9,7 +9,7 @@
             <field name="arch" type="xml">
                 <xpath expr="//form" position="inside">
                     <app data-string="Integración WordPress" string="Integración WordPress" name="estate_wordpress">
-                        <block title="Importar desde WordPress" name="wp_import">
+                        <block title="Importar / Enlazar desde WordPress" name="wp_import">
                             <setting string="Importar Catálogo" help="Trae todas las propiedades publicadas en WordPress a Odoo, incluyendo imágenes y datos completos.">
                                 <div>
                                     <p class="text-muted small mb-2">
@@ -20,6 +20,18 @@
                                             string="Importar Propiedades desde WordPress"
                                             type="object"
                                             class="btn-primary"/>
+                                </div>
+                            </setting>
+                            <setting string="Enlazar Manualmente" help="Vincula una propiedad existente en Odoo con un post existente en WordPress, sin duplicar ni modificar datos.">
+                                <div>
+                                    <p class="text-muted small mb-2">
+                                        Si ya tienes una propiedad en Odoo y otra en WordPress que son la misma,
+                                        usa este asistente para vincularlas sin perder datos.
+                                    </p>
+                                    <button name="action_open_wp_link_wizard"
+                                            string="🔗 Enlazar Propiedad con WordPress"
+                                            type="object"
+                                            class="btn-secondary"/>
                                 </div>
                             </setting>
                         </block>
@@ -92,12 +104,58 @@
             <field name="model">estate.property</field>
             <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
             <field name="arch" type="xml">
+                <!-- Botones en el header -->
                 <xpath expr="//header/button[@name='action_set_available']" position="before">
-                    <button name="action_publish_wordpress" string=" Publicar en WordPress" type="object" class="btn-secondary" invisible="wp_published == True"/>
-                    <button name="action_unlink_wordpress" string=" Desvincular (sin borrar en WP)" type="object" class="btn-link" invisible="wp_published != True"/>
-                    <button name="action_unpublish_wordpress" string=" Quitar de WordPress" type="object" class="btn-secondary" invisible="wp_published != True"/>
+                    <!-- Publicar: solo si NO está publicada -->
+                    <button name="action_publish_wordpress" string="📤 Publicar en WordPress" type="object" class="btn-secondary" invisible="wp_published == True"/>
+                    <!-- Re-enlazar: solo si fue desvinculada y tiene backup -->
+                    <button name="action_relink_wordpress" string="🔗 Re-enlazar a WordPress" type="object" class="btn-warning" invisible="wp_unlinked != True or wp_post_id_backup == 0"/>
+                    <!-- Traer datos de WP: solo si está publicada -->
+                    <button name="action_pull_from_wordpress" string="📥 Traer datos de WordPress" type="object" class="btn-info" invisible="wp_published != True"/>
+                    <!-- Desvincular: solo si está publicada -->
+                    <button name="action_unlink_wordpress" string="⛓️‍💥 Desvincular (sin borrar en WP)" type="object" class="btn-link" invisible="wp_published != True"/>
+                    <!-- Quitar de WP: solo si está publicada -->
+                    <button name="action_unpublish_wordpress" string="🗑️ Quitar de WordPress" type="object" class="btn-secondary" invisible="wp_published != True"
+                            confirm="¿Estás seguro? Esto ELIMINARÁ la propiedad de tu sitio WordPress. La propiedad se mantendrá en Odoo pero desaparecerá del sitio web."/>
+                </xpath>
+
+                <!-- Mejorar pestaña WordPress -->
+                <xpath expr="//page[@name='wordpress']" position="replace">
+                    <page string="WordPress" name="wordpress">
+                        <!-- Estado de enlace visual -->
+                        <div class="alert alert-success mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;"
+                             invisible="wp_published != True">
+                            <i class="fa fa-link" title="Enlazada"/> <strong>Enlazada con WordPress</strong> —
+                            Post ID: <field name="wp_post_id" readonly="1" class="d-inline"/>
+                        </div>
+                        <div class="alert alert-warning mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;"
+                             invisible="wp_unlinked != True">
+                            <i class="fa fa-chain-broken" title="Desvinculada"/> <strong>Desvinculada</strong> —
+                            Post ID original: <field name="wp_post_id_backup" readonly="1" class="d-inline"/>
+                            — Puedes re-enlazar desde el botón del header.
+                        </div>
+                        <div class="alert alert-secondary mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;"
+                             invisible="wp_published == True or wp_unlinked == True">
+                            <i class="fa fa-globe" title="Sin enlazar"/> <strong>Sin enlazar</strong> —
+                            Publica esta propiedad o enlázala manualmente a un post existente.
+                        </div>
+                        <group>
+                            <group string="Enlace Actual">
+                                <field name="wp_published" readonly="1"/>
+                                <field name="wp_post_id" readonly="1"/>
+                            </group>
+                            <group string="Historial de Enlace">
+                                <field name="wp_post_id_backup" readonly="1" invisible="wp_post_id_backup == 0"/>
+                                <field name="wp_unlinked" readonly="1"/>
+                            </group>
+                        </group>
+                    </page>
                 </xpath>
             </field>
         </record>
     </data>
 </odoo>
+

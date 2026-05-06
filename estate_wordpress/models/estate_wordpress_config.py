@@ -155,6 +155,17 @@ class EstateWordPressConfig(models.TransientModel):
             'target': 'new',
         }
 
+    def action_open_wp_link_wizard(self):
+        """Abre el wizard para enlazar manualmente una propiedad con WordPress."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Enlazar Propiedad con WordPress',
+            'res_model': 'estate.wordpress.link.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+
     def _msg(self, title, message):
         return {
             'type': 'ir.actions.client',

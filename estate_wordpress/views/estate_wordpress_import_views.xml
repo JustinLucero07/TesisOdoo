@@ -11,7 +11,7 @@
             <field name="arch" type="xml">
                 <form string="Importar Propiedades desde WordPress">
 
-                    <!-- ======= PANTALLA CONFIGURACIÓN ======= -->
+                    <!-- ======= PASO 1: CONFIGURACIÓN ======= -->
                     <group invisible="import_state != 'draft'">
                         <group string="Opciones de Importación">
                             <field name="max_properties"/>
@@ -28,8 +28,8 @@
                                     y descargará las propiedades via REST API.
                                 </p>
                                 <p>
-                                    Las propiedades nuevas se crearán en
-                                    <b>Inmobiliaria → Propiedades</b>.
+                                    En el siguiente paso podrás <b>seleccionar</b>
+                                    cuáles propiedades importar.
                                 </p>
                                 <p class="text-warning">
                                     Si activas <b>Importar Imágenes</b>, el proceso puede tardar
@@ -39,7 +39,40 @@
                         </group>
                     </group>
 
-                    <!-- ======= PANTALLA RESULTADOS ======= -->
+                    <!-- ======= PASO 2: SELECCIÓN ======= -->
+                    <group invisible="import_state != 'preview'">
+                        <div class="alert alert-info mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;">
+                            <i class="fa fa-info-circle" title="Info"/>
+                            Se encontraron <strong><field name="preview_total" readonly="1" class="d-inline"/></strong>
+                            propiedades en WordPress. Selecciona las que deseas importar.
+                            Las que ya existen en Odoo aparecen desmarcadas.
+                        </div>
+                        <div class="mb-2">
+                            <button name="action_select_all" string="✅ Todas"
+                                    type="object" class="btn-sm btn-outline-primary me-1"/>
+                            <button name="action_select_none" string="❌ Ninguna"
+                                    type="object" class="btn-sm btn-outline-secondary me-1"/>
+                            <button name="action_select_new_only" string="🆕 Solo nuevas"
+                                    type="object" class="btn-sm btn-outline-success"/>
+                        </div>
+                    </group>
+                    <field name="preview_line_ids" invisible="import_state != 'preview'">
+                        <list editable="bottom"
+                              decoration-muted="already_exists == True"
+                              decoration-success="selected == True and already_exists == False">
+                            <field name="selected"/>
+                            <field name="wp_post_id" string="ID" readonly="1"/>
+                            <field name="title" readonly="1"/>
+                            <field name="price" readonly="1" widget="monetary"/>
+                            <field name="area" readonly="1"/>
+                            <field name="bedrooms" readonly="1"/>
+                            <field name="city" readonly="1"/>
+                            <field name="already_exists" string="¿Existe?" readonly="1" widget="boolean"/>
+                        </list>
+                    </field>
+
+                    <!-- ======= PASO 3: RESULTADOS ======= -->
                     <group invisible="import_state != 'done'">
                         <group string="Resultado de la Importación">
                             <field name="imported_count" string="Propiedades nuevas importadas"/>
@@ -61,9 +94,9 @@
                     <field name="import_state" invisible="1"/>
 
                     <footer>
-                        <!-- Botones en pantalla de configuración -->
-                        <button name="action_import"
-                                string="Iniciar Importación"
+                        <!-- Paso 1: Buscar en WP -->
+                        <button name="action_preview"
+                                string="🔍 Buscar Propiedades en WordPress"
                                 type="object"
                                 class="btn-primary"
                                 invisible="import_state != 'draft'"/>
@@ -72,7 +105,18 @@
                                 special="cancel"
                                 invisible="import_state != 'draft'"/>
 
-                        <!-- Botones en pantalla de resultados -->
+                        <!-- Paso 2: Importar seleccionadas -->
+                        <button name="action_import"
+                                string="📥 Importar Seleccionadas"
+                                type="object"
+                                class="btn-primary"
+                                invisible="import_state != 'preview'"/>
+                        <button string="Cancelar"
+                                class="btn-secondary"
+                                special="cancel"
+                                invisible="import_state != 'preview'"/>
+
+                        <!-- Paso 3: Ver resultados -->
                         <button name="action_view_imported_properties"
                                 string="Ver Propiedades Importadas"
                                 type="object"

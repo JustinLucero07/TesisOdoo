@@ -535,6 +535,12 @@ class EstateProperty(models.Model):
     wp_post_id = fields.Integer(
         string='WordPress Post ID', readonly=True, index='btree_not_null')
     wp_published = fields.Boolean(string='Publicado en WordPress', default=False)
+    wp_post_id_backup = fields.Integer(
+        string='WordPress Post ID (Backup)', readonly=True,
+        help='Almacena el Post ID original al desvincular, permitiendo re-enlazar sin perder la referencia.')
+    wp_unlinked = fields.Boolean(
+        string='Desvinculado de WordPress', default=False,
+        help='Indica que esta propiedad estaba enlazada a WordPress pero fue desvinculada. El Post ID original se conserva en el backup.')
 
     # --- Relaciones y Ventas ---
     owner_id = fields.Many2one('res.partner', string='Propietario')
