@@ -49,11 +49,11 @@
                             Las que ya existen en Odoo aparecen desmarcadas.
                         </div>
                         <div class="mb-2">
-                            <button name="action_select_all" string="✅ Todas"
+                            <button name="action_select_all" string="Todas"
                                     type="object" class="btn-sm btn-outline-primary me-1"/>
-                            <button name="action_select_none" string="❌ Ninguna"
+                            <button name="action_select_none" string="Ninguna"
                                     type="object" class="btn-sm btn-outline-secondary me-1"/>
-                            <button name="action_select_new_only" string="🆕 Solo nuevas"
+                            <button name="action_select_new_only" string="Solo nuevas"
                                     type="object" class="btn-sm btn-outline-success"/>
                         </div>
                     </group>
@@ -96,8 +96,9 @@
                     <footer>
                         <!-- Paso 1: Buscar en WP -->
                         <button name="action_preview"
-                                string="🔍 Buscar Propiedades en WordPress"
+                                string="Buscar Propiedades en WordPress"
                                 type="object"
+                                icon="fa-search"
                                 class="btn-primary"
                                 invisible="import_state != 'draft'"/>
                         <button string="Cancelar"
@@ -107,8 +108,9 @@
 
                         <!-- Paso 2: Importar seleccionadas -->
                         <button name="action_import"
-                                string="📥 Importar Seleccionadas"
+                                string="Importar Seleccionadas"
                                 type="object"
+                                icon="fa-download"
                                 class="btn-primary"
                                 invisible="import_state != 'preview'"/>
                         <button string="Cancelar"

@@ -104,55 +104,5 @@
         </field>
     </record>
 
-    <!-- ═══════════════════════════════════════════
-         MENÚS — Sección Inteligencia
-    ═══════════════════════════════════════════ -->
-
-    <!-- Sub-sección: Análisis -->
-    <menuitem id="estate_menu_analytics_root"
-              name="Análisis"
-              parent="estate_management.estate_menu_intel_root"
-              sequence="22"/>
-
-        <menuitem id="estate_menu_analytics_property"
-                  name="Propiedades"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_property_action"
-                  sequence="10"/>
-
-        <menuitem id="estate_menu_analytics_contract"
-                  name="Contratos"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_contract_action"
-                  sequence="20"/>
-
-        <menuitem id="estate_menu_analytics_payment"
-                  name="Pagos"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_payment_action"
-                  sequence="30"/>
-
-        <menuitem id="estate_menu_analytics_offer"
-                  name="Ofertas"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_offer_action"
-                  sequence="40"/>
-
-        <menuitem id="estate_menu_analytics_expense"
-                  name="Gastos"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_expense_action"
-                  sequence="50"/>
-
-        <menuitem id="estate_menu_analytics_appraisal"
-                  name="Tasaciones"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_appraisal_action"
-                  sequence="60"/>
-
-        <menuitem id="estate_menu_analytics_maintenance"
-                  name="Mantenimiento"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_maintenance_action"
-                  sequence="70"/>
+    <!-- Menús definidos en estate_reports_menus.xml -->
 </odoo>

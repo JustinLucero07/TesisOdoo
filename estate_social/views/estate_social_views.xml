@@ -9,27 +9,27 @@
             <xpath expr="//notebook" position="inside">
                 <page string="Redes Sociales" name="social">
 
-                    <group string="🚀 Publicar en Redes Sociales">
+                    <group string="Publicar en Redes Sociales">
                         <div class="o_field_widget text-center py-3">
                             <h5 class="text-muted mb-2">Publicación automática vía API</h5>
                             <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
                                 <button name="action_publish_facebook"
-                                        string="📘 Publicar en Facebook"
+                                        string="Publicar en Facebook"
                                         type="object" class="btn btn-primary"
                                         confirm="¿Publicar esta propiedad en tu página de Facebook?"
                                         invisible="fb_published"/>
                                 <button name="action_publish_facebook"
-                                        string="🔄 Re-publicar en Facebook"
+                                        string="Re-publicar en Facebook"
                                         type="object" class="btn btn-outline-primary"
                                         confirm="¿Crear una nueva publicación en Facebook? La publicación anterior seguirá en tu página."
                                         invisible="not fb_published"/>
                                 <button name="action_unpublish_facebook"
-                                        string="🗑️ Eliminar de Facebook"
+                                        string="Eliminar de Facebook"
                                         type="object" class="btn btn-outline-danger"
                                         confirm="¿Eliminar el post de Facebook?"
                                         invisible="not fb_published"/>
                                 <button name="action_publish_instagram"
-                                        string="📸 Publicar en Instagram"
+                                        string="Publicar en Instagram"
                                         type="object" class="btn btn-warning"
                                         confirm="¿Publicar esta propiedad en Instagram Business?"
                                         invisible="ig_published"/>
@@ -43,23 +43,23 @@
                         </div>
                     </group>
 
-                    <group string="📣 Compartir manualmente">
+                    <group string="Compartir manualmente">
                         <div class="o_field_widget text-center py-3">
                             <div class="d-flex flex-wrap justify-content-center gap-2">
                                 <button name="action_share_facebook"
-                                        string="📘 Compartir en Facebook"
+                                        string="Compartir en Facebook"
                                         type="object" class="btn btn-outline-primary"/>
                                 <button name="action_share_whatsapp"
-                                        string="💬 WhatsApp (difusión)"
+                                        string="WhatsApp (difusión)"
                                         type="object" class="btn btn-outline-success"/>
                                 <button name="action_whatsapp_business_contact"
-                                        string="📲 WhatsApp Business"
+                                        string="WhatsApp Business"
                                         type="object" class="btn btn-outline-success"/>
                                 <button name="action_share_instagram"
-                                        string="📸 Copiar caption Instagram"
+                                        string="Copiar caption Instagram"
                                         type="object" class="btn btn-outline-warning"/>
                                 <button name="action_share_twitter"
-                                        string="🐦 Twitter/X"
+                                        string="Twitter/X"
                                         type="object" class="btn btn-outline-info"/>
                             </div>
                         </div>

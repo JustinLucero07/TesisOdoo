@@ -166,7 +166,7 @@
                                     <td style="padding: 9px 12px; border: 1px solid #ddd; font-weight: 600;">Parqueaderos</td>
                                     <t t-foreach="props" t-as="prop">
                                         <td style="padding: 9px 12px; border: 1px solid #ddd; text-align: center;">
-                                            <t t-out="prop.garage or '—'"/>
+                                            <t t-out="prop.parking_spaces or '—'"/>
                                         </td>
                                     </t>
                                 </tr>

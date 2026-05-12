@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_estate_sale_wizard_form" model="ir.ui.view">
+        <field name="name">estate.sale.wizard.form</field>
+        <field name="model">estate.sale.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cerrar Venta">
+                <sheet>
+                    <div class="oe_title">
+                        <h2>Confirmar Venta de Propiedad</h2>
+                        <h3 class="text-muted">
+                            <field name="property_id" readonly="1"/>
+                        </h3>
+                    </div>
+
+                    <group>
+                        <group string="Comprador">
+                            <field name="buyer_id" options="{'no_create': False}"/>
+                        </group>
+                        <group string="Fecha y Cierre">
+                            <field name="date_sold"/>
+                            <field name="sold_by"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Precio de Venta">
+                            <field name="sale_price" widget="monetary"/>
+                        </group>
+                        <group string="Comisión">
+                            <field name="commission_pct"/>
+                            <field name="commission_amount" widget="monetary" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <div class="alert alert-success" role="alert" style="font-size:0.9em">
+                        <i class="fa fa-check-circle"/> Al confirmar se cerrará la propiedad como
+                        <strong>Vendida</strong> y se generarán los registros de comisión automáticamente.
+                    </div>
+                </sheet>
+                <footer>
+                    <button name="action_confirm_sale" string="Confirmar Venta"
+                            type="object" class="btn-success oe_highlight" icon="fa-check"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_estate_sale_wizard" model="ir.actions.act_window">
+        <field name="name">Vender Propiedad</field>
+        <field name="res_model">estate.sale.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+</odoo>

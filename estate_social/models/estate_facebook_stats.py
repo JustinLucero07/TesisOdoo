@@ -313,8 +313,8 @@ class EstateFacebookStats(models.Model):
             ins_payload = {}
             try:
                 ins_payload = ins_resp.json()
-            except Exception:
-                pass
+            except Exception as e:
+                _logger.warning('Error parsing Facebook insights JSON: %s', e)
             insights_error_msg = False
             if ins_resp.status_code == 200 and 'data' in ins_payload:
                 for item in ins_payload.get('data', []):

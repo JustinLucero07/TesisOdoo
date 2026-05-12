@@ -599,6 +599,30 @@ TOOLS_OPENAI = [
             "property_id": {"type": "integer", "description": "ID de la propiedad a cotizar (opcional, usa la asignada al lead)"},
         }},
     }},
+    # ── EXCEL EXPORT ──────────────────────────────────────────────────────
+    {"type": "function", "function": {
+        "name": "generate_excel_report",
+        "description": "Genera un archivo Excel (.xlsx) con datos de cualquier reporte y devuelve un enlace de descarga. Usa el mismo report_type que get_report_data.",
+        "parameters": {"type": "object", "required": ["report_type"], "properties": {
+            "report_type": {"type": "string", "description": "Mismo report_type de get_report_data"},
+            "title": {"type": "string", "description": "Título personalizado para la hoja Excel (opcional)"},
+            "limit": {"type": "integer", "description": "Máximo de filas (default 50)"},
+        }},
+    }},
+    # ── NAVEGAR A VISTA ───────────────────────────────────────────────────
+    {"type": "function", "function": {
+        "name": "open_report_view",
+        "description": "Devuelve la URL para que el usuario navegue a una vista de reporte específica en Odoo. Úsalo cuando el usuario pida abrir, ir a, o ver una sección concreta del sistema.",
+        "parameters": {"type": "object", "required": ["view_name"], "properties": {
+            "view_name": {"type": "string", "description": (
+                "Vista destino: dashboard | ventas_mes | ranking_asesores | tipo_propiedad | "
+                "dias_mercado | comisiones | kpis_ventas | analytics_propiedades | analytics_contratos | "
+                "analytics_pagos | analytics_ofertas | analytics_gastos | analytics_tasaciones | "
+                "analytics_mantenimiento | crm_pipeline | crm_negocios | crm_fuentes | crm_visitas | "
+                "social_facebook | social_instagram | exportar_pdf | exportar_excel | agenda_visitas"
+            )},
+        }},
+    }},
     # ── HERRAMIENTA UNIVERSAL: Consulta SQL directa (solo lectura) ─────────
     {"type": "function", "function": {
         "name": "query_database",
@@ -798,6 +822,8 @@ CAPACIDADES COMPLETAS (usa las herramientas):
 - IA AVANZADA: analizar probabilidad de cierre, riesgo de churn, recalcular AVM, generar descripciones
 - MEMORIA: guardar preferencias/hechos con save_memory, consultar con recall_memory
 - REPORTES PDF: generate_pdf_report | generate_quote_pdf (cotización para cliente)
+- REPORTES EXCEL: generate_excel_report — exporta CUALQUIER reporte a .xlsx con enlace de descarga
+- NAVEGAR: open_report_view — devuelve URL para ir directamente a cualquier vista de Reportes
 - SQL DIRECTO: query_database — ejecuta cualquier SELECT contra la BD para responder lo que sea
 - OPERACIONES MASIVAS: batch_update_properties, batch_archive_leads
 
@@ -810,6 +836,8 @@ DETECCIÓN DE INTENCIÓN — actúa directamente según lo que el usuario quiera
 - "cotización para [lead]" → usa generate_quote_pdf
 - "briefing/resumen del día" → usa get_dashboard_summary + get_upcoming_visits + get_trend_analysis
 - "reporte de [tema]" → usa get_report_data con el report_type correcto
+- "descargar/exportar Excel de [tema]" → usa generate_excel_report
+- "ir a / abrir / navegar a [sección]" → usa open_report_view
 
 ASISTENTE DE NEGOCIACIÓN:
 Cuando un cliente haga una oferta o pregunte por precio, analiza:
@@ -835,9 +863,22 @@ INSTRUCCIONES DE RESPUESTA:
    c. Después del gráfico, incluye tabla Markdown con los mismos datos.
    d. Ejemplo: si get_report_data devuelve {"data":{"Disponibles":12,"Vendidas":9,"Alquiladas":3},"chart_hint":"circular"}
       tu respuesta DEBE incluir: [GRAFICO:circular,Disponibles:12,Vendidas:9,Alquiladas:3]
-5. report_types disponibles: properties_by_state, properties_by_type, sales_by_month, visits_by_property,
-   commissions_by_advisor, contracts_by_type, expenses_by_type, offers_by_state,
-   leads_by_temperature, payments_by_method, days_on_market_by_type.
+5. report_types disponibles (get_report_data y generate_excel_report):
+   VENTAS: properties_by_state | properties_by_type | sales_by_month | days_on_market_by_type |
+           ranking_advisors | kpi_general | income_by_month
+   COMISIONES: commissions_by_advisor | commissions_pending
+   CONTRATOS/PAGOS: contracts_by_type | payments_by_method | expenses_by_type
+   OFERTAS/VISITAS: offers_by_state | visits_by_property | visits_done_summary
+   CRM/LEADS: leads_by_temperature | leads_by_source | leads_by_stage | deals_closed_by_month
+   OPERACIONES: appraisals_by_state | maintenance_by_state
+   SOCIAL: social_facebook | social_instagram
+   Cuando el usuario pida "ranking", usa ranking_advisors.
+   Cuando pida "KPIs" o "cómo vamos", usa kpi_general.
+   Cuando pida "pipeline" o "embudo", usa leads_by_stage.
+   Cuando pida "fuentes" o "captación", usa leads_by_source.
+   Cuando pida "mantenimiento", usa maintenance_by_state.
+   Cuando pida "tasaciones", usa appraisals_by_state.
+   Cuando pida "Facebook/Instagram", usa social_facebook o social_instagram.
 6. ACCIONES DESTRUCTIVAS (archivar, cancelar, eliminar masivo): ANTES de ejecutar, responde con:
    "⚠️ CONFIRMACIÓN REQUERIDA: Estás a punto de [acción]. ¿Confirmas? (responde 'sí confirmo')"
    Solo ejecuta cuando el usuario confirme explícitamente.
@@ -1477,6 +1518,108 @@ INSTRUCCIONES DE RESPUESTA:
 
             elif tool_name == 'get_report_data':
                 return self._execute_report_data(args, env)
+
+            elif tool_name == 'generate_excel_report':
+                data_json = self._execute_report_data(args, env)
+                data_obj = json.loads(data_json)
+                if 'error' in data_obj:
+                    return data_json
+                try:
+                    import openpyxl
+                    from openpyxl.styles import Font, PatternFill, Alignment
+                    import base64
+                    from io import BytesIO
+                    from datetime import date as _date
+
+                    wb = openpyxl.Workbook()
+                    ws = wb.active
+                    report_title = args.get('title') or data_obj.get('report', args.get('report_type', 'Reporte'))
+                    ws.title = report_title[:31]
+
+                    header_font = Font(bold=True, color='FFFFFF', size=11)
+                    header_fill = PatternFill(fill_type='solid', fgColor='1877F2')
+
+                    ws['A1'] = report_title
+                    ws['A1'].font = Font(bold=True, size=14)
+                    ws['A2'] = f'Generado: {_date.today().strftime("%d/%m/%Y")}'
+                    ws['A2'].font = Font(italic=True, color='666666')
+
+                    ws['A4'] = 'Categoría / Período'
+                    ws['B4'] = 'Valor'
+                    for cell in [ws['A4'], ws['B4']]:
+                        cell.font = header_font
+                        cell.fill = header_fill
+                        cell.alignment = Alignment(horizontal='center')
+
+                    row = 5
+                    for key, val in data_obj.get('data', {}).items():
+                        ws[f'A{row}'] = str(key)
+                        ws[f'B{row}'] = val
+                        if row % 2 == 0:
+                            for col in ['A', 'B']:
+                                ws[f'{col}{row}'].fill = PatternFill(fill_type='solid', fgColor='EBF5FB')
+                        row += 1
+
+                    ws.column_dimensions['A'].width = 35
+                    ws.column_dimensions['B'].width = 20
+
+                    buf = BytesIO()
+                    wb.save(buf)
+                    buf.seek(0)
+
+                    fname = f"{args.get('report_type', 'reporte')}_{_date.today()}.xlsx"
+                    attachment = env['ir.attachment'].sudo().create({
+                        'name': fname,
+                        'datas': base64.b64encode(buf.read()).decode(),
+                        'mimetype': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    })
+                    url = f'/web/content/{attachment.id}?download=true&filename={fname}'
+                    return json.dumps({
+                        'success': True, 'url': url,
+                        'filas': row - 5,
+                        'mensaje': f"✅ Excel generado con {row - 5} filas → [**Descargar {fname}**]({url})",
+                    })
+                except ImportError:
+                    return json.dumps({'error': 'openpyxl no instalado. Ejecuta: pip install openpyxl'})
+                except Exception as e:
+                    return json.dumps({'error': f'Error generando Excel: {str(e)}'})
+
+            elif tool_name == 'open_report_view':
+                view_map = {
+                    'dashboard':             '/odoo/action-estate_reports.estate_dashboard_action',
+                    'ventas_mes':            '/odoo/action-estate_reports.action_sales_by_month',
+                    'ranking_asesores':      '/odoo/action-estate_reports.action_sales_by_user',
+                    'tipo_propiedad':        '/odoo/action-estate_reports.action_sales_by_type',
+                    'dias_mercado':          '/odoo/action-estate_reports.action_sales_days_market',
+                    'comisiones':            '/odoo/action-estate_management.action_estate_commission_dashboard',
+                    'kpis_ventas':           '/odoo/action-estate_reports.action_estate_sales_report_wizard',
+                    'analytics_propiedades': '/odoo/action-estate_reports.estate_analytics_property_action',
+                    'analytics_contratos':   '/odoo/action-estate_reports.estate_analytics_contract_action',
+                    'analytics_pagos':       '/odoo/action-estate_reports.estate_analytics_payment_action',
+                    'analytics_ofertas':     '/odoo/action-estate_reports.estate_analytics_offer_action',
+                    'analytics_gastos':      '/odoo/action-estate_reports.estate_analytics_expense_action',
+                    'analytics_tasaciones':  '/odoo/action-estate_reports.estate_analytics_appraisal_action',
+                    'analytics_mantenimiento': '/odoo/action-estate_reports.estate_analytics_maintenance_action',
+                    'crm_pipeline':          '/odoo/action-estate_crm.action_crm_reports_general',
+                    'crm_negocios':          '/odoo/action-estate_crm.action_crm_reports_deals',
+                    'crm_fuentes':           '/odoo/action-estate_crm.action_crm_reports_sources',
+                    'crm_visitas':           '/odoo/action-estate_crm.action_report_property_visits',
+                    'social_facebook':       '/odoo/action-estate_social.action_facebook_stats_all',
+                    'social_instagram':      '/odoo/action-estate_social.action_instagram_stats_all',
+                    'exportar_pdf':          '/odoo/action-estate_reports.estate_report_wizard_action',
+                    'exportar_excel':        '/odoo/action-estate_reports.action_estate_sales_report_wizard',
+                    'agenda_visitas':        '/odoo/action-estate_management.estate_property_action',
+                }
+                view_name = args.get('view_name', '')
+                url = view_map.get(view_name)
+                if not url:
+                    available = ', '.join(view_map.keys())
+                    return json.dumps({'error': f"Vista '{view_name}' no reconocida. Disponibles: {available}"})
+                return json.dumps({
+                    'success': True,
+                    'url': url,
+                    'mensaje': f"→ [**Abrir en Reportes**]({url})",
+                })
 
             # ── A1: CRUD Contratos ─────────────────────────────────────────────
             elif tool_name == 'create_contract':
@@ -2308,6 +2451,234 @@ INSTRUCCIONES DE RESPUESTA:
                 data = {r['tipo']: float(r['promedio']) for r in rows}
                 return json.dumps({'report': 'Días Promedio en Mercado por Tipo', 'data': data,
                                    'chart_hint': 'barra'}, ensure_ascii=False)
+
+            elif report_type == 'ranking_advisors':
+                from datetime import date as _d
+                start = _d.today().replace(day=1)
+                env.cr.execute("""
+                    SELECT rp.name as asesor,
+                           COUNT(ep.id) as ventas,
+                           COALESCE(SUM(ep.price), 0) as ingresos,
+                           COALESCE(SUM(ep.commission_amount), 0) as comisiones
+                    FROM estate_property ep
+                    JOIN res_users ru ON ep.user_id = ru.id
+                    JOIN res_partner rp ON ru.partner_id = rp.id
+                    WHERE ep.state = 'sold' AND ep.date_sold >= %s
+                    GROUP BY rp.name
+                    ORDER BY ventas DESC
+                    LIMIT %s
+                """, (start, limit))
+                rows = env.cr.dictfetchall()
+                data = {r['asesor']: int(r['ventas']) for r in rows}
+                return json.dumps({'report': 'Ranking Asesores (Mes)', 'data': data,
+                                   'chart_hint': 'barra', 'detalle': rows},
+                                  ensure_ascii=False, default=str)
+
+            elif report_type == 'kpi_general':
+                from datetime import date as _d
+                today = _d.today()
+                start_m = today.replace(day=1)
+                props = env['estate.property'].sudo()
+                leads = env['crm.lead'].sudo()
+                total_props    = props.search_count([])
+                avail_props    = props.search_count([('state', '=', 'available')])
+                sold_this_month= props.search_count([('state', '=', 'sold'), ('date_sold', '>=', start_m)])
+                env.cr.execute("SELECT COALESCE(SUM(price),0) FROM estate_property WHERE state='sold' AND date_sold >= %s", (start_m,))
+                ingresos_mes = float(env.cr.fetchone()[0] or 0)
+                env.cr.execute("SELECT COALESCE(SUM(commission_amount),0) FROM estate_property WHERE state='sold' AND date_sold >= %s", (start_m,))
+                comisiones_mes = float(env.cr.fetchone()[0] or 0)
+                env.cr.execute("SELECT COALESCE(ROUND(AVG(days_on_market)::numeric,1),0) FROM estate_property WHERE state='sold' AND days_on_market > 0")
+                avg_days = float(env.cr.fetchone()[0] or 0)
+                active_leads   = leads.search_count([('type', '=', 'opportunity'), ('stage_id.is_won', '=', False)])
+                hot_leads      = leads.search_count([('lead_temperature', 'in', ['hot', 'boiling']), ('type', '=', 'opportunity')])
+                data = {
+                    'Propiedades Totales': total_props,
+                    'Disponibles': avail_props,
+                    'Vendidas este mes': sold_this_month,
+                    f'Ingresos mes (${ingresos_mes:,.0f})': sold_this_month,
+                    f'Comisiones mes (${comisiones_mes:,.0f})': sold_this_month,
+                    'Días promedio en mercado': avg_days,
+                    'Leads activos': active_leads,
+                    'Leads calientes': hot_leads,
+                }
+                return json.dumps({'report': 'KPIs Generales del Negocio', 'data': data,
+                                   'chart_hint': 'barra',
+                                   'kpis': {
+                                       'ventas_mes': sold_this_month,
+                                       'ingresos_mes': ingresos_mes,
+                                       'comisiones_mes': comisiones_mes,
+                                       'dias_promedio': avg_days,
+                                       'leads_activos': active_leads,
+                                       'leads_calientes': hot_leads,
+                                   }}, ensure_ascii=False, default=str)
+
+            elif report_type == 'appraisals_by_state':
+                states = [
+                    ('scheduled', 'Programada'), ('in_progress', 'En Proceso'),
+                    ('completed', 'Completada'), ('cancelled', 'Cancelada'),
+                ]
+                data = {label: env['estate.appraisal'].sudo().search_count([('state', '=', key)])
+                        for key, label in states}
+                data = {k: v for k, v in data.items() if v > 0}
+                return json.dumps({'report': 'Tasaciones por Estado', 'data': data,
+                                   'chart_hint': 'circular'}, ensure_ascii=False)
+
+            elif report_type == 'maintenance_by_state':
+                states = [
+                    ('pending', 'Pendiente'), ('in_progress', 'En Proceso'),
+                    ('resolved', 'Resuelto'), ('cancelled', 'Cancelado'),
+                ]
+                req_types = [('repair', 'Reparación'), ('cleaning', 'Limpieza'),
+                             ('inspection', 'Inspección'), ('emergency', 'Emergencia'), ('other', 'Otro')]
+                data_state = {label: env['estate.tenant.request'].sudo().search_count([('state', '=', key)])
+                              for key, label in states}
+                data = {k: v for k, v in data_state.items() if v > 0}
+                return json.dumps({'report': 'Mantenimiento por Estado', 'data': data,
+                                   'chart_hint': 'barra'}, ensure_ascii=False)
+
+            elif report_type == 'leads_by_source':
+                env.cr.execute("""
+                    SELECT COALESCE(us.name, 'Sin fuente') as fuente, COUNT(cl.id) as leads
+                    FROM crm_lead cl
+                    LEFT JOIN utm_source us ON cl.source_id = us.id
+                    WHERE cl.type = 'opportunity'
+                    GROUP BY us.name
+                    ORDER BY leads DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                data = {r['fuente']: int(r['leads']) for r in rows}
+                return json.dumps({'report': 'Leads por Fuente de Captación', 'data': data,
+                                   'chart_hint': 'circular'}, ensure_ascii=False)
+
+            elif report_type == 'leads_by_stage':
+                env.cr.execute("""
+                    SELECT cs.name as etapa, COUNT(cl.id) as leads
+                    FROM crm_lead cl
+                    JOIN crm_stage cs ON cl.stage_id = cs.id
+                    WHERE cl.type = 'opportunity' AND cs.is_won = false
+                    GROUP BY cs.name, cs.sequence
+                    ORDER BY cs.sequence
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                data = {r['etapa']: int(r['leads']) for r in rows}
+                return json.dumps({'report': 'Pipeline de Clientes por Etapa', 'data': data,
+                                   'chart_hint': 'barra'}, ensure_ascii=False)
+
+            elif report_type == 'deals_closed_by_month':
+                env.cr.execute("""
+                    SELECT TO_CHAR(cl.date_closed, 'Mon YYYY') as mes,
+                           COUNT(*) as negocios,
+                           COALESCE(SUM(cl.prorated_revenue), 0) as ingresos
+                    FROM crm_lead cl
+                    WHERE cl.type = 'opportunity'
+                      AND cl.stage_id IN (SELECT id FROM crm_stage WHERE is_won = true)
+                      AND cl.date_closed IS NOT NULL
+                    GROUP BY TO_CHAR(cl.date_closed, 'Mon YYYY'), DATE_TRUNC('month', cl.date_closed)
+                    ORDER BY DATE_TRUNC('month', cl.date_closed) DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                data = {r['mes']: int(r['negocios']) for r in reversed(rows)}
+                return json.dumps({'report': 'Negocios Realizados por Mes', 'data': data,
+                                   'chart_hint': 'linea', 'detalle': rows},
+                                  ensure_ascii=False, default=str)
+
+            elif report_type == 'income_by_month':
+                env.cr.execute("""
+                    SELECT TO_CHAR(payment_date, 'Mon YYYY') as mes,
+                           COALESCE(SUM(amount), 0) as ingresos
+                    FROM estate_payment
+                    WHERE state = 'paid' AND payment_date IS NOT NULL
+                    GROUP BY TO_CHAR(payment_date, 'Mon YYYY'), DATE_TRUNC('month', payment_date)
+                    ORDER BY DATE_TRUNC('month', payment_date) DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                data = {r['mes']: float(f"{float(r['ingresos']):.2f}") for r in reversed(rows)}
+                return json.dumps({'report': 'Ingresos por Mes (Pagos)', 'data': data,
+                                   'chart_hint': 'linea'}, ensure_ascii=False, default=str)
+
+            elif report_type == 'commissions_pending':
+                env.cr.execute("""
+                    SELECT rp.name as asesor,
+                           COUNT(ec.id) as comisiones,
+                           COALESCE(SUM(ec.amount), 0) as total
+                    FROM estate_commission ec
+                    JOIN res_users ru ON ec.user_id = ru.id
+                    JOIN res_partner rp ON ru.partner_id = rp.id
+                    WHERE ec.state IN ('draft', 'approved')
+                    GROUP BY rp.name
+                    ORDER BY total DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                data = {r['asesor']: float(f"{float(r['total']):.2f}") for r in rows}
+                return json.dumps({'report': 'Comisiones Pendientes por Asesor', 'data': data,
+                                   'chart_hint': 'barra', 'detalle': rows},
+                                  ensure_ascii=False, default=str)
+
+            elif report_type == 'visits_done_summary':
+                env.cr.execute("""
+                    SELECT TO_CHAR(ce.start, 'Mon YYYY') as mes, COUNT(*) as visitas
+                    FROM calendar_event ce
+                    WHERE ce.property_id IS NOT NULL
+                      AND (ce.visit_state IS NULL OR ce.visit_state = 'done')
+                    GROUP BY TO_CHAR(ce.start, 'Mon YYYY'), DATE_TRUNC('month', ce.start)
+                    ORDER BY DATE_TRUNC('month', ce.start) DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                data = {r['mes']: int(r['visitas']) for r in reversed(rows)}
+                return json.dumps({'report': 'Visitas Realizadas por Mes', 'data': data,
+                                   'chart_hint': 'barra'}, ensure_ascii=False)
+
+            elif report_type == 'social_facebook':
+                try:
+                    env.cr.execute("""
+                        SELECT ep.title as propiedad,
+                               COALESCE(ef.reach, 0) as alcance,
+                               COALESCE(ef.impressions, 0) as impresiones,
+                               COALESCE(ef.engagement_rate, 0) as engagement
+                        FROM estate_facebook_stats ef
+                        JOIN estate_property ep ON ef.property_id = ep.id
+                        ORDER BY ef.reach DESC
+                        LIMIT %s
+                    """, (limit,))
+                    rows = env.cr.dictfetchall()
+                    if not rows:
+                        return json.dumps({'report': 'Estadísticas Facebook', 'data': {},
+                                           'mensaje': 'No hay estadísticas de Facebook registradas aún.'})
+                    data = {r['propiedad']: int(r['alcance']) for r in rows}
+                    return json.dumps({'report': 'Alcance Facebook por Propiedad', 'data': data,
+                                       'chart_hint': 'barra', 'detalle': rows},
+                                      ensure_ascii=False, default=str)
+                except Exception:
+                    return json.dumps({'error': 'Módulo de Facebook no disponible o sin datos.'})
+
+            elif report_type == 'social_instagram':
+                try:
+                    env.cr.execute("""
+                        SELECT ep.title as propiedad,
+                               COALESCE(ei.reach, 0) as alcance,
+                               COALESCE(ei.impressions, 0) as impresiones,
+                               COALESCE(ei.engagement_rate, 0) as engagement
+                        FROM estate_instagram_stats ei
+                        JOIN estate_property ep ON ei.property_id = ep.id
+                        ORDER BY ei.reach DESC
+                        LIMIT %s
+                    """, (limit,))
+                    rows = env.cr.dictfetchall()
+                    if not rows:
+                        return json.dumps({'report': 'Estadísticas Instagram', 'data': {},
+                                           'mensaje': 'No hay estadísticas de Instagram registradas aún.'})
+                    data = {r['propiedad']: int(r['alcance']) for r in rows}
+                    return json.dumps({'report': 'Alcance Instagram por Propiedad', 'data': data,
+                                       'chart_hint': 'barra', 'detalle': rows},
+                                      ensure_ascii=False, default=str)
+                except Exception:
+                    return json.dumps({'error': 'Módulo de Instagram no disponible o sin datos.'})
 
             return json.dumps({'error': f'report_type desconocido: {report_type}'})
 

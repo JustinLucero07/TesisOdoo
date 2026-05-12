@@ -45,6 +45,28 @@ class CalendarEvent(models.Model):
 
     visit_notes = fields.Text(string='Notas / Observaciones de la Visita')
 
+    visit_color = fields.Integer(string='Color', compute='_compute_visit_color', store=True)
+
+    @api.depends('visit_state', 'appointment_type')
+    def _compute_visit_color(self):
+        color_map = {
+            'done': 10,       # verde
+            'cancelled': 1,   # rojo
+            'scheduled': 4,   # azul
+        }
+        type_map = {
+            'signing': 7,     # violeta
+            'call': 3,        # amarillo
+            'meeting': 2,     # naranja
+        }
+        for rec in self:
+            if rec.visit_state in ('done', 'cancelled'):
+                rec.visit_color = color_map[rec.visit_state]
+            elif rec.appointment_type in type_map:
+                rec.visit_color = type_map[rec.appointment_type]
+            else:
+                rec.visit_color = 4
+
     # --- Lead CRM de origen ---
     lead_id = fields.Many2one(
         'crm.lead', string='Lead de Origen',

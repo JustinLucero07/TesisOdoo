@@ -224,14 +224,19 @@
     </record>
 
     <!-- ═══════════════════════════════════════════════════════
-         MENÚ
+         MENÚ — Redes Sociales bajo Reportes
     ═══════════════════════════════════════════════════════════ -->
 
+    <menuitem id="estate_menu_reportes_social_root"
+              name="Redes Sociales"
+              parent="estate_management.estate_menu_intel_root"
+              sequence="40"/>
+
     <menuitem id="menu_facebook_stats"
-              name="Stats Facebook"
-              parent="estate_reports.estate_menu_reports_root"
+              name="Estadísticas Facebook"
+              parent="estate_menu_reportes_social_root"
               action="action_estate_facebook_stats"
-              sequence="26"
+              sequence="10"
               groups="base.group_user"/>
 
 </odoo>

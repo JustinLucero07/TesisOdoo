@@ -27,6 +27,7 @@
         'views/estate_dashboard_views.xml',
         'views/estate_visitor_report_views.xml',
         'views/estate_analytics_views.xml',
+        'views/estate_sales_analytics_views.xml',
         'views/estate_reports_menus.xml',
     ],
     'installable': True,

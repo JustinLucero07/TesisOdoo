@@ -150,9 +150,9 @@
                                 <div class="oe_kanban_bottom_left">
                                     <field name="date"/>
                                     <span t-if="record.confidentiality.raw_value == 'restricted'"
-                                          class="badge text-bg-warning ms-1">🔒 Restringido</span>
+                                          class="badge text-bg-warning ms-1">Restringido</span>
                                     <span t-if="record.confidentiality.raw_value == 'confidential'"
-                                          class="badge text-bg-danger ms-1">🔐 Confidencial</span>
+                                          class="badge text-bg-danger ms-1">Confidencial</span>
                                 </div>
                                 <div class="oe_kanban_bottom_right">
                                     <span t-if="record.file_size.raw_value > 0">
@@ -191,6 +191,10 @@
                             type="object" icon="fa-undo"
                             invisible="state == 'pending'"
                             groups="estate_management.estate_group_manager"/>
+                    <button name="action_ocr_extract" string="Extraer con IA"
+                            type="object" icon="fa-magic" class="btn-info"
+                            invisible="not file"
+                            title="Analiza el archivo con Gemini Vision y extrae los datos automáticamente"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="pending,received,verified,archived"/>
                 </header>
@@ -246,6 +250,12 @@
 
                     <group string="Notas" invisible="not notes and state != 'pending'">
                         <field name="notes" nolabel="1"/>
+                    </group>
+
+                    <group string="Datos extraídos por IA (OCR)" invisible="not ocr_result">
+                        <field name="ocr_result" nolabel="1" readonly="1"
+                               widget="text"
+                               style="font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 8px; border-radius: 4px;"/>
                     </group>
                 </sheet>
                 <chatter/>
@@ -314,7 +324,7 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//notebook" position="inside">
-                <page string="📂 Documentos" name="estate_docs">
+                <page string="Documentos" name="estate_docs">
                     <field name="document_ids">
                         <list editable="bottom">
                             <field name="name"/>
@@ -363,7 +373,7 @@
                 </button>
                 <button name="action_view_full_folder" type="object"
                         class="oe_stat_button" icon="fa-folder-open">
-                    <span>📂 Carpeta completa</span>
+                    <span>Carpeta completa</span>
                 </button>
             </xpath>
         </field>
@@ -386,7 +396,7 @@
             </xpath>
             <!-- Pestaña de documentos del contrato (antes de la pestaña heredada) -->
             <xpath expr="//page[@name='legacy_documents']" position="before">
-                <page string="📂 Documentos del Contrato" name="contract_docs_linked">
+                <page string="Documentos del Contrato" name="contract_docs_linked">
                     <field name="document_ids">
                         <list editable="bottom"
                               decoration-muted="state == 'pending'"

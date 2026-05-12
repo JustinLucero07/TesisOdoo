@@ -18,8 +18,8 @@
         'data/estate_social_cron.xml',
         'views/estate_social_views.xml',
         'views/estate_social_config_views.xml',
-        'views/estate_instagram_stats_views.xml',
         'views/estate_facebook_stats_views.xml',
+        'views/estate_instagram_stats_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

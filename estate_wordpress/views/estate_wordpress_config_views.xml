@@ -29,8 +29,9 @@
                                         usa este asistente para vincularlas sin perder datos.
                                     </p>
                                     <button name="action_open_wp_link_wizard"
-                                            string="🔗 Enlazar Propiedad con WordPress"
+                                            string="Enlazar Propiedad con WordPress"
                                             type="object"
+                                            icon="fa-link"
                                             class="btn-secondary"/>
                                 </div>
                             </setting>
@@ -62,7 +63,7 @@
                                 <field name="wp_category_id"/>
                             </setting>
                             <div class="mt-3">
-                                <button name="action_wp_test_connection" string="⚡ Probar Conexión y Generar Token" type="object" class="btn-primary"/>
+                                <button name="action_wp_test_connection" string="Probar Conexión y Generar Token" type="object" class="btn-primary" icon="fa-bolt"/>
                             </div>
                         </block>
 
@@ -107,15 +108,11 @@
                 <!-- Botones en el header -->
                 <xpath expr="//header/button[@name='action_set_available']" position="before">
                     <!-- Publicar: solo si NO está publicada -->
-                    <button name="action_publish_wordpress" string="📤 Publicar en WordPress" type="object" class="btn-secondary" invisible="wp_published == True"/>
-                    <!-- Re-enlazar: solo si fue desvinculada y tiene backup -->
-                    <button name="action_relink_wordpress" string="🔗 Re-enlazar a WordPress" type="object" class="btn-warning" invisible="wp_unlinked != True or wp_post_id_backup == 0"/>
-                    <!-- Traer datos de WP: solo si está publicada -->
-                    <button name="action_pull_from_wordpress" string="📥 Traer datos de WordPress" type="object" class="btn-info" invisible="wp_published != True"/>
-                    <!-- Desvincular: solo si está publicada -->
-                    <button name="action_unlink_wordpress" string="⛓️‍💥 Desvincular (sin borrar en WP)" type="object" class="btn-link" invisible="wp_published != True"/>
-                    <!-- Quitar de WP: solo si está publicada -->
-                    <button name="action_unpublish_wordpress" string="🗑️ Quitar de WordPress" type="object" class="btn-secondary" invisible="wp_published != True"
+                    <button name="action_publish_wordpress" string="Publicar en WordPress" type="object" class="btn-secondary" icon="fa-upload" invisible="wp_published == True"/>
+                    <button name="action_relink_wordpress" string="Re-enlazar a WordPress" type="object" class="btn-warning" icon="fa-link" invisible="wp_unlinked != True or wp_post_id_backup == 0"/>
+                    <button name="action_pull_from_wordpress" string="Traer datos de WordPress" type="object" class="btn-info" icon="fa-download" invisible="wp_published != True"/>
+                    <button name="action_unlink_wordpress" string="Desvincular de WordPress" type="object" class="btn-link" icon="fa-chain-broken" invisible="wp_published != True"/>
+                    <button name="action_unpublish_wordpress" string="Quitar de WordPress" type="object" class="btn-secondary" icon="fa-trash" invisible="wp_published != True"
                             confirm="¿Estás seguro? Esto ELIMINARÁ la propiedad de tu sitio WordPress. La propiedad se mantendrá en Odoo pero desaparecerá del sitio web."/>
                 </xpath>
 

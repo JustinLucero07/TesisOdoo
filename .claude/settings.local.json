@@ -230,7 +230,17 @@
       "Bash(psql tesis_odoo19 -c \"SELECT id, name, model_id, domain_force FROM ir_rule WHERE model_id IN \\(SELECT id FROM ir_model WHERE model = 'estate.document'\\);\")",
       "Bash(psql tesis_odoo19 -c \"SELECT module, name, res_id, noupdate FROM ir_model_data WHERE model = 'ir.rule' AND module = 'estate_document';\")",
       "Bash(psql tesis_odoo19 -c \"UPDATE ir_model_data SET noupdate = false WHERE model = 'ir.rule' AND module = 'estate_document';\")",
-      "Bash(psql tesis_odoo19 -c \"SELECT name, noupdate FROM ir_model_data WHERE model = 'ir.rule' AND module = 'estate_document';\")"
+      "Bash(psql tesis_odoo19 -c \"SELECT name, noupdate FROM ir_model_data WHERE model = 'ir.rule' AND module = 'estate_document';\")",
+      "Bash(python -m py_compile estate_document/models/estate_document.py)",
+      "Bash(grep -n \"except.*pass\\\\|except.*:\\\\s*$\" /home/justin/Documentos/Tesis/estate_management/models/estate_property.py)",
+      "Bash(grep -n \"except.*pass\\\\|except.*:\\\\s*$\" /home/justin/Documentos/Tesis/estate_social/models/estate_social.py)",
+      "Bash(grep -rn \"except Exception:\\\\s*$\\\\|except:\\\\s*$\" --include=\"*.py\" estate_management/ estate_crm/ estate_document/ estate_reports/ estate_calendar/ estate_social/ estate_wordpress/ estate_ai_agent/)",
+      "Bash(grep -rn \"pass  #\\\\|pass$\" --include=\"*.py\" estate_management/models/ estate_crm/models/ estate_document/models/ estate_reports/)",
+      "Bash(grep -A2 \"except Exception:\\\\s*$\" estate_management/models/estate_property.py estate_crm/controllers/whatsapp_controller.py estate_crm/controllers/webhook_controller.py estate_social/models/estate_facebook_stats.py estate_wordpress/models/estate_wordpress_sync.py)",
+      "Bash(grep -v \"^--$\")",
+      "Bash(grep -A2 \"except Exception:\\\\s*$\" estate_wordpress/models/estate_wordpress_import.py)",
+      "Bash(pkill -f \"odoo-bin -c /home/justin/Documentos/Tesis/odoo19.conf\")",
+      "Bash(fuser -k 8070/tcp)"
     ],
     "additionalDirectories": [
       "/tmp",

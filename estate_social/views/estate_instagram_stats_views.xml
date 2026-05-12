@@ -180,10 +180,10 @@
          MENÚ — Bajo Redes Sociales o Informes
     ════════════════════════════════════════════════════════ -->
     <menuitem id="menu_instagram_stats"
-              name="Stats Instagram"
-              parent="estate_reports.estate_menu_reports_root"
+              name="Estadísticas Instagram"
+              parent="estate_social.estate_menu_reportes_social_root"
               action="action_instagram_stats_all"
-              sequence="25"
+              sequence="20"
               groups="base.group_user"/>
 
     <!-- ═══════════════════════════════════════════════════

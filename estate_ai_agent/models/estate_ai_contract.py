@@ -93,7 +93,7 @@ INSTRUCCIONES DE FORMATO:
 
             self.write({'notes': generated_html})
             self.message_post(
-                body='📄 Borrador de contrato redactado automáticamente por <strong>Gemini 1.5 Flash</strong>.',
+                body='📄 Borrador de contrato redactado automáticamente por <strong>Gemini</strong>.',
                 message_type='notification',
             )
             return {

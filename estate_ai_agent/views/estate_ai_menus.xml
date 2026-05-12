@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <menuitem id="estate_menu_ai_root"
-              name="Asistente de Inteligencia IA"
-              parent="estate_management.estate_menu_intel_root"
-              sequence="40"/>
+              name="Asistente IA"
+              sequence="4"
+              web_icon="estate_ai_agent,static/description/icon.png"/>
 
     <menuitem id="estate_menu_ai_chat"
               name="Chat IA"

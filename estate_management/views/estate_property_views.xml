@@ -44,8 +44,12 @@
                     <button name="%(estate_reports.action_report_ficha_tecnica)d" string="Descargar Ficha PDF" type="action" class="btn-secondary" icon="fa-download"/>
                     <button name="action_set_available" string="Disponible" type="object" class="oe_highlight" invisible="state == 'available'"/>
                     <button name="action_set_reserved" string="Reservar" type="object" invisible="state in ('sold', 'rented')"/>
-                    <button name="action_set_sold" string="Cerrar como Vendido" type="object" class="btn-success" invisible="state == 'sold'"/>
-                    <button name="action_set_rented" string="Alquilado" type="object" class="btn-primary" invisible="state == 'rented'"/>
+                    <button name="action_open_sale_wizard" string="Vender Propiedad" type="object"
+                            class="btn-success oe_highlight" icon="fa-handshake-o"
+                            invisible="state in ('sold', 'rented') or offer_type != 'sale'"/>
+                    <button name="action_set_rented" string="Alquilar Propiedad" type="object"
+                            class="btn-primary oe_highlight" icon="fa-key"
+                            invisible="state in ('sold', 'rented') or offer_type != 'rent'"/>
                     <button name="action_relist" string="Re-listar en Mercado" type="object"
                             class="btn-warning"
                             invisible="state not in ('sold', 'rented')"
@@ -85,6 +89,10 @@
                         <button name="action_view_property_invoices" type="object" class="oe_stat_button" icon="fa-file-text-o"
                                 invisible="property_invoice_count == 0">
                             <field name="property_invoice_count" string="Facturas" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_commissions" type="object" class="oe_stat_button" icon="fa-money"
+                                invisible="commission_count == 0">
+                            <field name="commission_count" string="Comisiones" widget="statinfo"/>
                         </button>
                     </div>
                     <field name="map_url" invisible="1"/>
@@ -326,9 +334,9 @@
                 <filter name="filter_sale" string="En Venta" domain="[('offer_type', '=', 'sale')]"/>
                 <filter name="filter_rent" string="En Arriendo" domain="[('offer_type', '=', 'rent')]"/>
                 <separator/>
-                <filter name="filter_wp_linked" string="🔗 Enlazadas con WordPress" domain="[('wp_published', '=', True)]"/>
-                <filter name="filter_wp_unlinked" string="⛓️‍💥 Desvinculadas de WordPress" domain="[('wp_unlinked', '=', True)]"/>
-                <filter name="filter_wp_never" string="🌐 Sin publicar en WordPress" domain="[('wp_published', '=', False), ('wp_unlinked', '=', False)]"/>
+                <filter name="filter_wp_linked" string="Enlazadas con WordPress" domain="[('wp_published', '=', True)]"/>
+                <filter name="filter_wp_unlinked" string="Desvinculadas de WordPress" domain="[('wp_unlinked', '=', True)]"/>
+                <filter name="filter_wp_never" string="Sin publicar en WordPress" domain="[('wp_published', '=', False), ('wp_unlinked', '=', False)]"/>
                 <group>
                     <filter name="group_type" string="Tipo" context="{'group_by': 'property_type_id'}"/>
                     <filter name="group_state" string="Estado" context="{'group_by': 'state'}"/>

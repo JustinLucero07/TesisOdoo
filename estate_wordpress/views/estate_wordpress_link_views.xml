@@ -13,7 +13,7 @@
 
                     <!-- ======= PASO 1: SELECCIÓN ======= -->
                     <group invisible="wizard_state != 'select'">
-                        <group string="🔗 Vincular Propiedad Existente">
+                        <group string="Vincular Propiedad Existente">
                             <field name="property_id"
                                    options="{'no_create': True}"
                                    placeholder="Buscar propiedad por título o referencia..."/>
@@ -41,7 +41,7 @@
 
                     <!-- ======= PASO 2: PREVIEW Y COMPARACIÓN ======= -->
                     <group invisible="wizard_state != 'preview'">
-                        <group string="📊 Comparación: Odoo vs WordPress" col="3">
+                        <group string="Comparación: Odoo vs WordPress" col="3">
                             <separator string="Campo" colspan="1"/>
                             <separator string="Odoo" colspan="1"/>
                             <separator string="WordPress" colspan="1"/>
@@ -74,7 +74,7 @@
 
                     <!-- ======= PASO 3: RESULTADO ======= -->
                     <group invisible="wizard_state != 'done'">
-                        <group string="✅ Enlace Completado">
+                        <group string="Enlace Completado">
                             <field name="result_message" nolabel="1" widget="text" readonly="1"/>
                         </group>
                     </group>
@@ -87,8 +87,9 @@
                     <footer>
                         <!-- Paso 1: Buscar -->
                         <button name="action_preview"
-                                string="🔍 Buscar en WordPress"
+                                string="Buscar en WordPress"
                                 type="object"
+                                icon="fa-search"
                                 class="btn-primary"
                                 invisible="wizard_state != 'select'"/>
                         <button string="Cancelar"
@@ -98,8 +99,9 @@
 
                         <!-- Paso 2: Enlazar -->
                         <button name="action_link"
-                                string="🔗 Enlazar"
+                                string="Enlazar"
                                 type="object"
+                                icon="fa-link"
                                 class="btn-primary"
                                 invisible="wizard_state != 'preview'"/>
                         <button name="action_back_to_select"

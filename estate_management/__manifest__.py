@@ -40,6 +40,7 @@
         'data/estate_contract_cron.xml',
         'data/estate_mail_templates.xml',
         'wizards/estate_property_comparator_wizard_views.xml',
+        'wizards/estate_sale_wizard_views.xml',
         'data/estate_hr_integrations.xml',
         'views/estate_portal_templates.xml',
         'views/estate_finance_menu.xml',

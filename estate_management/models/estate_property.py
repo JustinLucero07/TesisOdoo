@@ -583,6 +583,7 @@ class EstateProperty(models.Model):
     # --- Citas / Agenda ---
     meeting_count = fields.Integer(string='Citas', compute='_compute_meeting_count')
     commission_ids = fields.One2many('estate.commission', 'property_id', string='Historial de Comisiones')
+    commission_count = fields.Integer(string='N° Comisiones', compute='_compute_commission_count')
 
     @api.depends('price', 'mortgage_down_payment_pct', 'mortgage_rate', 'mortgage_term_years')
     def _compute_mortgage(self):
@@ -661,6 +662,22 @@ class EstateProperty(models.Model):
             'type': 'ir.actions.act_window',
             'name': f'Gastos — {self.title}',
             'res_model': 'estate.property.expense',
+            'view_mode': 'list,form',
+            'domain': [('property_id', '=', self.id)],
+            'context': {'default_property_id': self.id},
+        }
+
+    @api.depends('commission_ids')
+    def _compute_commission_count(self):
+        for rec in self:
+            rec.commission_count = len(rec.commission_ids)
+
+    def action_view_commissions(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Comisiones — {self.title}',
+            'res_model': 'estate.commission',
             'view_mode': 'list,form',
             'domain': [('property_id', '=', self.id)],
             'context': {'default_property_id': self.id},
@@ -933,8 +950,8 @@ class EstateProperty(models.Model):
                 if wp_pub and wp_id and hasattr(prop, 'action_publish_wordpress'):
                     try:
                         prop.action_publish_wordpress()
-                    except Exception:
-                        pass  # Silent — WP sync failures should not block saves
+                    except Exception as e:
+                        _logger.warning('WP sync falló al guardar propiedad %s: %s', prop.id, e)
         # Historial de precios
         if 'price' in vals:
             for prop in self:
@@ -1002,6 +1019,22 @@ class EstateProperty(models.Model):
                 )
         self.write({'state': 'reserved'})
 
+    def action_open_sale_wizard(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Vender Propiedad',
+            'res_model': 'estate.sale.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_property_id': self.id,
+                'default_buyer_id': self.buyer_id.id or False,
+                'default_sale_price': self.price or 0.0,
+                'default_commission_pct': self.commission_percentage or 5.0,
+            },
+        }
+
     def action_set_sold(self):
         self.ensure_one()
         if self.state not in ('available', 'reserved'):
@@ -1037,6 +1070,7 @@ class EstateProperty(models.Model):
                 'amount': main_amount,
                 'type': commission_type,
                 'date': today,
+                'state': 'approved',
             })
             self.env['estate.commission'].create({
                 'property_id': self.id,
@@ -1046,6 +1080,7 @@ class EstateProperty(models.Model):
                 'amount': co_amount,
                 'type': commission_type,
                 'date': today,
+                'state': 'approved',
             })
             self.message_post(
                 body=f'Comisión de ${total_amount:,.2f} dividida: '
@@ -1062,6 +1097,7 @@ class EstateProperty(models.Model):
                 'amount': total_amount,
                 'type': commission_type,
                 'date': today,
+                'state': 'approved',
             })
 
     def action_create_invoice(self):

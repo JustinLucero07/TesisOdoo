@@ -10,8 +10,8 @@
                 <div class="oe_right oe_button_box" name="visit_buttons" invisible="property_id == False">
                     <button name="action_done_visit" string=" Visita Realizada" type="object" class="oe_stat_button" icon="fa-check" invisible="visit_state != 'scheduled'"/>
                     <button name="action_send_whatsapp_followup" string=" WhatsApp Seguimiento" type="object" class="oe_stat_button" icon="fa-whatsapp" invisible="visit_state != 'done' or whatsapp_sent == True"/>
-                    <button name="action_send_survey_whatsapp" string="⭐ Encuesta Satisfacción" type="object" class="oe_stat_button" icon="fa-star" invisible="visit_state != 'done' or survey_sent == True" title="Envía encuesta de 1-5 estrellas al cliente por WhatsApp"/>
-                    <button name="action_cancel_visit" string="❌ Cancelar Visita" type="object" class="oe_stat_button" icon="fa-times" invisible="visit_state != 'scheduled'" confirm="¿Está seguro de cancelar esta visita?"/>
+                    <button name="action_send_survey_whatsapp" string=" Encuesta Satisfacción" type="object" class="oe_stat_button" icon="fa-star" invisible="visit_state != 'done' or survey_sent == True" title="Envía encuesta de 1-5 estrellas al cliente por WhatsApp"/>
+                    <button name="action_cancel_visit" string=" Cancelar Visita" type="object" class="oe_stat_button" icon="fa-times" invisible="visit_state != 'scheduled'" confirm="¿Está seguro de cancelar esta visita?"/>
                     <button name="action_schedule_visit" string=" Re-programar" type="object" class="oe_stat_button" icon="fa-refresh" invisible="visit_state == 'scheduled'"/>
                 </div>
                 <field name="visit_state" widget="statusbar" statusbar_visible="scheduled,done" invisible="property_id == False"/>
@@ -59,9 +59,14 @@
         <field name="model">calendar.event</field>
         <field name="inherit_id" ref="calendar.view_calendar_event_calendar"/>
         <field name="arch" type="xml">
+            <xpath expr="//calendar" position="attributes">
+                <attribute name="color">visit_color</attribute>
+            </xpath>
             <xpath expr="//field[@name='partner_ids']" position="after">
                 <field name="property_id" filters="1"/>
-                <field name="visit_state" invisible="1"/>
+                <field name="visit_state" filters="1" invisible="1"/>
+                <field name="appointment_type" filters="1" invisible="1"/>
+                <field name="visit_color" invisible="1"/>
             </xpath>
         </field>
     </record>
@@ -73,14 +78,27 @@
         <field name="inherit_id" ref="calendar.view_calendar_event_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='name']" position="after">
-                <field name="appointment_type" widget="badge" optional="show"/>
+                <field name="appointment_type" widget="badge"
+                       decoration-info="appointment_type == 'visit'"
+                       decoration-warning="appointment_type == 'call'"
+                       decoration-success="appointment_type == 'signing'"
+                       optional="show"/>
                 <field name="property_id" optional="show"/>
                 <field name="partner_id" optional="show"/>
-                <field name="visit_state" widget="badge" decoration-success="visit_state == 'done'" decoration-info="visit_state == 'scheduled'" invisible="property_id == False" optional="show"/>
-                <field name="visit_result" widget="badge" decoration-success="visit_result == 'offer_made'" decoration-info="visit_result == 'interested'" optional="hide"/>
+                <field name="visit_state" widget="badge"
+                       decoration-success="visit_state == 'done'"
+                       decoration-info="visit_state == 'scheduled'"
+                       decoration-danger="visit_state == 'cancelled'"
+                       invisible="property_id == False" optional="show"/>
+                <field name="visit_result" widget="badge"
+                       decoration-success="visit_result == 'offer_made'"
+                       decoration-info="visit_result == 'interested'"
+                       decoration-warning="visit_result == 'follow_up'"
+                       decoration-danger="visit_result == 'not_interested'"
+                       optional="hide"/>
                 <field name="visit_rating" widget="priority" optional="hide"/>
+                <field name="visit_color" column_invisible="True"/>
             </xpath>
-
         </field>
     </record>
 

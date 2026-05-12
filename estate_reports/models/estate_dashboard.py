@@ -395,7 +395,6 @@ class EstateDashboard(models.TransientModel):
         return self._action_open_property_list([('state', '=', 'sold')], 'Propiedades Vendidas')
 
     def action_open_stagnant(self):
-        from datetime import timedelta
         cutoff_45 = fields.Date.today() - timedelta(days=45)
         stagnant_ids = []
         available_old = self.env['estate.property'].search([
@@ -464,7 +463,6 @@ class EstateDashboard(models.TransientModel):
         }
 
     def action_open_expiring_contracts(self):
-        from datetime import timedelta
         limit = fields.Date.today() + timedelta(days=30)
         return {
             'type': 'ir.actions.act_window',

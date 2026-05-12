@@ -1,7 +1,24 @@
 import base64
+import json
+import logging
+import mimetypes
+import re
 
 from odoo import models, fields, api
 from odoo.exceptions import ValidationError, UserError
+
+_logger = logging.getLogger(__name__)
+
+# Tipos de archivo que Gemini Vision puede procesar
+_OCR_SUPPORTED_MIMES = {
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
+}
+
+try:
+    from google import genai as _genai
+    _GEMINI_OK = True
+except ImportError:
+    _GEMINI_OK = False
 
 ALLOWED_EXTENSIONS = ('.pdf', '.doc', '.docx', '.xls', '.xlsx',
                       '.jpg', '.jpeg', '.png', '.gif', '.webp')
@@ -81,6 +98,12 @@ class EstateDocument(models.Model):
         'res.users', string='Cargado por',
         default=lambda self: self.env.user, readonly=True)
     active = fields.Boolean(string='Activo', default=True)
+
+    # ── OCR ──────────────────────────────────────────────────────────────────
+    ocr_result = fields.Text(
+        string='Texto extraído (OCR)',
+        readonly=True,
+        help='Datos extraídos automáticamente del archivo mediante Gemini Vision.')
 
     # ── Computed ─────────────────────────────────────────────────────────────
     @api.depends('file')
@@ -171,6 +194,116 @@ class EstateDocument(models.Model):
                 'verified_by': False,
                 'verified_date': False,
             })
+
+    # ── OCR con Gemini Vision ────────────────────────────────────────────────
+    def action_ocr_extract(self):
+        """Envía el archivo a Gemini Vision y almacena el texto extraído en ocr_result."""
+        self.ensure_one()
+        if not self.file:
+            raise UserError('Sube un archivo antes de usar la extracción OCR.')
+
+        filename = self.filename or 'documento'
+        mime_type = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+
+        if mime_type not in _OCR_SUPPORTED_MIMES:
+            raise UserError(
+                f'El formato "{mime_type}" no es compatible con OCR. '
+                f'Usa imágenes (JPG, PNG, WEBP) o PDF.'
+            )
+
+        ICP = self.env['ir.config_parameter'].sudo()
+        api_key = ICP.get_param('estate_ai.api_key', '')
+        if not api_key:
+            raise UserError(
+                'No hay API Key de IA configurada. '
+                'Ve a Ajustes → Agente IA y configura la clave.'
+            )
+
+        # Elige el prompt según la categoría del tipo de documento
+        category = self.type_category or 'other'
+        prompts = {
+            'contract': (
+                'Extrae los datos de este contrato en formato JSON con los campos: '
+                'tipo_contrato, nombre_propietario, nombre_cliente, fecha_inicio, '
+                'fecha_fin, monto, direccion_propiedad, clausulas_importantes.'
+            ),
+            'identity': (
+                'Extrae los datos de este documento de identidad en formato JSON: '
+                'nombre_completo, numero_identificacion, fecha_nacimiento, '
+                'fecha_emision, fecha_vencimiento, direccion.'
+            ),
+            'property': (
+                'Extrae los datos de este documento de propiedad en formato JSON: '
+                'tipo_documento, numero_registro, direccion, propietario, '
+                'area_m2, valor_catastral, fecha_registro.'
+            ),
+            'financial': (
+                'Extrae los datos de este documento financiero en formato JSON: '
+                'tipo_documento, monto, fecha, banco_o_entidad, '
+                'numero_referencia, concepto, nombre_titular.'
+            ),
+            'legal': (
+                'Extrae los datos de este documento legal en formato JSON: '
+                'tipo_documento, partes_involucradas, fecha, notaria, '
+                'numero_escritura, descripcion_acto.'
+            ),
+        }
+        prompt = prompts.get(category,
+            'Analiza este documento inmobiliario y extrae en JSON todos los datos '
+            'relevantes que encuentres: nombres, fechas, montos, direcciones, '
+            'números de referencia y cualquier información importante.')
+
+        file_b64 = self.file.decode('utf-8') if isinstance(self.file, bytes) else self.file
+
+        extracted_text = ''
+        try:
+            if not _GEMINI_OK:
+                raise UserError(
+                    'La librería google-genai no está instalada. '
+                    'Ejecuta: pip install google-genai'
+                )
+            client = _genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=[{
+                    'parts': [
+                        {'inline_data': {'mime_type': mime_type, 'data': file_b64}},
+                        {'text': prompt},
+                    ]
+                }]
+            )
+            raw = response.text or ''
+            # Intenta parsear JSON para mostrarlo formateado
+            match = re.search(r'\{[\s\S]*\}', raw)
+            if match:
+                try:
+                    parsed = json.loads(match.group())
+                    extracted_text = json.dumps(parsed, ensure_ascii=False, indent=2)
+                except json.JSONDecodeError:
+                    extracted_text = raw
+            else:
+                extracted_text = raw
+        except UserError:
+            raise
+        except Exception as e:
+            _logger.exception('Error OCR Gemini en documento %s', self.id)
+            raise UserError(f'Error al procesar el documento con IA: {e}')
+
+        self.write({'ocr_result': extracted_text})
+        self.message_post(
+            body=f'🔍 <b>OCR completado con Gemini Vision.</b><br/>'
+                 f'<pre style="font-size:12px">{extracted_text[:500]}{"..." if len(extracted_text) > 500 else ""}</pre>'
+        )
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'OCR completado',
+                'message': 'Datos extraídos del documento correctamente.',
+                'type': 'success',
+                'sticky': False,
+            },
+        }
 
 
 class EstateDocumentRejectWizard(models.TransientModel):

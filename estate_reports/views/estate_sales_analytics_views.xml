@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════
+         GRAPH VIEWS — estate.property (ventas/alquileres)
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Ventas por Mes — línea temporal -->
+    <record id="estate_sales_graph_by_month" model="ir.ui.view">
+        <field name="name">estate.property.graph.sales.month</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Ventas por Mes" type="bar" sample="1">
+                <field name="date_sold" interval="month" type="row" string="Mes"/>
+                <field name="price" type="measure" string="Precio de venta"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Ranking de Asesores — barras de volumen -->
+    <record id="estate_sales_graph_by_user" model="ir.ui.view">
+        <field name="name">estate.property.graph.sales.user</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Ranking de Asesores" type="bar" sample="1" order="DESC">
+                <field name="user_id" type="row" string="Asesor"/>
+                <field name="price" type="measure" string="Volumen vendido"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Distribución por Tipo de Propiedad — pie -->
+    <record id="estate_sales_graph_by_type" model="ir.ui.view">
+        <field name="name">estate.property.graph.sales.type</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Por Tipo de Propiedad" type="pie" sample="1">
+                <field name="property_type_id" type="row" string="Tipo"/>
+                <field name="price" type="measure" string="Precio de venta"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Días en Mercado por Tipo -->
+    <record id="estate_sales_graph_days" model="ir.ui.view">
+        <field name="name">estate.property.graph.sales.days</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Días en Mercado" type="bar" sample="1">
+                <field name="property_type_id" type="row" string="Tipo"/>
+                <field name="days_on_market" type="measure" string="Días en mercado"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         PIVOT VIEWS
+    ═══════════════════════════════════════════════════════════ -->
+
+    <record id="estate_sales_pivot" model="ir.ui.view">
+        <field name="name">estate.property.pivot.sales</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Ventas" display_quantity="true" sample="1">
+                <field name="user_id" type="row" string="Asesor"/>
+                <field name="property_type_id" type="col" string="Tipo"/>
+                <field name="price" type="measure" string="Precio de venta"/>
+                <field name="days_on_market" type="measure" string="Días en mercado"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         SEARCH VIEW PARA VENTAS
+    ═══════════════════════════════════════════════════════════ -->
+
+    <record id="estate_sales_search" model="ir.ui.view">
+        <field name="name">estate.property.search.sales</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <search string="Filtrar Ventas">
+                <field name="user_id"/>
+                <field name="property_type_id"/>
+                <field name="city"/>
+                <field name="date_sold"/>
+                <filter name="sold" string="Vendidas" domain="[('state','=','sold')]"/>
+                <filter name="rented" string="Alquiladas" domain="[('state','=','rented')]"/>
+                <filter name="this_year" string="Este año"
+                        domain="[('date_sold','&gt;=', (context_today().replace(month=1,day=1)).strftime('%Y-%m-%d'))]"/>
+                <filter name="this_quarter" string="Este trimestre"
+                        domain="[('date_sold','&gt;=', (context_today() + relativedelta(months=-(context_today().month-1)%3)).replace(day=1).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="group_month" string="Agrupar por Mes"
+                        context="{'group_by': 'date_sold:month'}"/>
+                <filter name="group_user" string="Agrupar por Asesor"
+                        context="{'group_by': 'user_id'}"/>
+                <filter name="group_type" string="Agrupar por Tipo"
+                        context="{'group_by': 'property_type_id'}"/>
+                <filter name="group_city" string="Agrupar por Ciudad"
+                        context="{'group_by': 'city'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         ACCIONES
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- 1. Ventas por Mes -->
+    <record id="action_sales_by_month" model="ir.actions.act_window">
+        <field name="name">Ventas por Mes</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_by_month')}),
+            (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
+        <field name="domain">[('state','in',['sold','rented']),('date_sold','!=',False)]</field>
+        <field name="context">{'search_default_sold': 1, 'search_default_group_month': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
+            <p>Marca una propiedad como <b>Vendida</b> desde su formulario y aparecerá aquí.</p>
+        </field>
+    </record>
+
+    <!-- 2. Ranking de Asesores -->
+    <record id="action_sales_by_user" model="ir.actions.act_window">
+        <field name="name">Ranking de Asesores</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_by_user')}),
+            (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
+        <field name="domain">[('state','in',['sold','rented']),('date_sold','!=',False)]</field>
+        <field name="context">{'search_default_sold': 1, 'search_default_group_user': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
+        </field>
+    </record>
+
+    <!-- 3. Distribución por Tipo -->
+    <record id="action_sales_by_type" model="ir.actions.act_window">
+        <field name="name">Por Tipo de Propiedad</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_by_type')}),
+            (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
+        <field name="domain">[('state','in',['sold','rented']),('date_sold','!=',False)]</field>
+        <field name="context">{'search_default_sold': 1, 'search_default_group_type': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
+        </field>
+    </record>
+
+    <!-- 4. Días en Mercado -->
+    <record id="action_sales_days_market" model="ir.actions.act_window">
+        <field name="name">Días en Mercado</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_days')}),
+            (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
+        <field name="domain">[('state','in',['sold','rented']),('days_on_market','&gt;',0)]</field>
+        <field name="context">{'search_default_sold': 1, 'search_default_group_type': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ventas con tiempo en mercado calculado.</p>
+        </field>
+    </record>
+
+    <!-- Menús definidos en estate_reports_menus.xml -->
+
+</odoo>

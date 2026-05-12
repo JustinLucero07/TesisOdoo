@@ -19,11 +19,7 @@
 
         <!-- Tipos de Inmueble movido a Configuración -->
 
-        <menuitem id="estate_menu_property_comparator"
-                  name="Comparar Propiedades"
-                  parent="estate_menu_property_root"
-                  action="estate_property_comparator_wizard_action"
-                  sequence="30"/>
+        <!-- Comparar Propiedades disponible desde Reportes > Exportar -->
 
     <!-- 2. SECCIÓN: OPERACIONES -->
     <menuitem id="estate_menu_operations_root"
@@ -62,9 +58,9 @@
                   sequence="70"/>
 
 
-    <!-- 4. SECCIÓN: PLANIFICACIÓN -->
+    <!-- 4. SECCIÓN: AGENDA -->
     <menuitem id="estate_menu_planning_root"
-              name="Planificación"
+              name="Agenda"
               parent="estate_menu_root"
               sequence="40"/>
 
@@ -73,11 +69,11 @@
                   parent="estate_menu_planning_root"
                   action="calendar.action_calendar_event"
                   sequence="10"/>
-    <!-- 5. SECCIÓN: INTELIGENCIA & AGENTE -->
+    <!-- 5. REPORTES — App independiente en el menú principal de Odoo -->
     <menuitem id="estate_menu_intel_root"
-              name="Inteligencia"
-              parent="estate_menu_root"
-              sequence="50"/>
+              name="Reportes"
+              sequence="3"
+              web_icon="estate_reports,static/description/icon.png"/>
 
 
 
