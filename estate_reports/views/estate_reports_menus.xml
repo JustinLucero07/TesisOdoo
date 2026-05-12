@@ -50,6 +50,12 @@
                   action="estate_management.action_estate_commission_dashboard"
                   sequence="50"/>
 
+        <menuitem id="estate_menu_ventas_avg"
+                  name="Promedio de Ventas"
+                  parent="estate_menu_ventas_root"
+                  action="action_sales_avg_month"
+                  sequence="55"/>
+
         <menuitem id="estate_menu_ventas_kpi_wizard"
                   name="KPIs y Descargar Reporte"
                   parent="estate_menu_ventas_root"

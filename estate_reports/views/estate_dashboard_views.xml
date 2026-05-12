@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ============================================================
-         ACCIÓN — abre estate.dashboard como formulario KPI
-    ============================================================ -->
     <record id="estate_dashboard_action" model="ir.actions.act_window">
         <field name="name">Dashboard General</field>
         <field name="res_model">estate.dashboard</field>
@@ -11,69 +8,77 @@
         <field name="target">current</field>
     </record>
 
-    <!-- ============================================================
-         FORMULARIO PRINCIPAL DEL DASHBOARD — CON PESTAÑAS
-    ============================================================ -->
     <record id="estate_dashboard_view_form" model="ir.ui.view">
         <field name="name">estate.dashboard.form</field>
         <field name="model">estate.dashboard</field>
         <field name="arch" type="xml">
-            <form string="Dashboard Inmobiliario" create="false" delete="false">
+            <form string="Dashboard General" create="false" delete="false">
                 <sheet>
 
-                    <!-- ── Filtros Globales ─────────────────────────── -->
-                    <group col="4">
-                        <field name="filter_user_id"
-                               options="{'no_create': True}"
-                               placeholder="Todos los asesores"/>
-                        <field name="filter_period"/>
+                    <!-- ── Filtros Globales ─────────────────────────────── -->
+                    <div style="background:#f8faff;border-radius:10px;padding:10px 16px;
+                                margin-bottom:14px;border:1px solid #e3eaf5;
+                                display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+                        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:180px">
+                            <i class="fa fa-user-circle" title="Asesor" style="color:#004274;font-size:16px"/>
+                            <field name="filter_user_id"
+                                   options="{'no_create': True}"
+                                   placeholder="Todos los asesores"
+                                   style="flex:1"/>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:160px">
+                            <i class="fa fa-calendar" title="Período" style="color:#004274;font-size:16px"/>
+                            <field name="filter_period" style="flex:1"/>
+                        </div>
                         <field name="filter_date_from"
-                               invisible="filter_period != 'custom'"/>
+                               placeholder="Desde"
+                               invisible="filter_period != 'custom'"
+                               style="flex:1;min-width:130px"/>
                         <field name="filter_date_to"
-                               invisible="filter_period != 'custom'"/>
-                    </group>
+                               placeholder="Hasta"
+                               invisible="filter_period != 'custom'"
+                               style="flex:1;min-width:130px"/>
+                    </div>
 
-                    <!-- ── Inventario de Propiedades ─────────────────── -->
-                    <separator string="Inventario de Propiedades"/>
-                    <div class="oe_button_box" name="button_box_inventory">
-                        <button class="oe_stat_button" icon="fa-home" type="object"
-                                name="action_open_all_properties">
+                    <!-- ── Header KPI (banner + tarjetas) ──────────────── -->
+                    <field name="kpi_header_html" nolabel="1" readonly="1" colspan="4"/>
+
+                    <!-- ── Accesos rápidos Pipeline ─────────────────────── -->
+                    <div class="oe_button_box" name="quick_actions"
+                         style="margin-top:4px;margin-bottom:4px">
+                        <button class="oe_stat_button" icon="fa-tag" type="object"
+                                name="action_open_offers"
+                                style="border-left:3px solid #1877F2">
                             <div class="o_stat_info">
                                 <span class="o_stat_value">
-                                    <field name="total_properties" readonly="1"/>
+                                    <field name="active_offers_count" readonly="1"/>
                                 </span>
-                                <span class="o_stat_text">Total</span>
+                                <span class="o_stat_text">Ofertas</span>
                             </div>
                         </button>
-                        <button class="oe_stat_button" icon="fa-check-circle" type="object"
-                                name="action_open_available">
+                        <button class="oe_stat_button" icon="fa-file-text-o" type="object"
+                                name="action_open_contracts"
+                                style="border-left:3px solid #004274">
                             <div class="o_stat_info">
                                 <span class="o_stat_value">
-                                    <field name="available_properties" readonly="1"/>
+                                    <field name="active_contracts_count" readonly="1"/>
                                 </span>
-                                <span class="o_stat_text">Disponibles</span>
+                                <span class="o_stat_text">Contratos</span>
                             </div>
                         </button>
-                        <button class="oe_stat_button" icon="fa-key" type="object"
-                                name="action_open_rented">
+                        <button class="oe_stat_button" icon="fa-calendar-check-o" type="object"
+                                name="action_open_appointments"
+                                style="border-left:3px solid #00897B">
                             <div class="o_stat_info">
                                 <span class="o_stat_value">
-                                    <field name="rented_properties" readonly="1"/>
+                                    <field name="appointments_done" readonly="1"/>
                                 </span>
-                                <span class="o_stat_text">Alquiladas</span>
-                            </div>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-handshake-o" type="object"
-                                name="action_open_sold">
-                            <div class="o_stat_info">
-                                <span class="o_stat_value">
-                                    <field name="sold_properties" readonly="1"/>
-                                </span>
-                                <span class="o_stat_text">Vendidas</span>
+                                <span class="o_stat_text">Visitas</span>
                             </div>
                         </button>
                         <button class="oe_stat_button" icon="fa-clock-o" type="object"
-                                name="action_open_stagnant">
+                                name="action_open_stagnant"
+                                style="border-left:3px solid #d97706">
                             <div class="o_stat_info">
                                 <span class="o_stat_value">
                                     <field name="stagnant_properties" readonly="1"/>
@@ -81,158 +86,157 @@
                                 <span class="o_stat_text">Estancadas</span>
                             </div>
                         </button>
-                        <button class="oe_stat_button" icon="fa-file-excel-o" type="object"
-                                name="action_open_report_wizard">
+                        <button class="oe_stat_button" icon="fa-exclamation-triangle" type="object"
+                                name="action_open_expiring_contracts"
+                                style="border-left:3px solid #dc2626">
                             <div class="o_stat_info">
-                                <span class="o_stat_text">Generar Reporte</span>
+                                <span class="o_stat_value">
+                                    <field name="contracts_expiring" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Por Vencer</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-file-excel-o" type="object"
+                                name="action_open_report_wizard"
+                                style="border-left:3px solid #16a34a">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Exportar</span>
                             </div>
                         </button>
                     </div>
 
-                    <!-- ══════════════════════════════════════════════
+                    <!-- ══════════════════════════════════════════════════
                          PESTAÑAS DEL DASHBOARD
-                    ══════════════════════════════════════════════ -->
+                    ══════════════════════════════════════════════════ -->
                     <notebook>
 
                         <!-- ═══ PESTAÑA 1: RESUMEN ═══ -->
                         <page string="Resumen" name="tab_summary">
 
-                            <!-- Pipeline Comercial -->
-                            <separator string="Pipeline Comercial"/>
-                            <div class="oe_button_box" name="button_box_pipeline">
-                                <button class="oe_stat_button" icon="fa-tag" type="object"
-                                        name="action_open_offers">
-                                    <div class="o_stat_info">
-                                        <span class="o_stat_value">
-                                            <field name="active_offers_count" readonly="1"/>
-                                        </span>
-                                        <span class="o_stat_text">Ofertas Activas</span>
-                                    </div>
-                                </button>
-                                <button class="oe_stat_button" icon="fa-file-text-o" type="object"
-                                        name="action_open_contracts">
-                                    <div class="o_stat_info">
-                                        <span class="o_stat_value">
-                                            <field name="active_contracts_count" readonly="1"/>
-                                        </span>
-                                        <span class="o_stat_text">Contratos Activos</span>
-                                    </div>
-                                </button>
-                                <button class="oe_stat_button" icon="fa-shopping-cart" type="object"
-                                        name="action_open_sale_orders">
-                                    <div class="o_stat_info">
-                                        <span class="o_stat_value">
-                                            <field name="sale_orders_count" readonly="1"/>
-                                        </span>
-                                        <span class="o_stat_text">Órdenes de Venta</span>
-                                    </div>
-                                </button>
-                                <button class="oe_stat_button" icon="fa-users" type="object"
-                                        name="action_open_opportunities">
-                                    <div class="o_stat_info">
-                                        <span class="o_stat_value">
-                                            <field name="active_clients" readonly="1"/>
-                                        </span>
-                                        <span class="o_stat_text">Oportunidades</span>
-                                    </div>
-                                </button>
-                                <button class="oe_stat_button" icon="fa-calendar-check-o" type="object"
-                                        name="action_open_appointments">
-                                    <div class="o_stat_info">
-                                        <span class="o_stat_value">
-                                            <field name="appointments_done" readonly="1"/>
-                                        </span>
-                                        <span class="o_stat_text">Visitas (Período)</span>
-                                    </div>
-                                </button>
-                                <button class="oe_stat_button" icon="fa-exclamation-triangle" type="object"
-                                        name="action_open_expiring_contracts">
-                                    <div class="o_stat_info">
-                                        <span class="o_stat_value">
-                                            <field name="contracts_expiring" readonly="1"/>
-                                        </span>
-                                        <span class="o_stat_text">Contratos por Vencer</span>
-                                    </div>
-                                </button>
+                            <!-- Tendencias vs Período Anterior -->
+                            <div style="background:#fff;border-radius:10px;border:1px solid #e3eaf5;
+                                        padding:14px;margin-bottom:12px">
+                                <div style="font-weight:700;color:#004274;font-size:13px;
+                                            margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa fa-line-chart" title="Tendencias" style="color:#1877F2"/>
+                                    Tendencias vs Período Anterior
+                                </div>
+                                <field name="trend_html" nolabel="1" readonly="1"/>
                             </div>
 
-                            <!-- Indicadores Financieros -->
-                            <separator string="Indicadores Financieros — Período Seleccionado"/>
-                            <group>
-                                <group string="Ingresos">
-                                    <field name="monthly_commissions" readonly="1" widget="monetary"/>
-                                    <field name="won_revenue_month" readonly="1" widget="monetary"/>
-                                </group>
-                                <group string="Pendientes">
-                                    <field name="pending_revenue" readonly="1" widget="monetary"/>
-                                    <field name="pending_invoices_amount" readonly="1" widget="monetary"/>
-                                    <field name="avg_days_on_market" readonly="1"/>
-                                </group>
-                            </group>
-
-                            <!-- Tendencias -->
-                            <separator string="Tendencias vs Período Anterior"/>
-                            <group>
-                                <field name="trend_html" nolabel="1" readonly="1" colspan="2"/>
-                            </group>
-
-                            <!-- Gráficos inline -->
-                            <group col="2">
-                                <group>
+                            <!-- Gráficos en dos columnas -->
+                            <div style="display:flex;gap:12px;flex-wrap:wrap">
+                                <div style="flex:1;min-width:280px;background:#fff;
+                                            border-radius:10px;border:1px solid #e3eaf5;padding:14px">
+                                    <div style="font-weight:700;color:#004274;font-size:13px;
+                                                margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                        <i class="fa fa-bar-chart" title="Ventas del Período" style="color:#1877F2"/>
+                                        Ventas del Período
+                                    </div>
                                     <field name="sales_chart_html" nolabel="1" readonly="1"/>
-                                </group>
-                                <group>
+                                </div>
+                                <div style="flex:1;min-width:280px;background:#fff;
+                                            border-radius:10px;border:1px solid #e3eaf5;padding:14px">
+                                    <div style="font-weight:700;color:#004274;font-size:13px;
+                                                margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                        <i class="fa fa-pie-chart" title="Leads por Fuente" style="color:#00897B"/>
+                                        Leads por Fuente
+                                    </div>
                                     <field name="leads_chart_html" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+
+                            <!-- Indicadores Financieros detallados -->
+                            <div style="background:#fff;border-radius:10px;border:1px solid #e3eaf5;
+                                        padding:14px;margin-top:12px">
+                                <div style="font-weight:700;color:#004274;font-size:13px;
+                                            margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa fa-money" title="Indicadores Financieros" style="color:#16a34a"/>
+                                    Indicadores Financieros Detallados
+                                </div>
+                                <group col="4">
+                                    <field name="monthly_commissions" readonly="1" widget="monetary"
+                                           string="Comisiones del Período"/>
+                                    <field name="won_revenue_month" readonly="1" widget="monetary"
+                                           string="Ingresos Cerrados"/>
+                                    <field name="pending_revenue" readonly="1" widget="monetary"
+                                           string="Pipeline Pendiente"/>
+                                    <field name="pending_invoices_amount" readonly="1" widget="monetary"
+                                           string="Facturas Pendientes"/>
+                                    <field name="avg_days_on_market" readonly="1"
+                                           string="Días Promedio en Mercado"/>
                                 </group>
-                            </group>
+                            </div>
                         </page>
 
-                        <!-- ═══ PESTAÑA 2: VENTAS & AVM ═══ -->
+                        <!-- ═══ PESTAÑA 2: VENTAS &amp; AVM ═══ -->
                         <page string="Ventas &amp; AVM" name="tab_sales">
-                            <separator string="Comparativa Precio vs AVM — Propiedades Disponibles"/>
-                            <group>
-                                <field name="avm_comparison_html" nolabel="1" readonly="1" colspan="2"/>
-                            </group>
+                            <div style="background:#fff;border-radius:10px;border:1px solid #e3eaf5;padding:14px">
+                                <div style="font-weight:700;color:#004274;font-size:13px;
+                                            margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa fa-calculator" title="Comparativa AVM" style="color:#1877F2"/>
+                                    Comparativa Precio vs Valor AVM — Propiedades Disponibles
+                                </div>
+                                <field name="avm_comparison_html" nolabel="1" readonly="1"/>
+                            </div>
                         </page>
 
                         <!-- ═══ PESTAÑA 3: CRM — EMBUDO ═══ -->
                         <page string="CRM / Embudo" name="tab_crm">
-                            <separator string="Embudo de Conversión — Período Seleccionado"/>
-                            <group>
-                                <field name="funnel_html" nolabel="1" readonly="1" colspan="2"/>
-                            </group>
-                            <group col="4">
-                                <button string="Ver Leads del Período" type="object"
-                                        name="action_open_funnel_leads" class="btn-primary"
-                                        icon="fa-external-link"/>
-                                <button string="Ver Pagos Vencidos" type="object"
-                                        name="action_open_overdue_payments" class="btn-warning"
-                                        icon="fa-exclamation-circle"/>
-                            </group>
+                            <div style="background:#fff;border-radius:10px;border:1px solid #e3eaf5;padding:14px">
+                                <div style="font-weight:700;color:#004274;font-size:13px;
+                                            margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa fa-filter" title="Embudo de Conversión" style="color:#7c3aed"/>
+                                    Embudo de Conversión — Período Seleccionado
+                                </div>
+                                <field name="funnel_html" nolabel="1" readonly="1"/>
+                                <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+                                    <button string="Ver Leads del Período" type="object"
+                                            name="action_open_funnel_leads"
+                                            class="btn btn-primary btn-sm"
+                                            icon="fa-external-link"/>
+                                    <button string="Ver Pagos Vencidos" type="object"
+                                            name="action_open_overdue_payments"
+                                            class="btn btn-warning btn-sm"
+                                            icon="fa-exclamation-circle"/>
+                                </div>
+                            </div>
                         </page>
 
                         <!-- ═══ PESTAÑA 4: ARRIENDOS ═══ -->
                         <page string="Arriendos" name="tab_rentals">
-                            <separator string="Ocupación de Propiedades en Arriendo"/>
-                            <group>
-                                <field name="occupancy_html" nolabel="1" readonly="1" colspan="2"/>
-                            </group>
+                            <div style="background:#fff;border-radius:10px;border:1px solid #e3eaf5;padding:14px">
+                                <div style="font-weight:700;color:#004274;font-size:13px;
+                                            margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa fa-building" title="Arriendos" style="color:#7c3aed"/>
+                                    Ocupación de Propiedades en Arriendo
+                                </div>
+                                <field name="occupancy_html" nolabel="1" readonly="1"/>
+                            </div>
                         </page>
 
                         <!-- ═══ PESTAÑA 5: ASESORES ═══ -->
                         <page string="Asesores" name="tab_advisors">
-                            <separator string="Ranking de Asesores — Mes Actual"/>
-                            <group>
-                                <field name="advisor_ranking_html" nolabel="1" readonly="1" colspan="2"/>
-                            </group>
+                            <div style="background:#fff;border-radius:10px;border:1px solid #e3eaf5;padding:14px">
+                                <div style="font-weight:700;color:#004274;font-size:13px;
+                                            margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa fa-trophy" title="Ranking de Asesores" style="color:#d97706"/>
+                                    Ranking de Asesores — Período Seleccionado
+                                </div>
+                                <field name="advisor_ranking_html" nolabel="1" readonly="1"/>
+                            </div>
                         </page>
 
                         <!-- ═══ PESTAÑA 6: MAPA ═══ -->
                         <page string="Mapa" name="tab_map">
-                            <separator string="Distribución Geográfica"/>
-                            <group>
-                                <field name="map_html" nolabel="1" readonly="1" colspan="2"/>
-                            </group>
+                            <div style="background:#fff;border-radius:10px;border:1px solid #e3eaf5;padding:14px">
+                                <div style="font-weight:700;color:#004274;font-size:13px;
+                                            margin-bottom:10px;display:flex;align-items:center;gap:6px">
+                                    <i class="fa fa-map-marker" title="Distribución Geográfica" style="color:#dc2626"/>
+                                    Distribución Geográfica de Propiedades
+                                </div>
+                                <field name="map_html" nolabel="1" readonly="1"/>
+                            </div>
                         </page>
 
                     </notebook>

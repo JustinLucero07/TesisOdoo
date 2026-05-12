@@ -167,6 +167,53 @@
         </field>
     </record>
 
+    <!-- ═══════════════════════════════════════════════════════
+         PROMEDIO DE VENTAS — Gráfico + Pivot por mes
+    ═══════════════════════════════════════════════════════════ -->
+
+    <!-- Gráfico de barras: precio total vendido por mes -->
+    <record id="estate_sales_avg_graph" model="ir.ui.view">
+        <field name="name">estate.property.graph.avg.month</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Promedio de Ventas por Mes" type="bar" sample="1">
+                <field name="date_sold" interval="month" type="row" string="Mes"/>
+                <field name="price" type="measure" string="Ingresos Totales"/>
+                <field name="commission_amount" type="measure" string="Comisiones Totales"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Pivot: unidades, precio promedio, comisión promedio por mes -->
+    <record id="estate_sales_avg_pivot" model="ir.ui.view">
+        <field name="name">estate.property.pivot.avg.month</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <pivot string="Promedio de Ventas" display_quantity="true" sample="1">
+                <field name="date_sold" interval="month" type="row" string="Mes"/>
+                <field name="price" type="measure" string="Precio Venta"/>
+                <field name="commission_amount" type="measure" string="Comisión"/>
+                <field name="days_on_market" type="measure" string="Días en Mercado"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Acción: Promedio de Ventas (visual — graph + pivot + list) -->
+    <record id="action_sales_avg_month" model="ir.actions.act_window">
+        <field name="name">Promedio de Ventas</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'graph','view_id':ref('estate_sales_avg_graph')}),
+            (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_avg_pivot')})]"/>
+        <field name="domain">[('state','=','sold'),('date_sold','!=',False)]</field>
+        <field name="context">{'search_default_group_month': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
+            <p>Las propiedades vendidas aparecerán aquí agrupadas por mes con su precio e ingresos por comisión.</p>
+        </field>
+    </record>
+
     <!-- Menús definidos en estate_reports_menus.xml -->
 
 </odoo>

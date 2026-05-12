@@ -6,6 +6,19 @@ import calendar as _cal
 class EstateDashboard(models.TransientModel):
     _name = 'estate.dashboard'
     _description = 'Dashboard Inmobiliario'
+    _rec_name = 'display_title'
+
+    display_title = fields.Char(
+        string='Dashboard', compute='_compute_display_title')
+
+    @api.depends()
+    def _compute_display_title(self):
+        for rec in self:
+            rec.display_title = 'Dashboard General'
+
+    # ── Banner HTML (KPI cards + header) ─────────────────────────────
+    kpi_header_html = fields.Html(
+        string='Resumen Ejecutivo', compute='_compute_kpi_header')
 
     # KPIs Propiedades
     total_properties = fields.Integer(
@@ -132,6 +145,7 @@ class EstateDashboard(models.TransientModel):
     def _onchange_filters(self):
         """Trigger all recomputations when filters change."""
         self._compute_kpis()
+        self._compute_kpi_header()
         self._compute_advisor_ranking()
         self._compute_funnel()
         self._compute_occupancy()
@@ -257,6 +271,100 @@ class EstateDashboard(models.TransientModel):
                     ('start', '>=', fields.Datetime.to_datetime(cutoff_45)),
                 ])
             )
+
+    @api.depends('filter_user_id', 'filter_period', 'filter_date_from', 'filter_date_to')
+    def _compute_kpi_header(self):
+        """Genera tarjetas KPI con colores corporativos para la cabecera del dashboard."""
+        BLUE = '#004274'
+        LIGHT_BLUE = '#1877F2'
+        GREEN = '#16a34a'
+        ORANGE = '#d97706'
+        RED = '#dc2626'
+
+        for rec in self:
+            today = fields.Date.today()
+            start_month = today.replace(day=1)
+            period_from, period_to = rec._get_period_dates()
+            user_domain = [('user_id', '=', rec.filter_user_id.id)] if rec.filter_user_id else []
+
+            Property = self.env['estate.property']
+            total = Property.search_count(user_domain)
+            avail = Property.search_count(user_domain + [('state', '=', 'available')])
+            sold  = Property.search_count(user_domain + [('state', '=', 'sold')])
+            rented= Property.search_count(user_domain + [('state', '=', 'rented')])
+
+            sold_period = Property.search(user_domain + [
+                ('state', '=', 'sold'),
+                ('date_sold', '>=', period_from),
+                ('date_sold', '<=', period_to),
+            ])
+            revenue = sum(sold_period.mapped('price'))
+            commissions = sum(sold_period.mapped('commission_amount'))
+
+            # Avg price per sold property in period
+            avg_price = (revenue / len(sold_period)) if sold_period else 0.0
+
+            lead_count = self.env['crm.lead'].search_count([
+                ('type', '=', 'opportunity'),
+                ('probability', '>', 0), ('probability', '<', 100),
+            ])
+
+            def card(icon, label, value, color, bg='#f0f7ff'):
+                return (
+                    f'<div style="flex:1;min-width:140px;background:{bg};border-radius:12px;'
+                    f'padding:16px 14px;border-top:4px solid {color};box-shadow:0 2px 6px rgba(0,0,0,.06)">'
+                    f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+                    f'<i class="fa {icon}" style="font-size:18px;color:{color}"/>'
+                    f'<span style="font-size:11px;color:#6b7280;font-weight:500;text-transform:uppercase;letter-spacing:.05em">{label}</span>'
+                    f'</div>'
+                    f'<div style="font-size:24px;font-weight:700;color:{color}">{value}</div>'
+                    f'</div>'
+                )
+
+            period_label = dict([
+                ('month', 'Mes Actual'), ('quarter', 'Trimestre'), ('year', 'Año'),
+                ('last_month', 'Mes Anterior'), ('custom', 'Período Custom'),
+            ]).get(rec.filter_period or 'month', 'Período')
+
+            html = f'''
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:0 0 12px">
+                <!-- Header banner -->
+                <div style="background:linear-gradient(135deg,{BLUE} 0%,{LIGHT_BLUE} 100%);
+                            border-radius:12px;padding:18px 24px;margin-bottom:16px;
+                            display:flex;align-items:center;justify-content:space-between;gap:12px">
+                    <div>
+                        <h2 style="color:white;margin:0 0 4px;font-size:20px;font-weight:700">
+                            <i class="fa fa-tachometer" style="margin-right:8px"/>Dashboard Inmobiliario
+                        </h2>
+                        <span style="color:rgba(255,255,255,.75);font-size:13px">
+                            {period_label} · {today.strftime("%d/%m/%Y")}
+                            {"&nbsp;·&nbsp;<strong style='color:white'>" + rec.filter_user_id.name + "</strong>" if rec.filter_user_id else ""}
+                        </span>
+                    </div>
+                    <div style="text-align:right;color:white">
+                        <div style="font-size:28px;font-weight:800">{len(sold_period)}</div>
+                        <div style="font-size:11px;opacity:.8">ventas en período</div>
+                    </div>
+                </div>
+
+                <!-- KPI cards row -->
+                <div style="display:flex;flex-wrap:wrap;gap:10px">
+                    {card("fa-home", "Total Propiedades", total, BLUE)}
+                    {card("fa-check-circle", "Disponibles", avail, GREEN, '#f0fdf4')}
+                    {card("fa-handshake-o", "Vendidas", sold, LIGHT_BLUE)}
+                    {card("fa-key", "Alquiladas", rented, '#7c3aed', '#faf5ff')}
+                    {card("fa-users", "Leads Activos", lead_count, ORANGE, '#fffbeb')}
+                </div>
+
+                <!-- Financial summary -->
+                <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
+                    {card("fa-dollar", f"Ingresos ({period_label})", f"${revenue:,.0f}", GREEN, '#f0fdf4')}
+                    {card("fa-percent", f"Comisiones ({period_label})", f"${commissions:,.0f}", ORANGE, '#fffbeb')}
+                    {card("fa-bar-chart", "Precio Promedio Venta", f"${avg_price:,.0f}", LIGHT_BLUE)}
+                </div>
+            </div>
+            '''
+            rec.kpi_header_html = html
 
     def _compute_advisor_ranking(self):
         """Mejora 7: Ranking mensual de asesores por ventas y comisiones."""

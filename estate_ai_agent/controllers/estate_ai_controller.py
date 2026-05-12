@@ -865,13 +865,14 @@ INSTRUCCIONES DE RESPUESTA:
       tu respuesta DEBE incluir: [GRAFICO:circular,Disponibles:12,Vendidas:9,Alquiladas:3]
 5. report_types disponibles (get_report_data y generate_excel_report):
    VENTAS: properties_by_state | properties_by_type | sales_by_month | days_on_market_by_type |
-           ranking_advisors | kpi_general | income_by_month
+           ranking_advisors | kpi_general | income_by_month | sales_avg_summary
    COMISIONES: commissions_by_advisor | commissions_pending
    CONTRATOS/PAGOS: contracts_by_type | payments_by_method | expenses_by_type
    OFERTAS/VISITAS: offers_by_state | visits_by_property | visits_done_summary
    CRM/LEADS: leads_by_temperature | leads_by_source | leads_by_stage | deals_closed_by_month
    OPERACIONES: appraisals_by_state | maintenance_by_state
    SOCIAL: social_facebook | social_instagram
+   Cuando el usuario pida "promedio de ventas" o "análisis de ventas", usa sales_avg_summary.
    Cuando el usuario pida "ranking", usa ranking_advisors.
    Cuando pida "KPIs" o "cómo vamos", usa kpi_general.
    Cuando pida "pipeline" o "embudo", usa leads_by_stage.
@@ -2656,6 +2657,56 @@ INSTRUCCIONES DE RESPUESTA:
                                       ensure_ascii=False, default=str)
                 except Exception:
                     return json.dumps({'error': 'Módulo de Facebook no disponible o sin datos.'})
+
+            elif report_type == 'sales_avg_summary':
+                env.cr.execute("""
+                    SELECT
+                        TO_CHAR(date_sold, 'Mon YYYY') as mes,
+                        DATE_TRUNC('month', date_sold) as mes_ord,
+                        COUNT(*) as unidades,
+                        COALESCE(SUM(price), 0) as ingresos_total,
+                        COALESCE(AVG(price), 0) as precio_promedio,
+                        COALESCE(SUM(commission_amount), 0) as comisiones_total,
+                        COALESCE(AVG(commission_amount), 0) as comision_promedio,
+                        COALESCE(AVG(days_on_market), 0) as dias_promedio
+                    FROM estate_property
+                    WHERE state = 'sold' AND date_sold IS NOT NULL
+                    GROUP BY TO_CHAR(date_sold, 'Mon YYYY'), DATE_TRUNC('month', date_sold)
+                    ORDER BY DATE_TRUNC('month', date_sold) DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                if not rows:
+                    return json.dumps({'report': 'Promedio de Ventas', 'data': {},
+                                       'mensaje': 'Sin ventas registradas aún.'})
+                # Summary metrics
+                total_units = sum(r['unidades'] for r in rows)
+                total_revenue = sum(float(r['ingresos_total']) for r in rows)
+                total_commissions = sum(float(r['comisiones_total']) for r in rows)
+                n_months = len(rows)
+                avg_units_month = round(total_units / n_months, 1)
+                avg_revenue_month = round(total_revenue / n_months, 0)
+                avg_price_unit = round(total_revenue / total_units, 0) if total_units else 0
+                avg_commission_unit = round(total_commissions / total_units, 0) if total_units else 0
+                # Chart: revenue by month
+                data_revenue = {r['mes']: float(f"{float(r['ingresos_total']):.0f}") for r in reversed(rows)}
+                data_units = {r['mes']: int(r['unidades']) for r in reversed(rows)}
+                return json.dumps({
+                    'report': 'Promedio de Ventas',
+                    'data': data_revenue,
+                    'data_units': data_units,
+                    'chart_hint': 'linea',
+                    'resumen': {
+                        'meses_analizados': n_months,
+                        'unidades_promedio_mes': avg_units_month,
+                        'ingresos_promedio_mes': avg_revenue_month,
+                        'precio_promedio_por_venta': avg_price_unit,
+                        'comision_promedio_por_venta': avg_commission_unit,
+                        'ingresos_totales': round(total_revenue, 0),
+                        'comisiones_totales': round(total_commissions, 0),
+                    },
+                    'detalle': rows,
+                }, ensure_ascii=False, default=str)
 
             elif report_type == 'social_instagram':
                 try:
