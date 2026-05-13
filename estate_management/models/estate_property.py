@@ -42,7 +42,6 @@ class EstateProperty(models.Model):
     
     offer_type = fields.Selection([
         ('sale', 'Venta'),
-        ('rent', 'Alquiler'),
     ], string='Tipo de Oferta', default='sale', tracking=True)
 
     # --- Ubicación ---
@@ -488,7 +487,6 @@ class EstateProperty(models.Model):
         ('available', 'Disponible'),
         ('reserved', 'Reservado'),
         ('sold', 'Vendido'),
-        ('rented', 'Alquilado'),
     ], string='Estado', default='available', tracking=True, required=True)
 
     active = fields.Boolean(string='Activo', default=True)
@@ -736,7 +734,7 @@ class EstateProperty(models.Model):
             'domain': [('property_id', '=', self.id)],
             'context': {
                 'default_property_id': self.id,
-                'default_estate_transaction_type': 'sale' if self.offer_type == 'sale' else 'rent',
+                'default_estate_transaction_type': 'sale',
                 'default_partner_id': self.buyer_id.id or self.owner_id.id or False,
             },
         }

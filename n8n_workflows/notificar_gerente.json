@@ -1,0 +1,139 @@
+{
+    "name": "notificar_gerente",
+    "nodes": [
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "notificar-gerente",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "id": "a1b2c3d4-0001-0001-0001-000000000001",
+            "name": "Webhook",
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                240,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "msg-001",
+                            "name": "mensaje",
+                            "value": "={{ '🏠 Nuevo vendedor\\nNombre: ' + $json.body.nombre + '\\nTel: ' + $json.body.telefono + '\\nPropiedad: ' + $json.body.tipo_propiedad + ' en ' + $json.body.sector + '\\nPrecio estimado: ' + ($json.body.precio_estimado ?? 'No indicó') + '\\nEstado: ' + ($json.body.estado_propiedad ?? 'No indicó') + '\\nContactar lo antes posible.' }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "msg-002",
+                            "name": "telefono_gerente",
+                            "value": "593XXXXXXXXX",
+                            "type": "string"
+                        },
+                        {
+                            "id": "msg-003",
+                            "name": "phone_id",
+                            "value": "TU_PHONE_ID",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "a1b2c3d4-0002-0002-0002-000000000002",
+            "name": "Armar Mensaje",
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                460,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "=https://graph.facebook.com/v19.0/{{ $json.phone_id }}/messages",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "whatsAppApi",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.telefono_gerente }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"{{ $json.mensaje }}\"\n  }\n}",
+                "options": {}
+            },
+            "id": "a1b2c3d4-0003-0003-0003-000000000003",
+            "name": "Enviar WhatsApp Gerente",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "DOEaWrSOaR0CWKbo",
+                    "name": "WhatsApp account"
+                }
+            },
+            "position": [
+                680,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "respondWith": "json",
+                "responseBody": "={ \"success\": true, \"mensaje\": \"Gerente notificado correctamente\" }",
+                "options": {
+                    "responseCode": 200
+                }
+            },
+            "id": "a1b2c3d4-0004-0004-0004-000000000004",
+            "name": "Responder al Bot",
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                900,
+                300
+            ]
+        }
+    ],
+    "connections": {
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Armar Mensaje",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Armar Mensaje": {
+            "main": [
+                [
+                    {
+                        "node": "Enviar WhatsApp Gerente",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Enviar WhatsApp Gerente": {
+            "main": [
+                [
+                    {
+                        "node": "Responder al Bot",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "tags": []
+}
