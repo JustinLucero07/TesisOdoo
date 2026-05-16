@@ -50,7 +50,7 @@
                             invisible="state != 'accepted'"/>
                     <button name="action_create_sale_order" string="Crear Orden de Venta" type="object"
                             class="btn-success" icon="fa-shopping-cart"
-                            invisible="state != 'accepted' or offer_type != 'sale'"/>
+                            invisible="state != 'accepted'"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,submitted,countered,accepted"/>
                 </header>

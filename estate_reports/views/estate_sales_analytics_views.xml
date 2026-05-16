@@ -2,7 +2,7 @@
 <odoo>
 
     <!-- ═══════════════════════════════════════════════════════
-         GRAPH VIEWS — estate.property (ventas/alquileres)
+         GRAPH VIEWS — estate.property (ventas)
     ═══════════════════════════════════════════════════════════ -->
 
     <!-- Ventas por Mes — línea temporal -->
@@ -84,7 +84,7 @@
                 <field name="city"/>
                 <field name="date_sold"/>
                 <filter name="sold" string="Vendidas" domain="[('state','=','sold')]"/>
-                <filter name="rented" string="Alquiladas" domain="[('state','=','rented')]"/>
+
                 <filter name="this_year" string="Este año"
                         domain="[('date_sold','&gt;=', (context_today().replace(month=1,day=1)).strftime('%Y-%m-%d'))]"/>
                 <filter name="this_quarter" string="Este trimestre"
@@ -114,7 +114,7 @@
         <field name="view_ids" eval="[(5,0,0),
             (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_by_month')}),
             (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
-        <field name="domain">[('state','in',['sold','rented']),('date_sold','!=',False)]</field>
+        <field name="domain">[('state','=','sold'),('date_sold','!=',False)]</field>
         <field name="context">{'search_default_sold': 1, 'search_default_group_month': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
@@ -130,7 +130,7 @@
         <field name="view_ids" eval="[(5,0,0),
             (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_by_user')}),
             (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
-        <field name="domain">[('state','in',['sold','rented']),('date_sold','!=',False)]</field>
+        <field name="domain">[('state','=','sold'),('date_sold','!=',False)]</field>
         <field name="context">{'search_default_sold': 1, 'search_default_group_user': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
@@ -145,7 +145,7 @@
         <field name="view_ids" eval="[(5,0,0),
             (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_by_type')}),
             (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
-        <field name="domain">[('state','in',['sold','rented']),('date_sold','!=',False)]</field>
+        <field name="domain">[('state','=','sold'),('date_sold','!=',False)]</field>
         <field name="context">{'search_default_sold': 1, 'search_default_group_type': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
@@ -160,7 +160,7 @@
         <field name="view_ids" eval="[(5,0,0),
             (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_days')}),
             (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
-        <field name="domain">[('state','in',['sold','rented']),('days_on_market','&gt;',0)]</field>
+        <field name="domain">[('state','=','sold'),('days_on_market','&gt;',0)]</field>
         <field name="context">{'search_default_sold': 1, 'search_default_group_type': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Sin ventas con tiempo en mercado calculado.</p>

@@ -112,10 +112,7 @@ class EstatePayment(models.Model):
             raise UserError('Este pago no tiene cliente asignado. Asegúrese de que el contrato tenga un cliente.')
 
         contract_type = self.contract_id.contract_type if self.contract_id else 'other'
-        if contract_type == 'rent':
-            line_name = f'Cuota de alquiler: {self.contract_id.name} ({self.date})'
-            tx_type = 'rent'
-        elif contract_type == 'sale':
+        if contract_type == 'sale':
             line_name = f'Pago compraventa: {self.contract_id.name} ({self.date})'
             tx_type = 'sale'
         else:

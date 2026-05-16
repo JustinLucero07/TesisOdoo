@@ -86,7 +86,7 @@
             <field name="bedrooms">0</field>
             <field name="bathrooms">2</field>
             <field name="year_built">2015</field>
-            <field name="state">rented</field>
+            <field name="state">sold</field>
             <field name="description">&lt;p&gt;Local comercial en zona de alto tráfico, ideal para negocios.&lt;/p&gt;</field>
         </record>
 
@@ -145,7 +145,7 @@
             <field name="bathrooms">1</field>
             <field name="floor">2</field>
             <field name="year_built">2021</field>
-            <field name="state">rented</field>
+            <field name="state">sold</field>
             <field name="description">&lt;p&gt;Mini departamento ideal para estudiantes, cerca de universidades.&lt;/p&gt;</field>
         </record>
 

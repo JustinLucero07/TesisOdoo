@@ -15,7 +15,6 @@ class AccountMove(models.Model):
         related='property_id.qr_image', string='QR Propiedad', readonly=True)
     estate_transaction_type = fields.Selection([
         ('sale', 'Venta'),
-        ('rent', 'Alquiler'),
         ('commission', 'Comisión'),
         ('other', 'Otro')
     ], string='Tipo de Transacción Inmobiliaria', default='other')
@@ -54,18 +53,11 @@ class AccountMove(models.Model):
         if prop.state not in ('reserved', 'available'):
             raise ValidationError(
                 f'La propiedad ya está en estado "{prop.state}". Solo se puede actualizar desde Reservada o Disponible.')
-        if prop.offer_type == 'sale':
-            prop.write({'state': 'sold'})
-            prop.message_post(
-                body=f'✅ Propiedad marcada como <b>VENDIDA</b> desde la factura <b>{self.name}</b>.')
-            self.message_post(
-                body=f'✅ Propiedad <b>{prop.title}</b> marcada como VENDIDA.')
-        elif prop.offer_type == 'rent':
-            prop.write({'state': 'rented'})
-            prop.message_post(
-                body=f'✅ Propiedad marcada como <b>ARRENDADA</b> desde la factura <b>{self.name}</b>.')
-            self.message_post(
-                body=f'✅ Propiedad <b>{prop.title}</b> marcada como ARRENDADA.')
+        prop.write({'state': 'sold'})
+        prop.message_post(
+            body=f'✅ Propiedad marcada como <b>VENDIDA</b> desde la factura <b>{self.name}</b>.')
+        self.message_post(
+            body=f'✅ Propiedad <b>{prop.title}</b> marcada como VENDIDA.')
 
     @api.model
     def _cron_sync_property_state_from_invoices(self):
@@ -78,13 +70,7 @@ class AccountMove(models.Model):
         ])
         for move in paid_invoices:
             prop = move.property_id
-            if prop.offer_type == 'sale':
-                prop.write({'state': 'sold'})
-                prop.message_post(
-                    body=f'✅ Propiedad marcada como <b>VENDIDA</b> automáticamente '
-                         f'(factura <b>{move.name}</b> pagada).')
-            elif prop.offer_type == 'rent':
-                prop.write({'state': 'rented'})
-                prop.message_post(
-                    body=f'✅ Propiedad marcada como <b>ARRENDADA</b> automáticamente '
-                         f'(factura <b>{move.name}</b> pagada).')
+            prop.write({'state': 'sold'})
+            prop.message_post(
+                body=f'✅ Propiedad marcada como <b>VENDIDA</b> automáticamente '
+                     f'(factura <b>{move.name}</b> pagada).')

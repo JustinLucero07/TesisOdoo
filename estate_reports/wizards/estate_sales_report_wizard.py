@@ -1,8 +1,8 @@
 """Wizard de Reporte de Promedio de Ventas.
 
-Genera KPIs agregados sobre las propiedades vendidas/rentadas en un período,
-con comparación contra el período anterior y filtros por ciudad, tipo, asesor
-y operación. Exporta a PDF (QWeb) y Excel (xlsxwriter).
+Genera KPIs agregados sobre las propiedades vendidas en un período,
+con comparación contra el período anterior y filtros por ciudad, tipo y asesor.
+Exporta a PDF (QWeb) y Excel (xlsxwriter).
 """
 import io
 import json
@@ -23,9 +23,7 @@ PERIOD_SELECTION = [
 ]
 
 OPERATION_SELECTION = [
-    ('sale',  'Solo Ventas'),
-    ('rent',  'Solo Alquileres'),
-    ('both',  'Ventas + Alquileres'),
+    ('sale',  'Ventas'),
 ]
 
 
@@ -168,14 +166,10 @@ class EstateSalesReportWizard(models.TransientModel):
         return prev_from, prev_to
 
     def _build_target_states(self):
-        if self.operation_type == 'sale':
-            return ['sold']
-        if self.operation_type == 'rent':
-            return ['rented']
-        return ['sold', 'rented']
+        return ['sold']
 
     def _search_sold_properties(self, d_from, d_to):
-        """Busca propiedades que cambiaron a sold/rented dentro del período.
+        """Busca propiedades vendidas dentro del período.
         Usa contract_end_date como proxy del cierre — aproximación pragmática
         sin necesidad de una tabla de auditoría dedicada."""
         Property = self.env['estate.property'].sudo()

@@ -8,7 +8,6 @@ class SaleOrder(models.Model):
     property_id = fields.Many2one('estate.property', string='Propiedad Vinculada')
     estate_transaction_type = fields.Selection([
         ('sale', 'Venta'),
-        ('rent', 'Alquiler')
     ], string='Tipo de Contrato Inmobiliario', default='sale')
     lead_id = fields.Many2one('crm.lead', string='Lead de Origen', tracking=True,
                               help='Lead CRM que originó esta orden de venta.')

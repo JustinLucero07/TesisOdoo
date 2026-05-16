@@ -5,12 +5,12 @@
         <field name="name">estate.property.tree</field>
         <field name="model">estate.property</field>
         <field name="arch" type="xml">
-            <list string="Propiedades" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-info="state == 'rented'" decoration-warning="state == 'reserved'">
+            <list string="Propiedades" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'">
                 <field name="image_main" widget="image" options="{'size': [150, 150]}" />
                 <field name="name"/>
                 <field name="title"/>
                 <field name="property_type_id"/>
-                <field name="offer_type" optional="show"/>
+
                 <field name="city"/>
                 <field name="price" widget="monetary"/>
                 <field name="area"/>
@@ -26,7 +26,7 @@
                 <field name="contract_end_date" optional="hide"/>
                 <field name="wp_published" string="WP" optional="show" widget="boolean"
                        decoration-success="wp_published == True"/>
-                <field name="state" widget="badge" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-info="state == 'rented'" decoration-warning="state == 'reserved'"/>
+                <field name="state" widget="badge" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'"/>
             </list>
         </field>
     </record>
@@ -39,22 +39,19 @@
             <form string="Propiedad">
                 <header>
                     <button name="action_open_map" string=" Ver en Mapa" type="object" class="btn-info" invisible="not map_url"/>
-                    <button name="action_calculate_avm" string=" Calcular Precio AVM" type="object" class="btn-warning" invisible="state in ('sold', 'rented')"/>
-                    <button name="action_create_invoice" string="Generar Factura" type="object" class="btn-primary" icon="fa-file-text-o" invisible="state in ('sold', 'rented')"/>
+                    <button name="action_calculate_avm" string=" Calcular Precio AVM" type="object" class="btn-warning" invisible="state == 'sold'"/>
+                    <button name="action_create_invoice" string="Generar Factura" type="object" class="btn-primary" icon="fa-file-text-o" invisible="state == 'sold'"/>
                     <button name="%(estate_reports.action_report_ficha_tecnica)d" string="Descargar Ficha PDF" type="action" class="btn-secondary" icon="fa-download"/>
                     <button name="action_set_available" string="Disponible" type="object" class="oe_highlight" invisible="state == 'available'"/>
-                    <button name="action_set_reserved" string="Reservar" type="object" invisible="state in ('sold', 'rented')"/>
+                    <button name="action_set_reserved" string="Reservar" type="object" invisible="state == 'sold'"/>
                     <button name="action_open_sale_wizard" string="Vender Propiedad" type="object"
                             class="btn-success oe_highlight" icon="fa-handshake-o"
-                            invisible="state in ('sold', 'rented') or offer_type != 'sale'"/>
-                    <button name="action_set_rented" string="Alquilar Propiedad" type="object"
-                            class="btn-primary oe_highlight" icon="fa-key"
-                            invisible="state in ('sold', 'rented') or offer_type != 'rent'"/>
+                            invisible="state == 'sold'"/>
                     <button name="action_relist" string="Re-listar en Mercado" type="object"
                             class="btn-warning"
-                            invisible="state not in ('sold', 'rented')"
-                            confirm="¿Confirmas re-listar esta propiedad? Se borrarán los datos de comprador y fecha de venta/alquiler anteriores."/>
-                    <field name="state" widget="statusbar" statusbar_visible="available,reserved,sold,rented"/>
+                            invisible="state != 'sold'"
+                            confirm="¿Confirmas re-listar esta propiedad? Se borrarán los datos de comprador y fecha de venta anteriores."/>
+                    <field name="state" widget="statusbar" statusbar_visible="available,reserved,sold"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
@@ -120,15 +117,15 @@
                     </div>
                     <group>
                         <group string="Información General">
-                            <field name="property_type_id" readonly="state in ('sold', 'rented')"/>
-                            <field name="offer_type" widget="radio" options="{'horizontal': true}" readonly="state in ('sold', 'rented')"/>
-                            <field name="price" widget="monetary" readonly="state in ('sold', 'rented')"/>
-                            <field name="bottom_price" widget="monetary" readonly="state in ('sold', 'rented')"/>
-                            <field name="commission_percentage" readonly="state in ('sold', 'rented')"/>
+                            <field name="property_type_id" readonly="state == 'sold'"/>
+                            <field name="offer_type" invisible="1"/>
+                            <field name="price" widget="monetary" readonly="state == 'sold'"/>
+                            <field name="bottom_price" widget="monetary" readonly="state == 'sold'"/>
+                            <field name="commission_percentage" readonly="state == 'sold'"/>
                             <field name="commission_amount" widget="monetary"/>
-                            <field name="area" readonly="state in ('sold', 'rented')"/>
-                            <field name="owner_id" readonly="state in ('sold', 'rented')"/>
-                            <field name="buyer_id" readonly="state in ('sold', 'rented')"/>
+                            <field name="area" readonly="state == 'sold'"/>
+                            <field name="owner_id" readonly="state == 'sold'"/>
+                            <field name="buyer_id" readonly="state == 'sold'"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="co_user_id" widget="many2one_avatar_user"/>
                             <field name="commission_split_pct" invisible="not co_user_id"/>
@@ -277,15 +274,12 @@
                                     <field name="contract_reminder_days"/>
                                 </group>
                             </group>
-                            <!-- Mejora 13: ROI para Inversores -->
-                            <group string="Calculadora de Rentabilidad (Inversores)">
+                            <!-- Mejora 13: Plusvalía para Inversores -->
+                            <group string="Calculadora de Plusvalía (Inversores)">
                                 <group string="Entradas">
-                                    <field name="roi_monthly_rent_estimate" widget="monetary"/>
                                     <field name="roi_appreciation_rate"/>
                                 </group>
-                                <group string="Resultados (calculados automáticamente)">
-                                    <field name="roi_annual_yield" string="Rendimiento por Arriendo (% anual)"/>
-                                    <field name="roi_monthly_cashflow" widget="monetary" string="Flujo de Caja Neto Mensual"/>
+                                <group string="Resultado (calculado automáticamente)">
                                     <field name="roi_5year_value" widget="monetary" string="Valor Estimado a 5 Años"/>
                                 </group>
                             </group>
@@ -326,13 +320,9 @@
                 <field name="name"/>
                 <field name="city"/>
                 <field name="property_type_id"/>
-                <field name="offer_type"/>
                 <filter name="filter_available" string="Disponibles" domain="[('state', '=', 'available')]"/>
                 <filter name="filter_reserved" string="Reservadas" domain="[('state', '=', 'reserved')]"/>
                 <filter name="filter_sold" string="Vendidas" domain="[('state', '=', 'sold')]"/>
-                <filter name="filter_rented" string="Alquiladas" domain="[('state', '=', 'rented')]"/>
-                <filter name="filter_sale" string="En Venta" domain="[('offer_type', '=', 'sale')]"/>
-                <filter name="filter_rent" string="En Arriendo" domain="[('offer_type', '=', 'rent')]"/>
                 <separator/>
                 <filter name="filter_wp_linked" string="Enlazadas con WordPress" domain="[('wp_published', '=', True)]"/>
                 <filter name="filter_wp_unlinked" string="Desvinculadas de WordPress" domain="[('wp_unlinked', '=', True)]"/>
@@ -344,7 +334,6 @@
                 </group>
                 <searchpanel>
                     <field name="state" string="Estado" icon="fa-home" select="one" enable_counters="1"/>
-                    <field name="offer_type" string="Tipo de Operación" icon="fa-tag" select="one" enable_counters="1"/>
                     <field name="property_type_id" string="Tipo de Propiedad" icon="fa-building" enable_counters="1"/>
                 </searchpanel>
             </search>

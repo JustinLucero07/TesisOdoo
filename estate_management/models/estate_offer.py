@@ -197,8 +197,8 @@ class EstatePropertyOffer(models.Model):
                 'view_mode': 'form',
                 'res_id': existing.id,
             }
-        # Tipo de contrato según tipo de propiedad (venta/arriendo)
-        contract_type = 'rent' if self.property_id.offer_type == 'rent' else 'sale'
+        # Tipo de contrato siempre venta
+        contract_type = 'sale'
         contract = self.env['estate.contract'].create({
             'property_id': self.property_id.id,
             'partner_id': self.partner_id.id,
@@ -248,8 +248,6 @@ class EstatePropertyOffer(models.Model):
         self.ensure_one()
         if self.state != 'accepted':
             raise UserError('Solo se puede crear una orden desde una oferta ACEPTADA.')
-        if self.property_id.offer_type != 'sale':
-            raise UserError('Las órdenes de venta son para propiedades en VENTA. Use "Generar Contrato" para arriendos.')
 
         order_vals = {
             'partner_id': self.partner_id.id,

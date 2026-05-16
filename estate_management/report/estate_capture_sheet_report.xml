@@ -48,7 +48,7 @@
                                             <t t-if="prop.state == 'available'">DISPONIBLE</t>
                                             <t t-elif="prop.state == 'reserved'">RESERVADO</t>
                                             <t t-elif="prop.state == 'sold'">VENDIDO</t>
-                                            <t t-elif="prop.state == 'rented'">ARRENDADO</t>
+                                            <t t-elif="prop.state == 'sold'">VENDIDO</t>
                                         </span>
                                     </td>
                                 </tr>

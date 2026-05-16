@@ -31,7 +31,6 @@ class EstateAIContract(models.Model):
         prop = self.property_id
 
         c_type = {
-            'rent': 'de Arrendamiento',
             'sale': 'de Compraventa',
             'exclusivity': 'de Exclusividad Inmobiliaria',
         }.get(self.contract_type, 'Inmobiliario')

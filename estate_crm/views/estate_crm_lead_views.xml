@@ -60,6 +60,12 @@
                     class="oe_highlight" icon="fa-file-text"
                     invisible="not target_property_id or type == 'lead' or contract_count &gt; 0"
                     confirm="¿Crear un contrato para este lead con la propiedad seleccionada?"/>
+                <button name="action_mark_pending_need" string="📌 Marcar Con Necesidad" type="object"
+                    class="btn-warning" icon="fa-bookmark"
+                    invisible="pending_needs_active or type == 'lead'"/>
+                <button name="action_clear_pending_need" string="✅ Resolver Necesidad" type="object"
+                    class="btn-outline-success" icon="fa-check-circle"
+                    invisible="not pending_needs_active"/>
             </xpath>
             <!-- Pestañas: Ubicación GPS y Documentos Internos -->
             <xpath expr="//notebook" position="inside">
@@ -129,6 +135,10 @@
                     <field name="preferred_min_area" string="Área Mín. (m²)"/>
                     <field name="preferred_max_area" string="Área Máx. (m²)"/>
                     <field name="client_needs" placeholder="Ej. Cerca de parques, crédito pre-aprobado..."/>
+                    <separator string="📌 Necesidad Pendiente"/>
+                    <field name="pending_needs_active" widget="boolean_toggle"/>
+                    <field name="pending_needs_last_check" invisible="not pending_needs_active"/>
+                    <field name="pending_needs_notified_property_ids" widget="many2many_tags" invisible="not pending_needs_active"/>
                 </group>
             </xpath>
             <xpath expr="//group" position="after">
@@ -166,6 +176,8 @@
                 <field name="lead_source"/>
                 <field name="match_percentage"/>
                 <field name="expected_commission"/>
+                <field name="lead_velocity_days"/>
+                <field name="pending_needs_active"/>
                 <field name="lead_velocity_days"/>
             </xpath>
             <xpath expr="//footer" position="before">

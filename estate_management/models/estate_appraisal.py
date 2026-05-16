@@ -16,7 +16,6 @@ class EstateAppraisal(models.Model):
 
     request_reason = fields.Selection([
         ('sale',      'Preparar para Venta'),
-        ('rent',      'Preparar para Alquiler'),
         ('insurance', 'Seguro / Hipoteca'),
         ('legal',     'Trámite Legal / Sucesión'),
         ('other',     'Otro'),

@@ -1,0 +1,153 @@
+{
+  "name": "Horarios",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "fecha"
+            },
+            {
+              "name": "user_id",
+              "type": "number"
+            },
+            {
+              "name": "hora"
+            }
+          ]
+        }
+      },
+      "id": "f9646623-fe6b-4a22-89cc-404c68775f55",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "fecha",
+              "value": "={{ $json.fecha || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "user_id",
+              "value": "={{ Number($json.user_id) || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "abe0c539-3015-497a-b197-23faef38c49e",
+      "name": "Preparar Parametros",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH parsed_date AS (\n  SELECT\n    CASE\n      WHEN '{{ $json.fecha }}' ~ '^\\d{2}-\\d{2}-\\d{4}$' \n        THEN to_date('{{ $json.fecha }}', 'DD-MM-YYYY')\n      WHEN '{{ $json.fecha }}' ~ '^\\d{4}-\\d{2}-\\d{2}$' \n        THEN to_date('{{ $json.fecha }}', 'YYYY-MM-DD')\n      ELSE CURRENT_DATE\n    END AS fecha\n),\nhora_solicitada AS (\n  SELECT\n    CASE \n      WHEN '{{ $json.hora ?? \"\" }}' ~ '^\\d{2}:\\d{2}'\n        THEN ((SELECT fecha FROM parsed_date)::text || ' ' || '{{ $json.hora ?? \"08:00\" }}')::timestamp\n      ELSE NULL\n    END AS inicio_solicitado,\n    CASE \n      WHEN '{{ $json.hora ?? \"\" }}' ~ '^\\d{2}:\\d{2}'\n        THEN ((SELECT fecha FROM parsed_date)::text || ' ' || '{{ $json.hora ?? \"08:00\" }}')::timestamp\n             + INTERVAL '{{ $json.duracion ?? 1 }} hours'\n      ELSE NULL\n    END AS fin_solicitado\n),\nasesores AS (\n  SELECT u.id AS user_id, rp.name AS nombre_asesor,\n         COALESCE(rp.mobile, rp.phone, '') AS telefono_asesor\n  FROM res_users u\n  JOIN res_partner rp ON u.partner_id = rp.id\n  WHERE u.active = true\n    AND u.share = false\n    AND u.id > 1\n),\neventos_dia AS (\n  SELECT\n    a.user_id,\n    a.nombre_asesor,\n    ce.id AS event_id,\n    ce.name AS evento,\n    (ce.start AT TIME ZONE 'America/Guayaquil') AS inicio_local,\n    (ce.stop  AT TIME ZONE 'America/Guayaquil') AS fin_local,\n    to_char(ce.start AT TIME ZONE 'America/Guayaquil', 'HH24:MI') AS hora_inicio,\n    to_char(ce.stop  AT TIME ZONE 'America/Guayaquil', 'HH24:MI') AS hora_fin,\n    CASE\n      WHEN hs.inicio_solicitado IS NOT NULL\n        AND (ce.start AT TIME ZONE 'America/Guayaquil') < hs.fin_solicitado\n        AND (ce.stop  AT TIME ZONE 'America/Guayaquil') > hs.inicio_solicitado\n      THEN true\n      ELSE false\n    END AS hay_conflicto\n  FROM asesores a\n  CROSS JOIN parsed_date pd\n  CROSS JOIN hora_solicitada hs\n  JOIN calendar_event ce ON ce.active = true\n    AND (ce.start AT TIME ZONE 'America/Guayaquil')::date = pd.fecha\n    AND (\n      ce.user_id = a.user_id\n      OR ce.id IN (\n        SELECT event_id FROM calendar_attendee \n        WHERE partner_id = (SELECT partner_id FROM res_users WHERE id = a.user_id)\n          AND state != 'declined'\n      )\n    )\n)\nSELECT\n  a.user_id,\n  a.nombre_asesor,\n  a.telefono_asesor,\n  pd.fecha::text                                    AS fecha_consultada,\n  '{{ $json.hora ?? \"\" }}'                          AS hora_solicitada,\n  COALESCE(BOOL_OR(ed.hay_conflicto), false)        AS hora_ocupada,\n  CASE\n    WHEN BOOL_OR(ed.hay_conflicto) THEN \n      'CONFLICTO: ' || a.nombre_asesor || ' ya tiene cita en ese horario'\n    WHEN COUNT(ed.event_id) = 0 THEN \n      'Totalmente disponible'\n    WHEN COUNT(ed.event_id) < 4 THEN \n      'Parcialmente disponible (' || COUNT(ed.event_id) || ' citas)'\n    ELSE \n      'Agenda muy llena (' || COUNT(ed.event_id) || ' citas)'\n  END                                               AS disponibilidad,\n  COALESCE(\n    json_agg(\n      json_build_object(\n        'hora_inicio', ed.hora_inicio,\n        'hora_fin',    ed.hora_fin,\n        'evento',      ed.evento,\n        'conflicto',   ed.hay_conflicto\n      ) ORDER BY ed.inicio_local\n    ) FILTER (WHERE ed.event_id IS NOT NULL),\n    '[]'::json\n  )                                                 AS horarios_ocupados\nFROM asesores a\nCROSS JOIN parsed_date pd\nLEFT JOIN eventos_dia ed ON ed.user_id = a.user_id\nGROUP BY a.user_id, a.nombre_asesor, a.telefono_asesor, pd.fecha\nORDER BY COALESCE(BOOL_OR(ed.hay_conflicto), false) ASC, COUNT(ed.event_id) ASC;\n",
+        "options": {}
+      },
+      "id": "c40335dd-ef1e-435d-a2c3-1e08a6e74275",
+      "name": "Consultar Calendario",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        448,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "6mYPUyfDHs6x1dvZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ JSON.stringify($input.all().map(i => i.json), null, 2) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d30df85d-d9a1-4ea3-bcce-c3f6460580e5",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar Parametros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Parametros": {
+      "main": [
+        [
+          {
+            "node": "Consultar Calendario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar Calendario": {
+      "main": [
+        [
+          {
+            "node": "Formatear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f4eb2f3f-d08c-4400-847d-b8f921a50e8a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "ziMsQY3SZhzZqi3w",
+  "tags": []
+}

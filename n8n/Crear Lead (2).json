@@ -1,0 +1,274 @@
+{
+  "name": "Crear Lead",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "nombre"
+            },
+            {
+              "name": "telefono"
+            },
+            {
+              "name": "ciudad"
+            },
+            {
+              "name": "presupuesto",
+              "type": "number"
+            },
+            {
+              "name": "necesidades"
+            },
+            {
+              "name": "property_id",
+              "type": "number"
+            },
+            {
+              "name": "etapa",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "020b8aad-eeb0-48b8-b59f-56191b308bce",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "nombre",
+              "value": "={{ $json.nombre || 'Lead WhatsApp' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "telefono",
+              "value": "={{ $json.telefono || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "ciudad",
+              "value": "={{ $json.ciudad || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p4",
+              "name": "presupuesto",
+              "value": "={{ Number($json.presupuesto) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p5",
+              "name": "necesidades",
+              "value": "={{ $json.necesidades || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p6",
+              "name": "property_id",
+              "value": "={{ Number($json.property_id) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p7",
+              "name": "etapa",
+              "value": "={{ Number($json.etapa) || 1 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8ef9e8b7-0319-44e9-ab77-4c4ab5da834d",
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"tesis_odoo19\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
+        "options": {}
+      },
+      "id": "936adf7b-c2a3-4c66-9339-1e07d3bcab50",
+      "name": "Autenticar Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "uid1",
+              "name": "uid",
+              "value": "={{ $json.result }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f2b9a34d-707c-44e9-91ad-b9ba3445bfa8",
+      "name": "Extraer UID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        672,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:8070/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"tesis_odoo19\",\n      {{ $json.uid }},\n      \"admin\",\n      \"crm.lead\",\n      \"create\",\n      [{\n        \"name\": \"WhatsApp: {{ $('Preparar Datos').item.json.nombre }}\",\n        \"contact_name\": \"{{ $('Preparar Datos').item.json.nombre }}\",\n        \"phone\": \"{{ $('Preparar Datos').item.json.telefono }}\",\n        \"type\": \"opportunity\",\n        \"lead_source\": \"whatsapp\",\n        \"stage_id\": {{ $('Preparar Datos').item.json.etapa === 1 ? 15 : $('Preparar Datos').item.json.etapa === 2 ? 16 : $('Preparar Datos').item.json.etapa === 3 ? 17 : 15 }},\n        \"client_budget\": {{ $('Preparar Datos').item.json.presupuesto }},\n        \"preferred_city\": \"{{ $('Preparar Datos').item.json.ciudad }}\",\n        \"client_needs\": \"{{ $('Preparar Datos').item.json.necesidades }}\",\n        \"target_property_id\": {{ $('Preparar Datos').item.json.property_id > 0 ? $('Preparar Datos').item.json.property_id : 'false' }}\n      }]\n    ]\n  },\n  \"id\": 2\n}",
+        "options": {}
+      },
+      "id": "31562bf6-d4b8-4f13-8412-587e06fe6f55",
+      "name": "Crear Lead en Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.result ? 'Lead creado exitosamente con ID: ' + $json.result + '. El cliente ' + $('Preparar Datos').item.json.nombre + ' ha sido registrado en el CRM como oportunidad vía WhatsApp.' : 'Error al crear el lead: ' + JSON.stringify($json.error || 'desconocido') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "06e6a666-5808-421b-9717-34690e98162f",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos": {
+      "main": [
+        [
+          {
+            "node": "Autenticar Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autenticar Odoo": {
+      "main": [
+        [
+          {
+            "node": "Extraer UID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer UID": {
+      "main": [
+        [
+          {
+            "node": "Crear Lead en Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Lead en Odoo": {
+      "main": [
+        [
+          {
+            "node": "Formatear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8df667aa-9489-4d11-a5f7-38589fef0764",
+  "meta": {
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "yvpl7RX9b8y4Mafu",
+  "tags": []
+}

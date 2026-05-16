@@ -42,6 +42,12 @@
                   action="estate_interaction_action"
                   sequence="20"/>
 
+        <menuitem id="estate_menu_crm_pendientes"
+                  name="📌 Clientes Pendientes"
+                  parent="estate_menu_crm_directorio_root"
+                  action="action_crm_pending_needs"
+                  sequence="25"/>
+
         <!-- Mantengo Alianzas aquí por si es útil tener acceso rápido desde Clientes -->
         <menuitem id="estate_menu_crm_red_alianzas"
                   name="Red de Aliados"

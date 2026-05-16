@@ -46,7 +46,7 @@
                                     <span t-if="prop.avm_status == 'low'" style="color:orange;">(Oportunidad)</span>
                                 </td></tr>
                             <tr><td style="background:#f8f9fa;"><strong>Estado</strong></td>
-                                <td><t t-out="dict([('available','Disponible'),('reserved','Reservado'),('sold','Vendido'),('rented','Alquilado')]).get(prop.state, prop.state)"/></td></tr>
+                                <td><t t-out="dict([('available','Disponible'),('reserved','Reservado'),('sold','Vendido')]).get(prop.state, prop.state)"/></td></tr>
                             <tr><td style="background:#f8f9fa;"><strong>Días en el Mercado</strong></td>
                                 <td><t t-out="prop.days_on_market"/> días</td></tr>
                             <tr><td style="background:#f8f9fa;"><strong>Score de la Propiedad</strong></td>

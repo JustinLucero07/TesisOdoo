@@ -33,7 +33,6 @@ class EstateContract(models.Model):
 
     contract_type = fields.Selection([
         ('sale', 'Compraventa'),
-        ('rent', 'Alquiler'),
         ('exclusive', 'Exclusividad'),
     ], string='Tipo de Contrato', required=True, default='sale', tracking=True)
 
@@ -229,7 +228,7 @@ class EstateContract(models.Model):
         self.write({'state': 'draft'})
 
     def action_suspend(self):
-        """Suspende un contrato activo (impago, juicio, pausa de renta)."""
+        """Suspende un contrato activo (impago, juicio, disputa)."""
         self._check_state_transition('suspended')
         for rec in self:
             rec.state = 'suspended'
@@ -243,7 +242,7 @@ class EstateContract(models.Model):
             rec.message_post(body='▶ Contrato reactivado.')
 
     def action_start_renewal(self):
-        """Marca el contrato actual como 'en renovación'. Útil para alquileres
+        """Marca el contrato actual como 'en renovación'. Útil para contratos
         que están en proceso de prorrogarse antes del vencimiento."""
         self._check_state_transition('renewing')
         for rec in self:
@@ -301,45 +300,6 @@ class EstateContract(models.Model):
             'view_mode': 'list,form',
             'domain': [('contract_id', '=', self.id)],
             'context': {'default_contract_id': self.id},
-        }
-
-    def action_generate_rent_invoice(self):
-        """Genera una factura mensual de arrendamiento para este contrato."""
-        self.ensure_one()
-        if self.contract_type != 'rent':
-            raise UserError('La facturación mensual es solo para contratos de ARRENDAMIENTO.')
-        if self.state != 'active':
-            raise UserError('El contrato debe estar ACTIVO para generar facturas.')
-        today = fields.Date.today()
-        month_label = today.strftime('%B %Y')
-        invoice = self.env['account.move'].create({
-            'move_type': 'out_invoice',
-            'partner_id': self.partner_id.id,
-            'invoice_origin': self.name,
-            'property_id': self.property_id.id,
-            'estate_transaction_type': 'rent',
-            'invoice_line_ids': [(0, 0, {
-                'name': f'Renta mensual — {self.property_id.title} ({month_label})',
-                'quantity': 1,
-                'price_unit': self.amount,
-            })],
-        })
-        # Registrar pago vinculado al contrato
-        self.env['estate.payment'].create({
-            'contract_id': self.id,
-            'amount': self.amount,
-            'date': today,
-            'invoice_id': invoice.id,
-            'notes': f'Renta {month_label} — generada automáticamente.',
-        })
-        self.message_post(
-            body=f'🧾 Factura <b>{invoice.name or "borrador"}</b> generada para {month_label}.')
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Factura Mensual',
-            'res_model': 'account.move',
-            'view_mode': 'form',
-            'res_id': invoice.id,
         }
 
     @api.model

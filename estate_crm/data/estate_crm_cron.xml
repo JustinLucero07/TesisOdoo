@@ -51,5 +51,15 @@
             <field name="interval_type">days</field>
             <field name="active" eval="True"/>
         </record>
+        <!-- Cron: Matching de Clientes con Necesidad Pendiente -->
+        <record id="ir_cron_estate_pending_needs_matching" model="ir.cron">
+            <field name="name">Inmobiliaria: Buscar Propiedades para Clientes con Necesidad Pendiente</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_pending_needs_matching()</field>
+            <field name="interval_number">6</field>
+            <field name="interval_type">hours</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

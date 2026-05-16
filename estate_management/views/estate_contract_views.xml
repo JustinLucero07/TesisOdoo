@@ -38,9 +38,6 @@
                     <button name="action_activate" string="Activar" type="object"
                         class="oe_highlight" icon="fa-check"
                         invisible="state != 'draft'"/>
-                    <button name="action_generate_rent_invoice" string="Generar Factura Mensual" type="object"
-                        class="btn-primary" icon="fa-file-text-o"
-                        invisible="state != 'active' or contract_type != 'rent'"/>
                     <button name="action_suspend" string="Suspender" type="object"
                         class="btn-warning" icon="fa-pause"
                         invisible="state != 'active'"/>
@@ -311,7 +308,7 @@
             <p class="o_view_nocontent_smiling_face">
                 Cree su primer contrato inmobiliario.
             </p>
-            <p>Gestione contratos de venta, alquiler y exclusividad.</p>
+            <p>Gestione contratos de venta y exclusividad.</p>
         </field>
     </record>
 

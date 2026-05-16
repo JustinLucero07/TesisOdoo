@@ -10,6 +10,10 @@
             <field name="name">2. Captación y Calificación</field>
             <field name="sequence">2</field>
         </record>
+        <record id="stage_lead2b_estate_con_necesidad" model="crm.stage">
+            <field name="name">📌 Con Necesidad Pendiente</field>
+            <field name="sequence">2</field>
+        </record>
         <record id="stage_lead3_estate_visita" model="crm.stage">
             <field name="name">3. Visita Realizada</field>
             <field name="sequence">3</field>

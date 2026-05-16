@@ -105,7 +105,7 @@ class EstateReportWizard(models.TransientModel):
             records = self.env['estate.property'].search([
                 ('contract_end_date', '!=', False),
                 ('contract_end_date', '<=', limit_date),
-                ('state', 'in', ('available', 'rented', 'reserved')),
+                ('state', 'in', ('available', 'reserved')),
             ], order='contract_end_date')
             data['records'] = records
             data['title'] = 'Contratos por Vencer (próximos 60 días)'
@@ -151,9 +151,9 @@ class EstateReportWizard(models.TransientModel):
             ])
 
         elif self.report_type == 'occupancy_report':
-            data['title'] = 'Ocupación de Arriendos'
+            data['title'] = 'Contratos Activos'
             data['records'] = self.env['estate.contract'].search([
-                ('contract_type', '=', 'rent'),
+                ('state', '=', 'active'),
             ], order='property_id')
 
         return data
@@ -795,8 +795,8 @@ class EstateReportWizard(models.TransientModel):
 
             for contract in data['records']:
                 prop = contract.property_id
-                state = 'Ocupada' if prop.state == 'rented' else 'Vacante'
-                state_fmt = green_fmt if prop.state == 'rented' else red_fmt
+                state = 'Activo' if contract.state == 'active' else 'Inactivo'
+                state_fmt = green_fmt if contract.state == 'active' else red_fmt
                 days_left = (contract.date_end - today).days if contract.date_end else 0
                 days_fmt = red_fmt if days_left < 30 else (yellow_fmt if days_left < 60 else cell_fmt)
 

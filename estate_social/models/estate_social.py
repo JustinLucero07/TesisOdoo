@@ -136,7 +136,6 @@ class EstatePropertySocial(models.Model):
                 'available': '✅ Disponible',
                 'reserved': '🔒 Reservado',
                 'sold': '🏆 Vendido',
-                'rented': '🔑 Alquilado',
             }
             text = (
                 f"🏠 *{self.title}*\n"

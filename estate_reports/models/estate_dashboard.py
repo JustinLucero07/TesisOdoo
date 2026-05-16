@@ -27,8 +27,6 @@ class EstateDashboard(models.TransientModel):
         string='Disponibles', compute='_compute_kpis')
     sold_properties = fields.Integer(
         string='Vendidas', compute='_compute_kpis')
-    rented_properties = fields.Integer(
-        string='Alquiladas', compute='_compute_kpis')
 
     # KPIs Clientes
     total_clients = fields.Integer(
@@ -103,18 +101,6 @@ class EstateDashboard(models.TransientModel):
     funnel_html = fields.Html(
         string='Embudo de Conversión', compute='_compute_funnel')
 
-    # ── Pestaña Arriendos — Ocupación ──────────────────────────────
-    occupancy_html = fields.Html(
-        string='Ocupación de Propiedades', compute='_compute_occupancy')
-    total_rental_properties = fields.Integer(
-        string='Propiedades en Arriendo', compute='_compute_occupancy')
-    occupied_count = fields.Integer(
-        string='Ocupadas', compute='_compute_occupancy')
-    vacant_count = fields.Integer(
-        string='Vacantes', compute='_compute_occupancy')
-    occupancy_rate = fields.Float(
-        string='Tasa de Ocupación %', compute='_compute_occupancy')
-
     # ── Pestaña Ventas — Comparativa AVM ───────────────────────────
     avm_comparison_html = fields.Html(
         string='Comparativa AVM', compute='_compute_avm_comparison')
@@ -148,7 +134,6 @@ class EstateDashboard(models.TransientModel):
         self._compute_kpi_header()
         self._compute_advisor_ranking()
         self._compute_funnel()
-        self._compute_occupancy()
         self._compute_avm_comparison()
         self._compute_charts()
         self._compute_trends()
@@ -192,8 +177,6 @@ class EstateDashboard(models.TransientModel):
                 user_domain + [('state', '=', 'available')])
             rec.sold_properties = Property.search_count(
                 user_domain + [('state', '=', 'sold')])
-            rec.rented_properties = Property.search_count(
-                user_domain + [('state', '=', 'rented')])
 
             # Clientes (Leads)
             lead_domain = [('user_id', '=', rec.filter_user_id.id)] if rec.filter_user_id else []
@@ -224,7 +207,7 @@ class EstateDashboard(models.TransientModel):
             rec.contracts_expiring = Property.search_count([
                 ('contract_end_date', '!=', False),
                 ('contract_end_date', '<=', limit),
-                ('state', 'in', ('available', 'rented', 'reserved')),
+                ('state', 'in', ('available', 'reserved')),
             ])
 
             # KPIs Financieros (Período seleccionado)
@@ -291,7 +274,6 @@ class EstateDashboard(models.TransientModel):
             total = Property.search_count(user_domain)
             avail = Property.search_count(user_domain + [('state', '=', 'available')])
             sold  = Property.search_count(user_domain + [('state', '=', 'sold')])
-            rented= Property.search_count(user_domain + [('state', '=', 'rented')])
 
             sold_period = Property.search(user_domain + [
                 ('state', '=', 'sold'),
@@ -352,7 +334,6 @@ class EstateDashboard(models.TransientModel):
                     {card("fa-home", "Total Propiedades", total, BLUE)}
                     {card("fa-check-circle", "Disponibles", avail, GREEN, '#f0fdf4')}
                     {card("fa-handshake-o", "Vendidas", sold, LIGHT_BLUE)}
-                    {card("fa-key", "Alquiladas", rented, '#7c3aed', '#faf5ff')}
                     {card("fa-users", "Leads Activos", lead_count, ORANGE, '#fffbeb')}
                 </div>
 
@@ -438,7 +419,7 @@ class EstateDashboard(models.TransientModel):
             for p in props:
                 color = 'blue'
                 if p.state == 'sold': color = 'red'
-                elif p.state == 'rented': color = 'green'
+                elif p.state == 'reserved': color = 'orange'
                 elif p.state == 'available': color = 'blue'
                 
                 popup = f"<b>{p.title}</b><br/>{p.city}<br/>${p.price:,.2f}"
@@ -495,9 +476,6 @@ class EstateDashboard(models.TransientModel):
 
     def action_open_available(self):
         return self._action_open_property_list([('state', '=', 'available')], 'Propiedades Disponibles')
-
-    def action_open_rented(self):
-        return self._action_open_property_list([('state', '=', 'rented')], 'Propiedades Alquiladas')
 
     def action_open_sold(self):
         return self._action_open_property_list([('state', '=', 'sold')], 'Propiedades Vendidas')
@@ -580,7 +558,7 @@ class EstateDashboard(models.TransientModel):
             'domain': [
                 ('contract_end_date', '!=', False),
                 ('contract_end_date', '<=', limit),
-                ('state', 'in', ('available', 'rented', 'reserved')),
+                ('state', 'in', ('available', 'reserved')),
             ],
             'target': 'current',
         }
@@ -629,7 +607,6 @@ class EstateDashboard(models.TransientModel):
             'total_properties': dashboard.total_properties,
             'available_properties': dashboard.available_properties,
             'sold_properties': dashboard.sold_properties,
-            'rented_properties': dashboard.rented_properties,
             'total_clients': dashboard.total_clients,
             'active_clients': dashboard.active_clients,
             'avg_days_on_market': dashboard.avg_days_on_market,
@@ -660,11 +637,6 @@ class EstateDashboard(models.TransientModel):
         # ── Datos del mes reportado ──
         sold_last = Property.search([
             ('state', '=', 'sold'),
-            ('date_sold', '>=', last_month_first),
-            ('date_sold', '<=', last_month_last),
-        ])
-        rented_last = Property.search([
-            ('state', '=', 'rented'),
             ('date_sold', '>=', last_month_first),
             ('date_sold', '<=', last_month_last),
         ])
@@ -759,7 +731,7 @@ class EstateDashboard(models.TransientModel):
         expiring = Property.search_count([
             ('contract_end_date', '!=', False),
             ('contract_end_date', '<=', today + timedelta(days=30)),
-            ('state', 'in', ('rented', 'reserved')),
+            ('state', 'in', ('reserved',)),
         ])
         if expiring:
             alerts.append(f'📄 {expiring} contratos vencen en 30 días')
@@ -797,10 +769,6 @@ class EstateDashboard(models.TransientModel):
                             <div style="font-size:32px;font-weight:bold;color:#16a34a;">{len(sold_last)}</div>
                             <div style="color:#6b7280;font-size:13px;">Vendidas</div>
                             <div style="font-size:12px;color:#6b7280;margin-top:4px;">{var_sales}</div>
-                        </td>
-                        <td style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
-                            <div style="font-size:32px;font-weight:bold;color:#2563eb;">{len(rented_last)}</div>
-                            <div style="color:#6b7280;font-size:13px;">Alquiladas</div>
                         </td>
                         <td style="padding:16px;text-align:center;background:white;border:1px solid #e5e7eb;">
                             <div style="font-size:32px;font-weight:bold;color:#8b5cf6;">{len(new_leads)}</div>
@@ -970,87 +938,6 @@ class EstateDashboard(models.TransientModel):
                 {bars}
             </div>'''
 
-    # ──────────────────────────────────────────────────────────────────
-    # NIVEL 2: Ocupación de Arriendos
-    # ──────────────────────────────────────────────────────────────────
-    def _compute_occupancy(self):
-        for rec in self:
-            Contract = self.env['estate.contract'].sudo()
-            Property = self.env['estate.property'].sudo()
-            today = fields.Date.today()
-
-            # Properties with rental contracts (active or expired)
-            rental_contracts = Contract.search([('contract_type', '=', 'rent')])
-            rental_prop_ids = rental_contracts.mapped('property_id.id')
-            # Also include properties with state=rented
-            rented_props = Property.search([('state', '=', 'rented')])
-            all_rental_ids = list(set(rental_prop_ids + rented_props.ids))
-
-            rec.total_rental_properties = len(all_rental_ids)
-            rec.occupied_count = Property.search_count([('id', 'in', all_rental_ids), ('state', '=', 'rented')])
-            rec.vacant_count = rec.total_rental_properties - rec.occupied_count
-            rec.occupancy_rate = round(rec.occupied_count / rec.total_rental_properties * 100, 1) if rec.total_rental_properties else 0
-
-            rows = ''
-            if all_rental_ids:
-                props = Property.browse(all_rental_ids)
-                for p in props[:15]:
-                    active_contract = Contract.search([
-                        ('property_id', '=', p.id),
-                        ('contract_type', '=', 'rent'),
-                        ('state', '=', 'active'),
-                    ], limit=1)
-                    status_color = '#16a34a' if p.state == 'rented' else '#dc2626'
-                    status_text = 'Ocupada' if p.state == 'rented' else 'Vacante'
-                    tenant = active_contract.partner_id.name if active_contract else '-'
-                    end_date = str(active_contract.date_end) if active_contract and active_contract.date_end else '-'
-                    amount = f"${active_contract.amount:,.0f}" if active_contract else '-'
-                    rows += f'''<tr>
-                        <td style="padding:8px;border-bottom:1px solid #f1f5f9;">{p.title}</td>
-                        <td style="padding:8px;border-bottom:1px solid #f1f5f9;">{p.city or '-'}</td>
-                        <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:center;">
-                            <span style="background:{status_color};color:white;padding:2px 10px;border-radius:12px;font-size:12px;">{status_text}</span>
-                        </td>
-                        <td style="padding:8px;border-bottom:1px solid #f1f5f9;">{tenant}</td>
-                        <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:right;">{amount}</td>
-                        <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:center;">{end_date}</td>
-                    </tr>'''
-
-            if not rows:
-                rows = '<tr><td colspan="6" style="padding:20px;text-align:center;color:#9ca3af;">Sin propiedades en arriendo</td></tr>'
-
-            rec.occupancy_html = f'''
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                <div style="display:flex;gap:12px;margin-bottom:16px;">
-                    <div style="flex:1;background:#eff6ff;padding:14px;border-radius:10px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#1d4ed8;">{rec.total_rental_properties}</div>
-                        <div style="font-size:11px;color:#6b7280;">Total Arriendos</div>
-                    </div>
-                    <div style="flex:1;background:#f0fdf4;padding:14px;border-radius:10px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#16a34a;">{rec.occupied_count}</div>
-                        <div style="font-size:11px;color:#6b7280;">Ocupadas</div>
-                    </div>
-                    <div style="flex:1;background:#fef2f2;padding:14px;border-radius:10px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#dc2626;">{rec.vacant_count}</div>
-                        <div style="font-size:11px;color:#6b7280;">Vacantes</div>
-                    </div>
-                    <div style="flex:1;background:#fefce8;padding:14px;border-radius:10px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#d97706;">{rec.occupancy_rate}%</div>
-                        <div style="font-size:11px;color:#6b7280;">Tasa Ocupación</div>
-                    </div>
-                </div>
-                <table style="width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-                    <thead><tr style="background:#1e40af;color:white;">
-                        <th style="padding:10px;text-align:left;">Propiedad</th>
-                        <th style="padding:10px;">Ciudad</th>
-                        <th style="padding:10px;text-align:center;">Estado</th>
-                        <th style="padding:10px;">Inquilino</th>
-                        <th style="padding:10px;text-align:right;">Renta</th>
-                        <th style="padding:10px;text-align:center;">Vence</th>
-                    </tr></thead>
-                    <tbody>{rows}</tbody>
-                </table>
-            </div>'''
 
     # ──────────────────────────────────────────────────────────────────
     # NIVEL 2: Comparativa AVM masiva

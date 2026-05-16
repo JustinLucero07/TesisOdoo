@@ -25,7 +25,6 @@ class EstateCommission(models.Model):
 
     type = fields.Selection([
         ('sale', 'Venta'),
-        ('rental', 'Alquiler'),
         ('bonus', 'Bono/Premio')
     ], string='Tipo de Comisión', required=True, default='sale')
 

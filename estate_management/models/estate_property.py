@@ -183,20 +183,12 @@ class EstateProperty(models.Model):
         string='Tour 360° Activo', default=False,
         help='Activa el visor 360° en el portal público.')
 
-    # --- Mejora 13: Calculadora de Rentabilidad (ROI) ---
-    roi_monthly_rent_estimate = fields.Float(
-        string='Renta Mensual Estimada ($)',
-        help='Ingresa el arriendo mensual estimado para calcular el ROI.')
+    # --- Mejora 13: Calculadora de Plusvalía ---
     roi_appreciation_rate = fields.Float(
         string='Apreciación Anual Estimada (%)', default=5.0,
         help='Porcentaje de plusvalía anual esperado. Promedio Ecuador: 5-8%.')
-    roi_annual_yield = fields.Float(
-        string='Rendimiento Anual por Arriendo (%)', compute='_compute_roi', store=True)
     roi_5year_value = fields.Float(
         string='Valor Estimado a 5 Años ($)', compute='_compute_roi', store=True)
-    roi_monthly_cashflow = fields.Float(
-        string='Flujo de Caja Mensual ($)', compute='_compute_roi', store=True,
-        help='Ingreso neto mensual estimado (renta - mantenimiento estimado 15%).')
 
     # --- AVM (Automated Valuation Model) ---
     avm_estimated_price = fields.Float(
@@ -494,8 +486,8 @@ class EstateProperty(models.Model):
     # --- Métricas de Venta ---
     date_listed = fields.Date(string='Fecha de Publicación', tracking=True,
         help='Fecha en que la propiedad se puso en el mercado.')
-    date_sold = fields.Date(string='Fecha de Venta/Alquiler', tracking=True,
-        help='Fecha en que se cerró la venta o alquiler.')
+    date_sold = fields.Date(string='Fecha de Venta', tracking=True,
+        help='Fecha en que se cerró la venta.')
     days_on_market = fields.Integer(
         string='Días en el Mercado', compute='_compute_days_on_market', store=True,
         help='Cantidad de días que la propiedad estuvo disponible antes de venderse.')
@@ -506,7 +498,7 @@ class EstateProperty(models.Model):
 
     # --- Contratos ---
     contract_end_date = fields.Date(string='Vencimiento de Contrato', tracking=True,
-        help='Fecha en que vence el contrato de alquiler o exclusividad.')
+        help='Fecha en que vence el contrato de exclusividad.')
     contract_reminder_days = fields.Integer(
         string='Días para Recordatorio', default=30,
         help='Cuántos días antes del vencimiento se generará una alerta.')
@@ -735,7 +727,7 @@ class EstateProperty(models.Model):
             'context': {
                 'default_property_id': self.id,
                 'default_estate_transaction_type': 'sale',
-                'default_partner_id': self.buyer_id.id or self.owner_id.id or False,
+                'default_partner_id': (self.buyer_id.id if self.buyer_id else False) or (self.owner_id.id if self.owner_id else False),
             },
         }
 
@@ -763,7 +755,7 @@ class EstateProperty(models.Model):
         order_vals = {
             'partner_id': partner.id,
             'property_id': self.id,
-            'estate_transaction_type': 'sale' if self.offer_type == 'sale' else 'rent',
+            'estate_transaction_type': 'sale',
             'lead_id': active_lead.id if active_lead else False,
         }
         if self.product_id:
@@ -1004,7 +996,7 @@ class EstateProperty(models.Model):
             'sold_by': False,
         })
         self.message_post(
-            body='Propiedad re-listada en el mercado. Datos de venta/alquiler anteriores archivados.',
+            body='Propiedad re-listada en el mercado. Datos de venta anteriores archivados.',
             message_type='comment',
             subtype_xmlid='mail.mt_note',
         )
@@ -1037,7 +1029,7 @@ class EstateProperty(models.Model):
         self.ensure_one()
         if self.state not in ('available', 'reserved'):
             raise UserError('Solo se puede marcar como Vendida una propiedad Disponible o Reservada.')
-        vals = {'state': 'sold', 'offer_type': 'sale'}
+        vals = {'state': 'sold'}
         if not self.date_sold:
             vals['date_sold'] = fields.Date.today()
         if not self.sold_by:
@@ -1045,13 +1037,7 @@ class EstateProperty(models.Model):
         self.write(vals)
         self._create_commission_records('sale', self.commission_amount, self.price, self.commission_percentage)
 
-    def action_set_rented(self):
-        self.ensure_one()
-        if self.state not in ('available', 'reserved'):
-            raise UserError('Solo se puede marcar como Alquilada una propiedad Disponible o Reservada.')
-        self.write({'state': 'rented', 'offer_type': 'rent'})
-        commission_amt = self.commission_amount or (self.price * 0.5)
-        self._create_commission_records('rental', commission_amt, self.price, self.commission_percentage)
+
 
     def _create_commission_records(self, commission_type, total_amount, sale_price, pct):
         """Crea registros de comisión, dividiendo entre asesor y co-asesor si aplica."""
@@ -1198,7 +1184,7 @@ class EstateProperty(models.Model):
         today = fields.Date.today()
         properties = self.search([
             ('contract_end_date', '!=', False),
-            ('state', 'in', ['available', 'reserved', 'rented']),
+            ('state', 'in', ['available', 'reserved']),
         ])
         for prop in properties:
             days_left = (prop.contract_end_date - today).days
@@ -1284,21 +1270,12 @@ class EstateProperty(models.Model):
                         user_id=prop.user_id.id or self.env.uid,
                     )
 
-    @api.depends('price', 'roi_monthly_rent_estimate', 'roi_appreciation_rate')
+    @api.depends('price', 'roi_appreciation_rate')
     def _compute_roi(self):
-        """Mejora 13: Calcula métricas de rentabilidad para inversores."""
+        """Mejora 13: Calcula plusvalía estimada a 5 años."""
         for rec in self:
             price = rec.price or 0.0
-            monthly_rent = rec.roi_monthly_rent_estimate or 0.0
             appreciation = (rec.roi_appreciation_rate or 0.0) / 100.0
-            if price > 0 and monthly_rent > 0:
-                annual_rent = monthly_rent * 12
-                rec.roi_annual_yield = (annual_rent / price) * 100.0
-                maintenance = monthly_rent * 0.15
-                rec.roi_monthly_cashflow = monthly_rent - maintenance
-            else:
-                rec.roi_annual_yield = 0.0
-                rec.roi_monthly_cashflow = 0.0
             if price > 0 and appreciation > 0:
                 rec.roi_5year_value = price * ((1 + appreciation) ** 5)
             else:

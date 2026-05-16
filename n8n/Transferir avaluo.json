@@ -1,0 +1,134 @@
+{
+  "name": "Transferir avaluo",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "msg-001",
+              "name": "mensaje",
+              "value": "={{ '🏠 Nueva avaluo \\nNombre Cliente: ' + $json.nombre_cliente + '\\nTel: ' + $json.telefono_cliente +'\\nTipo propiedad: ' + $json.tipo_propiedad + '\\nSector: ' + $json.sector +'\\nNotas: ' + $json.notas + '\\nContactar lo antes posible.' }}",
+              "type": "string"
+            },
+            {
+              "id": "msg-002",
+              "name": "telefono_avaluo",
+              "value": "=593992555864",
+              "type": "string"
+            },
+            {
+              "id": "msg-003",
+              "name": "phone_id",
+              "value": "1117287444793731",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d17256a3-8d00-4798-99f8-99afa0eb71f7",
+      "name": "Armar Mensaje",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v25.0/{{ $json.phone_id }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.telefono_avaluo }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": {{$json.mensaje.toJsonString()}}\n  }\n}",
+        "options": {}
+      },
+      "id": "4ca85f0a-a0e8-442d-b09d-5f9ef3038d3e",
+      "name": "Enviar WhatsApp Gerente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        464,
+        0
+      ],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "telefono_cliente"
+            },
+            {
+              "name": "nombre_cliente"
+            },
+            {
+              "name": "tipo_propiedad"
+            },
+            {
+              "name": "sector"
+            },
+            {
+              "name": "notas"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "c253694f-6631-4d13-b7af-e93826bf4639",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Armar Mensaje": {
+      "main": [
+        [
+          {
+            "node": "Enviar WhatsApp Gerente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Armar Mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "500d267e-101d-49c3-b70f-0b881e80c6a2",
+  "meta": {
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "pFRCGGzU9Yip443k",
+  "tags": []
+}

@@ -1,0 +1,150 @@
+{
+  "name": "Propiedades",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "ciudad"
+            },
+            {
+              "name": "presupuesto",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "7c1d4722-fd0e-4cf7-b4b6-fc605d8ebfe8",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        416,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "p1",
+              "name": "ciudad",
+              "value": "={{ $json.ciudad || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "presupuesto",
+              "value": "={{ Number($json.presupuesto) || 999999999 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c4f2d461-cb3c-400c-8838-dcaba29cabe7",
+      "name": "Preparar Parametros",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        -304
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n    p.id, \n    p.name AS referencia,\n    p.title AS titulo, \n    p.price AS precio, \n    p.area AS metraje_m2, \n    p.bedrooms AS habitaciones, \n    p.street AS sector,\n    p.city AS ciudad,\n    COALESCE(t.name, 'Inmueble') AS tipo_propiedad,\n    CASE \n        WHEN p.wp_post_id IS NOT NULL THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id \n        ELSE 'https://inmobi.com.ec/catalogo/' \n    END AS link_propiedad\nFROM estate_property p \nLEFT JOIN estate_property_type t ON p.property_type_id = t.id \nWHERE p.state = 'available' \n  AND p.active = true\n  AND (\n    '{{ $json.ubicacion || $json.ciudad || \"\" }}' = '' \n    OR p.city ILIKE '%' || '{{ $json.ubicacion || $json.ciudad }}' || '%' \n    OR p.street ILIKE '%' || '{{ $json.ubicacion || $json.ciudad }}' || '%'\n    OR p.title ILIKE '%' || '{{ $json.ubicacion || $json.ciudad }}' || '%'\n  )\n  AND p.price <= ({{ $json.presupuesto_max || $json.presupuesto || 999999999 }} * 1.10)\nORDER BY p.price ASC\nLIMIT 10;\n",
+        "options": {}
+      },
+      "id": "f39f53d0-8983-40a9-9817-4c0bbb95ccde",
+      "name": "Buscar en PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        864,
+        -304
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "6mYPUyfDHs6x1dvZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ JSON.stringify($input.all().map(i => i.json), null, 2) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "009625d4-1977-498b-9a2e-3a3e7a6bc096",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1088,
+        -304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar Parametros",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Parametros": {
+      "main": [
+        [
+          {
+            "node": "Buscar en PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar en PostgreSQL": {
+      "main": [
+        [
+          {
+            "node": "Formatear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "51591055-22fc-4efd-ab13-e5230e0f6eff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "jS5q7vdhxYFzHoi4",
+  "tags": []
+}

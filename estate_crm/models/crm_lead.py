@@ -46,6 +46,20 @@ class CrmLead(models.Model):
         
     client_needs = fields.Text(string='Necesidades Especiales / Demanda del Cliente', 
                               help='Detalles específicos sobre lo que busca el cliente (ej. cerca de parques, aceptan mascotas, crédito pre-aprobado).')
+
+    # --- Necesidad Pendiente (Mejora: Matching automático) ---
+    pending_needs_active = fields.Boolean(
+        string='Con Necesidad Pendiente', default=False, tracking=True,
+        help='Indica que el cliente tiene una demanda activa pero no hay propiedad que la cumpla aún. '
+             'El cron cada 6h re-evalúa el catálogo y notifica por WhatsApp si encuentra match.')
+    pending_needs_last_check = fields.Datetime(
+        string='Última Revisión del Catálogo', readonly=True,
+        help='Fecha/hora en que el cron revió por última vez el catálogo para este lead.')
+    pending_needs_notified_property_ids = fields.Many2many(
+        'estate.property', 'crm_lead_pending_notified_property_rel',
+        'lead_id', 'property_id',
+        string='Propiedades Ya Notificadas',
+        help='Propiedades que ya se enviaron al cliente para evitar duplicados.')
                               
     # --- Cierre de Ventas ---
     closing_payment_type = fields.Selection([
@@ -169,8 +183,6 @@ class CrmLead(models.Model):
         if not self.partner_id:
             raise UserError('Asigna un cliente al lead antes de crear el contrato.')
         contract_type = 'sale'
-        if self.target_property_id and self.target_property_id.offer_type == 'rent':
-            contract_type = 'rent'
         vals = {
             'partner_id': self.partner_id.id,
             'contract_type': contract_type,
@@ -235,8 +247,7 @@ class CrmLead(models.Model):
         }
         if self.target_property_id:
             order_vals['property_id'] = self.target_property_id.id
-            order_vals['estate_transaction_type'] = (
-                'sale' if self.target_property_id.offer_type == 'sale' else 'rent')
+            order_vals['estate_transaction_type'] = 'sale'
             if self.target_property_id.product_id:
                 order_vals['order_line'] = [(0, 0, {
                     'product_id': self.target_property_id.product_id.id,
@@ -559,12 +570,25 @@ class CrmLead(models.Model):
                     }
                 }
             else:
+                # === AUTO-MARCAR COMO NECESIDAD PENDIENTE ===
+                lead.pending_needs_active = True
+                # Mover a etapa "Con Necesidad Pendiente" si existe
+                pending_stage = self.env.ref(
+                    'estate_crm.stage_lead2b_estate_con_necesidad', raise_if_not_found=False)
+                if pending_stage:
+                    lead.stage_id = pending_stage.id
+                lead.message_post(
+                    body='📌 No se encontró match en el catálogo actual. '
+                         'Lead marcado como <b>Con Necesidad Pendiente</b>. '
+                         'El cron cada 6h buscará automáticamente nuevas propiedades compatibles.',
+                    message_type='comment', subtype_xmlid='mail.mt_note')
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': 'AI Matchmaker',
-                        'message': 'No hay propiedades compatibles en el catálogo activo en este momento.',
+                        'title': '📌 Sin Match — Necesidad Pendiente',
+                        'message': 'No hay propiedades compatibles ahora. Lead marcado como "Con Necesidad Pendiente". '
+                                   'Se buscará automáticamente cada 6 horas.',
                         'type': 'warning',
                     }
                 }
@@ -947,6 +971,157 @@ class CrmLead(models.Model):
                 note=f'Lead recibido vía {source_label}. Realizar primer contacto en las próximas 2 horas.',
                 user_id=lead.user_id.id,
             )
+
+    # ──────────────────────────────────────────────────────────────────────
+    # NECESIDAD PENDIENTE — Botón manual y cron automático
+    # ──────────────────────────────────────────────────────────────────────
+
+    def action_mark_pending_need(self):
+        """Botón manual para marcar un lead como 'Con Necesidad Pendiente'."""
+        self.ensure_one()
+        pending_stage = self.env.ref(
+            'estate_crm.stage_lead2b_estate_con_necesidad', raise_if_not_found=False)
+        vals = {'pending_needs_active': True}
+        if pending_stage:
+            vals['stage_id'] = pending_stage.id
+        self.write(vals)
+        self.message_post(
+            body='📌 Lead marcado como <b>Con Necesidad Pendiente</b> manualmente. '
+                 'El sistema buscará propiedades compatibles cada 6 horas.',
+            message_type='comment', subtype_xmlid='mail.mt_note')
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': '📌 Necesidad Pendiente Activada',
+                'message': 'El lead se moverá a la etapa "Con Necesidad Pendiente" y el cron '
+                           'buscará propiedades cada 6 horas.',
+                'type': 'success', 'sticky': False,
+            }
+        }
+
+    def action_clear_pending_need(self):
+        """Desactiva la necesidad pendiente cuando se resuelve manualmente."""
+        self.ensure_one()
+        self.write({'pending_needs_active': False})
+        self.message_post(
+            body='✅ Necesidad pendiente resuelta manualmente.',
+            message_type='comment', subtype_xmlid='mail.mt_note')
+
+    @api.model
+    def _cron_pending_needs_matching(self):
+        """Cron (cada 6h): busca propiedades disponibles que matchean con leads
+        marcados como 'Con Necesidad Pendiente' y envía WhatsApp + actividad."""
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        leads = self.search([
+            ('pending_needs_active', '=', True),
+            ('stage_id.is_won', '=', False),
+            ('active', '=', True),
+        ])
+        if not leads:
+            return
+
+        Property = self.env['estate.property'].sudo()
+        now = fields.Datetime.now()
+        CalendarEvent = self.env['calendar.event'].sudo()
+
+        for lead in leads:
+            # Construir dominio de búsqueda basado en preferencias
+            domain = [('state', '=', 'available'), ('price', '>', 0)]
+            if lead.preferred_city:
+                domain.append(('city', 'ilike', lead.preferred_city))
+            elif lead.city:
+                domain.append(('city', 'ilike', lead.city))
+            if lead.preferred_property_type_id:
+                domain.append(('property_type_id', '=', lead.preferred_property_type_id.id))
+
+            # Excluir propiedades ya notificadas
+            already_notified = lead.pending_needs_notified_property_ids.ids
+            if already_notified:
+                domain.append(('id', 'not in', already_notified))
+
+            candidates = Property.search(domain, limit=50)
+            best_match = None
+            best_score = -1
+
+            for prop in candidates:
+                score = 0
+                if lead.client_budget and prop.price > 0:
+                    ratio = lead.client_budget / prop.price
+                    if ratio >= 1.0:
+                        score += 50
+                    elif ratio >= 0.90:
+                        score += 40
+                    elif ratio >= 0.75:
+                        score += 25
+                    elif ratio >= 0.50:
+                        score += 10
+                if lead.preferred_property_type_id and prop.property_type_id == lead.preferred_property_type_id:
+                    score += 20
+                ref_city = (lead.preferred_city or lead.city or '').strip().lower()
+                prop_city = (prop.city or '').strip().lower()
+                if ref_city and prop_city and ref_city == prop_city:
+                    score += 20
+                if lead.preferred_bedrooms and prop.bedrooms and prop.bedrooms >= lead.preferred_bedrooms:
+                    score += 10
+                if score > best_score:
+                    best_score = score
+                    best_match = prop
+
+            # Actualizar timestamp de revisión
+            lead.pending_needs_last_check = now
+
+            if best_match and best_score >= 60:
+                # ¡Match encontrado!
+                lead.target_property_id = best_match.id
+                lead.pending_needs_notified_property_ids = [(4, best_match.id)]
+
+                # Intentar enviar WhatsApp al cliente
+                phone = lead.phone or (lead.partner_id.phone if lead.partner_id else False)
+                client_name = lead.partner_id.name or lead.contact_name or 'Cliente'
+                if phone:
+                    msg = (
+                        f'🏠 ¡Hola {client_name}! Tenemos una propiedad ideal para ti:\n\n'
+                        f'📍 *{best_match.title}*\n'
+                        f'📌 {best_match.city or "Ciudad no especificada"}\n'
+                        f'💰 ${best_match.price:,.0f}\n'
+                        f'🛏️ {best_match.bedrooms or 0} hab. · {best_match.area or 0} m²\n\n'
+                        f'📞 Contáctanos para agendar una visita.'
+                    )
+                    try:
+                        CalendarEvent._send_whatsapp_text(phone, msg)
+                        _logger.info(
+                            'WhatsApp enviado a %s para lead %s (propiedad: %s, score: %d%%)',
+                            phone, lead.name, best_match.title, best_score)
+                    except Exception as e:
+                        _logger.warning('Error WhatsApp para lead %s: %s', lead.name, e)
+
+                # Crear actividad para el asesor
+                lead.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    summary=f'🏠 Match encontrado: {best_match.title} ({best_score}%)',
+                    note=f'El cron encontró una propiedad compatible para el cliente '
+                         f'{client_name}. Propiedad: {best_match.title} '
+                         f'(${best_match.price:,.0f}, {best_match.city}). '
+                         f'Se envió notificación WhatsApp.',
+                    user_id=lead.user_id.id or self.env.uid,
+                )
+
+                # Log en chatter
+                lead.message_post(
+                    body=(
+                        f'🎯 <b>Match automático encontrado</b> ({best_score}% compatibilidad)<br/>'
+                        f'Propiedad: <b>{best_match.title}</b> — '
+                        f'{best_match.city} — ${best_match.price:,.0f}<br/>'
+                        f'Se envió WhatsApp al cliente y se creó actividad para el asesor.'
+                    ),
+                    message_type='comment', subtype_xmlid='mail.mt_note')
+
+                _logger.info(
+                    'Pending Needs Match: lead=%s, property=%s, score=%d',
+                    lead.name, best_match.name, best_score)
 
 
 class CalendarEvent(models.Model):
