@@ -1,0 +1,361 @@
+{
+  "name": "agente_router",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "rt-wh-get",
+      "name": "Webhook GET (Verificacion)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-200, -160],
+      "webhookId": "whatsapp-verify"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "rt-wh-post",
+      "name": "Webhook POST (Mensajes)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-200, 0],
+      "webhookId": "whatsapp-msg"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "rt-ok-verify",
+      "name": "Responder Verificacion",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [20, -160]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\nconst entry = body?.entry?.[0];\nconst change = entry?.changes?.[0];\nconst msg = change?.value?.messages?.[0];\nconst contact = change?.value?.contacts?.[0];\nconst metadata = change?.value?.metadata;\n\nif (!msg) return [{ json: { skip: true } }];\n\nreturn [{ json: {\n  mensaje:         msg.text?.body || '',\n  numero:          msg.from,\n  nombre:          contact?.profile?.name || '',\n  tipo:            msg.type,\n  audioId:         msg.audio?.id || '',\n  phoneNumberId:   metadata?.phone_number_id || '1117287444793731'\n}}];"
+      },
+      "id": "rt-extract",
+      "name": "Extraer Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [20, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Inject date context (UTC-5 Ecuador)\nconst d = $input.first().json;\nif (d.skip) return [{ json: d }];\n\nconst now = new Date(Date.now() - 5 * 3600000);\nconst pad = n => String(n).padStart(2,'0');\nconst fmt = dt => `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth()+1)}-${pad(dt.getUTCDate())}`;\n\nconst hoy = new Date(now);\nconst manana = new Date(now); manana.setUTCDate(manana.getUTCDate()+1);\nconst dow = now.getUTCDay(); // 0=Sun\nconst lunes = new Date(now); lunes.setUTCDate(now.getUTCDate() + (dow===0?1:8-dow)%7 || 7);\n// This week days\nconst diasSemana = ['domingo','lunes','martes','miercoles','jueves','viernes','sabado'];\nconst semana = {};\nfor (let i=0;i<7;i++) { const d2=new Date(now); d2.setUTCDate(now.getUTCDate()-dow+i); semana[diasSemana[i]]=fmt(d2); }\n// Next week\nconst semanaProx = {};\nfor (let i=0;i<7;i++) { const d2=new Date(now); d2.setUTCDate(now.getUTCDate()-dow+i+7); semanaProx[diasSemana[i]+'_proxima']=fmt(d2); }\n\nconst fechaCtx = `\\n🗓️ CONTEXTO DE FECHAS (solo para ti):\\nHoy: ${fmt(hoy)} (${diasSemana[dow]})\\nMañana: ${fmt(manana)}\\nEsta semana: ${JSON.stringify(semana)}\\nPróxima semana: ${JSON.stringify(semanaProx)}\\n`;\n\nreturn [{ json: { ...d, fecha_contexto: fechaCtx } }];"
+      },
+      "id": "rt-dates",
+      "name": "Contexto de Fechas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c1", "leftValue": "={{ $json.tipo }}", "rightValue": "text", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rt-is-text",
+      "name": "Es texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [460, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c2", "leftValue": "={{ $json.tipo }}", "rightValue": "audio", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rt-is-audio",
+      "name": "Es audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [460, 160]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v25.0/{{ $json.audioId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "id": "rt-audio-url",
+      "name": "Obtener URL Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 160],
+      "credentials": { "whatsAppApi": { "id": "DOEaWrSOaR0CWKbo", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": { "response": { "response": { "responseFormat": "file" } } }
+      },
+      "id": "rt-audio-dl",
+      "name": "Descargar Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 160],
+      "credentials": { "whatsAppApi": { "id": "DOEaWrSOaR0CWKbo", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": { "__rl": true, "value": "models/gemini-2.5-flash", "mode": "list", "cachedResultName": "models/gemini-2.5-flash" },
+        "text": "Transcribe exactamente lo que dice el cliente en este audio. Solo devuelve el texto, sin comentarios ni explicaciones.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "id": "rt-transcribe",
+      "name": "Transcribir Audio",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [1120, 160],
+      "credentials": { "googlePalmApi": { "id": "ZNY6Adry9gpjCRH2", "name": "Google Gemini(PaLM) Api account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge transcribed audio into message format\nconst transcription = $input.first().json.text || '';\nconst orig = $('Contexto de Fechas').first().json;\nreturn [{ json: { ...orig, mensaje: transcription, tipo: 'text' } }];"
+      },
+      "id": "rt-audio-merge",
+      "name": "Armar Mensaje Audio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 160]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT phone, nombre, intent, state, context, history, last_activity FROM wa_sessions WHERE phone = '{{ $json.numero }}' LIMIT 1;",
+        "options": {}
+      },
+      "id": "rt-read-db",
+      "name": "Leer Sesion DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [680, 0],
+      "credentials": { "postgres": { "id": "6mYPUyfDHs6x1dvZ", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge DB session with current message data\nconst msgData = $('Contexto de Fechas').first().json;\nconst dbRows  = $input.all().map(i => i.json);\nconst session = dbRows.find(r => r.phone) || {};\n\nconst currentIntent = (session.intent || 'UNKNOWN').toUpperCase();\nconst nombre        = session.nombre || msgData.nombre || '';\nconst history       = session.history || [];\nconst context       = session.context || {};\nconst state         = session.state   || 'greeting';\n\n// If we already know the intent, reuse it\nif (currentIntent !== 'UNKNOWN' && state !== 'done') {\n  return [{ json: {\n    ...msgData,\n    intent: currentIntent,\n    nombre, history: JSON.stringify(history),\n    context_json: JSON.stringify(context),\n    isNew: false\n  }}];\n}\n\n// New client — keyword classification (instant, no LLM cost)\nconst msg = (msgData.mensaje || '').toLowerCase();\nconst venderKw   = ['vender','vendo','venta de','tengo una','quiero vender','propietario','mi propiedad'];\nconst avaluoKw   = ['avalúo','avaluo','cuánto vale','valoración','tasación','valor de mi'];\nlet intent = 'COMPRADOR';\nfor (const kw of avaluoKw) { if (msg.includes(kw)) { intent = 'AVALUO'; break; } }\nfor (const kw of venderKw)  { if (msg.includes(kw)) { intent = 'VENDEDOR'; break; } }\n\nreturn [{ json: {\n  ...msgData,\n  intent,\n  nombre,\n  history: JSON.stringify([]),\n  context_json: JSON.stringify({}),\n  isNew: true\n}}];"
+      },
+      "id": "rt-classify",
+      "name": "Clasificar Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "id": "c3", "leftValue": "={{ $json.intent }}", "rightValue": "COMPRADOR", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "rt-is-buyer",
+      "name": "Es Comprador?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1120, 0]
+    },
+    {
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "value": "AgenteComprador001",
+          "mode": "id",
+          "cachedResultName": "agente_comprador"
+        },
+        "fields": {
+          "values": [
+            { "name": "mensaje",        "stringValue": "={{ $json.mensaje }}" },
+            { "name": "numero",         "stringValue": "={{ $json.numero }}" },
+            { "name": "nombre",         "stringValue": "={{ $json.nombre }}" },
+            { "name": "history_json",   "stringValue": "={{ $json.history }}" },
+            { "name": "context_json",   "stringValue": "={{ $json.context_json }}" },
+            { "name": "fecha_contexto", "stringValue": "={{ $json.fecha_contexto }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "rt-exec-buyer",
+      "name": "Ejecutar Agente Comprador",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1340, -80]
+    },
+    {
+      "parameters": {
+        "mode": "each",
+        "workflowId": {
+          "__rl": true,
+          "value": "AgenteVendedor001",
+          "mode": "id",
+          "cachedResultName": "agente_vendedor"
+        },
+        "fields": {
+          "values": [
+            { "name": "mensaje",        "stringValue": "={{ $json.mensaje }}" },
+            { "name": "numero",         "stringValue": "={{ $json.numero }}" },
+            { "name": "nombre",         "stringValue": "={{ $json.nombre }}" },
+            { "name": "history_json",   "stringValue": "={{ $json.history }}" },
+            { "name": "fecha_contexto", "stringValue": "={{ $json.fecha_contexto }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "rt-exec-seller",
+      "name": "Ejecutar Agente Vendedor",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1340, 80]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge response with original session context, then UPSERT to wa_sessions\nconst resp      = $input.first().json.response || $input.first().json.output || '';\nconst classify  = $('Clasificar Intent').first().json;\nconst numero    = classify.numero;\nconst intent    = classify.intent;\nconst nombre    = classify.nombre;\nconst mensaje   = classify.mensaje;\n\nconst oldHistory = JSON.parse(classify.history || '[]');\nconst newHistory = [\n  ...oldHistory,\n  { role: 'human', content: mensaje, ts: new Date().toISOString() },\n  { role: 'ai',    content: resp,    ts: new Date().toISOString() }\n].slice(-20); // keep last 20 messages\n\nreturn [{ json: {\n  phone:   numero,\n  nombre:  nombre,\n  intent:  intent,\n  history: JSON.stringify(newHistory),\n  response: resp\n}}];"
+      },
+      "id": "rt-prep-save",
+      "name": "Preparar Guardar Sesion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO wa_sessions (phone, nombre, intent, state, history, last_activity)\nVALUES (\n  '{{ $json.phone }}',\n  '{{ $json.nombre.replace(/'/g, \"''\") }}',\n  '{{ $json.intent }}',\n  'active',\n  '{{ $json.history }}'::jsonb,\n  NOW()\n)\nON CONFLICT (phone) DO UPDATE SET\n  nombre        = EXCLUDED.nombre,\n  intent        = EXCLUDED.intent,\n  state         = 'active',\n  history       = EXCLUDED.history,\n  last_activity = NOW();",
+        "options": {}
+      },
+      "id": "rt-save-db",
+      "name": "Guardar Sesion DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [1780, 0],
+      "credentials": { "postgres": { "id": "6mYPUyfDHs6x1dvZ", "name": "Postgres account" } }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v25.0/{{ $('Clasificar Intent').first().json.phoneNumberId }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Clasificar Intent').first().json.numero }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": {{ $('Preparar Guardar Sesion').first().json.response.toJsonString() }}\n  }\n}",
+        "options": {}
+      },
+      "id": "rt-send-wa",
+      "name": "Enviar Respuesta WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 0],
+      "credentials": { "whatsAppApi": { "id": "DOEaWrSOaR0CWKbo", "name": "WhatsApp account" } }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"ok\"}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "rt-ok-meta",
+      "name": "Responder OK a Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2220, 0]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"status\": \"ok\"}",
+        "options": { "responseCode": 200 }
+      },
+      "id": "rt-ok-skip",
+      "name": "Ignorar (no es texto ni audio)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 320]
+    }
+  ],
+  "connections": {
+    "Webhook GET (Verificacion)": {
+      "main": [[ { "node": "Responder Verificacion", "type": "main", "index": 0 } ]]
+    },
+    "Webhook POST (Mensajes)": {
+      "main": [[ { "node": "Extraer Datos", "type": "main", "index": 0 } ]]
+    },
+    "Extraer Datos": {
+      "main": [[ { "node": "Contexto de Fechas", "type": "main", "index": 0 } ]]
+    },
+    "Contexto de Fechas": {
+      "main": [[ { "node": "Es texto?", "type": "main", "index": 0 } ]]
+    },
+    "Es texto?": {
+      "main": [
+        [ { "node": "Leer Sesion DB", "type": "main", "index": 0 } ],
+        [ { "node": "Es audio?",      "type": "main", "index": 0 } ]
+      ]
+    },
+    "Es audio?": {
+      "main": [
+        [ { "node": "Obtener URL Audio", "type": "main", "index": 0 } ],
+        [ { "node": "Ignorar (no es texto ni audio)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Obtener URL Audio":    { "main": [[ { "node": "Descargar Audio",    "type": "main", "index": 0 } ]] },
+    "Descargar Audio":      { "main": [[ { "node": "Transcribir Audio",  "type": "main", "index": 0 } ]] },
+    "Transcribir Audio":    { "main": [[ { "node": "Armar Mensaje Audio","type": "main", "index": 0 } ]] },
+    "Armar Mensaje Audio":  { "main": [[ { "node": "Leer Sesion DB",     "type": "main", "index": 0 } ]] },
+    "Leer Sesion DB":       { "main": [[ { "node": "Clasificar Intent",  "type": "main", "index": 0 } ]] },
+    "Clasificar Intent":    { "main": [[ { "node": "Es Comprador?",       "type": "main", "index": 0 } ]] },
+    "Es Comprador?": {
+      "main": [
+        [ { "node": "Ejecutar Agente Comprador", "type": "main", "index": 0 } ],
+        [ { "node": "Ejecutar Agente Vendedor",  "type": "main", "index": 0 } ]
+      ]
+    },
+    "Ejecutar Agente Comprador": { "main": [[ { "node": "Preparar Guardar Sesion", "type": "main", "index": 0 } ]] },
+    "Ejecutar Agente Vendedor":  { "main": [[ { "node": "Preparar Guardar Sesion", "type": "main", "index": 0 } ]] },
+    "Preparar Guardar Sesion":   { "main": [[ { "node": "Guardar Sesion DB",        "type": "main", "index": 0 } ]] },
+    "Guardar Sesion DB":         { "main": [[ { "node": "Enviar Respuesta WhatsApp","type": "main", "index": 0 } ]] },
+    "Enviar Respuesta WhatsApp": { "main": [[ { "node": "Responder OK a Meta",      "type": "main", "index": 0 } ]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1", "binaryMode": "separate" },
+  "meta": { "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810" },
+  "id": "AgenteRouter001",
+  "tags": []
+}

@@ -148,6 +148,7 @@
                         <group>
                             <field name="street" placeholder="Ej: Av. 9 de Octubre y Pedro Carbo"/>
                             <field name="city"/>
+                            <field name="sector_keywords" placeholder="Ej: Paccha, El Valle, Ricaurte"/>
                             <field name="state_id"/>
                         </group>
                         <group>

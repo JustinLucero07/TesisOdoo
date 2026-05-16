@@ -1,0 +1,253 @@
+{
+  "name": "agente_comprador",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "mensaje" },
+            { "name": "numero" },
+            { "name": "nombre" },
+            { "name": "history_json" },
+            { "name": "context_json" },
+            { "name": "fecha_contexto" }
+          ]
+        }
+      },
+      "id": "ac-trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst history = JSON.parse(d.history_json || '[]');\nconst context = JSON.parse(d.context_json || '{}');\n\n// Build conversation history text (last 14 messages)\nlet historialTexto = '';\nif (history.length > 0) {\n  const recientes = history.slice(-14);\n  historialTexto = '\\n\\n[Conversación previa con este cliente]\\n' +\n    recientes.map(m => (m.role === 'human' ? 'Cliente: ' : 'Asistente: ') + m.content).join('\\n') +\n    '\\n[Fin historial — continúa naturalmente sin repetir saludos]';\n}\n\n// Context: property in consideration, lead already created, etc.\nlet ctxTexto = '';\nif (context.property_id) {\n  ctxTexto += `\\n[Propiedad en discusión: ID ${context.property_id}, wp_post_id ${context.wp_post_id || 0}]`;\n}\nif (context.lead_id) {\n  ctxTexto += `\\n[Lead ya registrado: ID ${context.lead_id} — NO volver a llamar registrar_lead]`;\n}\nif (context.cita_id) {\n  ctxTexto += `\\n[Cita ya agendada: ID ${context.cita_id} — NO volver a llamar agendar_cita]`;\n}\n\nreturn [{ json: {\n  mensaje:        d.mensaje,\n  numero:         d.numero,\n  nombre:         d.nombre || '',\n  fecha_contexto: d.fecha_contexto || '',\n  historial:      historialTexto,\n  ctx:            ctxTexto\n}}];"
+      },
+      "id": "ac-ctx",
+      "name": "Preparar Contexto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.fecha_contexto + $json.ctx + $json.historial + '\\n\\nMensaje actual del cliente: ' + $json.mensaje }}",
+        "options": {
+          "systemMessage": "Eres el Asistente Inmobi, asesor virtual de Inmobi en Cuenca, Ecuador.\nAtiendes por WhatsApp de forma humana, natural y directa.\nNunca digas que eres IA, bot o asistente virtual.\nSi preguntan: \"Jaja no, soy el asistente de Inmobi, trabajo aquí con el equipo.\"\n\n════════════════════════════════════\nPRIMER MENSAJE — SALUDO INICIAL\n════════════════════════════════════\n\nSaluda una sola vez y pregunta el nombre:\n\"¡Hola! Soy el asistente de Inmobi 😊 ¿Con quién tengo el gusto?\"\n\nUna vez que te diga el nombre, úsalo naturalmente en la conversación.\nLuego: \"¿Qué estás buscando, [nombre]?\"\n\nSi el cliente ya dijo qué busca en su primer mensaje: NO repitas la pregunta.\nPide solo el nombre y avanza directamente.\n\n════════════════════════════════════\nREGLAS QUE NUNCA PUEDES ROMPER\n════════════════════════════════════\n\nUNA SOLA PREGUNTA POR MENSAJE. Siempre. Sin excepción.\nNUNCA pidas el número de teléfono. Ya lo tienes.\nNUNCA menciones que registraste o guardaste algo en un sistema.\nNUNCA uses negritas, asteriscos, listas numeradas ni viñetas. Solo texto plano.\nNUNCA des links genéricos. Solo links reales que vengan de un tool.\nNUNCA inventes direcciones ni IDs de propiedades.\nNUNCA repitas preguntas que el cliente ya respondió.\n\n════════════════════════════════════\nCÓMO PRESENTAR PROPIEDADES\n════════════════════════════════════\n\n\"Tengo [tipo] en [sector], [X habitaciones], [X m²], $[precio]. [link real]\"\n\nSi hay varias:\n\"Tengo dos opciones. Una en [sector A], [características], $[precio], [link].\nLa otra en [sector B], [características], $[precio], [link].\n¿Cuál te llama más la atención?\"\n\nNUNCA digas \"Encontré\", \"Las opciones son:\", ni uses listas.\nNUNCA des información sin el link real de la propiedad.\n\n════════════════════════════════════\nFOTOS / IMÁGENES\n════════════════════════════════════\n\nCuando el cliente pida fotos, imágenes o \"cómo se ve\":\nPaso 1 → Si aún no tienes los detalles: llama obtener_detalle_inmueble primero.\nPaso 2 → Llama enviar_fotos_propiedad con el property_id y wp_post_id de la propiedad.\nPaso 3 → Responde: \"Te mando las fotos ahora.\"\n\nSiempre usa el property_id y wp_post_id del tool anterior. NUNCA los inventes.\n\n════════════════════════════════════\nCUÁNDO BUSCAR VS CUÁNDO CALIFICAR\n════════════════════════════════════\n\nSi el cliente da sector o zona → busca YA con buscar_propiedades.\nNo pidas presupuesto antes de buscar si ya tienes sector.\nBusca, muestra, luego pregunta cuál le llamó la atención.\n\nSi da filtros técnicos (habitaciones, baños, precio, tipo) → buscar_propiedades_pro.\n\nSi no tiene sector ni tipo claro → pregunta el sector primero.\n\n════════════════════════════════════\nCALIFICACIÓN — SOLO ANTES DE AGENDAR\n════════════════════════════════════\n\nDos preguntas máximo, una a la vez:\n1. \"¿Ese precio está dentro de lo que tienes pensado?\"\n2. \"¿Lo harías con crédito o ya tienes cómo manejarlo?\"\n   BIESS/banco: \"¿Ya tienes precalificación?\"\n   Contado: avanza directo.\n   No sabe: acepta y avanza. NUNCA insistas.\n\nNUNCA repitas la pregunta de forma de pago si ya la respondió.\n\n════════════════════════════════════\nCUANDO NO HAY OPCIONES\n════════════════════════════════════\n\nSi no hay propiedades que encajen:\n\"Por ahora no tengo algo que se ajuste a lo que buscas.\"\n\nSi el cliente pide que le avises cuando salga algo:\nPaso 1 → clientes_pendientes con sus datos y lo que busca.\nPaso 2 → \"Listo, en cuanto tengamos algo te aviso.\"\nPaso 3 → Cierra la conversación. No sigas ofreciendo alternativas.\n\n════════════════════════════════════\nCITAS — ANTICIPACIÓN MÍNIMA 1 HORA\n════════════════════════════════════\n\nSi pide hora a menos de 1 hora de anticipación:\n\"Esa hora ya no nos da el tiempo. ¿Te funciona más tarde o mañana?\"\n\n════════════════════════════════════\nORDEN OBLIGATORIO PARA AGENDAR\n════════════════════════════════════\n\nPaso 1 → Muestra propiedad con datos reales y link\nPaso 2 → Califica precio (una pregunta)\nPaso 3 → Califica forma de pago (una pregunta)\nPaso 4 → Pregunta el día\nPaso 5 → Pregunta la hora\nPaso 6 → verificar_disponibilidad_asesor (YYYY-MM-DD, hora exacta)\nPaso 7 → Elige asesor internamente, guarda su teléfono\nPaso 8 → Confirma disponibilidad al cliente\nPaso 9 → Pide nombre completo si aún no lo tienes\nPaso 10 → registrar_lead (UNA vez)\nPaso 11 → agendar_cita (UNA vez)\nPaso 12 → \"Listo, tu cita quedó registrada. Pronto un asesor te contacta.\"\nPaso 13 → notificar_asesor (UNA vez, con su teléfono interno)\n\nNUNCA muestres el nombre ni teléfono del asesor al cliente.\n\n════════════════════════════════════\nREGLAS CRÍTICAS DE DATOS\n════════════════════════════════════\n\nPROPERTY_ID: NUNCA lo inventes. Solo úsalo si vino de buscar_propiedades,\nbuscar_propiedades_pro o obtener_detalle_inmueble.\n\nEl ID real de la propiedad es SIEMPRE el campo \"id\" del JSON.\nNUNCA extraigas IDs desde URLs. El número en ?p= es el wp_post_id, NO el ID.\n\nTELÉFONO: Usa el número exacto del contexto de WhatsApp con código de país.\n\nANTI-DUPLICADOS: Cada tool se llama solo UNA VEZ por conversación:\nregistrar_lead, agendar_cita, notificar_asesor, clientes_pendientes.\n\n════════════════════════════════════\nLÓGICA DE HERRAMIENTAS\n════════════════════════════════════\n\nbuscar_propiedades → cliente menciona sector, zona o calle\nbuscar_propiedades_pro → cliente da filtros técnicos\nobtener_detalle_inmueble → detalles, fotos, o llega con propiedad específica\nenviar_fotos_propiedad → cliente pide fotos/imágenes (DESPUÉS de tener property_id y wp_post_id)\nverificar_disponibilidad_asesor → antes de cualquier cita\nregistrar_lead → cuando tienes nombre+teléfono+propiedad\nagendar_cita → lead_id + disponibilidad confirmados\nnotificar_asesor → inmediatamente después de agendar\nclientes_pendientes → no hay propiedades y cliente pide aviso\n\n════════════════════════════════════\nLÓGICA DE ASESORES\n════════════════════════════════════\n\nIgnora al asesor \"Administrator\" (user_id: 2).\nElige el primero con hora_ocupada: false.\nSi todos ocupados → propón otra hora.\nNUNCA muestres nombre ni teléfono del asesor al cliente.\n\n════════════════════════════════════\nRESOLUCIÓN DE FECHAS\n════════════════════════════════════\n\nRecibirás un bloque 🗓️ CONTEXTO DE FECHAS. Solo para ti, nunca lo muestres.\nConvierte siempre a YYYY-MM-DD antes de llamar cualquier tool.\n\n════════════════════════════════════\nPERSONALIDAD\n════════════════════════════════════\n\nHumano, ágil, amable, directo. No pareces chatbot.\nFrases cortas. Conversacional. Máximo un emoji si se siente natural.\nSiempre en español. Asume siempre Cuenca, Ecuador.\n\nHORARIO: Lunes a viernes 8:00-13:00 y 14:00-17:00\nDirección: Padre Julio Matovelle, Cuenca | Web: inmobi.com.ec"
+        }
+      },
+      "id": "ac-agent",
+      "name": "AI Agent Comprador",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [680, 0]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "ac-llm",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [480, 220],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZNY6Adry9gpjCRH2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "buscar_propiedades",
+        "description": "Busca propiedades disponibles por sector/ciudad y presupuesto. Usa cuando el cliente menciona zona o sector.",
+        "workflowId": { "__rl": true, "value": "jS5q7vdhxYFzHoi4", "mode": "id" },
+        "fields": { "values": [ { "name": "ciudad" }, { "name": "presupuesto" } ] }
+      },
+      "id": "ac-t1",
+      "name": "Tool: Buscar Propiedades",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [360, 320]
+    },
+    {
+      "parameters": {
+        "name": "buscar_propiedades_pro",
+        "description": "Búsqueda avanzada por múltiples filtros: ubicacion, presupuesto_max, habitaciones_min, tipo_propiedad, parqueaderos_min, banos_min.",
+        "workflowId": { "__rl": true, "value": "XZC5yfEXWrQ95Mp3", "mode": "id" },
+        "fields": { "values": [
+          { "name": "ubicacion" }, { "name": "presupuesto_max" },
+          { "name": "habitaciones_min" }, { "name": "tipo_propiedad" },
+          { "name": "parqueaderos_min" }, { "name": "banos_min" }
+        ]}
+      },
+      "id": "ac-t2",
+      "name": "Tool: buscar propiedades pro",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [480, 320]
+    },
+    {
+      "parameters": {
+        "name": "obtener_detalle_inmueble",
+        "description": "Obtiene detalles completos de una propiedad por su ID de base de datos. OBLIGATORIO cuando el cliente pide detalles, fotos, ubicación exacta, o llega con propiedad específica.",
+        "workflowId": { "__rl": true, "value": "bdD9F2bm2N2oKsrM", "mode": "id" },
+        "fields": { "values": [ { "name": "id_propiedad", "type": "number" } ] }
+      },
+      "id": "ac-t3",
+      "name": "Tool: Detalles",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [600, 320]
+    },
+    {
+      "parameters": {
+        "name": "enviar_fotos_propiedad",
+        "description": "Envía hasta 5 fotos de la propiedad al cliente por WhatsApp. Usa cuando el cliente pide fotos, imágenes o quiere ver cómo se ve la propiedad. Requiere property_id y wp_post_id (del tool anterior), phone y phoneNumberId.",
+        "workflowId": {
+          "__rl": true,
+          "value": "EnviarFotosPropiedad01",
+          "mode": "id",
+          "cachedResultName": "enviar_fotos_propiedad"
+        },
+        "fields": { "values": [
+          { "name": "property_id", "type": "number" },
+          { "name": "wp_post_id",  "type": "number" },
+          { "name": "phone" },
+          { "name": "phoneNumberId" }
+        ]}
+      },
+      "id": "ac-t4",
+      "name": "Tool: Enviar Fotos",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [720, 320]
+    },
+    {
+      "parameters": {
+        "name": "verificar_disponibilidad_asesor",
+        "description": "Verifica disponibilidad de asesores para una fecha y hora dadas (YYYY-MM-DD y HH:MM). Ignora Administrator (user_id 2). Elige el primero con hora_ocupada: false.",
+        "workflowId": { "__rl": true, "value": "ziMsQY3SZhzZqi3w", "mode": "id" },
+        "fields": { "values": [
+          { "name": "fecha" }, { "name": "hora" }, { "name": "user_id" }
+        ]}
+      },
+      "id": "ac-t5",
+      "name": "Tool: Verificar Disponibilidad",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [840, 320]
+    },
+    {
+      "parameters": {
+        "name": "registrar_lead",
+        "description": "Crea un lead en el CRM. Llama solo UNA VEZ cuando tengas nombre, telefono, ciudad, presupuesto, necesidades, property_id y etapa (1=Nuevo, 2=Calificado, 3=Visita).",
+        "workflowId": { "__rl": true, "value": "yvpl7RX9b8y4Mafu", "mode": "id" },
+        "fields": { "values": [
+          { "name": "nombre" }, { "name": "telefono" }, { "name": "ciudad" },
+          { "name": "presupuesto" }, { "name": "necesidades" },
+          { "name": "property_id" }, { "name": "etapa" }
+        ]}
+      },
+      "id": "ac-t6",
+      "name": "Tool: Registrar Lead",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [960, 320]
+    },
+    {
+      "parameters": {
+        "name": "agendar_cita",
+        "description": "Agenda una visita a una propiedad. Llama solo UNA VEZ. Requiere: fecha (YYYY-MM-DD), hora (HH:MM), property_id, lead_id, user_id (asesor elegido), nombre_cliente, nombre_propiedad, duracion (horas).",
+        "workflowId": { "__rl": true, "value": "5uu5FgIDZOxYIkfF", "mode": "id" },
+        "fields": { "values": [
+          { "name": "fecha" }, { "name": "hora" }, { "name": "property_id" },
+          { "name": "lead_id" }, { "name": "user_id" },
+          { "name": "nombre_cliente" }, { "name": "nombre_propiedad" },
+          { "name": "duracion" }
+        ]}
+      },
+      "id": "ac-t7",
+      "name": "Tool: Agendar Cita",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [1080, 320]
+    },
+    {
+      "parameters": {
+        "name": "notificar_asesor",
+        "description": "Envía WhatsApp al asesor asignado con los datos de la cita. Llama inmediatamente después de agendar_cita. NUNCA muestres el nombre ni teléfono del asesor al cliente.",
+        "workflowId": { "__rl": true, "value": "xVIZjqNm4M3dTiat", "mode": "id" },
+        "fields": { "values": [
+          { "name": "telefono_cliente" }, { "name": "nombre_cliente" },
+          { "name": "propiedad" }, { "name": "sector" },
+          { "name": "fecha" }, { "name": "hora" },
+          { "name": "telefono_asesor" }
+        ]}
+      },
+      "id": "ac-t8",
+      "name": "Tool: Notificar Asesor",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [1200, 320]
+    },
+    {
+      "parameters": {
+        "name": "clientes_pendientes",
+        "description": "Registra al cliente como pendiente cuando no hay propiedades disponibles que le convengan y pide que le avisen. Llama UNA sola vez.",
+        "workflowId": { "__rl": true, "value": "SNHWLpTjIriEF9iM", "mode": "id" },
+        "fields": { "values": [
+          { "name": "nombre" }, { "name": "telefono" }, { "name": "ciudad" },
+          { "name": "presupuesto" }, { "name": "tipo_propiedad" }, { "name": "sector" }
+        ]}
+      },
+      "id": "ac-t9",
+      "name": "Tool: Clientes Pendientes",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [1320, 320]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "r1", "name": "response", "value": "={{ $json.output }}", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ac-out",
+      "name": "Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 0]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [[ { "node": "Preparar Contexto", "type": "main", "index": 0 } ]]
+    },
+    "Preparar Contexto": {
+      "main": [[ { "node": "AI Agent Comprador", "type": "main", "index": 0 } ]]
+    },
+    "AI Agent Comprador": {
+      "main": [[ { "node": "Respuesta", "type": "main", "index": 0 } ]]
+    },
+    "Google Gemini":                  { "ai_languageModel": [[ { "node": "AI Agent Comprador", "type": "ai_languageModel", "index": 0 } ]] },
+    "Tool: Buscar Propiedades":       { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: buscar propiedades pro":   { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: Detalles":                 { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: Enviar Fotos":             { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: Verificar Disponibilidad": { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: Registrar Lead":           { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: Agendar Cita":             { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: Notificar Asesor":         { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] },
+    "Tool: Clientes Pendientes":      { "ai_tool": [[ { "node": "AI Agent Comprador", "type": "ai_tool", "index": 0 } ]] }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810" },
+  "id": "AgenteComprador001",
+  "tags": []
+}

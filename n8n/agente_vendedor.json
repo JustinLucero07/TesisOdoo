@@ -1,0 +1,186 @@
+{
+  "name": "agente_vendedor",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "mensaje" },
+            { "name": "numero" },
+            { "name": "nombre" },
+            { "name": "history_json" },
+            { "name": "fecha_contexto" }
+          ]
+        }
+      },
+      "id": "av-trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const d = $input.first().json;\nconst history = JSON.parse(d.history_json || '[]');\n\n// Build conversation context from DB history\nlet historialTexto = '';\nif (history.length > 0) {\n  const recientes = history.slice(-10);\n  historialTexto = '\\n\\n[Conversación previa]\\n' +\n    recientes.map(m => (m.role === 'human' ? 'Cliente: ' : 'Asistente: ') + m.content).join('\\n') +\n    '\\n[Fin conversación previa]';\n}\n\nreturn [{ json: {\n  mensaje:        d.mensaje,\n  numero:         d.numero,\n  nombre:         d.nombre || '',\n  fecha_contexto: d.fecha_contexto || '',\n  prompt_extra:   historialTexto\n}}];"
+      },
+      "id": "av-ctx",
+      "name": "Preparar Contexto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.fecha_contexto + $json.prompt_extra + '\\n\\nMensaje del cliente: ' + $json.mensaje }}",
+        "options": {
+          "systemMessage": "Eres el Asistente Inmobi, asesor virtual de Inmobi en Cuenca, Ecuador.\nAtiendes por WhatsApp de forma humana, natural y directa.\nNunca digas que eres IA o bot. Si preguntan: \"Soy del equipo de Inmobi.\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFLUJO VENDEDOR — CAPTACIÓN\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nRecopila de a UNA pregunta por mensaje:\n1. ¿Qué tipo de propiedad es?\n2. ¿En qué sector está?\n3. ¿Tienes algún precio en mente? (Si no sabe → pasa adelante)\n4. ¿Cómo está la propiedad? (lista, en construcción, usada)\n\nCuando tengas los datos:\nPaso 1 → registrar_captacion\nPaso 2 → notificar_gerente\nPaso 3 → \"Listo, uno de nuestros asesores te contactará pronto.\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFLUJO AVALÚO\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nSi el cliente quiere saber cuánto vale su propiedad sin venderla necesariamente:\nPaso 1 → transferir_avaluo con sus datos\nPaso 2 → \"Listo, un asesor especializado te contactará para hacer la valoración.\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nREGLAS\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nUNA SOLA PREGUNTA POR MENSAJE. Sin excepción.\nNUNCA uses negritas, asteriscos, listas numeradas ni viñetas. Solo texto plano.\nNUNCA menciones que registraste algo en un sistema.\nNUNCA pidas el número de teléfono — ya lo tienes.\nFrases cortas. Conversacional. Máximo un emoji si se siente natural.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nHORARIO Y CONTACTO\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nLunes a viernes: 8:00 a 13:00 y 14:00 a 17:00\nDirección: Padre Julio Matovelle, Cuenca\nWeb: inmobi.com.ec"
+        }
+      },
+      "id": "av-agent",
+      "name": "AI Agent Vendedor",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [680, 0]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "av-llm",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [680, 160],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZNY6Adry9gpjCRH2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "registrar_captacion",
+        "description": "Registra una propiedad que el cliente quiere vender y notifica al gerente. Llama SOLO cuando tengas: tipo_propiedad, sector, precio_estimado (puede ser 0), estado_propiedad.",
+        "workflowId": {
+          "__rl": true,
+          "value": "0iTmnMd9jIlLy9IJ",
+          "mode": "id"
+        },
+        "fields": {
+          "values": [
+            { "name": "telefono_cliente" },
+            { "name": "nombre_cliente" },
+            { "name": "tipo_propiedad" },
+            { "name": "sector" },
+            { "name": "precio_estimado" },
+            { "name": "estado_propiedad" }
+          ]
+        }
+      },
+      "id": "av-tool-captacion",
+      "name": "Tool: Registrar Captacion",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [560, 280]
+    },
+    {
+      "parameters": {
+        "name": "notificar_gerente",
+        "description": "Envía WhatsApp al gerente con los datos del vendedor. Llama inmediatamente después de registrar_captacion.",
+        "workflowId": {
+          "__rl": true,
+          "value": "0iTmnMd9jIlLy9IJ",
+          "mode": "id"
+        },
+        "fields": {
+          "values": [
+            { "name": "telefono_cliente" },
+            { "name": "nombre_cliente" },
+            { "name": "tipo_propiedad" },
+            { "name": "sector" },
+            { "name": "precio_estimado" },
+            { "name": "estado_propiedad" }
+          ]
+        }
+      },
+      "id": "av-tool-gerente",
+      "name": "Tool: Notificar Gerente",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [700, 280]
+    },
+    {
+      "parameters": {
+        "name": "transferir_avaluo",
+        "description": "Transfiere solicitud de avalúo al equipo especializado. Úsalo cuando el cliente quiere saber el valor de su propiedad.",
+        "workflowId": {
+          "__rl": true,
+          "value": "pFRCGGzU9Yip443k",
+          "mode": "id"
+        },
+        "fields": {
+          "values": [
+            { "name": "telefono_cliente" },
+            { "name": "nombre_cliente" },
+            { "name": "tipo_propiedad" },
+            { "name": "sector" },
+            { "name": "notas" }
+          ]
+        }
+      },
+      "id": "av-tool-avaluo",
+      "name": "Tool: Transferir Avaluo",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [840, 280]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "av-out",
+      "name": "Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 0]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [[ { "node": "Preparar Contexto", "type": "main", "index": 0 } ]]
+    },
+    "Preparar Contexto": {
+      "main": [[ { "node": "AI Agent Vendedor", "type": "main", "index": 0 } ]]
+    },
+    "AI Agent Vendedor": {
+      "main": [[ { "node": "Respuesta", "type": "main", "index": 0 } ]]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [[ { "node": "AI Agent Vendedor", "type": "ai_languageModel", "index": 0 } ]]
+    },
+    "Tool: Registrar Captacion": {
+      "ai_tool": [[ { "node": "AI Agent Vendedor", "type": "ai_tool", "index": 0 } ]]
+    },
+    "Tool: Notificar Gerente": {
+      "ai_tool": [[ { "node": "AI Agent Vendedor", "type": "ai_tool", "index": 0 } ]]
+    },
+    "Tool: Transferir Avaluo": {
+      "ai_tool": [[ { "node": "AI Agent Vendedor", "type": "ai_tool", "index": 0 } ]]
+    }
+  },
+  "active": true,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810" },
+  "id": "AgenteVendedor001",
+  "tags": []
+}

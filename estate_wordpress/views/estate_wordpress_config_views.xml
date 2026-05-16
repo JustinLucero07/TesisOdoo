@@ -109,6 +109,9 @@
                 <xpath expr="//header/button[@name='action_set_available']" position="before">
                     <!-- Publicar: solo si NO está publicada -->
                     <button name="action_publish_wordpress" string="Publicar en WordPress" type="object" class="btn-secondary" icon="fa-upload" invisible="wp_published == True"/>
+                    <!-- Despublicar: visible solo si ya está publicada -->
+                    <button name="action_unpublish_wp" string="Despublicar de WP" type="object" class="btn-danger" icon="fa-times-circle" invisible="wp_published != True"
+                            confirm="¿Estás seguro? Esto ELIMINARÁ la propiedad de tu sitio WordPress. La propiedad se mantendrá en Odoo pero desaparecerá del sitio web."/>
                     <button name="action_relink_wordpress" string="Re-enlazar a WordPress" type="object" class="btn-warning" icon="fa-link" invisible="wp_unlinked != True or wp_post_id_backup == 0"/>
                     <button name="action_pull_from_wordpress" string="Traer datos de WordPress" type="object" class="btn-info" icon="fa-download" invisible="wp_published != True"/>
                     <button name="action_unlink_wordpress" string="Desvincular de WordPress" type="object" class="btn-link" icon="fa-chain-broken" invisible="wp_published != True"/>
@@ -149,6 +152,19 @@
                                 <field name="wp_unlinked" readonly="1"/>
                             </group>
                         </group>
+                        <!-- Acciones rápidas dentro del tab -->
+                        <div class="mt-3" invisible="wp_published != True">
+                            <button name="action_unpublish_wp" string="Despublicar de WP" type="object"
+                                    class="btn-danger" icon="fa-times-circle"
+                                    confirm="¿Estás seguro? Esto ELIMINARÁ la propiedad de tu sitio WordPress. La propiedad se mantendrá en Odoo."/>
+                            <button name="action_publish_wordpress" string="Re-sincronizar ahora" type="object"
+                                    class="btn-secondary ms-2" icon="fa-refresh"
+                                    title="Fuerza la re-sincronización completa con WordPress"/>
+                        </div>
+                        <div class="mt-3" invisible="wp_published == True">
+                            <button name="action_publish_wordpress" string="Publicar en WordPress" type="object"
+                                    class="btn-primary" icon="fa-upload"/>
+                        </div>
                     </page>
                 </xpath>
             </field>

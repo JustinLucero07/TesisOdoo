@@ -532,6 +532,12 @@ class EstateProperty(models.Model):
         string='Desvinculado de WordPress', default=False,
         help='Indica que esta propiedad estaba enlazada a WordPress pero fue desvinculada. El Post ID original se conserva en el backup.')
 
+    # --- Sectores relacionados (para CRM matching y búsqueda) ---
+    sector_keywords = fields.Char(
+        string='Sectores Relacionados',
+        help='Sectores y barrios relacionados separados por coma. Ej: Paccha, El Valle, Ricaurte'
+    )
+
     # --- Relaciones y Ventas ---
     owner_id = fields.Many2one('res.partner', string='Propietario')
     buyer_id = fields.Many2one('res.partner', string='Comprador', tracking=True)
@@ -831,7 +837,7 @@ class EstateProperty(models.Model):
         for vals in vals_list:
             if vals.get('name', 'Nuevo') == 'Nuevo':
                 vals['name'] = self.env['ir.sequence'].next_by_code('estate.property') or 'Nuevo'
-        
+
         properties = super().create(vals_list)
 
         # Sincronizar automáticamente con un producto nativo de Odoo
@@ -860,6 +866,13 @@ class EstateProperty(models.Model):
                     prop.owner_id.sudo().write({'is_property_owner': True})
             if prop.buyer_id:
                 prop.buyer_id._apply_estate_category('estate_management.partner_category_buyer')
+            # Auto-publicar en WordPress si se creó con wp_published=True
+            if prop.wp_published and hasattr(prop, 'action_publish_wordpress'):
+                try:
+                    prop.with_context(no_wp_sync=True).action_publish_wordpress()
+                except Exception as e:
+                    _logger.warning(
+                        'WP auto-publish al crear propiedad %s falló: %s', prop.id, e)
 
         return properties
 
@@ -919,6 +932,14 @@ class EstateProperty(models.Model):
                 'message': 'El % de split del Co-Asesor debe estar entre 0 y 100.',
             }}
 
+    # Campos que, cuando cambian, deben re-sincronizar la propiedad en WordPress
+    _WP_SYNC_FIELDS = {
+        'title', 'description', 'price', 'area', 'bedrooms', 'bathrooms',
+        'parking_spaces', 'street', 'city', 'state_id', 'country_id', 'zip_code',
+        'latitude', 'longitude', 'property_type_id', 'state', 'image_main',
+        'image_ids', 'year_built',
+    }
+
     def write(self, vals):
         res = super().write(vals)
         # Sincronizar actualizaciones hacia product.template
@@ -931,17 +952,20 @@ class EstateProperty(models.Model):
                     product_vals['list_price'] = vals['price']
                 if product_vals:
                     prop.product_id.sudo().write(product_vals)
-        # Auto-sync price/title change to WordPress if already published
-        # hasattr guard: estate_wordpress es módulo opcional (R4 fix)
-        if ('price' in vals or 'title' in vals or 'description' in vals) and not self.env.context.get('no_wp_sync'):
-            for prop in self:
-                wp_pub = getattr(prop, 'wp_published', False)
-                wp_id = getattr(prop, 'wp_post_id', 0)
-                if wp_pub and wp_id and hasattr(prop, 'action_publish_wordpress'):
-                    try:
-                        prop.action_publish_wordpress()
-                    except Exception as e:
-                        _logger.warning('WP sync falló al guardar propiedad %s: %s', prop.id, e)
+        # Auto-sync a WordPress si la propiedad ya está publicada y cambia
+        # algún campo relevante. Guard no_wp_sync para evitar bucles.
+        if not self.env.context.get('no_wp_sync'):
+            changed_wp_fields = self._WP_SYNC_FIELDS.intersection(vals.keys())
+            if changed_wp_fields:
+                for prop in self:
+                    wp_pub = getattr(prop, 'wp_published', False)
+                    wp_id = getattr(prop, 'wp_post_id', 0)
+                    if wp_pub and wp_id and hasattr(prop, 'action_publish_wordpress'):
+                        try:
+                            prop.with_context(no_wp_sync=True).action_publish_wordpress()
+                        except Exception as e:
+                            _logger.warning(
+                                'WP auto-sync falló al guardar propiedad %s: %s', prop.id, e)
         # Historial de precios
         if 'price' in vals:
             for prop in self:
@@ -1029,12 +1053,21 @@ class EstateProperty(models.Model):
         self.ensure_one()
         if self.state not in ('available', 'reserved'):
             raise UserError('Solo se puede marcar como Vendida una propiedad Disponible o Reservada.')
+
+        # Despublicar de WordPress antes de cambiar el estado
+        if self.wp_published and self.wp_post_id and hasattr(self, 'action_unpublish_wordpress'):
+            try:
+                self.action_unpublish_wordpress()
+            except Exception as e:
+                _logger.warning(
+                    'WP unpublish automático al vender propiedad %s falló: %s', self.id, e)
+
         vals = {'state': 'sold'}
         if not self.date_sold:
             vals['date_sold'] = fields.Date.today()
         if not self.sold_by:
             vals['sold_by'] = 'agency'
-        self.write(vals)
+        self.with_context(no_wp_sync=True).write(vals)
         self._create_commission_records('sale', self.commission_amount, self.price, self.commission_percentage)
 
 
@@ -1312,3 +1345,25 @@ class EstateProperty(models.Model):
                         ),
                         user_id=prop.user_id.id or self.env.uid,
                     )
+
+    def action_unpublish_wp(self):
+        """Botón 'Despublicar de WP': elimina la propiedad de WordPress y marca
+        wp_published = False en Odoo. Delega al método del módulo estate_wordpress
+        (action_unpublish_wordpress) si está disponible; de lo contrario solo limpia
+        los campos locales."""
+        self.ensure_one()
+        if hasattr(self, 'action_unpublish_wordpress'):
+            return self.action_unpublish_wordpress()
+        # Fallback: solo limpiar en Odoo
+        self.write({'wp_published': False, 'wp_post_id': 0})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Despublicado',
+                'message': 'La propiedad fue marcada como no publicada en Odoo. '
+                           'El módulo estate_wordpress no está instalado, verifica manualmente en WordPress.',
+                'sticky': False,
+                'type': 'warning',
+            },
+        }

@@ -1,0 +1,2147 @@
+{
+  "name": "Asistente Virtual Inmobi — Multi-Agente",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Asistente Virtual Inmobi — Multi-Agente\n\n**Flujo:**\nWebhook → Extraer → ¿Texto? → Leer DB → Resolver Sesión\n↓ ¿Tiene Sesión?\n  • NO (número nuevo) → Agente Comprador directamente\n  • SÍ (cliente conocido) → Clasificar Intent → ¿Es Comprador?\n    · COMPRADOR → Agente Comprador (9 herramientas)\n    · VENDEDOR  → Agente Vendedor (3 herramientas)\n→ Guardar DB → WhatsApp → OK Meta\n\n**Memoria:** PostgreSQL `wa_sessions` (historial 20 msgs + intent persistente)",
+        "height": 240,
+        "width": 500,
+        "color": 4
+      },
+      "id": "sticky-01",
+      "name": "Arquitectura",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1400,
+        -380
+      ]
+    },
+    {
+      "parameters": {
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wb-get",
+      "name": "Webhook GET (Verificación)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        0
+      ],
+      "webhookId": "eba947ba-6299-470b-bd8f-c5d291c0a808"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query['hub.challenge'] }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "resp-ver",
+      "name": "Responder Verificación",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1180,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wb-post",
+      "name": "Webhook POST (Mensajes)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -1400,
+        280
+      ],
+      "webhookId": "f93f41a6-e85a-4527-91ec-db03938e79b1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1",
+              "name": "mensaje",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].text.body }}",
+              "type": "string"
+            },
+            {
+              "id": "f2",
+              "name": "numero",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].from }}",
+              "type": "string"
+            },
+            {
+              "id": "f3",
+              "name": "nombre",
+              "value": "={{ $json.body.entry[0].changes[0].value.contacts[0].profile.name }}",
+              "type": "string"
+            },
+            {
+              "id": "f4",
+              "name": "tipo",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].type }}",
+              "type": "string"
+            },
+            {
+              "id": "f5",
+              "name": "phoneNumberId",
+              "value": "={{ $json.body.entry[0].changes[0].value.metadata.phone_number_id }}",
+              "type": "string"
+            },
+            {
+              "id": "f6",
+              "name": "audioId",
+              "value": "={{ $json.body.entry[0].changes[0].value.messages[0].audio?.id ?? '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "extract",
+      "name": "Extraer Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1180,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "text",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-text",
+      "name": "¿Es texto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -920,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.tipo }}",
+              "rightValue": "audio",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "is-audio",
+      "name": "¿Es audio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -660,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "ignorar",
+      "name": "Ignorar (no es texto/audio)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -660,
+        680
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=https://graph.facebook.com/v19.0/{{ $json.audioId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {}
+      },
+      "id": "get-audio-url",
+      "name": "Obtener URL del Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -400,
+        480
+      ],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "dl-audio",
+      "name": "Descargar Audio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -140,
+        480
+      ],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Transcribe exactamente lo que dice el cliente en este audio. Solo devuelve el texto, sin comentarios ni explicaciones.",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        480
+      ],
+      "id": "analyze-audio",
+      "name": "Analyze audio",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZNY6Adry9gpjCRH2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "mensaje",
+              "value": "={{ $json.content.parts[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "a2",
+              "name": "numero",
+              "value": "={{ $('Extraer Datos').item.json.numero }}",
+              "type": "string"
+            },
+            {
+              "id": "a3",
+              "name": "nombre",
+              "value": "={{ $('Extraer Datos').item.json.nombre }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "phoneNumberId",
+              "value": "={{ $('Extraer Datos').item.json.phoneNumberId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "armar-audio",
+      "name": "Armar Mensaje de Audio",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT COALESCE(s.phone, '') AS phone, COALESCE(s.nombre, '') AS nombre, COALESCE(s.intent, 'UNKNOWN') AS intent, COALESCE(s.history::text, '[]') AS history FROM (SELECT 1) t LEFT JOIN wa_sessions s ON s.phone = '{{ $json.numero }}' LIMIT 1;",
+        "options": {}
+      },
+      "id": "leer-sesion",
+      "name": "Leer Sesion DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -660,
+        280
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "6mYPUyfDHs6x1dvZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge DB session with original message data\nconst extractData = $('Extraer Datos').first().json;\nconst dbItems = $input.all();\n\n// Get message (text or transcribed audio)\nlet mensaje = extractData.mensaje || '';\ntry {\n  const audioData = $('Armar Mensaje de Audio').first().json;\n  if (audioData?.mensaje) mensaje = audioData.mensaje;\n} catch(e) { /* text path */ }\n\n// Parse DB session\nlet intent_db = 'UNKNOWN';\nlet history = [];\nif (dbItems.length > 0 && dbItems[0].json && dbItems[0].json.phone) {\n  const row = dbItems[0].json;\n  intent_db = row.intent || 'UNKNOWN';\n  const raw = row.history;\n  if (Array.isArray(raw)) history = raw;\n  else if (typeof raw === 'string') { try { history = JSON.parse(raw); } catch(e) { history = []; } }\n  else if (raw && typeof raw === 'object') history = Object.values(raw).length ? raw : [];\n}\n\n// tiene_sesion = true solo si ya existe sesión con intent definido\nconst tiene_sesion = (intent_db === 'COMPRADOR' || intent_db === 'VENDEDOR');\n\n// Compute date context (Guayaquil UTC-5)\nconst ahora = new Date();\nconst offset = -5 * 60;\nconst local = new Date(ahora.getTime() + ahora.getTimezoneOffset() * 60000 + offset * 60000);\nconst dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];\nconst meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];\nfunction iso(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }\nfunction add(d,n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }\nfunction next(t) { const h=local.getDay(); let d=t-h; if(d<=0)d+=7; return add(local,d); }\nconst man=add(local,1), pas=add(local,2);\nconst lun=next(1),mar=next(2),mie=next(3),jue=next(4),vie=next(5),sab=next(6),dom=next(0);\n\n// Build history text (for agents)\nconst recientes = history.slice(-10);\nlet prompt_extra = '';\nif (recientes.length > 0) {\n  prompt_extra = '\\n\\n[Conversación previa]\\n' +\n    recientes.map(m => (m.role === 'human' ? 'Cliente: ' : 'Asistente: ') + m.content).join('\\n') +\n    '\\n[Fin conversación previa]';\n}\n\n// Full date context string\nconst lunes=iso(lun), martes=iso(mar), miercoles=iso(mie), jueves=iso(jue), viernes=iso(vie), sabado=iso(sab), domingo=iso(dom);\nconst fecha_contexto = `🗓️ CONTEXTO DE FECHAS (uso interno - nunca mencionar al cliente):\\nHoy: ${dias[local.getDay()]} ${local.getDate()} de ${meses[local.getMonth()]} de ${local.getFullYear()} [${iso(local)}]\\nMañana: ${dias[man.getDay()]} ${man.getDate()} de ${meses[man.getMonth()]} [${iso(man)}]\\nPasado mañana: [${iso(pas)}]\\nEsta semana: lunes=${lunes}, martes=${martes}, miércoles=${miercoles}, jueves=${jueves}, viernes=${viernes}, sábado=${sabado}, domingo=${domingo}\\nPróxima semana: lunes=${iso(add(lun,7))}, martes=${iso(add(mar,7))}, miércoles=${iso(add(mie,7))}, jueves=${iso(add(jue,7))}, viernes=${iso(add(vie,7))}, sábado=${iso(add(sab,7))}, domingo=${iso(add(dom,7))}`;\n\nreturn [{ json: {\n  mensaje,\n  numero:        extractData.numero,\n  nombre:        extractData.nombre || '',\n  phoneNumberId: extractData.phoneNumberId,\n  intent_db,\n  tiene_sesion,\n  history_json:  JSON.stringify(history.slice(-20)),\n  fecha_contexto,\n  prompt_extra\n}}];"
+      },
+      "id": "resolver-sesion",
+      "name": "Resolver Sesion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Clasificar Intent — solo para usuarios con sesión existente\n// Los números nuevos van directo al Agente Comprador sin pasar por aquí\nconst d = $input.first().json;\nconst msg = (d.mensaje || '').toLowerCase();\n\n// Keywords que pueden reclasificar incluso a usuarios con sesión\nconst venderKW = ['vender','vendo','quiero vender','tengo una propiedad','mi casa','mi departamento','mi terreno','mi suite','captacion','captación','poner en venta'];\nconst avaluoKW = ['avalúo','avaluo','valuación','valoración','valor de mi','cuánto vale','cuanto vale','precio de mi'];\n\n// Partir del intent guardado (tiene_sesion=true aquí siempre)\nlet intent = d.intent_db;\nif (avaluoKW.some(k => msg.includes(k)) || venderKW.some(k => msg.includes(k))) {\n  intent = 'VENDEDOR';\n} else if (!intent || intent === 'UNKNOWN') {\n  intent = 'COMPRADOR';\n}\n\nreturn [{ json: { ...d, intent } }];"
+      },
+      "id": "clasificar",
+      "name": "Clasificar Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.tiene_sesion }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "tiene-sesion",
+      "name": "¿Tiene Sesion?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -140,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "COMPRADOR",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "es-comprador",
+      "name": "¿Es Comprador?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        320,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "gemini-2.5-flash",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "gemini-c",
+      "name": "Gemini — Comprador",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        460,
+        60
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZNY6Adry9gpjCRH2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "buscar_propiedades",
+        "description": "Busca propiedades disponibles. LLAMA ESTE TOOL cuando el cliente diga que busca algo, mencione un sector/calle/zona, o pida ver opciones. Si no hay sector específico, pasa ciudad='' para ver todo. Devuelve id, titulo, precio, habitaciones, m2, link_propiedad.",
+        "workflowId": {
+          "__rl": true,
+          "value": "jS5q7vdhxYFzHoi4",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/jS5q7vdhxYFzHoi4",
+          "cachedResultName": "Propiedades"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "presupuesto": "={{ $fromAI('presupuesto', 'Presupuesto maximo del cliente en numero. Si no lo menciono usar 999999999', 'number') }}",
+            "ciudad": "={{ $fromAI('ciudad', 'Zona sector calle o ciudad. Si el cliente no especifico sector pasar string vacio para ver todas las propiedades disponibles', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ciudad",
+              "displayName": "ciudad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "presupuesto",
+              "displayName": "presupuesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-buscar",
+      "name": "Tool: Buscar Propiedades",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        60,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "buscar_propiedades_pro",
+        "description": "Busqueda avanzada cuando el cliente especifica detalles como habitaciones banos parqueaderos metros tipo de propiedad (casa depto terreno) o tipo de oferta (venta arriendo). Tambien usala para buscar con zona mas filtros combinados.",
+        "workflowId": {
+          "__rl": true,
+          "value": "XZC5yfEXWrQ95Mp3",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/XZC5yfEXWrQ95Mp3",
+          "cachedResultName": "buscar_propiedades_pro"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ubicacion": "={{ $fromAI('ubicacion', 'Sector o barrio de Cuenca. Si no especifica, dejar vacío.', 'string') }}",
+            "presupuesto_max": "={{ $fromAI('presupuesto_max', 'Presupuesto máximo del cliente en dólares.', 'number') }}",
+            "habitaciones_min": "={{ $fromAI('habitaciones_min', 'Número mínimo de habitaciones.', 'number') }}",
+            "tipo_propiedad": "={{ $fromAI('tipo_propiedad', 'Tipo de inmueble: Casa, Departamento, Terreno, Suite, etc.', 'string') }}",
+            "tipo_oferta": "={{ $fromAI('tipo_oferta', 'Tipo de negocio: sale para venta.', 'string') }}",
+            "parqueaderos_min": "={{ $fromAI('parqueaderos_min', 'Número mínimo de parqueaderos.', 'number') }}",
+            "banos_min": "={{ $fromAI('banos_min', 'Número mínimo de baños.', 'number') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ubicacion",
+              "displayName": "ubicacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "presupuesto_max",
+              "displayName": "presupuesto_max",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "habitaciones_min",
+              "displayName": "habitaciones_min",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "tipo_propiedad",
+              "displayName": "tipo_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_oferta",
+              "displayName": "tipo_oferta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "parqueaderos_min",
+              "displayName": "parqueaderos_min",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "banos_min",
+              "displayName": "banos_min",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-buscarpro",
+      "name": "Tool: Buscar Propiedades Pro",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        240,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "obtener_detalle_inmueble",
+        "description": "Obtiene detalles completos de una propiedad: descripcion, habitaciones, banos, m2, link. Usala cuando el cliente pida mas detalles o info de una propiedad especifica. Pasa id_propiedad si lo tienes (puede ser el id de Odoo o el wp_post_id, ambos funcionan). Si no tienes ningun id, pasa id_propiedad=0 y busqueda con el nombre o sector.",
+        "workflowId": {
+          "__rl": true,
+          "value": "bdD9F2bm2N2oKsrM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/bdD9F2bm2N2oKsrM",
+          "cachedResultName": "obtener_detalle_inmueble"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id_propiedad": "={{ $fromAI('id_propiedad', 'ID de la propiedad. Puede ser el id interno de Odoo o el wp_post_id. Pasa 0 si no tienes ningun id', 'number') }}",
+            "busqueda": "={{ $fromAI('busqueda', 'Descripcion de la propiedad si no tienes id. Ej: casa en Banos, depto en Challuabamba', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_propiedad",
+              "displayName": "id_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "busqueda",
+              "displayName": "busqueda",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-detalles",
+      "name": "Tool: Detalles Inmueble",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        420,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "verificar_disponibilidad_asesor",
+        "description": "Verifica si el asesor tiene disponibilidad en una fecha. Devuelve horarios ocupados.",
+        "workflowId": {
+          "__rl": true,
+          "value": "ziMsQY3SZhzZqi3w",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ziMsQY3SZhzZqi3w",
+          "cachedResultName": "Horarios"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $fromAI('fecha', 'Fecha a verificar en formato YYYY-MM-DD', 'string') }}",
+            "user_id": "={{ $fromAI('user_id', 'ID del asesor, usar 1 por defecto', 'number') }}",
+            "hora": "={{ $fromAI('hora', 'Hora solicitada en formato HH:MM, vacío si solo consulta el día', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "hora",
+              "displayName": "hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-verificar",
+      "name": "Tool: Verificar Disponibilidad",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        600,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "registrar_lead",
+        "description": "Registra al cliente como lead en Odoo. Usar cuando tenga nombre, teléfono, ciudad, presupuesto y necesidades.",
+        "workflowId": {
+          "__rl": true,
+          "value": "yvpl7RX9b8y4Mafu",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yvpl7RX9b8y4Mafu",
+          "cachedResultName": "Crear Lead"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $fromAI('nombre', 'Nombre completo del cliente', 'string') }}",
+            "telefono": "={{ $fromAI('telefono', 'Numero de telefono del cliente', 'string') }}",
+            "ciudad": "={{ $fromAI('ciudad', 'Ciudad donde busca', 'string') }}",
+            "presupuesto": "={{ $fromAI('presupuesto', 'Presupuesto en numero', 'number') }}",
+            "necesidades": "={{ $fromAI('necesidades', 'Resumen de lo que busca el cliente', 'string') }}",
+            "property_id": "={{ $fromAI('property_id', 'ID numerico Odoo de la propiedad elegida, 0 si no eligio', 'number') }}",
+            "etapa": "={{ $fromAI('etapa', 'Etapa del lead. Valores: Nuevo, Calificado, Visita Agendada', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ciudad",
+              "displayName": "ciudad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "presupuesto",
+              "displayName": "presupuesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "necesidades",
+              "displayName": "necesidades",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "property_id",
+              "displayName": "property_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "etapa",
+              "displayName": "etapa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-lead",
+      "name": "Tool: Registrar Lead",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        780,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "agendar_cita",
+        "description": "Agenda una cita en Odoo vinculada al lead. Ejecutar SOLO después de verificar disponibilidad y registrar lead.",
+        "workflowId": {
+          "__rl": true,
+          "value": "5uu5FgIDZOxYIkfF",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/5uu5FgIDZOxYIkfF",
+          "cachedResultName": "Crear Cita"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $fromAI('fecha', 'Fecha de la cita en formato YYYY-MM-DD', 'string') }}",
+            "hora": "={{ $fromAI('hora', 'Hora de la cita en formato HH:MM', 'string') }}",
+            "nombre_cliente": "={{ $fromAI('nombre_cliente', 'Nombre del cliente', 'string') }}",
+            "nombre_propiedad": "={{ $fromAI('nombre_propiedad', 'Titulo de la propiedad a visitar', 'string') }}",
+            "property_id": "={{ $fromAI('property_id', 'ID numerico Odoo de la propiedad, no el wp_post_id', 'number') }}",
+            "lead_id": "={{ $fromAI('lead_id', 'ID del lead en CRM. 0 si no existe', 'number') }}",
+            "user_id": "={{ $fromAI('user_id', 'ID del asesor. Usar 1', 'number') }}",
+            "duracion": "={{ $fromAI('duracion', 'Duracion en horas. Usar 1.0', 'number') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora",
+              "displayName": "hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "property_id",
+              "displayName": "property_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "lead_id",
+              "displayName": "lead_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "user_id",
+              "displayName": "user_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nombre_propiedad",
+              "displayName": "nombre_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "duracion",
+              "displayName": "duracion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-cita",
+      "name": "Tool: Agendar Cita",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "notificar_asesor",
+        "description": "Notifica al asesor asignado que tiene una cita agendada. Se llama INMEDIATAMENTE después de agendar_cita, una sola vez.",
+        "workflowId": {
+          "__rl": true,
+          "value": "xVIZjqNm4M3dTiat",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/xVIZjqNm4M3dTiat",
+          "cachedResultName": "Notificar al asesor"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono_cliente": "={{ $fromAI('telefono', 'Numero de telefono del cliente', 'string') }}",
+            "nombre_cliente": "={{ $fromAI('nombre_cliente', 'Nombre del cliente', 'string') }}",
+            "propiedad": "={{ $fromAI('propiedad', 'Nombre o descripción de la propiedad a visitar', 'string') }}",
+            "fecha": "={{ $fromAI('fecha', 'Fecha de la cita en formato YYYY-MM-DD', 'string') }}",
+            "sector": "={{ $fromAI('sector', 'Sector donde está la propiedad', 'string') }}",
+            "hora": "={{ $fromAI('hora', 'Hora de la cita, ejemplo: 14:00', 'string') }}",
+            "telefono_asesor": "={{ $fromAI('telefono_asesor', 'Teléfono del asesor asignado de verificar_disponibilidad_asesor, con código de país', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefono_cliente",
+              "displayName": "telefono_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "propiedad",
+              "displayName": "propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora",
+              "displayName": "hora",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefono_asesor",
+              "displayName": "telefono_asesor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-notifasesor",
+      "name": "Tool: Notificar Asesor",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "clientes_pendientes",
+        "description": "Registra un cliente que no encontró lo que buscaba y quiere que le avisen cuando haya algo disponible. Úsalo cuando el cliente diga 'si tiene algo me avisa', 'avísame si sale algo'. Solo una vez por conversación.",
+        "workflowId": {
+          "__rl": true,
+          "value": "SNHWLpTjIriEF9iM",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/SNHWLpTjIriEF9iM",
+          "cachedResultName": "Clientes pendientes"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nombre": "={{ $fromAI('nombre', 'Nombre completo del cliente', 'string') }}",
+            "telefono": "={{ $fromAI('telefono', 'Numero de telefono del cliente', 'string') }}",
+            "ciudad": "={{ $fromAI('ciudad', 'Ciudad donde busca', 'string') }}",
+            "presupuesto": "={{ $fromAI('presupuesto', 'Presupuesto en numero', 'number') }}",
+            "tipo_propiedad": "={{ $fromAI('tipo_propiedad', 'Resumen del tipo de propiedad que necesita', 'string') }}",
+            "sector": "={{ $fromAI('sector', 'Sector donde quiere la propiedad', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "nombre",
+              "displayName": "nombre",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ciudad",
+              "displayName": "ciudad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "presupuesto",
+              "displayName": "presupuesto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "tipo_propiedad",
+              "displayName": "tipo_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-pendientes",
+      "name": "Tool: Clientes Pendientes",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1320,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "name": "enviar_fotos_propiedad",
+        "description": "Envia fotos de una propiedad al cliente por WhatsApp. Llamala SIEMPRE que el cliente pida fotos o imagenes. Pasa property_id si lo tienes; si no, pasa busqueda con el nombre o sector de la propiedad. Siempre pasa phone y phoneNumberId.",
+        "workflowId": {
+          "__rl": true,
+          "value": "EnviarFotosPropiedad01",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "property_id": "={{ $fromAI('property_id', 'ID numerico de la propiedad. Pasar 0 si no lo tienes', 'number') }}",
+            "wp_post_id": "={{ $fromAI('wp_post_id', 'wp_post_id de WordPress. Pasar 0 si no lo tienes', 'number') }}",
+            "phone": "={{ $fromAI('phone', 'Numero de telefono del cliente', 'string') }}",
+            "phoneNumberId": "={{ $fromAI('phoneNumberId', 'ID del numero de WhatsApp Business', 'string') }}",
+            "busqueda": "={{ $fromAI('busqueda', 'Descripcion de la propiedad si no tienes property_id. Ej: casa en Banos, departamento en Challuabamba', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "property_id",
+              "displayName": "property_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "wp_post_id",
+              "displayName": "wp_post_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "phoneNumberId",
+              "displayName": "phoneNumberId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "busqueda",
+              "displayName": "busqueda",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tc-fotos",
+      "name": "Tool: Enviar Fotos",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        1500,
+        -440
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.fecha_contexto + $json.prompt_extra + '\\n\\n[RECORDATORIO INTERNO: Si el mensaje del cliente implica búsqueda, detalles o fotos → llama el tool correspondiente ANTES de responder]\\n\\nMensaje del cliente: ' + $json.mensaje }}",
+        "options": {
+          "systemMessage": "<identity>\nEres asesor de ventas de Inmobi, inmobiliaria en Cuenca, Ecuador.\nCanal: WhatsApp. Tono: humano, directo, amigable.\nNUNCA digas que eres IA. Si preguntan: \"Jaja no, soy del equipo de Inmobi.\"\n</identity>\n\n<tool_calling_rules>\nREGLA FUNDAMENTAL: SIEMPRE llama un tool antes de responder cuando aplique un caso de abajo.\n\nCASO 1 — BÚSQUEDA CON SECTOR ESPECÍFICO:\nEl cliente menciona un sector, calle, zona o barrio (\"en Baños\", \"por la 12 de octubre\", \"en Paccha\").\n→ Llama buscar_propiedades INMEDIATAMENTE con ese sector.\n→ NO preguntes más. Busca y muestra resultados.\n\nCASO 1B — CLIENTE PIDE VER TODO (\"qué tienes\", \"muéstrame opciones\", \"qué propiedades tienes\"):\n→ Llama buscar_propiedades con ciudad=\"\" para ver todo el catálogo.\n\nCASO 2 — DETALLES:\nEl cliente pide más información, datos, descripción de una propiedad específica.\n→ Llama obtener_detalle_inmueble INMEDIATAMENTE.\n→ Usa id_propiedad si lo tienes (Odoo id o wp_post_id). Si no, usa busqueda=descripcion del historial.\n\nCASO 3 — FOTOS:\nEl cliente pide fotos o imágenes.\n→ Llama enviar_fotos_propiedad INMEDIATAMENTE.\n→ Pasa wp_post_id si lo tienes. Si no, property_id=0 + busqueda=descripcion.\n\nCASO 4 — SALUDO PURO (\"hola\", \"buenas\"):\n→ Responde con el saludo. No llames ningún tool.\n\nPROHIBIDO:\n- Decir \"visita nuestra web\" ante búsquedas, fotos o detalles.\n- Inventar propiedades o precios.\n- Responder sin tool cuando aplica CASO 1, 2 o 3.\n</tool_calling_rules>\n\n<qualifying>\nCUANDO LA BÚSQUEDA ES VAGA (sin sector, solo \"busco una propiedad\", \"quiero algo\", \"estoy buscando\"):\n→ NO llames el tool todavía.\n→ Pregunta UNA sola cosa: \"¿Qué tipo de propiedad buscas y en qué sector de Cuenca te interesa?\"\n→ Cuando responda con sector → CASO 1 (busca inmediatamente).\n→ Cuando responda solo el tipo (\"una casa\") sin sector → pregunta solo el sector: \"¿Y en qué sector?\"\n→ Cuando tenga sector → busca.\n\nCALIFICACIÓN (después de mostrar propiedades):\nHaz estas preguntas UNA A LA VEZ, en orden:\n1. \"¿Ese precio está dentro de lo que tienes pensado?\"\n2. \"¿Lo harías con crédito o contado?\"\nNo preguntes presupuesto antes de mostrar. Califica después de que vea opciones.\n</qualifying>\n\n<conversation_rules>\nHISTORIAL: Recibirás [Conversación previa]. Si tiene mensajes del Asistente → NO saludes de nuevo.\nPRIMERA VEZ: \"Hola! Soy del equipo de Inmobi 😊 ¿Con quién tengo el gusto?\"\nNOMBRE: Pregunta UNA sola vez. Si no lo da, continúa sin insistir.\nERROR EN HISTORIAL: Si el historial muestra \"tuve un problema\", NO lo repitas. Intenta de nuevo.\n</conversation_rules>\n\n<property_display>\nFormato por propiedad: \"[tipo] en [sector], [hab]hab, [m2]m2, $[precio]. [link si válido]\"\nLink válido = no null y no termina en ?p=0.\nSin negritas. Sin asteriscos. Sin listas numeradas. Texto plano. Frases cortas.\nMáximo 3-4 propiedades por respuesta. No muestres todas a la vez.\nUNA SOLA PREGUNTA por mensaje al final.\n</property_display>\n\n<no_results>\nSi el tool no devuelve nada:\n1. Busca de nuevo en sectores cercanos (Paccha→El Valle; Challuabamba→Totoracocha; Misicata→Yanuncay).\n2. Si tampoco hay → pregunta si acepta otro sector o rango de precio.\n3. Si el cliente dice \"avísame\" → clientes_pendientes → \"Listo, te aviso cuando tengamos algo.\"\n</no_results>\n\n<flows>\nAGENDAR VISITA:\nverificar_disponibilidad_asesor → confirmar disponibilidad → registrar_lead (una vez) →\nagendar_cita (una vez) → \"Cita registrada, pronto te contactan.\" → notificar_asesor (inmediato)\nNunca reveles nombre/teléfono del asesor al cliente.\n\nVENDER PROPIEDAD (una pregunta a la vez):\ntipo → sector → precio (si no sabe, avanza) → estado →\nregistrar_captacion + notificar_gerente → \"Un asesor te contactará pronto.\"\n\nAVALÚO: transferir_avaluo → \"Un asesor especializado te contactará.\"\n</flows>\n\n<dates>\nRecibirás CONTEXTO DE FECHAS. Solo para ti. Nunca lo menciones. Convierte fechas a YYYY-MM-DD.\n</dates>",
+          "maxIterations": 5
+        }
+      },
+      "id": "agent-c",
+      "name": "AI Agent — Comprador",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        700,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "gemini-2.5-flash",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "gemini-v",
+      "name": "Gemini — Vendedor",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        280,
+        540
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "ZNY6Adry9gpjCRH2",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "registrar_captacion",
+        "description": "Registra una propiedad que el cliente quiere vender. Llama SOLO cuando tengas: tipo_propiedad, sector, precio_estimado (puede ser 0), estado_propiedad.",
+        "workflowId": {
+          "__rl": true,
+          "value": "0iTmnMd9jIlLy9IJ",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono_cliente": "={{ $fromAI('telefono', 'Numero de telefono del cliente que quiere vender', 'string') }}",
+            "nombre_cliente": "={{ $fromAI('nombre_cliente', 'Nombre del cliente', 'string') }}",
+            "tipo_propiedad": "={{ $fromAI('tipo_propiedad', 'Tipo de propiedad que quiere vender', 'string') }}",
+            "sector": "={{ $fromAI('sector', 'Sector donde está la propiedad', 'string') }}",
+            "precio_estimado": "={{ $fromAI('precio_estimado', 'Precio estimado de la propiedad', 'string') }}",
+            "estado_propiedad": "={{ $fromAI('estado_propiedad', 'Estado de la propiedad: lista, en construcción, usada', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefono_cliente",
+              "displayName": "telefono_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_propiedad",
+              "displayName": "tipo_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "precio_estimado",
+              "displayName": "precio_estimado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "estado_propiedad",
+              "displayName": "estado_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tv-captacion",
+      "name": "Tool: Registrar Captacion",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        380,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "name": "notificar_gerente",
+        "description": "Envía WhatsApp al gerente con los datos del vendedor. Llama inmediatamente después de registrar_captacion.",
+        "workflowId": {
+          "__rl": true,
+          "value": "0iTmnMd9jIlLy9IJ",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/0iTmnMd9jIlLy9IJ",
+          "cachedResultName": "notificar_gerente"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono_cliente": "={{ $fromAI('telefono', 'Numero de telefono del cliente que quiere vender', 'string') }}",
+            "nombre_cliente": "={{ $fromAI('nombre_cliente', 'Nombre del cliente', 'string') }}",
+            "tipo_propiedad": "={{ $fromAI('tipo_propiedad', 'Resumen del tipo de propiedad que quiere vender', 'string') }}",
+            "sector": "={{ $fromAI('sector', 'Sector donde está la propiedad', 'string') }}",
+            "precio_estimado": "={{ $fromAI('precio_estimado', 'Precio estimado de la propiedad', 'string') }}",
+            "estado_propiedad": "={{ $fromAI('estado_propiedad', 'Estado de la propiedad', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefono_cliente",
+              "displayName": "telefono_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_propiedad",
+              "displayName": "tipo_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "precio_estimado",
+              "displayName": "precio_estimado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "estado_propiedad",
+              "displayName": "estado_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tv-gerente",
+      "name": "Tool: Notificar Gerente",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        560,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "name": "transferir_avaluo",
+        "description": "Transfiere solicitud de avalúo al equipo especializado. Úsalo cuando el cliente quiere saber el valor de su propiedad.",
+        "workflowId": {
+          "__rl": true,
+          "value": "pFRCGGzU9Yip443k",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/pFRCGGzU9Yip443k",
+          "cachedResultName": "Transferir avaluo"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefono_cliente": "={{ $fromAI('telefono', 'Numero de telefono del cliente', 'string') }}",
+            "nombre_cliente": "={{ $fromAI('nombre_cliente', 'Nombre del cliente', 'string') }}",
+            "tipo_propiedad": "={{ $fromAI('tipo_propiedad', 'Tipo de propiedad del avalúo', 'string') }}",
+            "sector": "={{ $fromAI('sector', 'Sector donde está la propiedad', 'string') }}",
+            "notas": "={{ $fromAI('notas', 'Detalles adicionales que mencionó el cliente', 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefono_cliente",
+              "displayName": "telefono_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nombre_cliente",
+              "displayName": "nombre_cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_propiedad",
+              "displayName": "tipo_propiedad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sector",
+              "displayName": "sector",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "notas",
+              "displayName": "notas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "tv-avaluo",
+      "name": "Tool: Transferir Avaluo",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        740,
+        940
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.fecha_contexto + $json.prompt_extra + '\\n\\nMensaje del cliente: ' + $json.mensaje }}",
+        "options": {
+          "systemMessage": "Eres el Asistente Inmobi, asesor virtual de Inmobi en Cuenca, Ecuador.\nAtiendes por WhatsApp de forma humana, natural y directa.\nNunca digas que eres IA o bot. Si preguntan: \"Soy del equipo de Inmobi.\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFLUJO VENDEDOR — CAPTACIÓN\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nRecopila de a UNA pregunta por mensaje:\n1. ¿Qué tipo de propiedad es?\n2. ¿En qué sector está?\n3. ¿Tienes algún precio en mente? (Si no sabe → pasa adelante)\n4. ¿Cómo está la propiedad? (lista, en construcción, usada)\n\nCuando tengas los datos:\nPaso 1 → registrar_captacion\nPaso 2 → notificar_gerente\nPaso 3 → \"Listo, uno de nuestros asesores te contactará pronto.\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nFLUJO AVALÚO\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nSi el cliente quiere saber cuánto vale su propiedad sin venderla necesariamente:\nPaso 1 → transferir_avaluo con sus datos\nPaso 2 → \"Listo, un asesor especializado te contactará para hacer la valoración.\"\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nREGLAS\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nUNA SOLA PREGUNTA POR MENSAJE. Sin excepción.\nNUNCA uses negritas, asteriscos, listas numeradas ni viñetas. Solo texto plano.\nNUNCA menciones que registraste algo en un sistema.\nNUNCA pidas el número de teléfono — ya lo tienes.\nFrases cortas. Conversacional. Máximo un emoji si se siente natural.\n\n━━━━━━━━━━━━━━━━━━━━━━━━\nHORARIO Y CONTACTO\n━━━━━━━━━━━━━━━━━━━━━━━━\n\nLunes a viernes: 8:00 a 13:00 y 14:00 a 17:00\nDirección: Padre Julio Matovelle, Cuenca\nWeb: inmobi.com.ec"
+        }
+      },
+      "id": "agent-v",
+      "name": "AI Agent — Vendedor",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        480,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ic1",
+              "name": "intent",
+              "value": "COMPRADOR",
+              "type": "string"
+            },
+            {
+              "id": "ic2",
+              "name": "response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-intent-c",
+      "name": "Marcar Comprador",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        860,
+        -200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "iv1",
+              "name": "intent",
+              "value": "VENDEDOR",
+              "type": "string"
+            },
+            {
+              "id": "iv2",
+              "name": "response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-intent-v",
+      "name": "Marcar Vendedor",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        720
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// intent viene del Set node anterior (Marcar Comprador / Marcar Vendedor)\n// history_json y mensaje vienen de Resolver Sesion (siempre corrió)\nconst d = $input.first().json;\nconst response = d.response || d.output || '';\nconst intent = d.intent || 'COMPRADOR';\n\nconst extractData = $('Extraer Datos').first().json;\nconst resolverData = $('Resolver Sesion').first().json;\n\nconst history = JSON.parse(resolverData.history_json || '[]');\nhistory.push({ role: 'human', content: resolverData.mensaje });\nhistory.push({ role: 'assistant', content: response });\n\nreturn [{ json: {\n  phone:         extractData.numero,\n  nombre:        extractData.nombre || resolverData.nombre || '',\n  intent,\n  history_json:  JSON.stringify(history.slice(-20)),\n  response,\n  phoneNumberId: extractData.phoneNumberId\n}}];"
+      },
+      "id": "preparar-guardar",
+      "name": "Preparar Guardar Sesion",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        280
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO wa_sessions (phone, nombre, intent, history, last_activity)\nVALUES ($1, $2, $3, $4::jsonb, NOW())\nON CONFLICT (phone) DO UPDATE SET\n  nombre = EXCLUDED.nombre,\n  intent = EXCLUDED.intent,\n  history = EXCLUDED.history,\n  last_activity = NOW();",
+        "options": {
+          "queryReplacement": "={{ [$json.phone, $json.nombre, $json.intent, $json.history_json] }}"
+        }
+      },
+      "id": "guardar-db",
+      "name": "Guardar Sesion DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1260,
+        280
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "6mYPUyfDHs6x1dvZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "={{ $('Preparar Guardar Sesion').item.json.phoneNumberId }}",
+        "recipientPhoneNumber": "={{ $('Preparar Guardar Sesion').item.json.phone }}",
+        "textBody": "={{ $('Preparar Guardar Sesion').item.json.response }}",
+        "additionalFields": {}
+      },
+      "id": "enviar-wa",
+      "name": "Enviar Respuesta WhatsApp",
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        280
+      ],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "OK",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "resp-ok",
+      "name": "Responder OK a Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1780,
+        280
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook GET (Verificación)": {
+      "main": [
+        [
+          {
+            "node": "Responder Verificación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook POST (Mensajes)": {
+      "main": [
+        [
+          {
+            "node": "Extraer Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Datos": {
+      "main": [
+        [
+          {
+            "node": "¿Es texto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es texto?": {
+      "main": [
+        [
+          {
+            "node": "Leer Sesion DB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "¿Es audio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es audio?": {
+      "main": [
+        [
+          {
+            "node": "Obtener URL del Audio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Ignorar (no es texto/audio)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener URL del Audio": {
+      "main": [
+        [
+          {
+            "node": "Descargar Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Descargar Audio": {
+      "main": [
+        [
+          {
+            "node": "Analyze audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze audio": {
+      "main": [
+        [
+          {
+            "node": "Armar Mensaje de Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Armar Mensaje de Audio": {
+      "main": [
+        [
+          {
+            "node": "Leer Sesion DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Sesion DB": {
+      "main": [
+        [
+          {
+            "node": "Resolver Sesion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolver Sesion": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene Sesion?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene Sesion?": {
+      "main": [
+        [
+          {
+            "node": "Clasificar Intent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Clasificar Intent": {
+      "main": [
+        [
+          {
+            "node": "¿Es Comprador?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Es Comprador?": {
+      "main": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Agent — Vendedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent — Comprador": {
+      "main": [
+        [
+          {
+            "node": "Marcar Comprador",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Comprador": {
+      "main": [
+        [
+          {
+            "node": "Preparar Guardar Sesion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent — Vendedor": {
+      "main": [
+        [
+          {
+            "node": "Marcar Vendedor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar Vendedor": {
+      "main": [
+        [
+          {
+            "node": "Preparar Guardar Sesion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Guardar Sesion": {
+      "main": [
+        [
+          {
+            "node": "Guardar Sesion DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar Sesion DB": {
+      "main": [
+        [
+          {
+            "node": "Enviar Respuesta WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Respuesta WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Responder OK a Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini — Comprador": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini — Vendedor": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent — Vendedor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Buscar Propiedades": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Buscar Propiedades Pro": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Detalles Inmueble": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Verificar Disponibilidad": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Registrar Lead": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Agendar Cita": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Notificar Asesor": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Clientes Pendientes": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Enviar Fotos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Comprador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Registrar Captacion": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Vendedor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Notificar Gerente": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Vendedor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool: Transferir Avaluo": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent — Vendedor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "meta": {
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "AsistenteVirtualMultiagente01",
+  "tags": []
+}

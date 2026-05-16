@@ -1,0 +1,410 @@
+{
+  "name": "enviar_fotos_propiedad",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "property_id",
+              "type": "number"
+            },
+            {
+              "name": "wp_post_id",
+              "type": "number"
+            },
+            {
+              "name": "phone"
+            },
+            {
+              "name": "phoneNumberId"
+            },
+            {
+              "name": "busqueda"
+            }
+          ]
+        }
+      },
+      "id": "ef01-trigger",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "property_id",
+              "value": "={{ $json.property_id || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "a2",
+              "name": "wp_post_id",
+              "value": "={{ $json.wp_post_id || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "a3",
+              "name": "phone",
+              "value": "={{ $json.phone || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a4",
+              "name": "phoneNumberId",
+              "value": "={{ $json.phoneNumberId || '1117287444793731' }}",
+              "type": "string"
+            },
+            {
+              "id": "a5",
+              "name": "busqueda",
+              "value": "={{ $json.busqueda || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ef02-params",
+      "name": "Preparar Params",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        460,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, wp_post_id, title\nFROM estate_property\nWHERE active = true\n  AND (\n    -- Buscar por property_id (id de Odoo) o por wp_post_id pasado como property_id\n    ({{ $json.property_id }} > 0 AND (\n      id = {{ $json.property_id }}\n      OR wp_post_id = {{ $json.property_id }}\n    ))\n    OR\n    -- Buscar por wp_post_id directo si se paso por separado\n    ({{ $json.property_id }} = 0 AND {{ $json.wp_post_id }} > 0 AND\n      wp_post_id = {{ $json.wp_post_id }}\n    )\n    OR\n    -- Fallback: buscar por texto cuando no hay ningun id\n    ({{ $json.property_id }} = 0 AND {{ $json.wp_post_id }} = 0 AND\n      '{{ $json.busqueda }}' != '' AND (\n        title  ILIKE '%' || '{{ $json.busqueda }}' || '%'\n        OR city   ILIKE '%' || '{{ $json.busqueda }}' || '%'\n        OR street ILIKE '%' || '{{ $json.busqueda }}' || '%'\n        OR COALESCE(sector_keywords,'') ILIKE '%' || '{{ $json.busqueda }}' || '%'\n      )\n    )\n  )\nORDER BY (wp_post_id IS NOT NULL AND wp_post_id > 0) DESC, id DESC\nLIMIT 1;\n",
+        "options": {}
+      },
+      "id": "ef03-dbquery",
+      "name": "Obtener wp_post_id de DB",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        680,
+        0
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "6mYPUyfDHs6x1dvZ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge DB result with trigger params\nconst triggerData = $('Preparar Params').first().json;\nconst dbRow = $input.first().json;\n\n// wp_post_id: prefer the one from trigger, fallback to DB\nconst wp_post_id = (triggerData.wp_post_id && triggerData.wp_post_id > 0)\n  ? triggerData.wp_post_id\n  : (dbRow.wp_post_id || 0);\n\nif (!wp_post_id || wp_post_id === 0) {\n  return [{ json: {\n    error: 'Esta propiedad no está publicada en el sitio web todavía. No hay fotos disponibles.',\n    enviadas: 0,\n    phone: triggerData.phone,\n    phoneNumberId: triggerData.phoneNumberId\n  }}];\n}\n\nreturn [{ json: {\n  wp_post_id,\n  phone:         triggerData.phone,\n  phoneNumberId: triggerData.phoneNumberId,\n  property_id:   triggerData.property_id\n}}];"
+      },
+      "id": "ef04-merge",
+      "name": "Resolver wp_post_id",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "ef05-ifcheck",
+      "name": "¿Tiene WordPress?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://inmobi.com.ec/wp-json/wp/v2/media?parent={{ $json.wp_post_id }}&per_page=5&_fields=source_url,alt_text&orderby=menu_order&order=asc",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "ef06-wpapi",
+      "name": "Buscar Fotos en WordPress",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse WP response and create one item per image (max 5)\nconst allItems = $input.all();\nconst phone         = $('Resolver wp_post_id').first().json.phone;\nconst phoneNumberId = $('Resolver wp_post_id').first().json.phoneNumberId;\n\n// WP API returns an array directly\nlet images = [];\nfor (const item of allItems) {\n  const body = item.json;\n  if (Array.isArray(body)) {\n    images = images.concat(body);\n  } else if (body && body.source_url) {\n    images.push(body);\n  }\n}\nimages = images.slice(0, 5);\n\nif (images.length === 0) {\n  return [{ json: {\n    error: 'No encontré fotos de esta propiedad en el sitio web.',\n    enviadas: 0\n  }}];\n}\n\nconst total = images.length;\nreturn images.map((img, idx) => ({\n  json: {\n    source_url:    img.source_url,\n    caption:       `Foto ${idx + 1} de ${total}`,\n    phone,\n    phoneNumberId,\n    idx,\n    total\n  }\n}));"
+      },
+      "id": "ef07-parselist",
+      "name": "Preparar Lista Fotos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v25.0/{{ $json.phoneNumberId }}/messages",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "whatsAppApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.phone }}\",\n  \"type\": \"image\",\n  \"image\": {\n    \"link\": \"{{ $json.source_url }}\",\n    \"caption\": \"{{ $json.caption }}\"\n  }\n}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "ef08-sendimg",
+      "name": "Enviar Foto WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1780,
+        -80
+      ],
+      "credentials": {
+        "whatsAppApi": {
+          "id": "DOEaWrSOaR0CWKbo",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate results from all image sends\nconst items = $input.all();\nlet enviadas = 0;\nlet errores  = 0;\nfor (const item of items) {\n  const body = item.json;\n  // Meta returns { messages: [{id}] } on success\n  if (body && body.messages && body.messages.length > 0) {\n    enviadas++;\n  } else {\n    errores++;\n  }\n}\nreturn [{ json: {\n  enviadas,\n  errores,\n  response: enviadas > 0\n    ? `${enviadas} foto(s) enviada(s) correctamente.`\n    : 'No se pudieron enviar las fotos. Intenta más tarde.'\n}}];"
+      },
+      "id": "ef09-count",
+      "name": "Contar Enviadas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.error || $json.response }}",
+              "type": "string"
+            },
+            {
+              "id": "r2",
+              "name": "enviadas",
+              "value": "={{ $json.enviadas || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ef10-noimg",
+      "name": "Sin WordPress",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1340,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.response || $json.error || 'Proceso completado' }}",
+              "type": "string"
+            },
+            {
+              "id": "r2",
+              "name": "enviadas",
+              "value": "={{ $json.enviadas || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ef11-finalok",
+      "name": "Respuesta Final",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2220,
+        -80
+      ]
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Preparar Params",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Params": {
+      "main": [
+        [
+          {
+            "node": "Obtener wp_post_id de DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener wp_post_id de DB": {
+      "main": [
+        [
+          {
+            "node": "Resolver wp_post_id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolver wp_post_id": {
+      "main": [
+        [
+          {
+            "node": "¿Tiene WordPress?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Tiene WordPress?": {
+      "main": [
+        [
+          {
+            "node": "Buscar Fotos en WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sin WordPress",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Fotos en WordPress": {
+      "main": [
+        [
+          {
+            "node": "Preparar Lista Fotos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Lista Fotos": {
+      "main": [
+        [
+          {
+            "node": "Enviar Foto WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Foto WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Contar Enviadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contar Enviadas": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "enviar-fotos-v1",
+  "meta": {
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "EnviarFotosPropiedad01",
+  "tags": []
+}
