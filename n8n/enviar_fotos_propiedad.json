@@ -150,7 +150,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://inmobi.com.ec/wp-json/wp/v2/media?parent={{ $json.wp_post_id }}&per_page=5&_fields=source_url,alt_text&orderby=menu_order&order=asc",
+        "url": "=https://inmobi.com.ec/wp-json/wp/v2/media?parent={{ $json.wp_post_id }}&per_page=5&_fields=source_url,alt_text&orderby=id&order=asc",
         "options": {
           "timeout": 10000,
           "response": {

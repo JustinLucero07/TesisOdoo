@@ -43,3 +43,7 @@ access_estate_comparator_wizard_admin,estate.comparator.wizard.admin,model_estat
 access_estate_sale_wizard_agent,estate.sale.wizard.agent,model_estate_sale_wizard,estate_group_agent,1,1,1,0
 access_estate_sale_wizard_manager,estate.sale.wizard.manager,model_estate_sale_wizard,estate_group_manager,1,1,1,0
 access_estate_sale_wizard_admin,estate.sale.wizard.admin,model_estate_sale_wizard,estate_group_admin,1,1,1,1
+access_estate_property_marketing,estate.property.marketing,model_estate_property,estate_group_marketing,1,1,0,0
+access_estate_property_type_marketing,estate.property.type.marketing,model_estate_property_type,estate_group_marketing,1,0,0,0
+access_estate_property_tag_marketing,estate.property.tag.marketing,model_estate_property_tag,estate_group_marketing,1,0,0,0
+access_estate_property_image_marketing,estate.property.image.marketing,model_estate_property_image,estate_group_marketing,1,1,1,0

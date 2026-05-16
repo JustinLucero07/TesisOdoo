@@ -154,6 +154,7 @@
                         <group>
                             <field name="country_id"/>
                             <field name="zip_code"/>
+                            <field name="wp_publish_location" widget="boolean_toggle"/>
                             <button name="action_geocode_address" string="  Ubicar en Mapa" type="object"
                                     class="btn-primary btn-sm" icon="fa-map-marker"
                                     title="Busca la dirección y actualiza lat/lon automáticamente"/>

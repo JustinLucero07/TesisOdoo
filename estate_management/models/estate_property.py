@@ -46,13 +46,34 @@ class EstateProperty(models.Model):
 
     # --- Ubicación ---
     street = fields.Char(string='Dirección')
-    city = fields.Char(string='Ciudad', tracking=True)
+    city = fields.Char(string='Ciudad', default='Cuenca', tracking=True)
     state_id = fields.Many2one(
-        'res.country.state', string='Provincia/Estado')
+        'res.country.state', string='Provincia/Estado',
+        default=lambda self: self.env['res.country.state'].search(
+            [('name', 'ilike', 'Azuay'), ('country_id.code', '=', 'EC')], limit=1))
     country_id = fields.Many2one(
         'res.country', string='País',
-        default=lambda self: self.env.company.country_id)
+        default=lambda self: self.env['res.country'].search([('code', '=', 'EC')], limit=1))
     zip_code = fields.Char(string='Código Postal')
+
+    _EC_POSTAL_CODES = {
+        'cuenca': '010101', 'guayaquil': '090101', 'quito': '170101',
+        'loja': '110101', 'ambato': '180101', 'riobamba': '060101',
+        'machala': '070101', 'portoviejo': '130101', 'manta': '130701',
+        'esmeraldas': '080101', 'ibarra': '100101', 'santo domingo': '230101',
+    }
+
+    @api.onchange('city')
+    def _onchange_city_zip(self):
+        if self.city and not self.zip_code:
+            code = self._EC_POSTAL_CODES.get(self.city.lower().strip(), '')
+            if code:
+                self.zip_code = code
+
+    @api.onchange('street')
+    def _onchange_street_keywords(self):
+        if self.street and not self.sector_keywords:
+            self.sector_keywords = self.street
     latitude = fields.Float(string='Latitud', digits=(10, 7))
     longitude = fields.Float(string='Longitud', digits=(10, 7))
     company_currency = fields.Many2one(
@@ -537,6 +558,12 @@ class EstateProperty(models.Model):
         string='Sectores Relacionados',
         help='Sectores y barrios relacionados separados por coma. Ej: Paccha, El Valle, Ricaurte'
     )
+    wp_publish_location = fields.Boolean(
+        string='Publicar Ubicación en WP',
+        default=True,
+        help='Si está activo, la dirección exacta y el mapa se publican en WordPress. '
+             'Desactívalo si el propietario no quiere revelar la dirección pública.'
+    )
 
     # --- Relaciones y Ventas ---
     owner_id = fields.Many2one('res.partner', string='Propietario')
@@ -937,7 +964,7 @@ class EstateProperty(models.Model):
         'title', 'description', 'price', 'area', 'bedrooms', 'bathrooms',
         'parking_spaces', 'street', 'city', 'state_id', 'country_id', 'zip_code',
         'latitude', 'longitude', 'property_type_id', 'state', 'image_main',
-        'image_ids', 'year_built',
+        'image_ids', 'year_built', 'wp_publish_location',
     }
 
     def write(self, vals):

@@ -1,0 +1,124 @@
+services:
+
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-odoo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - inmobi-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-odoo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Odoo 19 ─────────────────────────────────────────────────────────────────
+  odoo:
+    build:
+      context: ./odoo
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: db
+      PORT: 5432
+      USER: ${POSTGRES_USER:-odoo}
+      PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - odoo-data:/var/lib/odoo
+      - ./odoo/conf/odoo.conf:/etc/odoo/odoo.conf:ro
+      - custom-addons:/opt/odoo-addons   # montado desde el repo
+    ports:
+      - "8069:8069"
+    networks:
+      - inmobi-net
+
+  # ─── n8n ─────────────────────────────────────────────────────────────────────
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    environment:
+      - N8N_HOST=${N8N_HOST:-n8n.tudominio.com}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - NODE_ENV=production
+      - WEBHOOK_URL=https://${N8N_HOST:-n8n.tudominio.com}/
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n
+      - DB_POSTGRESDB_USER=${POSTGRES_USER:-odoo}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      - N8N_EMAIL_MODE=smtp
+      - N8N_SMTP_HOST=${SMTP_HOST:-}
+      - N8N_SMTP_PORT=${SMTP_PORT:-587}
+      - N8N_SMTP_USER=${SMTP_USER:-}
+      - N8N_SMTP_PASS=${SMTP_PASS:-}
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+    volumes:
+      - n8n-data:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    networks:
+      - inmobi-net
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ─── Nginx (reverse proxy + SSL) ─────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot-www:/var/www/certbot:ro
+      - certbot-certs:/etc/letsencrypt:ro
+    networks:
+      - inmobi-net
+    depends_on:
+      - odoo
+      - n8n
+
+  # ─── Certbot (SSL auto-renovación) ────────────────────────────────────────────
+  certbot:
+    image: certbot/certbot
+    restart: unless-stopped
+    volumes:
+      - certbot-www:/var/www/certbot
+      - certbot-certs:/etc/letsencrypt
+    entrypoint: >
+      sh -c "trap exit TERM;
+             while :; do
+               certbot renew --webroot -w /var/www/certbot --quiet;
+               sleep 12h & wait $${!};
+             done"
+
+volumes:
+  postgres-data:
+  odoo-data:
+  n8n-data:
+  certbot-www:
+  certbot-certs:
+  custom-addons:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /opt/inmobi/addons   # directorio en la VPS con tus módulos
+
+networks:
+  inmobi-net:
+    driver: bridge

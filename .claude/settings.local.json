@@ -256,7 +256,9 @@
       "Bash(sort -k2)",
       "Bash(psql -U justin -d tesis_odoo19 -c \"SELECT column_name, data_type FROM information_schema.columns WHERE table_name='estate_property' AND column_name='sector_keywords';\")",
       "Bash(psql -U justin -d tesis_odoo19 -c \"DELETE FROM wa_sessions WHERE phone = '593992555864'; SELECT 'Session cleared' as status;\")",
-      "Bash(psql -U justin -d tesis_odoo19 -c \"DELETE FROM wa_sessions WHERE phone = '593992555864'; SELECT 'Sesion limpiada' as status;\")"
+      "Bash(psql -U justin -d tesis_odoo19 -c \"DELETE FROM wa_sessions WHERE phone = '593992555864'; SELECT 'Sesion limpiada' as status;\")",
+      "Bash(psql -U justin -d tesis_odoo19 -c ' *)",
+      "Read(//home/jimmy/Documentos/Tesis/**)"
     ],
     "additionalDirectories": [
       "/tmp",

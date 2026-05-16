@@ -1,0 +1,8 @@
+# Dependencias extra del proyecto Inmobi (no incluidas en Odoo base)
+qrcode[pil]>=7.4
+google-genai>=1.0.0
+openai>=2.0.0
+openpyxl>=3.1.0
+psycopg2-binary>=2.9.0
+requests>=2.31.0
+Pillow>=10.0.0

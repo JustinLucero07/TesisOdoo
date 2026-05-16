@@ -265,6 +265,7 @@ class EstatePropertyWordPress(models.Model):
             lng_str = str(self.longitude)
             location = f"{self.latitude},{self.longitude},15"
 
+        publish_location = getattr(self, 'wp_publish_location', True)
         meta = {
             # --- Información ---
             'fave_property_price': str(self.price or 0),
@@ -281,16 +282,16 @@ class EstatePropertyWordPress(models.Model):
             'fave_property_id': self.name or '',
 
             # --- Mapa ---
-            'fave_property_map': '1' if location else '0',
-            'fave_property_location': location,
-            'fave_property_map_address': full_address,
-            'houzez_geolocation_lat': lat_str,
-            'houzez_geolocation_long': lng_str,
+            'fave_property_map': '1' if (location and publish_location) else '0',
+            'fave_property_location': location if publish_location else '',
+            'fave_property_map_address': full_address if publish_location else '',
+            'houzez_geolocation_lat': lat_str if publish_location else '',
+            'houzez_geolocation_long': lng_str if publish_location else '',
             'fave_property_map_street_view': 'hide',
 
             # --- Dirección ---
-            'fave_property_address': self.street or '',
-            'fave_property_zip': self.zip_code or '',
+            'fave_property_address': (self.street or '') if publish_location else '',
+            'fave_property_zip': (self.zip_code or '') if publish_location else '',
 
             # --- Agente ---
             'fave_agent_display_option': 'agent_info',
