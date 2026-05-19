@@ -894,12 +894,8 @@ class EstateProperty(models.Model):
             if prop.buyer_id:
                 prop.buyer_id._apply_estate_category('estate_management.partner_category_buyer')
             # Auto-publicar en WordPress si se creó con wp_published=True
-            if prop.wp_published and hasattr(prop, 'action_publish_wordpress'):
-                try:
-                    prop.with_context(no_wp_sync=True).action_publish_wordpress()
-                except Exception as e:
-                    _logger.warning(
-                        'WP auto-publish al crear propiedad %s falló: %s', prop.id, e)
+            if prop.wp_published and hasattr(prop, '_trigger_wp_sync_async'):
+                prop._trigger_wp_sync_async()
 
         return properties
 
@@ -964,7 +960,7 @@ class EstateProperty(models.Model):
         'title', 'description', 'price', 'area', 'bedrooms', 'bathrooms',
         'parking_spaces', 'street', 'city', 'state_id', 'country_id', 'zip_code',
         'latitude', 'longitude', 'property_type_id', 'state', 'image_main',
-        'image_ids', 'year_built', 'wp_publish_location',
+        'image_ids', 'year_built', 'wp_publish_location', 'sector_keywords',
     }
 
     def write(self, vals):
@@ -981,18 +977,15 @@ class EstateProperty(models.Model):
                     prop.product_id.sudo().write(product_vals)
         # Auto-sync a WordPress si la propiedad ya está publicada y cambia
         # algún campo relevante. Guard no_wp_sync para evitar bucles.
+        # Se ejecuta en un hilo de fondo para no bloquear el guardado.
         if not self.env.context.get('no_wp_sync'):
             changed_wp_fields = self._WP_SYNC_FIELDS.intersection(vals.keys())
             if changed_wp_fields:
                 for prop in self:
                     wp_pub = getattr(prop, 'wp_published', False)
                     wp_id = getattr(prop, 'wp_post_id', 0)
-                    if wp_pub and wp_id and hasattr(prop, 'action_publish_wordpress'):
-                        try:
-                            prop.with_context(no_wp_sync=True).action_publish_wordpress()
-                        except Exception as e:
-                            _logger.warning(
-                                'WP auto-sync falló al guardar propiedad %s: %s', prop.id, e)
+                    if wp_pub and wp_id and hasattr(prop, '_trigger_wp_sync_async'):
+                        prop._trigger_wp_sync_async()
         # Historial de precios
         if 'price' in vals:
             for prop in self:

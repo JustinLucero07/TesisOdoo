@@ -24,6 +24,7 @@
         'wizards/estate_report_wizard_views.xml',
         'wizards/estate_commission_wizard_views.xml',
         'wizards/estate_sales_report_wizard_views.xml',
+        'views/estate_property_report_button.xml',
         'views/estate_dashboard_views.xml',
         'views/estate_visitor_report_views.xml',
         'views/estate_analytics_views.xml',

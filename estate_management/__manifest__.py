@@ -43,8 +43,8 @@
         'wizards/estate_sale_wizard_views.xml',
         'data/estate_hr_integrations.xml',
         'views/estate_portal_templates.xml',
-        'views/estate_finance_menu.xml',
         'views/estate_menus.xml',
+        'views/estate_finance_menu.xml',
         'data/estate_users_roles.xml',
     ],
     'demo': [

@@ -41,7 +41,7 @@
                     <button name="action_open_map" string=" Ver en Mapa" type="object" class="btn-info" invisible="not map_url"/>
                     <button name="action_calculate_avm" string=" Calcular Precio AVM" type="object" class="btn-warning" invisible="state == 'sold'"/>
                     <button name="action_create_invoice" string="Generar Factura" type="object" class="btn-primary" icon="fa-file-text-o" invisible="state == 'sold'"/>
-                    <button name="%(estate_reports.action_report_ficha_tecnica)d" string="Descargar Ficha PDF" type="action" class="btn-secondary" icon="fa-download"/>
+
                     <button name="action_set_available" string="Disponible" type="object" class="oe_highlight" invisible="state == 'available'"/>
                     <button name="action_set_reserved" string="Reservar" type="object" invisible="state == 'sold'"/>
                     <button name="action_open_sale_wizard" string="Vender Propiedad" type="object"

@@ -2,8 +2,13 @@ import base64
 import json
 import logging
 import re
+import threading
+import time
 
+import odoo
 import requests
+
+from odoo import api as odoo_api
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
@@ -83,6 +88,9 @@ class EstateWordpressImportWizard(models.TransientModel):
     update_existing = fields.Boolean(
         'Actualizar existentes', default=False,
         help='Si está activo, actualiza las propiedades que ya existen en Odoo (identificadas por WordPress Post ID).')
+    show_existing = fields.Boolean(
+        'Mostrar ya importadas', default=False,
+        help='Por defecto se ocultan las propiedades que ya fueron importadas. Activa esto para verlas.')
     max_properties = fields.Integer(
         'Máximo a importar', default=100,
         help='Límite de propiedades a traer en esta sesión. WordPress devuelve 20 por página.')
@@ -91,13 +99,15 @@ class EstateWordpressImportWizard(models.TransientModel):
     import_state = fields.Selection([
         ('draft', 'Configuración'),
         ('preview', 'Selección'),
+        ('running', 'Importando...'),
         ('done', 'Completado'),
     ], default='draft', string='Estado')
 
     # --- Preview lines ---
     preview_line_ids = fields.One2many(
         'estate.wordpress.import.line', 'wizard_id', string='Propiedades encontradas')
-    preview_total = fields.Integer('Total encontradas', readonly=True)
+    preview_total = fields.Integer('Nuevas disponibles', readonly=True)
+    existing_total = fields.Integer('Ya importadas (ocultas)', readonly=True)
 
     # --- Resultados ---
     imported_count = fields.Integer('Importadas', readonly=True)
@@ -265,6 +275,7 @@ class EstateWordpressImportWizard(models.TransientModel):
         """
         combined = {}
         KEY_FIELDS = ('fave_property_price', 'fave_property_size', 'fave_property_bedrooms')
+        post_type = cfg['post_type']
 
         def _has_key_data():
             return any(
@@ -272,146 +283,86 @@ class EstateWordpressImportWizard(models.TransientModel):
                 for k in KEY_FIELDS
             )
 
-        # === Estrategia 1: XML-RPC (siempre devuelve custom fields en WP) ===
-        xmlrpc_meta = self._fetch_meta_via_xmlrpc(cfg, wp_post_id)
-        if xmlrpc_meta:
-            combined.update(xmlrpc_meta)
-            _logger.info(
-                "Import meta post %s — XML-RPC: %d campos. price=%s, size=%s, beds=%s",
-                wp_post_id, len(xmlrpc_meta),
-                xmlrpc_meta.get('fave_property_price', '?'),
-                xmlrpc_meta.get('fave_property_size', '?'),
-                xmlrpc_meta.get('fave_property_bedrooms', '?'))
-            if _has_key_data():
-                return combined
+        def _merge(data_dict):
+            if isinstance(data_dict, dict):
+                for k, v in data_dict.items():
+                    if v not in (None, '', [], False):
+                        combined.setdefault(k, v)
 
-        # === Estrategia 2: Plugin odoo-meta-reader (GET, lee TODOS los meta) ===
+        # === Estrategia 1: Endpoint custom odoo-houzez (el más rápido — mismo q usamos para guardar) ===
         try:
-            meta_url = f"{cfg['url']}/wp-json/odoo-meta/v1/read/{wp_post_id}"
             resp = requests.get(
-                meta_url, auth=cfg['auth'], headers=cfg['headers'], timeout=15)
+                f"{cfg['url']}/wp-json/odoo-houzez/v1/meta/{wp_post_id}",
+                auth=cfg['auth'], headers=cfg['headers'], timeout=8)
             if resp.status_code == 200:
                 data = resp.json()
-                if isinstance(data, dict):
-                    for k, v in data.items():
-                        if v not in (None, '', []):
-                            combined.setdefault(k, v)
-                    _logger.info(
-                        "Import meta post %s — odoo-meta-reader: %d campos. price=%s, size=%s, beds=%s",
-                        wp_post_id, len(data),
-                        combined.get('fave_property_price', '?'),
-                        combined.get('fave_property_size', '?'),
-                        combined.get('fave_property_bedrooms', '?'))
-                    if _has_key_data():
-                        return combined
-        except Exception as e:
-            _logger.debug("odoo-meta-reader endpoint no disponible para post %s: %s", wp_post_id, e)
+                _merge(data.get('meta', data) if isinstance(data, dict) else {})
+                if _has_key_data():
+                    _logger.debug("meta post %s: odoo-houzez OK", wp_post_id)
+                    return combined
+        except Exception:
+            pass
 
-        # === Estrategia 3: Endpoint custom odoo-houzez (el MISMO que usamos para GUARDAR) ===
+        # === Estrategia 2: REST individual con context=edit (built-in WP) ===
         try:
-            meta_url = f"{cfg['url']}/wp-json/odoo-houzez/v1/meta/{wp_post_id}"
             resp = requests.get(
-                meta_url, auth=cfg['auth'], headers=cfg['headers'], timeout=15)
-            if resp.status_code == 200:
-                data = resp.json()
-                if isinstance(data, dict):
-                    meta_data = data.get('meta', data)
-                    if isinstance(meta_data, dict):
-                        for k, v in meta_data.items():
-                            if v not in (None, '', []):
-                                combined.setdefault(k, v)
-                    _logger.info(
-                        "Import meta post %s — odoo-houzez endpoint: price=%s, size=%s",
-                        wp_post_id,
-                        combined.get('fave_property_price', '?'),
-                        combined.get('fave_property_size', '?'))
-                    if _has_key_data():
-                        return combined
-        except Exception as e:
-            _logger.debug("odoo-houzez meta endpoint no disponible para post %s: %s", wp_post_id, e)
-
-        # === Estrategia 3: REST individual con context=edit ===
-        post_type = cfg['post_type']
-        try:
-            url = f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_post_id}"
-            resp = requests.get(
-                url,
+                f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_post_id}",
                 params={'context': 'edit'},
-                auth=cfg['auth'], headers=cfg['headers'],
-                timeout=20,
-            )
+                auth=cfg['auth'], headers=cfg['headers'], timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
-                # Extraer meta registrado
-                rest_meta = data.get('meta', {}) or {}
-                rest_acf = data.get('acf', {}) or {}
-                for source in (rest_meta, rest_acf):
-                    for k, v in source.items():
-                        if v not in (None, '', [], False):
-                            combined.setdefault(k, v)
-                # Houzez a veces expone campos a primer nivel con prefijo fave_ o houzez_
+                _merge(data.get('meta', {}))
+                _merge(data.get('acf', {}))
                 for key, val in data.items():
                     if key.startswith(('fave_', 'houzez_')) and val not in (None, '', [], False):
                         combined.setdefault(key, val)
-                _logger.info(
-                    "Import meta post %s — REST edit: price=%s, size=%s, beds=%s",
-                    wp_post_id,
-                    combined.get('fave_property_price', '?'),
-                    combined.get('fave_property_size', '?'),
-                    combined.get('fave_property_bedrooms', '?'))
                 if _has_key_data():
+                    _logger.debug("meta post %s: REST edit OK", wp_post_id)
                     return combined
-        except Exception as e:
-            _logger.debug("REST individual fetch falló para post %s: %s", wp_post_id, e)
+        except Exception:
+            pass
 
-        # === Estrategia 4: endpoints custom Houzez (tema) ===
-        if not _has_key_data():
-            for route in [
-                f"{cfg['url']}/wp-json/houzez/v1/property-meta/{wp_post_id}",
-                f"{cfg['url']}/wp-json/houzez/v1/properties/{wp_post_id}",
-            ]:
-                try:
-                    resp = requests.get(
-                        route, auth=cfg['auth'], headers=cfg['headers'], timeout=10)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        if isinstance(data, dict):
-                            if 'data' in data and isinstance(data['data'], dict):
-                                for k, v in data['data'].items():
-                                    if v not in (None, ''):
-                                        combined.setdefault(k, v)
-                            for k, v in data.items():
-                                if k != 'data' and v not in (None, '', {}, []):
-                                    combined.setdefault(k, v)
-                        _logger.info(
-                            "Import meta post %s — Houzez endpoint %s: price=%s",
-                            wp_post_id, route.split('/')[-2],
-                            combined.get('fave_property_price', '?'))
-                        if _has_key_data():
-                            break
-                except Exception:
-                    pass
+        # === Estrategia 3: Plugin odoo-meta-reader ===
+        try:
+            resp = requests.get(
+                f"{cfg['url']}/wp-json/odoo-meta/v1/read/{wp_post_id}",
+                auth=cfg['auth'], headers=cfg['headers'], timeout=8)
+            if resp.status_code == 200:
+                _merge(resp.json())
+                if _has_key_data():
+                    _logger.debug("meta post %s: odoo-meta-reader OK", wp_post_id)
+                    return combined
+        except Exception:
+            pass
 
-        # === Estrategia 5: REST individual SIN context=edit (público) ===
-        if not _has_key_data():
+        # === Estrategia 4: Endpoints nativos Houzez (tema) ===
+        for route in [
+            f"{cfg['url']}/wp-json/houzez/v1/property-meta/{wp_post_id}",
+            f"{cfg['url']}/wp-json/houzez/v1/properties/{wp_post_id}",
+        ]:
             try:
-                url = f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_post_id}"
-                resp = requests.get(
-                    url, auth=cfg['auth'], headers=cfg['headers'], timeout=20)
+                resp = requests.get(route, auth=cfg['auth'], headers=cfg['headers'], timeout=8)
                 if resp.status_code == 200:
                     data = resp.json()
-                    for key, val in data.items():
-                        if key.startswith(('fave_', 'houzez_')) and val not in (None, '', [], False):
-                            combined.setdefault(key, val)
+                    if isinstance(data, dict):
+                        _merge(data.get('data', {}))
+                        _merge({k: v for k, v in data.items() if k != 'data'})
+                    if _has_key_data():
+                        break
             except Exception:
                 pass
 
-        # Log final si seguimos sin datos
+        # === Estrategia 5: XML-RPC — más lento pero más completo (último recurso) ===
+        if not _has_key_data():
+            xmlrpc_meta = self._fetch_meta_via_xmlrpc(cfg, wp_post_id)
+            if xmlrpc_meta:
+                combined.update(xmlrpc_meta)
+                _logger.debug("meta post %s: XML-RPC OK (%d campos)", wp_post_id, len(xmlrpc_meta))
+
         if not _has_key_data():
             _logger.warning(
-                "Import meta post %s: NO SE ENCONTRARON DATOS después de 5 estrategias. "
-                "Llaves encontradas: %s",
-                wp_post_id, list(combined.keys())[:20])
+                "meta post %s: sin datos tras 5 estrategias. Llaves: %s",
+                wp_post_id, list(combined.keys())[:15])
 
         return combined
 
@@ -660,6 +611,18 @@ class EstateWordpressImportWizard(models.TransientModel):
         if not city:
             city = get_meta('fave_property_city', '')
 
+        # --- Sectores / Barrios ---
+        # Fuentes: meta Houzez + taxonomía property-label (usada para zonas/barrios)
+        sector_parts = []
+        neighborhood = get_meta('fave_property_neighborhood', '') or get_meta('fave_property_near_me', '')
+        if neighborhood:
+            sector_parts.append(str(neighborhood).strip())
+        label_names = self._get_taxonomy_term_names(wp_prop, 'property-label')
+        for lname in label_names:
+            if lname and lname.strip() not in sector_parts:
+                sector_parts.append(lname.strip())
+        sector_keywords = ', '.join(sector_parts) if sector_parts else ''
+
         vals = {
             'title': title,
             'description': description,
@@ -676,6 +639,9 @@ class EstateWordpressImportWizard(models.TransientModel):
             'wp_post_id': wp_prop.get('id', 0),
             'wp_published': True,
         }
+
+        if sector_keywords:
+            vals['sector_keywords'] = sector_keywords
 
         if property_type_id:
             vals['property_type_id'] = property_type_id
@@ -792,6 +758,41 @@ class EstateWordpressImportWizard(models.TransientModel):
             self.env['estate.property.image'].create(image_vals)
 
     # =========================================================================
+    # AUTO-GEOCODIFICACIÓN
+    # =========================================================================
+
+    def _auto_geocode_property(self, prop):
+        """Geocodifica con Nominatim si la propiedad no tiene coordenadas."""
+        if prop.latitude and prop.longitude:
+            return
+        parts = [p for p in [
+            prop.street, prop.city,
+            prop.state_id.name if prop.state_id else None,
+            prop.country_id.name if prop.country_id else 'Ecuador',
+        ] if p]
+        if len(parts) < 2:
+            return
+        query = ', '.join(parts)
+        try:
+            time.sleep(1)  # Respetar rate limit de Nominatim (1 req/seg)
+            resp = requests.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={'q': query, 'format': 'json', 'limit': 1, 'countrycodes': 'ec'},
+                headers={'User-Agent': 'OdooEstateImport/1.0'},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data:
+                    prop.with_context(no_wp_sync=True).write({
+                        'latitude': float(data[0]['lat']),
+                        'longitude': float(data[0]['lon']),
+                    })
+                    _logger.info("Geocodificado '%s': %.6f, %.6f", query, float(data[0]['lat']), float(data[0]['lon']))
+        except Exception as e:
+            _logger.warning("Auto-geocode falló para '%s': %s", query, e)
+
+    # =========================================================================
     # ACCIÓN PRINCIPAL
     # =========================================================================
 
@@ -879,12 +880,25 @@ class EstateWordpressImportWizard(models.TransientModel):
                 'odoo_property_id': existing.id if existing else False,
             })
 
-        self.env['estate.wordpress.import.line'].create(lines)
+        # Contar las ya importadas antes de filtrar
+        existing_count = sum(1 for l in lines if l['already_exists'])
+        if not self.show_existing:
+            lines = [l for l in lines if not l['already_exists']]
 
-        self.write({
-            'import_state': 'preview',
-            'preview_total': len(lines),
-        })
+        if not lines:
+            # Todas ya fueron importadas — mostrar aviso en lugar de lista vacía
+            self.write({
+                'import_state': 'preview',
+                'preview_total': 0,
+                'existing_total': existing_count,
+            })
+        else:
+            self.env['estate.wordpress.import.line'].create(lines)
+            self.write({
+                'import_state': 'preview',
+                'preview_total': len(lines),
+                'existing_total': existing_count,
+            })
 
         return {
             'type': 'ir.actions.act_window',
@@ -929,70 +943,99 @@ class EstateWordpressImportWizard(models.TransientModel):
         }
 
     def action_import(self):
-        """Paso 2: Importa las propiedades SELECCIONADAS desde WordPress."""
+        """Paso 2: Lanza la importación en un hilo de fondo y retorna al instante."""
         self.ensure_one()
-        cfg = self._get_wp_cfg()
-
         selected_lines = self.preview_line_ids.filtered('selected')
         if not selected_lines:
             raise UserError('No seleccionaste ninguna propiedad para importar.')
 
-        # Necesitamos re-fetch los datos completos de WP para cada propiedad seleccionada
-        Property = self.env['estate.property'].with_context(no_wp_sync=True)
-        imported = updated = skipped = 0
-        errors = []
+        # Capturar datos antes de lanzar el hilo (el cursor original se cerrará)
+        wizard_id = self.id
+        dbname = self.env.cr.dbname
+        uid = self.env.uid
+        line_data = [(l.wp_post_id, l.title) for l in selected_lines]
+        update_existing = self.update_existing
+        import_images = self.import_images
 
-        for line in selected_lines:
-            wp_id = line.wp_post_id
+        self.write({'import_state': 'running'})
+
+        def _run_import():
+            imported = updated = skipped = 0
+            errors = []
             try:
-                with self.env.cr.savepoint():
-                    # Fetch del post individual con embed
+                with odoo.registry(dbname).cursor() as cr:
+                    env = odoo_api.Environment(cr, uid, {'no_wp_sync': True, 'active_test': False})
+                    wizard = env['estate.wordpress.import.wizard'].browse(wizard_id)
+                    cfg = wizard._get_wp_cfg()
+                    Property = env['estate.property']
                     post_type = cfg['post_type']
-                    api_url = f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_id}"
-                    resp = requests.get(
-                        api_url,
-                        params={'_embed': 1, 'context': 'edit'},
-                        auth=cfg['auth'], headers=cfg['headers'], timeout=30)
 
-                    if resp.status_code != 200:
-                        errors.append(f"[{line.title}]: HTTP {resp.status_code}")
-                        continue
+                    for wp_id, title in line_data:
+                        try:
+                            with cr.savepoint():
+                                resp = requests.get(
+                                    f"{cfg['url']}/wp-json/wp/v2/{post_type}/{wp_id}",
+                                    params={'_embed': 1, 'context': 'edit'},
+                                    auth=cfg['auth'], headers=cfg['headers'], timeout=20)
+                                if resp.status_code != 200:
+                                    errors.append(f"[{title}]: HTTP {resp.status_code}")
+                                    continue
+                                wp_prop = resp.json()
+                                extra_meta = wizard._fetch_single_post_meta(cfg, wp_id)
+                                vals = wizard._map_wp_to_vals(wp_prop, extra_meta)
+                                existing = Property.search([('wp_post_id', '=', wp_id)], limit=1)
+                                if existing and not update_existing:
+                                    skipped += 1
+                                    continue
+                                if existing:
+                                    existing.write(vals)
+                                    prop = existing
+                                    updated += 1
+                                else:
+                                    prop = Property.create(vals)
+                                    imported += 1
+                                if import_images:
+                                    wizard._import_images_for_property(prop, wp_prop, cfg)
+                                wizard._auto_geocode_property(prop)
+                        except Exception as e:
+                            errors.append(f"[{title}]: {str(e)}")
+                            _logger.error("Error importando WP post %s: %s", wp_id, e, exc_info=True)
 
-                    wp_prop = resp.json()
-
-                    # Fetch meta completo (XML-RPC + cascada)
-                    extra_meta = self._fetch_single_post_meta(cfg, wp_id)
-                    vals = self._map_wp_to_vals(wp_prop, extra_meta)
-
-                    existing = Property.search([('wp_post_id', '=', wp_id)], limit=1) if wp_id else False
-
-                    if existing and not self.update_existing:
-                        skipped += 1
-                        continue
-
-                    if existing:
-                        existing.write(vals)
-                        prop = existing
-                        updated += 1
-                    else:
-                        prop = Property.create(vals)
-                        imported += 1
-
-                    if self.import_images:
-                        self._import_images_for_property(prop, wp_prop, cfg)
-
+                    if wizard.exists():
+                        wizard.write({
+                            'import_state': 'done',
+                            'imported_count': imported,
+                            'updated_count': updated,
+                            'skipped_count': skipped,
+                            'error_log': '\n'.join(errors) if errors else False,
+                        })
+                    cr.commit()
+                    _logger.info("WP import fondo: importadas=%s actualizadas=%s omitidas=%s",
+                                 imported, updated, skipped)
             except Exception as e:
-                errors.append(f"[{line.title}]: {str(e)}")
-                _logger.error(f"Error importando WP post {wp_id}: {e}", exc_info=True)
+                _logger.error("WP import fondo falló: %s", e, exc_info=True)
+                try:
+                    with odoo.registry(dbname).cursor() as cr2:
+                        env2 = odoo_api.Environment(cr2, uid, {})
+                        w = env2['estate.wordpress.import.wizard'].browse(wizard_id)
+                        if w.exists():
+                            w.write({'import_state': 'done', 'error_log': str(e)})
+                        cr2.commit()
+                except Exception:
+                    pass
 
-        self.write({
-            'import_state': 'done',
-            'imported_count': imported,
-            'updated_count': updated,
-            'skipped_count': skipped,
-            'error_log': '\n'.join(errors) if errors else False,
-        })
+        threading.Thread(target=_run_import, daemon=True).start()
 
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.wordpress.import.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_refresh_import(self):
+        """Refresca el estado del wizard mientras el import corre en fondo."""
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'estate.wordpress.import.wizard',

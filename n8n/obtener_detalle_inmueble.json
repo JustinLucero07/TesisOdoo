@@ -15,13 +15,13 @@
           ]
         }
       },
-      "id": "88e7210a-1486-48b9-b6c2-c6e0aa06d9e0",
+      "id": "390c85f3-0416-40d4-8c3f-f8fb995454cd",
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        816,
-        -272
+        4480,
+        -224
       ]
     },
     {
@@ -44,13 +44,13 @@
         },
         "options": {}
       },
-      "id": "895291b1-bea8-46ef-86aa-e455283b37a4",
+      "id": "56675737-778b-46d4-95f4-8f1e7424ff6f",
       "name": "Preparar Parametros",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1040,
-        -272
+        4704,
+        -224
       ]
     },
     {
@@ -59,18 +59,18 @@
         "query": "SELECT\n    COALESCE(p.id, 0)              AS property_id,\n    COALESCE(p.wp_post_id, 0)      AS wp_post_id,\n    COALESCE(p.name, '')            AS referencia,\n    COALESCE(p.title, '')           AS titulo,\n    COALESCE(p.description, '')     AS descripcion_detallada,\n    COALESCE(p.price, 0)            AS precio,\n    COALESCE(p.area, 0)             AS metros_cuadrados,\n    COALESCE(p.bedrooms, 0)         AS habitaciones,\n    COALESCE(p.bathrooms, 0)        AS banos,\n    COALESCE(p.parking_spaces, 0)   AS parqueaderos,\n    p.year_built                    AS anio_construccion,\n    COALESCE(t.name, '')            AS tipo_propiedad,\n    COALESCE(p.street, '')          AS direccion,\n    COALESCE(p.city, '')            AS ciudad,\n    COALESCE(p.sector_keywords, '') AS sectores_relacionados,\n    CASE\n        WHEN p.wp_post_id IS NOT NULL AND p.wp_post_id > 0\n        THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id\n        ELSE NULL\n    END AS link_web,\n    CASE WHEN p.id IS NULL THEN 'no_encontrada' ELSE 'ok' END AS estado\nFROM (SELECT 1) dummy\nLEFT JOIN estate_property p\n  ON p.active = true\n  AND (\n    -- Busqueda por ID exacto (Odoo id o wp_post_id)\n    ({{ $json.id_propiedad }} > 0 AND (\n      p.id = {{ $json.id_propiedad }}\n      OR p.wp_post_id = {{ $json.id_propiedad }}\n    ))\n    OR\n    -- Busqueda por texto: cada palabra separada por % para tolerancia\n    ({{ $json.id_propiedad }} = 0 AND '{{ $json.busqueda }}' != '' AND\n      (COALESCE(p.title,'') || ' ' || COALESCE(p.street,'') || ' ' || COALESCE(p.city,''))\n      ILIKE '%' || replace('{{ $json.busqueda }}', ' ', '%') || '%'\n    )\n  )\nLEFT JOIN estate_property_type t ON p.property_type_id = t.id\nORDER BY (p.state = 'available') DESC NULLS LAST, p.id DESC\nLIMIT 1;\n",
         "options": {}
       },
-      "id": "6c7cff10-05ce-4bc9-93e8-ee009a022a86",
+      "id": "18c0126a-04ae-4513-8891-d3cf41b44959",
       "name": "Consultar Detalles",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        1264,
-        -272
+        4928,
+        -224
       ],
       "credentials": {
         "postgres": {
-          "id": "6mYPUyfDHs6x1dvZ",
-          "name": "Postgres account"
+          "id": "hpxXcbKUCIUvlbJn",
+          "name": "Inmobi"
         }
       }
     },
@@ -88,13 +88,13 @@
         },
         "options": {}
       },
-      "id": "d76a1de3-8e74-401c-9e10-a2f7c413bbf5",
+      "id": "ebd012f7-9d4e-42c2-9e49-ff4a680a8a01",
       "name": "Formatear Respuesta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1488,
-        -272
+        5152,
+        -224
       ]
     }
   ],
@@ -140,7 +140,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "d3c44a57-e404-43a1-99b2-67d666a7304e",
+  "versionId": "0786390f-cc62-4ccf-98c6-22924550dc48",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"

@@ -17,21 +17,18 @@
               "name": "phone"
             },
             {
-              "name": "phoneNumberId"
-            },
-            {
               "name": "busqueda"
             }
           ]
         }
       },
-      "id": "ef01-trigger",
+      "id": "fe06e506-ce39-40b3-8cf9-9648ae757b71",
       "name": "When Executed by Another Workflow",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        240,
-        0
+        3040,
+        1776
       ]
     },
     {
@@ -59,7 +56,7 @@
             {
               "id": "a4",
               "name": "phoneNumberId",
-              "value": "={{ $json.phoneNumberId || '1117287444793731' }}",
+              "value": "=1117287444793731",
               "type": "string"
             },
             {
@@ -72,13 +69,13 @@
         },
         "options": {}
       },
-      "id": "ef02-params",
+      "id": "451e973d-8ec1-4303-aa92-fa3f8aa2b56f",
       "name": "Preparar Params",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        460,
-        0
+        3248,
+        1776
       ]
     },
     {
@@ -87,18 +84,18 @@
         "query": "SELECT id, wp_post_id, title\nFROM estate_property\nWHERE active = true\n  AND (\n    -- Buscar por property_id (id de Odoo) o por wp_post_id pasado como property_id\n    ({{ $json.property_id }} > 0 AND (\n      id = {{ $json.property_id }}\n      OR wp_post_id = {{ $json.property_id }}\n    ))\n    OR\n    -- Buscar por wp_post_id directo si se paso por separado\n    ({{ $json.property_id }} = 0 AND {{ $json.wp_post_id }} > 0 AND\n      wp_post_id = {{ $json.wp_post_id }}\n    )\n    OR\n    -- Fallback: buscar por texto cuando no hay ningun id\n    ({{ $json.property_id }} = 0 AND {{ $json.wp_post_id }} = 0 AND\n      '{{ $json.busqueda }}' != '' AND (\n        title  ILIKE '%' || '{{ $json.busqueda }}' || '%'\n        OR city   ILIKE '%' || '{{ $json.busqueda }}' || '%'\n        OR street ILIKE '%' || '{{ $json.busqueda }}' || '%'\n        OR COALESCE(sector_keywords,'') ILIKE '%' || '{{ $json.busqueda }}' || '%'\n      )\n    )\n  )\nORDER BY (wp_post_id IS NOT NULL AND wp_post_id > 0) DESC, id DESC\nLIMIT 1;\n",
         "options": {}
       },
-      "id": "ef03-dbquery",
+      "id": "6ec1f822-a4d9-4b74-82d5-e737589ae426",
       "name": "Obtener wp_post_id de DB",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        680,
-        0
+        3472,
+        1776
       ],
       "credentials": {
         "postgres": {
-          "id": "6mYPUyfDHs6x1dvZ",
-          "name": "Postgres account"
+          "id": "hpxXcbKUCIUvlbJn",
+          "name": "Inmobi"
         }
       }
     },
@@ -106,13 +103,13 @@
       "parameters": {
         "jsCode": "// Merge DB result with trigger params\nconst triggerData = $('Preparar Params').first().json;\nconst dbRow = $input.first().json;\n\n// wp_post_id: prefer the one from trigger, fallback to DB\nconst wp_post_id = (triggerData.wp_post_id && triggerData.wp_post_id > 0)\n  ? triggerData.wp_post_id\n  : (dbRow.wp_post_id || 0);\n\nif (!wp_post_id || wp_post_id === 0) {\n  return [{ json: {\n    error: 'Esta propiedad no está publicada en el sitio web todavía. No hay fotos disponibles.',\n    enviadas: 0,\n    phone: triggerData.phone,\n    phoneNumberId: triggerData.phoneNumberId\n  }}];\n}\n\nreturn [{ json: {\n  wp_post_id,\n  phone:         triggerData.phone,\n  phoneNumberId: triggerData.phoneNumberId,\n  property_id:   triggerData.property_id\n}}];"
       },
-      "id": "ef04-merge",
+      "id": "96667c73-517c-4eed-ab50-a1501581d8c6",
       "name": "Resolver wp_post_id",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        900,
-        0
+        3696,
+        1776
       ]
     },
     {
@@ -138,48 +135,47 @@
         },
         "options": {}
       },
-      "id": "ef05-ifcheck",
+      "id": "b891404d-7477-41fb-81d7-a0996d5f116f",
       "name": "¿Tiene WordPress?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1120,
-        0
+        3920,
+        1776
       ]
     },
     {
       "parameters": {
-        "method": "GET",
         "url": "=https://inmobi.com.ec/wp-json/wp/v2/media?parent={{ $json.wp_post_id }}&per_page=5&_fields=source_url,alt_text&orderby=id&order=asc",
         "options": {
-          "timeout": 10000,
           "response": {
             "response": {
               "neverError": true
             }
-          }
+          },
+          "timeout": 10000
         }
       },
-      "id": "ef06-wpapi",
+      "id": "10101174-4dc7-42da-8ec8-6b3aaaddb1d0",
       "name": "Buscar Fotos en WordPress",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1340,
-        -80
+        4128,
+        1696
       ]
     },
     {
       "parameters": {
         "jsCode": "// Parse WP response and create one item per image (max 5)\nconst allItems = $input.all();\nconst phone         = $('Resolver wp_post_id').first().json.phone;\nconst phoneNumberId = $('Resolver wp_post_id').first().json.phoneNumberId;\n\n// WP API returns an array directly\nlet images = [];\nfor (const item of allItems) {\n  const body = item.json;\n  if (Array.isArray(body)) {\n    images = images.concat(body);\n  } else if (body && body.source_url) {\n    images.push(body);\n  }\n}\nimages = images.slice(0, 5);\n\nif (images.length === 0) {\n  return [{ json: {\n    error: 'No encontré fotos de esta propiedad en el sitio web.',\n    enviadas: 0\n  }}];\n}\n\nconst total = images.length;\nreturn images.map((img, idx) => ({\n  json: {\n    source_url:    img.source_url,\n    caption:       `Foto ${idx + 1} de ${total}`,\n    phone,\n    phoneNumberId,\n    idx,\n    total\n  }\n}));"
       },
-      "id": "ef07-parselist",
+      "id": "7a72447a-8710-4339-9073-66de12162b15",
       "name": "Preparar Lista Fotos",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1560,
-        -80
+        4352,
+        1696
       ]
     },
     {
@@ -192,21 +188,21 @@
         "specifyBody": "json",
         "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.phone }}\",\n  \"type\": \"image\",\n  \"image\": {\n    \"link\": \"{{ $json.source_url }}\",\n    \"caption\": \"{{ $json.caption }}\"\n  }\n}",
         "options": {
-          "timeout": 15000,
           "response": {
             "response": {
               "neverError": true
             }
-          }
+          },
+          "timeout": 15000
         }
       },
-      "id": "ef08-sendimg",
+      "id": "12823738-76f8-4e37-800d-bac946535aaa",
       "name": "Enviar Foto WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1780,
-        -80
+        4576,
+        1696
       ],
       "credentials": {
         "whatsAppApi": {
@@ -219,13 +215,13 @@
       "parameters": {
         "jsCode": "// Aggregate results from all image sends\nconst items = $input.all();\nlet enviadas = 0;\nlet errores  = 0;\nfor (const item of items) {\n  const body = item.json;\n  // Meta returns { messages: [{id}] } on success\n  if (body && body.messages && body.messages.length > 0) {\n    enviadas++;\n  } else {\n    errores++;\n  }\n}\nreturn [{ json: {\n  enviadas,\n  errores,\n  response: enviadas > 0\n    ? `${enviadas} foto(s) enviada(s) correctamente.`\n    : 'No se pudieron enviar las fotos. Intenta más tarde.'\n}}];"
       },
-      "id": "ef09-count",
+      "id": "4c91963d-a9aa-4214-9337-824b7b45197d",
       "name": "Contar Enviadas",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2000,
-        -80
+        4800,
+        1696
       ]
     },
     {
@@ -248,13 +244,13 @@
         },
         "options": {}
       },
-      "id": "ef10-noimg",
+      "id": "e68898e3-6b00-43b7-bef1-c0b8943f9069",
       "name": "Sin WordPress",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1340,
-        100
+        4128,
+        1888
       ]
     },
     {
@@ -277,16 +273,17 @@
         },
         "options": {}
       },
-      "id": "ef11-finalok",
+      "id": "800ee674-002f-4286-97b1-84e8e87901bc",
       "name": "Respuesta Final",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2220,
-        -80
+        5008,
+        1696
       ]
     }
   ],
+  "pinData": {},
   "connections": {
     "When Executed by Another Workflow": {
       "main": [
@@ -401,10 +398,10 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "enviar-fotos-v1",
+  "versionId": "e658cd10-4293-4d2f-84b0-79afe7e8b730",
   "meta": {
     "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
   },
-  "id": "EnviarFotosPropiedad01",
+  "id": "Zht623mI6pb92l78",
   "tags": []
 }

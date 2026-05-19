@@ -115,10 +115,5 @@
         </field>
     </record>
 
-    <!-- Menú en Inteligencia -->
-    <menuitem id="estate_menu_visitor_report"
-              name="Visitantes por Propiedad"
-              parent="estate_management.estate_menu_intel_root"
-              action="estate_visitor_report_action"
-              sequence="20"/>
+
 </odoo>

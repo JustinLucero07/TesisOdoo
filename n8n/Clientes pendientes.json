@@ -92,7 +92,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://127.0.0.1:8070/jsonrpc",
+        "url": "http://45.132.240.234:8069/jsonrpc",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -104,7 +104,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"tesis_odoo19\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"inmobi_produccion\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
         "options": {}
       },
       "id": "19b8367b-e795-4863-9c59-c9e2c172e81d",
@@ -142,7 +142,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://127.0.0.1:8070/jsonrpc",
+        "url": "http://45.132.240.234:8069/jsonrpc",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -154,7 +154,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"tesis_odoo19\",\n      {{ $json.uid }},\n      \"admin\",\n      \"crm.lead\",\n      \"create\",\n      [{\n        \"name\": \"WhatsApp: {{ $('Preparar Datos').item.json.nombre ?? 'Sin nombre' }}\",\n        \"contact_name\": \"{{ $('Preparar Datos').item.json.nombre ?? '' }}\",\n        \"phone\": \"{{ $('Preparar Datos').item.json.telefono ?? '' }}\",\n        \"type\": \"opportunity\",\n        \"lead_source\": \"whatsapp\",\n        \"stage_id\": 23,\n        \"pending_needs_active\": true,\n        \"client_budget\": {{ $('Preparar Datos').item.json.presupuesto ?? 0 }},\n        \"preferred_city\": \"{{ $('Preparar Datos').item.json.ciudad ?? '' }}\",\n        \"client_needs\": \"Tipo: {{ $('Preparar Datos').item.json.tipo_propiedad ?? 'No especificado' }}\\nSector: {{ $('Preparar Datos').item.json.sector ?? 'No especificado' }}\",\n        \"preferred_bedrooms\": {{ $('Preparar Datos').item.json.habitaciones ?? 0 }},\n        \"preferred_min_area\": {{ $('Preparar Datos').item.json.area_min ?? 0 }},\n        \"preferred_max_area\": {{ $('Preparar Datos').item.json.area_max ?? 0 }},\n        \"target_property_id\": {{ $('Preparar Datos').item.json.property_id > 0 ? $('Preparar Datos').item.json.property_id : false }}\n      }]\n    ]\n  },\n  \"id\": 2\n}\n",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"inmobi_produccion\",\n      {{ $json.uid }},\n      \"admin\",\n      \"crm.lead\",\n      \"create\",\n      [{\n        \"name\": \"WhatsApp: {{ $('Preparar Datos').item.json.nombre ?? 'Sin nombre' }}\",\n        \"contact_name\": \"{{ $('Preparar Datos').item.json.nombre ?? '' }}\",\n        \"phone\": \"{{ $('Preparar Datos').item.json.telefono ?? '' }}\",\n        \"type\": \"opportunity\",\n        \"lead_source\": \"whatsapp\",\n        \"stage_id\": 7,\n        \"pending_needs_active\": true,\n        \"client_budget\": {{ $('Preparar Datos').item.json.presupuesto ?? 0 }},\n        \"preferred_city\": \"{{ $('Preparar Datos').item.json.ciudad ?? '' }}\",\n        \"client_needs\": \"Tipo: {{ $('Preparar Datos').item.json.tipo_propiedad ?? 'No especificado' }}\\nSector: {{ $('Preparar Datos').item.json.sector ?? 'No especificado' }}\",\n        \"preferred_bedrooms\": {{ $('Preparar Datos').item.json.habitaciones ?? 0 }},\n        \"preferred_min_area\": {{ $('Preparar Datos').item.json.area_min ?? 0 }},\n        \"preferred_max_area\": {{ $('Preparar Datos').item.json.area_max ?? 0 }},\n        \"target_property_id\": {{ $('Preparar Datos').item.json.property_id > 0 ? $('Preparar Datos').item.json.property_id : false }}\n      }]\n    ]\n  },\n  \"id\": 2\n}\n",
         "options": {}
       },
       "id": "4415f665-c2e3-4de6-b16b-ad3e6f54bfbb",
@@ -254,7 +254,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "43f183e6-4005-4305-80a4-261cb3b8618a",
+  "versionId": "3520df36-155f-4cc2-95d6-af9ade28dff6",
   "meta": {
     "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
   },

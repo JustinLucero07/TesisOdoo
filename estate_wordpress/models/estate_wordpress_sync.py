@@ -1,6 +1,9 @@
 import base64
 import json
 import logging
+import threading
+
+import odoo
 import requests
 
 from odoo import models, api
@@ -248,22 +251,23 @@ class EstatePropertyWordPress(models.Model):
     # -------------------------------------------------------------------------
     def _build_houzez_meta(self, cfg, featured_id, gallery_ids):
         """Build ALL Houzez meta fields."""
-        # Address
-        full_address = ', '.join([p for p in [
-            self.street, self.city,
+        # Dirección para geocodificación (sin zip, mejor compatibilidad con Nominatim/Google)
+        map_address = ', '.join([p for p in [
+            self.street,
+            self.city,
             self.state_id.name if self.state_id else None,
-            self.zip_code,
-            self.country_id.name if self.country_id else None
+            self.country_id.name if self.country_id else 'Ecuador',
         ] if p])
 
-        # GPS
+        # GPS — usar formato fijo para evitar notación científica
         location = ''
         lat_str = ''
         lng_str = ''
-        if self.latitude and self.longitude:
-            lat_str = str(self.latitude)
-            lng_str = str(self.longitude)
-            location = f"{self.latitude},{self.longitude},15"
+        has_coords = bool(self.latitude or self.longitude)
+        if has_coords:
+            lat_str = f'{self.latitude:.8f}'
+            lng_str = f'{self.longitude:.8f}'
+            location = f'{lat_str},{lng_str},15'
 
         publish_location = getattr(self, 'wp_publish_location', True)
         meta = {
@@ -282,9 +286,9 @@ class EstatePropertyWordPress(models.Model):
             'fave_property_id': self.name or '',
 
             # --- Mapa ---
-            'fave_property_map': '1' if (location and publish_location) else '0',
+            'fave_property_map': '1' if (has_coords and publish_location) else '0',
             'fave_property_location': location if publish_location else '',
-            'fave_property_map_address': full_address if publish_location else '',
+            'fave_property_map_address': map_address if publish_location else '',
             'houzez_geolocation_lat': lat_str if publish_location else '',
             'houzez_geolocation_long': lng_str if publish_location else '',
             'fave_property_map_street_view': 'hide',
@@ -292,6 +296,9 @@ class EstatePropertyWordPress(models.Model):
             # --- Dirección ---
             'fave_property_address': (self.street or '') if publish_location else '',
             'fave_property_zip': (self.zip_code or '') if publish_location else '',
+
+            # --- Sector / Barrio ---
+            'fave_property_neighborhood': (self.sector_keywords or '') if publish_location else '',
 
             # --- Agente ---
             'fave_agent_display_option': 'agent_info',
@@ -431,6 +438,74 @@ class EstatePropertyWordPress(models.Model):
         except Exception as e:
             _logger.warning(f"WP taxonomy set exception: {e}")
             return False
+
+    # -------------------------------------------------------------------------
+    # AUTO-GEOCODE (fallback para propiedades sin coordenadas)
+    # -------------------------------------------------------------------------
+    def _auto_geocode_from_address(self):
+        """Geocodifica la dirección con Nominatim si la propiedad no tiene coordenadas."""
+        if self.latitude and self.longitude:
+            return
+        parts = [p for p in [
+            self.street, self.city,
+            self.state_id.name if self.state_id else None,
+            self.country_id.name if self.country_id else 'Ecuador',
+        ] if p]
+        if len(parts) < 2:
+            return
+        query = ', '.join(parts)
+        try:
+            resp = requests.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={'q': query, 'format': 'json', 'limit': 1, 'countrycodes': 'ec'},
+                headers={'User-Agent': 'OdooEstateSync/1.0'},
+                timeout=10,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data:
+                    self.write({'latitude': float(data[0]['lat']), 'longitude': float(data[0]['lon'])})
+                    _logger.info("Auto-geocoded '%s': %.6f, %.6f", query, float(data[0]['lat']), float(data[0]['lon']))
+        except Exception as e:
+            _logger.warning("Auto-geocode falló para '%s': %s", query, e)
+
+    # -------------------------------------------------------------------------
+    # ASYNC BACKGROUND SYNC
+    # -------------------------------------------------------------------------
+    def _trigger_wp_sync_async(self):
+        """Lanza la sincronización con WordPress en un hilo de fondo (no bloqueante)."""
+        self.ensure_one()
+        dbname = self.env.cr.dbname
+        uid = self.env.uid
+        prop_id = self.id
+
+        def _do_sync():
+            try:
+                with odoo.registry(dbname).cursor() as cr:
+                    env = api.Environment(cr, uid, {'no_wp_sync': True, 'active_test': False})
+                    prop = env['estate.property'].browse(prop_id)
+                    if not prop.exists():
+                        return
+                    # Geocodificar si no hay coordenadas
+                    if not (prop.latitude and prop.longitude):
+                        prop._auto_geocode_from_address()
+                    cfg = prop._get_wp_config()
+                    if cfg['active'] != 'True' or not cfg['url']:
+                        return
+                    featured_id, gallery_ids = prop._wp_upload_all_images(cfg)
+                    wp_id = prop._wp_create_or_update_post(cfg, featured_id)
+                    if wp_id:
+                        meta = prop._build_houzez_meta(cfg, featured_id, gallery_ids)
+                        prop._wp_save_meta(cfg, wp_id, meta)
+                        prop._wp_set_taxonomies(cfg, wp_id)
+                        prop.write({'wp_post_id': wp_id, 'wp_published': True})
+                    cr.commit()
+                    _logger.info("WP sync en fondo completado: propiedad=%s post_id=%s", prop_id, wp_id)
+            except Exception as e:
+                _logger.error("WP sync en fondo falló: propiedad=%s error=%s", prop_id, e, exc_info=True)
+
+        t = threading.Thread(target=_do_sync, daemon=True)
+        t.start()
 
     # -------------------------------------------------------------------------
     # MAIN PUBLISH ACTION

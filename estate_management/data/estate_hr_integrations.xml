@@ -10,21 +10,21 @@
     <!-- Agente → puede ver/registrar su propia asistencia -->
     <record id="estate_group_agent" model="res.groups">
         <field name="implied_ids" eval="[
-            Command.link(ref('hr_attendance.hr_attendance_group_user')),
+            Command.link(ref('hr_attendance.group_hr_attendance_user')),
         ]"/>
     </record>
 
     <!-- Manager → puede gestionar asistencias del equipo -->
     <record id="estate_group_manager" model="res.groups">
         <field name="implied_ids" eval="[
-            Command.link(ref('hr_attendance.hr_attendance_group_officer')),
+            Command.link(ref('hr_attendance.group_hr_attendance_officer')),
         ]"/>
     </record>
 
     <!-- Admin → acceso total a asistencias -->
     <record id="estate_group_admin" model="res.groups">
         <field name="implied_ids" eval="[
-            Command.link(ref('hr_attendance.hr_attendance_group_manager')),
+            Command.link(ref('hr_attendance.group_hr_attendance_manager')),
         ]"/>
     </record>
 </odoo>

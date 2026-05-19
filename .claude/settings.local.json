@@ -258,7 +258,9 @@
       "Bash(psql -U justin -d tesis_odoo19 -c \"DELETE FROM wa_sessions WHERE phone = '593992555864'; SELECT 'Session cleared' as status;\")",
       "Bash(psql -U justin -d tesis_odoo19 -c \"DELETE FROM wa_sessions WHERE phone = '593992555864'; SELECT 'Sesion limpiada' as status;\")",
       "Bash(psql -U justin -d tesis_odoo19 -c ' *)",
-      "Read(//home/jimmy/Documentos/Tesis/**)"
+      "Read(//home/jimmy/Documentos/Tesis/**)",
+      "Bash(git -C /home/justin/Documentos/Tesis diff --name-only)",
+      "Bash(git -C /home/justin/Documentos/Tesis diff estate_management/__manifest__.py)"
     ],
     "additionalDirectories": [
       "/tmp",

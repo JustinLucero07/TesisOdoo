@@ -72,8 +72,8 @@
       ],
       "credentials": {
         "postgres": {
-          "id": "6mYPUyfDHs6x1dvZ",
-          "name": "Postgres account"
+          "id": "hpxXcbKUCIUvlbJn",
+          "name": "Inmobi"
         }
       }
     },
@@ -143,7 +143,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "f4eb2f3f-d08c-4400-847d-b8f921a50e8a",
+  "versionId": "45c8a389-636b-46f9-bbab-a73cc2a1c87f",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"

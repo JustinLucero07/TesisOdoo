@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_property_view_form_report_button" model="ir.ui.view">
+        <field name="name">estate.property.form.report.button</field>
+        <field name="model">estate.property</field>
+        <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
+        <field name="arch" type="xml">
+            <button name="action_create_invoice" position="after">
+                <button name="%(action_report_ficha_tecnica)d" string="Descargar Ficha PDF" type="action" class="btn-secondary" icon="fa-download"/>
+            </button>
+        </field>
+    </record>
+</odoo>

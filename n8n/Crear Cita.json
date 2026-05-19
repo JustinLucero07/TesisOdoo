@@ -113,7 +113,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://127.0.0.1:8070/jsonrpc",
+        "url": "http://45.132.240.234:8069/jsonrpc",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -125,7 +125,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"tesis_odoo19\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"inmobi_produccion\", \"admin\", \"admin\", {}]\n  },\n  \"id\": 1\n}",
         "options": {}
       },
       "id": "2d056bc2-961e-48c1-8bb7-ef3e4da9934c",
@@ -176,7 +176,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://127.0.0.1:8070/jsonrpc",
+        "url": "http://45.132.240.234:8069/jsonrpc",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -188,7 +188,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"tesis_odoo19\",\n      {{ $json.uid }},\n      \"admin\",\n      \"calendar.event\",\n      \"create\",\n      [{\n        \"name\": \"Visita: {{ $json.nombre_propiedad }} - {{ $json.nombre_cliente }}\",\n        \"start\": \"{{ $json.start }}\",\n        \"stop\": \"{{ $json.stop }}\",\n        \"duration\": {{ $json.duration }},\n        \"user_id\": {{ $json.user_id }},\n        \"property_id\": {{ $json.property_id > 0 ? $json.property_id : 'false' }},\n        \"lead_id\": {{ $json.lead_id > 0 ? $json.lead_id : 'false' }},\n        \"appointment_type\": \"visit\",\n        \"visit_state\": \"scheduled\"\n      }]\n    ]\n  },\n  \"id\": 3\n}",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"inmobi_produccion\",\n      {{ $json.uid }},\n      \"admin\",\n      \"calendar.event\",\n      \"create\",\n      [{\n        \"name\": \"Visita: {{ $json.nombre_propiedad }} - {{ $json.nombre_cliente }}\",\n        \"start\": \"{{ $json.start }}\",\n        \"stop\": \"{{ $json.stop }}\",\n        \"duration\": {{ $json.duration }},\n        \"user_id\": {{ $json.user_id }},\n        \"property_id\": {{ $json.property_id > 0 ? $json.property_id : 'false' }},\n        \"lead_id\": {{ $json.lead_id > 0 ? $json.lead_id : 'false' }},\n        \"appointment_type\": \"visit\",\n        \"visit_state\": \"scheduled\"\n      }]\n    ]\n  },\n  \"id\": 3\n}",
         "options": {}
       },
       "id": "cd85a09a-3e85-4788-b5aa-0edcc853eb6f",
@@ -299,7 +299,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "a3e4f169-b668-4ad5-aa1f-19f133422d66",
+  "versionId": "33fafaf7-074f-478f-bedd-fe02d1229a1e",
   "meta": {
     "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
   },

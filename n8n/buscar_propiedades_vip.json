@@ -1,0 +1,80 @@
+{
+  "name": "buscar_propiedades_vip",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            { "name": "ubicacion" },
+            { "name": "presupuesto_max", "type": "number" }
+          ]
+        }
+      },
+      "id": "vip-trigger-001",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [200, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "v1",
+              "name": "ubicacion",
+              "value": "={{ $json.ubicacion || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "v2",
+              "name": "presupuesto_max",
+              "value": "={{ Number($json.presupuesto_max) || 999999999 }}",
+              "type": "number"
+            },
+            {
+              "id": "v3",
+              "name": "ubicacion_norm",
+              "value": "={{ ($json.ubicacion || '').toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "vip-prep-001",
+      "name": "Preparar Parametros",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    p.id,\n    p.name AS referencia,\n    p.title AS titulo,\n    p.price AS precio,\n    p.area AS metros_cuadrados,\n    p.bedrooms AS habitaciones,\n    p.bathrooms AS banos,\n    p.parking_spaces AS parqueaderos,\n    p.street AS direccion_zona,\n    p.city AS ciudad,\n    COALESCE(t.name, 'Propiedad') AS tipo_propiedad,\n    CASE p.offer_type WHEN 'sale' THEN 'Venta' ELSE 'Arriendo' END AS oferta,\n    CASE WHEN p.wp_post_id IS NOT NULL AND p.wp_post_id > 0 THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id ELSE NULL END AS link_propiedad,\n    p.wp_post_id\nFROM estate_property p\nLEFT JOIN estate_property_type t ON p.property_type_id = t.id\nWHERE p.state = 'available' AND p.active = true AND p.price > 0\n  AND p.price <= ({{ $json.presupuesto_max || 999999999 }} * 1.15)\n  -- OBLIGATORIO: \"vip\" o \"credito vip\" en titulo, descripcion o sector_keywords\n  AND (\n    lower(translate(coalesce(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n    OR lower(translate(coalesce(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%credito vip%'\n    OR lower(translate(COALESCE(p.description,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n    OR lower(translate(COALESCE(p.description,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%credito vip%'\n    OR lower(translate(COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n  )\n  -- Sector opcional (si se da, debe matchear al menos una palabra)\n  AND (\n    '{{ $json.ubicacion_norm || \"\" }}' = ''\n    OR EXISTS (\n      SELECT 1 FROM unnest(string_to_array('{{ $json.ubicacion_norm }}', ' ')) AS word\n      WHERE word != '' AND length(word) >= 3\n        AND lower(translate(coalesce(p.title,'') || ' ' || coalesce(p.street,'') || ' ' || coalesce(p.city,'') || ' ' || COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%' || word || '%'\n    )\n  )\nORDER BY p.property_score DESC NULLS LAST, p.price ASC\nLIMIT 8;",
+        "options": {}
+      },
+      "id": "vip-sql-001",
+      "name": "Buscar VIP en PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [640, 200],
+      "credentials": {
+        "postgres": {
+          "id": "hpxXcbKUCIUvlbJn",
+          "name": "Inmobi"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [[{ "node": "Preparar Parametros", "type": "main", "index": 0 }]]
+    },
+    "Preparar Parametros": {
+      "main": [[{ "node": "Buscar VIP en PostgreSQL", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "active": false
+}

@@ -19,6 +19,8 @@
                                    help="Activa esto para descargar imagen principal y galería. Tarda más tiempo."/>
                             <field name="update_existing"
                                    help="Si está activo, las propiedades ya existentes (por Post ID de WP) serán actualizadas."/>
+                            <field name="show_existing"
+                                   help="Por defecto se ocultan las ya importadas. Activa para verlas en la lista."/>
                         </group>
                         <group string="Información">
                             <div class="text-muted">
@@ -28,12 +30,9 @@
                                     y descargará las propiedades via REST API.
                                 </p>
                                 <p>
-                                    En el siguiente paso podrás <b>seleccionar</b>
-                                    cuáles propiedades importar.
-                                </p>
-                                <p class="text-warning">
-                                    Si activas <b>Importar Imágenes</b>, el proceso puede tardar
-                                    varios minutos dependiendo de la cantidad de fotos.
+                                    La importación corre en <b>segundo plano</b> — la
+                                    pantalla responde al instante y puedes darle
+                                    <b>Actualizar estado</b> para ver el progreso.
                                 </p>
                             </div>
                         </group>
@@ -41,14 +40,32 @@
 
                     <!-- ======= PASO 2: SELECCIÓN ======= -->
                     <group invisible="import_state != 'preview'">
-                        <div class="alert alert-info mb-2 py-2 px-3" role="alert"
-                             style="border-radius:8px; font-size:0.88em;">
-                            <i class="fa fa-info-circle" title="Info"/>
-                            Se encontraron <strong><field name="preview_total" readonly="1" class="d-inline"/></strong>
-                            propiedades en WordPress. Selecciona las que deseas importar.
-                            Las que ya existen en Odoo aparecen desmarcadas.
+                        <!-- Sin propiedades nuevas -->
+                        <div class="alert alert-warning mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;"
+                             invisible="preview_total != 0">
+                            <i class="fa fa-check-circle" title="Todo importado"/>
+                            <strong> Todas las propiedades de WordPress ya están en Odoo.</strong>
+                            <span invisible="existing_total == 0">
+                                (<field name="existing_total" readonly="1" class="d-inline"/> ya importadas)
+                            </span>
+                            <br/>
+                            <small>Activa <b>Mostrar ya importadas</b> y vuelve a buscar si quieres actualizarlas.</small>
                         </div>
-                        <div class="mb-2">
+
+                        <!-- Hay propiedades nuevas -->
+                        <div class="alert alert-info mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;"
+                             invisible="preview_total == 0">
+                            <i class="fa fa-info-circle" title="Info"/>
+                            <strong><field name="preview_total" readonly="1" class="d-inline"/></strong>
+                            propiedades nuevas listas para importar.
+                            <span invisible="existing_total == 0">
+                                — <field name="existing_total" readonly="1" class="d-inline"/> ya importadas (ocultas).
+                            </span>
+                        </div>
+
+                        <div class="mb-2" invisible="preview_total == 0">
                             <button name="action_select_all" string="Todas"
                                     type="object" class="btn-sm btn-outline-primary me-1"/>
                             <button name="action_select_none" string="Ninguna"
@@ -57,10 +74,11 @@
                                     type="object" class="btn-sm btn-outline-success"/>
                         </div>
                     </group>
-                    <field name="preview_line_ids" invisible="import_state != 'preview'">
+
+                    <field name="preview_line_ids"
+                           invisible="import_state != 'preview' or preview_total == 0">
                         <list editable="bottom"
-                              decoration-muted="already_exists == True"
-                              decoration-success="selected == True and already_exists == False">
+                              decoration-success="selected == True">
                             <field name="selected"/>
                             <field name="wp_post_id" string="ID" readonly="1"/>
                             <field name="title" readonly="1"/>
@@ -72,7 +90,19 @@
                         </list>
                     </field>
 
-                    <!-- ======= PASO 3: RESULTADOS ======= -->
+                    <!-- ======= PASO 3: IMPORTANDO EN FONDO ======= -->
+                    <group invisible="import_state != 'running'">
+                        <div class="text-center py-4">
+                            <i class="fa fa-spinner fa-spin fa-2x text-primary" title="Importando en segundo plano..."/>
+                            <p class="mt-3 mb-1"><b>Importación en progreso...</b></p>
+                            <p class="text-muted" style="font-size:0.9em;">
+                                Corre en segundo plano. Haz clic en
+                                <b>Actualizar estado</b> para ver si terminó.
+                            </p>
+                        </div>
+                    </group>
+
+                    <!-- ======= PASO 4: RESULTADOS ======= -->
                     <group invisible="import_state != 'done'">
                         <group string="Resultado de la Importación">
                             <field name="imported_count" string="Propiedades nuevas importadas"/>
@@ -90,8 +120,9 @@
                         </group>
                     </group>
 
-                    <!-- Campo oculto de estado -->
+                    <!-- Campos ocultos de estado -->
                     <field name="import_state" invisible="1"/>
+                    <field name="existing_total" invisible="1"/>
 
                     <footer>
                         <!-- Paso 1: Buscar en WP -->
@@ -112,13 +143,25 @@
                                 type="object"
                                 icon="fa-download"
                                 class="btn-primary"
-                                invisible="import_state != 'preview'"/>
+                                invisible="import_state != 'preview' or preview_total == 0"/>
                         <button string="Cancelar"
                                 class="btn-secondary"
                                 special="cancel"
                                 invisible="import_state != 'preview'"/>
 
-                        <!-- Paso 3: Ver resultados -->
+                        <!-- Paso 3: Importando en fondo -->
+                        <button name="action_refresh_import"
+                                string="Actualizar estado"
+                                type="object"
+                                icon="fa-refresh"
+                                class="btn-primary"
+                                invisible="import_state != 'running'"/>
+                        <button string="Cerrar"
+                                class="btn-secondary"
+                                special="cancel"
+                                invisible="import_state != 'running'"/>
+
+                        <!-- Paso 4: Ver resultados -->
                         <button name="action_view_imported_properties"
                                 string="Ver Propiedades Importadas"
                                 type="object"
