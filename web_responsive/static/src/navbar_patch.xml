@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        Replace the desktop apps dropdown with a fullscreen App Drawer.
+        Uses t-portal="'body'" (same pattern as Odoo 19's mobile sidebar)
+        so the overlay renders at body level and escapes navbar stacking context.
+    -->
+    <t t-inherit="web.NavBar.AppsMenu" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o_navbar_apps_menu')]" position="replace">
+
+            <!-- Trigger button (keeps isScopedApp guard so t-else below stays valid) -->
+            <div t-if="!isScopedApp" class="o_navbar_apps_menu">
+                <button data-hotkey="h"
+                        title="Todas las Aplicaciones"
+                        t-att-class="{ 'o-wr-active': state.appDrawerOpen }"
+                        t-on-click="toggleAppDrawer">
+                    <i class="oi oi-apps"/>
+                </button>
+            </div>
+
+            <!-- Fullscreen App Drawer — portaled to body to escape navbar stacking context -->
+            <t t-if="state.appDrawerOpen">
+                <t t-portal="'body'">
+                    <!-- Dark backdrop -->
+                    <div class="o-wr-AppDrawer-backdrop" t-on-click="closeAppDrawer"/>
+
+                    <!-- Drawer panel -->
+                    <div class="o-wr-AppDrawer">
+                        <!-- Header -->
+                        <div class="o-wr-AppDrawer-header">
+                            <div class="o-wr-AppDrawer-logo">
+                                <i class="oi oi-apps"/>
+                                <span>Aplicaciones</span>
+                            </div>
+
+                            <!-- Search -->
+                            <div class="o-wr-AppDrawer-search">
+                                <i class="fa fa-search"/>
+                                <input type="text"
+                                       placeholder="Buscar aplicación..."
+                                       t-att-value="state.appSearch"
+                                       t-on-input="(ev) => { this.state.appSearch = ev.target.value; }"
+                                       autocomplete="off"
+                                       spellcheck="false"/>
+                                <button t-if="state.appSearch"
+                                        class="o-wr-AppDrawer-clearSearch"
+                                        t-on-click="() => { this.state.appSearch = ''; }"
+                                        title="Limpiar">
+                                    <i class="fa fa-times"/>
+                                </button>
+                            </div>
+
+                            <button class="o-wr-AppDrawer-close" t-on-click="closeAppDrawer" title="Cerrar (Esc)">
+                                <i class="fa fa-times"/>
+                            </button>
+                        </div>
+
+                        <!-- App Grid -->
+                        <div class="o-wr-AppDrawer-grid">
+                            <t t-if="appDrawerApps.length">
+                                <a t-foreach="appDrawerApps"
+                                   t-as="app"
+                                   t-key="app.id"
+                                   class="o-wr-AppCard"
+                                   t-att-class="{ 'o-wr-AppCard--active': currentApp and currentApp.id === app.id }"
+                                   t-att-href="getMenuItemHref(app)"
+                                   t-on-click.prevent="() => this.onAppSelected(app)"
+                                   t-att-title="app.name">
+                                    <!-- Icon: image -->
+                                    <div t-if="app.webIconData"
+                                         class="o-wr-AppCard-icon"
+                                         t-attf-style="background-image:url({{ getAppIconSrc(app) }});background-size:cover;background-position:center;"/>
+                                    <!-- Icon: letter fallback -->
+                                    <div t-else="" class="o-wr-AppCard-icon o-wr-AppCard-icon--fallback">
+                                        <span t-esc="(app.name or '?')[0].toUpperCase()"/>
+                                    </div>
+                                    <span class="o-wr-AppCard-name" t-esc="app.name"/>
+                                </a>
+                            </t>
+                            <div t-else="" class="o-wr-AppDrawer-noResults">
+                                <i class="fa fa-search-minus"/>
+                                <p>Sin resultados para "<strong t-esc="state.appSearch"/>"</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+
+        </xpath>
+    </t>
+
+</templates>

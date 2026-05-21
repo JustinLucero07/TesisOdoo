@@ -10,13 +10,15 @@
               name="Inmuebles de mis aliados"
               parent="estate_management.estate_menu_property_root"
               action="action_crm_allied_properties"
-              sequence="14"/>
+              sequence="14"
+              groups="estate_management.estate_group_agent"/>
 
     <menuitem id="estate_menu_property_match"
               name="Cruce inmuebles - clientes"
               parent="estate_management.estate_menu_property_root"
               action="action_crm_match_properties_window"
-              sequence="16"/>
+              sequence="16"
+              groups="estate_management.estate_group_agent"/>
 
     <!-- 2. Clientes (Integrado en CRM nativo) -->
     <menuitem id="estate_menu_crm_directorio_root"
@@ -64,29 +66,34 @@
     <menuitem id="estate_menu_reportes_crm_root"
               name="CRM y Leads"
               parent="estate_management.estate_menu_intel_root"
-              sequence="50"/>
+              sequence="50"
+              groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_crm_reports_general"
                   name="Pipeline de Clientes"
                   parent="estate_menu_reportes_crm_root"
                   action="action_crm_reports_general"
-                  sequence="10"/>
+                  sequence="10"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_crm_reports_deals"
                   name="Negocios Realizados"
                   parent="estate_menu_reportes_crm_root"
                   action="action_crm_reports_deals"
-                  sequence="20"/>
+                  sequence="20"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_crm_reports_sources"
                   name="Fuentes de Captación"
                   parent="estate_menu_reportes_crm_root"
                   action="action_crm_reports_sources"
-                  sequence="30"/>
+                  sequence="30"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_crm_reports_visits"
                   name="Visitas por Inmueble"
                   parent="estate_menu_reportes_crm_root"
                   action="action_report_property_visits"
-                  sequence="40"/>
+                  sequence="40"
+                  groups="estate_management.estate_group_manager"/>
 </odoo>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!--
+        Inject PropertySummary at the very top of the chatter content area
+        for estate.property records only.
+    -->
+    <t t-inherit="mail.Chatter" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('o-mail-Chatter-top')]" position="after">
+            <PropertySummary
+                t-if="props.threadModel === 'estate.property' and props.threadId"
+                recordId="props.threadId"/>
+        </xpath>
+    </t>
+
+</templates>

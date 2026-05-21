@@ -5,23 +5,24 @@
         <field name="model">estate.property</field>
         <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
         <field name="arch" type="xml">
-            <!-- Move AI description button INTO the Description tab -->
+
+            <!-- AI description button in the Description tab -->
             <xpath expr="//page[@name='description']/field[@name='description']" position="before">
                 <div class="mb-3">
                     <button name="action_generate_ai_description" type="object"
                             string="  Generar Descripción Comercial con IA" class="btn-success btn-sm"
-                            icon="fa-magic" title="Genera una descripción comercial profesional con IA y la guarda aquí"/>
+                            icon="fa-magic" title="Genera una descripción comercial profesional con IA"/>
                 </div>
             </xpath>
 
-            <!-- AI Vision analysis button stays in Geo/IA tab -->
+            <!-- AI Vision analysis button in Geo/IA tab -->
             <xpath expr="//field[@name='ai_vision_description']" position="before">
                 <button name="action_analyze_image_ai" type="object"
                         string="Analizar Imagen con IA" class="btn-primary"
                         icon="fa-eye" title="Usa Gemini Vision para analizar la imagen principal"/>
             </xpath>
 
-            <!-- AI analysis attributes in Geo/IA tab -->
+            <!-- AI attributes in Geo/IA tab -->
             <xpath expr="//group[@name='geo_ai']" position="inside">
                 <group string="Atributos Detectados (IA)">
                     <field name="ai_condition" widget="badge"/>
@@ -34,6 +35,95 @@
                            placeholder="La descripción comercial generada aparecerá aquí como respaldo..."/>
                 </group>
             </xpath>
+
+            <!-- NEW: Asistente IA tab — summary + chat shortcut -->
+            <xpath expr="//page[@name='wordpress']" position="after">
+                <page string="Asistente IA" name="ai_assistant" icon="fa-robot">
+                    <!-- Summary card -->
+                    <div class="row">
+                        <div class="col-12">
+                            <!-- Header bar -->
+                            <div class="d-flex align-items-center justify-content-between mb-3 pb-2"
+                                 style="border-bottom: 2px solid #e9ecef;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa fa-robot text-primary" style="font-size:1.4rem;" title="Asistente IA"/>
+                                    <div>
+                                        <h5 class="mb-0 fw-bold">Resumen Ejecutivo IA</h5>
+                                        <small class="text-muted">
+                                            Actualizado:
+                                            <field name="ai_summary_date" readonly="1" widget="datetime" class="d-inline"/>
+                                        </small>
+                                    </div>
+                                </div>
+                                <button name="action_generate_property_summary"
+                                        type="object"
+                                        string="Generar / Actualizar Resumen"
+                                        class="btn-primary btn-sm"
+                                        icon="fa-refresh"/>
+                            </div>
+
+                            <!-- Summary content (or placeholder) -->
+                            <div invisible="ai_property_summary">
+                                <div class="alert alert-light text-center py-5" role="status" style="border: 2px dashed #dee2e6; border-radius: 12px;">
+                                    <i class="fa fa-robot fa-3x text-muted mb-3 d-block" title="Sin resumen"/>
+                                    <p class="text-muted mb-3">
+                                        No hay resumen generado para esta propiedad.<br/>
+                                        Haz clic en <strong>"Generar / Actualizar Resumen"</strong> para que la IA analice
+                                        los datos y te dé un análisis ejecutivo.
+                                    </p>
+                                    <button name="action_generate_property_summary"
+                                            type="object"
+                                            string="  Generar Resumen Ahora"
+                                            class="btn-primary"
+                                            icon="fa-magic"/>
+                                </div>
+                            </div>
+
+                            <div invisible="not ai_property_summary"
+                                 style="background: linear-gradient(135deg, #f0f7ff 0%, #fafbfc 100%);
+                                        border: 1px solid #c8dff5;
+                                        border-radius: 12px;
+                                        padding: 20px 24px;">
+                                <field name="ai_property_summary" widget="html" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat shortcut section -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="p-3 rounded" style="background:#f8f9fa; border: 1px solid #e9ecef;">
+                                <div class="d-flex align-items-center gap-3">
+                                    <i class="fa fa-comments fa-2x text-primary" title="Chat IA"/>
+                                    <div class="flex-grow-1">
+                                        <strong>Chatear sobre esta propiedad</strong>
+                                        <p class="text-muted small mb-0">
+                                            El asistente flotante (esquina inferior derecha) puede responder
+                                            preguntas específicas sobre esta propiedad: valoración, competencia,
+                                            estrategia de precio, leads interesados, historial de visitas, etc.
+                                        </p>
+                                    </div>
+                                    <button type="object" name="action_open_ai_chat_for_property"
+                                            string="Abrir Chat IA"
+                                            class="btn-outline-primary btn-sm"
+                                            icon="fa-external-link"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marketing description backup -->
+                    <div class="row mt-3" invisible="not ai_marketing_description">
+                        <div class="col-12 p-3 bg-white rounded border">
+                            <p class="text-muted small fw-bold mb-2">
+                                <i class="fa fa-file-text-o" title="Descripción comercial"/> Descripción Comercial (respaldo)
+                            </p>
+                            <field name="ai_marketing_description" widget="text" readonly="1" nolabel="1"/>
+                        </div>
+                    </div>
+                </page>
+            </xpath>
+
         </field>
     </record>
 </odoo>

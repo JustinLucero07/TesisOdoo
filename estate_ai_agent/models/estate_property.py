@@ -18,6 +18,11 @@ class EstateProperty(models.Model):
     ai_marketing_description = fields.Text(
         string='Descripción Comercial IA',
         help='Generada por IA: 3 versiones (formal, emocional, directa) + titulares para redes.')
+    ai_property_summary = fields.Html(
+        string='Resumen IA',
+        help='Resumen ejecutivo generado por IA con los puntos clave de la propiedad.')
+    ai_summary_date = fields.Datetime(
+        string='Fecha del Resumen', readonly=True)
     ai_condition = fields.Selection([
         ('excellent', 'Excelente'),
         ('good', 'Buena'),
@@ -268,3 +273,189 @@ Responde SOLO con el HTML de la descripción, sin bloques de código ni explicac
             _logger.error("Error en generador de descripción IA: %s", str(e))
             raise UserError(_("Error al generar descripción: %s") % str(e))
 
+    def action_generate_property_summary(self):
+        """Genera análisis ejecutivo IA completo con TODOS los datos de la propiedad."""
+        self.ensure_one()
+        import re as _re
+        if not GOOGLE_GENAI_AVAILABLE:
+            raise UserError(_("La librería 'google-genai' no está instalada."))
+
+        ICP = self.env['ir.config_parameter'].sudo()
+        api_key = ICP.get_param('estate_ai.api_key', '')
+        if not api_key:
+            raise UserError(_("Configure la API Key de IA en Configuración > Agente IA."))
+
+        prop = self
+
+        # ── Datos básicos ──────────────────────────────────────────────────
+        tipo = prop.property_type_id.name if prop.property_type_id else 'Inmueble'
+        operacion = 'Venta' if prop.offer_type == 'sale' else 'Arriendo'
+        estado_label = dict(prop._fields['state'].selection).get(prop.state, prop.state)
+        precio = f"${prop.price:,.2f}" if prop.price else 'No definido'
+        precio_m2 = f"${prop.price / prop.area:,.2f}/m²" if prop.price and prop.area else ''
+
+        avm_info = 'No calculado'
+        if prop.avm_estimated_price:
+            diff = ((prop.price - prop.avm_estimated_price) / prop.avm_estimated_price * 100) if prop.price else 0
+            avm_label = {'fair': 'En rango de mercado', 'high': 'Por encima del mercado', 'low': 'Por debajo del mercado'}.get(prop.avm_status, '')
+            avm_info = f"${prop.avm_estimated_price:,.2f} → {avm_label} ({diff:+.1f}% vs precio actual)"
+
+        # ── Historial de precios ───────────────────────────────────────────
+        motivo_map = dict(self.env['estate.property.price.history']._fields['change_reason'].selection) \
+            if 'estate.property.price.history' in self.env else {}
+        price_lines = []
+        for ph in prop.price_history_ids[:8]:
+            motivo = motivo_map.get(ph.change_reason, ph.change_reason or '')
+            price_lines.append(
+                f"  • {ph.date.strftime('%d/%m/%Y')}: ${ph.old_price:,.0f} → ${ph.new_price:,.0f} "
+                f"({ph.change_pct:+.1f}%) [{motivo}{' — ' + ph.notes if ph.notes else ''}]"
+            )
+
+        # ── Leads interesados ──────────────────────────────────────────────
+        leads = self.env['crm.lead'].search(
+            [('target_property_id', '=', prop.id)],
+            order='lead_score asc, create_date desc', limit=20
+        ) if 'target_property_id' in self.env['crm.lead']._fields else []
+
+        temp_map = {'cold': 'Frío', 'warm': 'Tibio', 'hot': 'Caliente', 'boiling': 'Hirviendo'}
+        lead_lines = []
+        for l in leads:
+            nombre = (l.partner_id.name if l.partner_id else None) or l.partner_name or l.name or 'Sin nombre'
+            budget = f"${l.client_budget:,.0f}" if l.client_budget else 'N/A'
+            temp = temp_map.get(l.lead_temperature, l.lead_temperature or '—')
+            score = l.lead_score or '—'
+            stage = l.stage_id.name if l.stage_id else 'Sin etapa'
+            lead_lines.append(f"  • {nombre} | Presupuesto: {budget} | Temperatura: {temp} | Score: {score} | Etapa: {stage}")
+
+        # ── Visitas / Citas ────────────────────────────────────────────────
+        visits = self.env['calendar.event'].search(
+            [('property_id', '=', prop.id)], order='start desc', limit=10
+        ) if 'property_id' in self.env['calendar.event']._fields else []
+
+        rating_map = {'1': '⭐ Muy bajo', '2': '⭐⭐ Bajo', '3': '⭐⭐⭐ Normal', '4': '⭐⭐⭐⭐ Bueno', '5': '⭐⭐⭐⭐⭐ Excelente'}
+        visit_lines = []
+        for v in visits:
+            attendees = ', '.join(a.partner_id.name for a in v.attendee_ids if a.partner_id) or 'Sin asistentes'
+            rating = rating_map.get(str(getattr(v, 'visit_rating', '') or ''), 'Sin calificar')
+            visit_lines.append(f"  • {v.start.strftime('%d/%m/%Y %H:%M')}: {attendees} — Rating: {rating}")
+
+        # ── Mensajes recientes del chatter ─────────────────────────────────
+        messages = self.env['mail.message'].search([
+            ('res_id', '=', prop.id), ('model', '=', 'estate.property'),
+            ('message_type', 'in', ['comment', 'email']),
+        ], order='date desc', limit=6)
+        msg_lines = []
+        for m in messages:
+            author = m.author_id.name if m.author_id else 'Sistema'
+            body = _re.sub('<[^<]+?>', '', m.body or '').strip()[:180]
+            if body:
+                msg_lines.append(f"  • [{m.date.strftime('%d/%m/%Y')}] {author}: {body}")
+
+        # ── Contexto completo para IA ──────────────────────────────────────
+        context_text = f"""
+PROPIEDAD: {prop.name or 'Sin nombre'} | Código: {getattr(prop, 'ref', '') or prop.id}
+Tipo: {tipo} | Operación: {operacion} | Estado: {estado_label}
+Ubicación: {prop.street or ''}, {prop.city or ''}, {prop.state_id.name if prop.state_id else ''}
+Área: {prop.area or 0} m² | Hab: {prop.bedrooms or 0} | Baños: {prop.bathrooms or 0} | Parqueaderos: {prop.parking_spaces or 0}
+Piso: {getattr(prop, 'floor', 0) or 0} | Año construcción: {getattr(prop, 'year_built', '') or 'N/A'}
+Precio actual: {precio} {f'({precio_m2})' if precio_m2 else ''}
+Valoración AVM: {avm_info}
+Días en mercado: {prop.days_on_market or 0}
+Propietario: {prop.owner_id.name if prop.owner_id else 'Sin asignar'}
+Asesor: {prop.user_id.name if prop.user_id else 'Sin asignar'}
+Publicado en web: {'Sí' if prop.wp_published else 'No'}
+
+HISTORIAL DE PRECIOS ({len(price_lines)} cambio(s)):
+{chr(10).join(price_lines) if price_lines else '  Sin cambios de precio registrados.'}
+
+LEADS INTERESADOS ({len(lead_lines)} lead(s)):
+{chr(10).join(lead_lines) if lead_lines else '  Sin leads asignados a esta propiedad.'}
+
+VISITAS REALIZADAS ({len(visit_lines)} cita(s)):
+{chr(10).join(visit_lines) if visit_lines else '  Sin visitas registradas.'}
+
+ACTIVIDAD RECIENTE:
+{chr(10).join(msg_lines) if msg_lines else '  Sin mensajes recientes.'}
+"""
+
+        prompt = f"""Genera un análisis inmobiliario en HTML para el asesor. SIN introducción, SIN "Estimado Asesor", ve DIRECTO a las secciones.
+
+USA EXACTAMENTE esta estructura (6 secciones, emojis como encabezados):
+
+<p><strong>🏠 Ficha</strong></p>
+<ul><li>...</li></ul>
+
+<p><strong>💰 Precio</strong></p>
+<ul><li>...</li></ul>
+
+<p><strong>👥 Interesados</strong></p>
+<ul><li>NOMBRE REAL de cada lead, su presupuesto y temperatura</li></ul>
+
+<p><strong>📅 Visitas</strong></p>
+<ul><li>NOMBRE REAL de cada visitante, fecha y calificación</li></ul>
+
+<p><strong>⚠️ Alertas</strong></p>
+<ul><li>...</li></ul>
+
+<p><strong>🎯 Acción inmediata</strong></p>
+<ul><li>1-2 acciones concretas</li></ul>
+
+REGLAS CRÍTICAS:
+- SIEMPRE menciona los NOMBRES REALES de leads y visitantes (están en los datos)
+- Si no hay visitas/leads, escribe "Sin registros — registra citas para dar seguimiento"
+- Máximo 350 palabras, sin CSS inline, sin intro genérica
+- Interpreta los datos: ¿el precio está bien? ¿hay interés real? ¿qué falta?
+
+DATOS:
+{context_text}
+
+Responde SOLO el HTML listo para insertar. Sin markdown, sin explicaciones."""
+
+        try:
+            client = genai.Client(
+                api_key=api_key,
+                http_options=genai.types.HttpOptions(api_version='v1beta'),
+            )
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=genai.types.GenerateContentConfig(temperature=0.35, max_output_tokens=2500),
+            )
+            html = response.text.strip()
+            html = _re.sub(r'^```\w*\n?', '', html)
+            html = _re.sub(r'\n?```$', '', html).strip()
+
+            prop.write({
+                'ai_property_summary': html,
+                'ai_summary_date': fields.Datetime.now(),
+            })
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': '🤖 Análisis actualizado',
+                    'message': 'El análisis ejecutivo IA se generó con todos los datos disponibles.',
+                    'type': 'success',
+                    'sticky': False,
+                }
+            }
+        except Exception as e:
+            _logger.error("Error generando análisis IA: %s", str(e))
+            raise UserError(_("Error al generar análisis: %s") % str(e))
+
+    def action_open_ai_chat_for_property(self):
+        """Opens the AI chat action with a pre-loaded question about this property."""
+        self.ensure_one()
+        prop_name = self.name or f"ID {self.id}"
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'estate_ai_chat',
+            'name': f'Asistente IA — {prop_name}',
+            'context': {
+                'default_message': (
+                    f"Dame un análisis completo de la propiedad \"{prop_name}\" "
+                    f"(ID: {self.id}): precio, valoración AVM, días en mercado, "
+                    f"leads interesados y recomendación de estrategia."
+                )
+            },
+        }

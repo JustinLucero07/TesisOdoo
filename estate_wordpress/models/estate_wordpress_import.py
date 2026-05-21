@@ -5,10 +5,10 @@ import re
 import threading
 import time
 
-import odoo
 import requests
 
 from odoo import api as odoo_api
+from odoo.modules.registry import Registry
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
@@ -963,7 +963,7 @@ class EstateWordpressImportWizard(models.TransientModel):
             imported = updated = skipped = 0
             errors = []
             try:
-                with odoo.registry(dbname).cursor() as cr:
+                with Registry(dbname).cursor() as cr:
                     env = odoo_api.Environment(cr, uid, {'no_wp_sync': True, 'active_test': False})
                     wizard = env['estate.wordpress.import.wizard'].browse(wizard_id)
                     cfg = wizard._get_wp_cfg()
@@ -1015,7 +1015,7 @@ class EstateWordpressImportWizard(models.TransientModel):
             except Exception as e:
                 _logger.error("WP import fondo falló: %s", e, exc_info=True)
                 try:
-                    with odoo.registry(dbname).cursor() as cr2:
+                    with Registry(dbname).cursor() as cr2:
                         env2 = odoo_api.Environment(cr2, uid, {})
                         w = env2['estate.wordpress.import.wizard'].browse(wizard_id)
                         if w.exists():

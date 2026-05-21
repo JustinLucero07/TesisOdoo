@@ -5,7 +5,7 @@
         <field name="name">estate.property.tree</field>
         <field name="model">estate.property</field>
         <field name="arch" type="xml">
-            <list string="Propiedades" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'">
+            <list string="Propiedades" decoration-muted="state == 'draft'" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'">
                 <field name="image_main" widget="image" options="{'size': [150, 150]}" />
                 <field name="name"/>
                 <field name="title"/>
@@ -26,7 +26,7 @@
                 <field name="contract_end_date" optional="hide"/>
                 <field name="wp_published" string="WP" optional="show" widget="boolean"
                        decoration-success="wp_published == True"/>
-                <field name="state" widget="badge" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'"/>
+                <field name="state" widget="badge" decoration-muted="state == 'draft'" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'"/>
             </list>
         </field>
     </record>
@@ -38,22 +38,45 @@
         <field name="arch" type="xml">
             <form string="Propiedad">
                 <header>
-                    <button name="action_open_map" string=" Ver en Mapa" type="object" class="btn-info" invisible="not map_url"/>
-                    <button name="action_calculate_avm" string=" Calcular Precio AVM" type="object" class="btn-warning" invisible="state == 'sold'"/>
-                    <button name="action_create_invoice" string="Generar Factura" type="object" class="btn-primary" icon="fa-file-text-o" invisible="state == 'sold'"/>
+                    <!-- Borrador: acción principal = Publicar -->
+                    <button name="action_publish" string="Publicar en Mercado" type="object"
+                            class="btn-primary oe_highlight" icon="fa-rocket"
+                            invisible="state != 'draft'"/>
+                    <button name="action_set_draft" string="Volver a Borrador" type="object"
+                            class="btn-secondary"
+                            invisible="state not in ('available', 'reserved')"
+                            confirm="¿Retirar del mercado y guardar como borrador?"/>
 
-                    <button name="action_set_available" string="Disponible" type="object" class="oe_highlight" invisible="state == 'available'"/>
-                    <button name="action_set_reserved" string="Reservar" type="object" invisible="state == 'sold'"/>
+                    <!-- Disponible → Reservado → Vendido -->
+                    <button name="action_set_available" string="Disponible" type="object"
+                            class="oe_highlight" invisible="state != 'reserved'"/>
+                    <button name="action_set_reserved" string="Reservar" type="object"
+                            invisible="state != 'available'"/>
                     <button name="action_open_sale_wizard" string="Vender Propiedad" type="object"
                             class="btn-success oe_highlight" icon="fa-handshake-o"
-                            invisible="state == 'sold'"/>
+                            invisible="state not in ('available', 'reserved')"/>
                     <button name="action_relist" string="Re-listar en Mercado" type="object"
                             class="btn-warning"
                             invisible="state != 'sold'"
                             confirm="¿Confirmas re-listar esta propiedad? Se borrarán los datos de comprador y fecha de venta anteriores."/>
-                    <field name="state" widget="statusbar" statusbar_visible="available,reserved,sold"/>
+
+                    <!-- Acciones secundarias (solo cuando no es borrador) -->
+                    <button name="action_open_map" string="Ver en Mapa" type="object"
+                            class="btn-info" invisible="not map_url"/>
+                    <button name="action_calculate_avm" string="Calcular AVM" type="object"
+                            class="btn-warning" invisible="state in ('draft', 'sold')"/>
+                    <button name="action_create_invoice" string="Generar Factura" type="object"
+                            class="btn-primary" icon="fa-file-text-o"
+                            invisible="state in ('draft', 'sold')"/>
+
+                    <field name="state" widget="statusbar" statusbar_visible="draft,available,reserved,sold"/>
                 </header>
                 <sheet>
+                    <!-- Sellos de estado visibles en la esquina superior -->
+                    <widget name="web_ribbon" title="VENDIDO" bg_color="text-bg-danger"
+                            invisible="state != 'sold'"/>
+                    <widget name="web_ribbon" title="BORRADOR" bg_color="text-bg-secondary"
+                            invisible="state != 'draft'"/>
                     <div class="oe_title">
                         <h1>
                             <field name="title" placeholder="Título de la propiedad"/>

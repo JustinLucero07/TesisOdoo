@@ -5,76 +5,142 @@
       "parameters": {
         "workflowInputs": {
           "values": [
-            { "name": "ubicacion" },
-            { "name": "presupuesto_max", "type": "number" }
+            {"name": "ubicacion"},
+            {"name": "presupuesto_max", "type": "number"}
           ]
         }
       },
-      "id": "vip-trigger-001",
+      "id": "e377f4b1-a2cb-4f9b-a77d-888eac656ceb",
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [200, 200]
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {"id": "v1", "name": "ubicacion", "value": "={{ $json.ubicacion || '' }}", "type": "string"},
+            {"id": "v2", "name": "presupuesto_max", "value": "={{ Number($json.presupuesto_max) || 999999999 }}", "type": "number"},
+            {"id": "v3", "name": "ubicacion_norm", "value": "={{ ($json.ubicacion || '').toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim() }}", "type": "string"}
+          ]
+        },
+        "options": {}
+      },
+      "id": "dcefc9ad-c1ae-460a-9bf4-51fcb0a3c608",
+      "name": "Preparar Parametros",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [224, 0]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n    p.id,\n    p.name AS referencia,\n    p.title AS titulo,\n    p.price AS precio,\n    p.area AS metros_cuadrados,\n    p.bedrooms AS habitaciones,\n    p.bathrooms AS banos,\n    p.parking_spaces AS parqueaderos,\n    p.street AS direccion_zona,\n    p.city AS ciudad,\n    COALESCE(t.name, 'Propiedad') AS tipo_propiedad,\n    CASE p.offer_type WHEN 'sale' THEN 'Venta' ELSE 'Arriendo' END AS oferta,\n    CASE WHEN p.wp_post_id IS NOT NULL AND p.wp_post_id > 0 THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id ELSE NULL END AS link_propiedad,\n    p.wp_post_id\nFROM estate_property p\nLEFT JOIN estate_property_type t ON p.property_type_id = t.id\nWHERE p.state = 'available' AND p.active = true AND p.price > 0\n  AND p.price <= ({{ $json.presupuesto_max || 999999999 }} * 1.15)\n  AND (\n    lower(translate(coalesce(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n    OR lower(translate(coalesce(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%credito vip%'\n    OR lower(translate(COALESCE(p.description,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n    OR lower(translate(COALESCE(p.description,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%credito vip%'\n    OR lower(translate(COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n  )\n  AND (\n    '{{ $json.ubicacion_norm || \"\" }}' = ''\n    OR EXISTS (\n      SELECT 1 FROM unnest(string_to_array('{{ $json.ubicacion_norm }}', ' ')) AS word\n      WHERE word != '' AND length(word) >= 3\n        AND lower(translate(coalesce(p.title,'') || ' ' || coalesce(p.street,'') || ' ' || coalesce(p.city,'') || ' ' || COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n            ILIKE '%' || lower(translate(word,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%'\n    )\n  )\nORDER BY p.property_score DESC NULLS LAST, p.price ASC\nLIMIT 8;",
+        "options": {}
+      },
+      "id": "7d9bd481-2147-4216-8fbd-9fe43b24678b",
+      "name": "Buscar VIP en PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [448, 0],
+      "credentials": {
+        "postgres": {"id": "hpxXcbKUCIUvlbJn", "name": "Inmobi"}
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "cond-vip",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-results-vip",
+      "name": "¿Hay Resultados?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [672, 0]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "v1",
-              "name": "ubicacion",
-              "value": "={{ $json.ubicacion || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "v2",
-              "name": "presupuesto_max",
-              "value": "={{ Number($json.presupuesto_max) || 999999999 }}",
-              "type": "number"
-            },
-            {
-              "id": "v3",
-              "name": "ubicacion_norm",
-              "value": "={{ ($json.ubicacion || '').toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim() }}",
+              "id": "r-vip",
+              "name": "response",
+              "value": "={{ JSON.stringify($input.all().map(i => i.json), null, 2) }}",
               "type": "string"
             }
           ]
         },
         "options": {}
       },
-      "id": "vip-prep-001",
-      "name": "Preparar Parametros",
+      "id": "formatear-vip",
+      "name": "Formatear Respuesta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [420, 200]
+      "position": [896, -140]
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT\n    p.id,\n    p.name AS referencia,\n    p.title AS titulo,\n    p.price AS precio,\n    p.area AS metros_cuadrados,\n    p.bedrooms AS habitaciones,\n    p.bathrooms AS banos,\n    p.parking_spaces AS parqueaderos,\n    p.street AS direccion_zona,\n    p.city AS ciudad,\n    COALESCE(t.name, 'Propiedad') AS tipo_propiedad,\n    CASE p.offer_type WHEN 'sale' THEN 'Venta' ELSE 'Arriendo' END AS oferta,\n    CASE WHEN p.wp_post_id IS NOT NULL AND p.wp_post_id > 0 THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id ELSE NULL END AS link_propiedad,\n    p.wp_post_id\nFROM estate_property p\nLEFT JOIN estate_property_type t ON p.property_type_id = t.id\nWHERE p.state = 'available' AND p.active = true AND p.price > 0\n  AND p.price <= ({{ $json.presupuesto_max || 999999999 }} * 1.15)\n  -- OBLIGATORIO: \"vip\" o \"credito vip\" en titulo, descripcion o sector_keywords\n  AND (\n    lower(translate(coalesce(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n    OR lower(translate(coalesce(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%credito vip%'\n    OR lower(translate(COALESCE(p.description,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n    OR lower(translate(COALESCE(p.description,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%credito vip%'\n    OR lower(translate(COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%vip%'\n  )\n  -- Sector opcional (si se da, debe matchear al menos una palabra)\n  AND (\n    '{{ $json.ubicacion_norm || \"\" }}' = ''\n    OR EXISTS (\n      SELECT 1 FROM unnest(string_to_array('{{ $json.ubicacion_norm }}', ' ')) AS word\n      WHERE word != '' AND length(word) >= 3\n        AND lower(translate(coalesce(p.title,'') || ' ' || coalesce(p.street,'') || ' ' || coalesce(p.city,'') || ' ' || COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) ILIKE '%' || word || '%'\n    )\n  )\nORDER BY p.property_score DESC NULLS LAST, p.price ASC\nLIMIT 8;",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sr-vip",
+              "name": "response",
+              "value": "=[]",
+              "type": "string"
+            },
+            {
+              "id": "sr-vip2",
+              "name": "sin_resultados",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
         "options": {}
       },
-      "id": "vip-sql-001",
-      "name": "Buscar VIP en PostgreSQL",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [640, 200],
-      "credentials": {
-        "postgres": {
-          "id": "hpxXcbKUCIUvlbJn",
-          "name": "Inmobi"
-        }
-      }
+      "id": "sin-resultados-vip",
+      "name": "Sin Resultados",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [896, 160]
     }
   ],
+  "pinData": {},
   "connections": {
     "Execute Workflow Trigger": {
-      "main": [[{ "node": "Preparar Parametros", "type": "main", "index": 0 }]]
+      "main": [[{"node": "Preparar Parametros", "type": "main", "index": 0}]]
     },
     "Preparar Parametros": {
-      "main": [[{ "node": "Buscar VIP en PostgreSQL", "type": "main", "index": 0 }]]
+      "main": [[{"node": "Buscar VIP en PostgreSQL", "type": "main", "index": 0}]]
+    },
+    "Buscar VIP en PostgreSQL": {
+      "main": [[{"node": "¿Hay Resultados?", "type": "main", "index": 0}]]
+    },
+    "¿Hay Resultados?": {
+      "main": [
+        [{"node": "Formatear Respuesta", "type": "main", "index": 0}],
+        [{"node": "Sin Resultados", "type": "main", "index": 0}]
+      ]
     }
   },
-  "settings": {},
-  "active": false
+  "active": true,
+  "settings": {"executionOrder": "v1", "binaryMode": "separate", "availableInMCP": false},
+  "versionId": "63938e2b-f805-46bf-9c18-8d210e4253a0",
+  "meta": {
+    "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
+  },
+  "id": "4TJYvwvB10Bn1aRk",
+  "tags": []
 }

@@ -105,12 +105,18 @@
             <field name="model">estate.property</field>
             <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
             <field name="arch" type="xml">
-                <!-- Botones en el header -->
-                <xpath expr="//header/button[@name='action_set_available']" position="before">
-                    <button name="action_publish_wordpress" string="Publicar en WP" type="object" class="btn-primary" icon="fa-upload" invisible="wp_published == True"/>
-                    <button name="action_unpublish_wp" string="Despublicar de WP" type="object" class="btn-danger" icon="fa-times-circle" invisible="wp_published != True"
-                            confirm="¿Estás seguro? Esto eliminará la propiedad de WordPress. En Odoo se conserva."/>
-                    <button name="action_relink_wordpress" string="Re-enlazar WP" type="object" class="btn-warning" icon="fa-link" invisible="wp_unlinked != True or wp_post_id_backup == 0"/>
+                <!-- Botones WordPress en el header (antes del campo de estado) -->
+                <xpath expr="//header/field[@name='state']" position="before">
+                    <button name="action_publish_wordpress" string="Publicar en Web" type="object"
+                            class="btn-success" icon="fa-wordpress"
+                            invisible="wp_published or state == 'draft'"/>
+                    <button name="action_unpublish_wp" string="Quitar de Web" type="object"
+                            class="btn-secondary" icon="fa-wordpress"
+                            invisible="not wp_published"
+                            confirm="¿Quitar esta propiedad del sitio web WordPress? En Odoo se conserva."/>
+                    <button name="action_relink_wordpress" string="Re-enlazar WP" type="object"
+                            class="btn-warning" icon="fa-link"
+                            invisible="not wp_unlinked or wp_post_id_backup == 0"/>
                 </xpath>
 
                 <!-- Pestaña WordPress -->

@@ -13,48 +13,15 @@
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "id": "p1",
-              "name": "ubicacion",
-              "value": "={{ $json.ubicacion || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "p2",
-              "name": "presupuesto_max",
-              "value": "={{ Number($json.presupuesto_max) || 999999999 }}",
-              "type": "number"
-            },
-            {
-              "id": "p3",
-              "name": "habitaciones_min",
-              "value": "={{ Number($json.habitaciones_min) || 0 }}",
-              "type": "number"
-            },
-            {
-              "id": "p4",
-              "name": "banos_min",
-              "value": "={{ Number($json.banos_min) || 0 }}",
-              "type": "number"
-            },
-            {
-              "id": "p5",
-              "name": "parqueaderos_min",
-              "value": "={{ Number($json.parqueaderos_min) || 0 }}",
-              "type": "number"
-            },
-            {
-              "id": "p6",
-              "name": "tipo_propiedad",
-              "value": "={{ $json.tipo_propiedad || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "p7",
-              "name": "tipo_oferta",
-              "value": "={{ $json.tipo_oferta || 'sale' }}",
-              "type": "string"
-            }
+            {"id": "p1", "name": "ubicacion", "value": "={{ $json.ubicacion || '' }}", "type": "string"},
+            {"id": "p2", "name": "presupuesto_max", "value": "={{ Number($json.presupuesto_max) || 999999999 }}", "type": "number"},
+            {"id": "p3", "name": "habitaciones_min", "value": "={{ Number($json.habitaciones_min) || 0 }}", "type": "number"},
+            {"id": "p4", "name": "banos_min", "value": "={{ Number($json.banos_min) || 0 }}", "type": "number"},
+            {"id": "p5", "name": "parqueaderos_min", "value": "={{ Number($json.parqueaderos_min) || 0 }}", "type": "number"},
+            {"id": "p6", "name": "tipo_propiedad_norm", "value": "={{ ($json.tipo_propiedad || '').toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim() }}", "type": "string"},
+            {"id": "p7", "name": "tipo_oferta", "value": "={{ $json.tipo_oferta || '' }}", "type": "string"},
+            {"id": "p8", "name": "ubicacion_norm", "value": "={{ ($json.ubicacion || '').toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim() }}", "type": "string"},
+            {"id": "p9", "name": "busqueda_libre_norm", "value": "={{ ($json.busqueda_libre || '').toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim() }}", "type": "string"}
           ]
         },
         "options": {}
@@ -68,10 +35,8 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT\n    p.id,\n    p.name AS referencia,\n    p.title AS titulo,\n    p.price AS precio,\n    p.area AS metros_cuadrados,\n    p.bedrooms AS habitaciones,\n    p.bathrooms AS banos,\n    p.parking_spaces AS parqueaderos,\n    p.street AS direccion_zona,\n    p.city AS ciudad,\n    t.name->>'es' AS tipo_propiedad,\n    CASE p.offer_type WHEN 'sale' THEN 'Venta' ELSE 'Arriendo' END AS oferta,\n    CASE \n        WHEN p.wp_post_id IS NOT NULL THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id \n        ELSE 'https://inmobi.com.ec/catalogo/' \n    END AS link_propiedad,\n    p.property_score AS puntuacion\nFROM estate_property p\nLEFT JOIN estate_property_type t ON p.property_type_id = t.id\nWHERE p.state = 'available'\n  AND p.active = true\n  AND ($1 = '' OR p.city ILIKE '%' || $1 || '%' OR p.street ILIKE '%' || $1 || '%')\n  AND p.price <= $2\n  AND p.bedrooms >= $3\n  AND p.bathrooms >= $4\n  AND p.parking_spaces >= $5\n  AND ($6 = '' OR t.name->>'es' ILIKE '%' || $6 || '%')\n  AND p.offer_type = $7\nORDER BY p.property_score DESC, p.price ASC\nLIMIT 8;",
-        "options": {
-          "queryParams": "={{ $json.ubicacion }},{{ $json.presupuesto_max }},{{ $json.habitaciones_min }},{{ $json.banos_min }},{{ $json.parqueaderos_min }},{{ $json.tipo_propiedad }},{{ $json.tipo_oferta }}"
-        }
+        "query": "SELECT\n    p.id,\n    p.name AS referencia,\n    p.title AS titulo,\n    p.price AS precio,\n    p.area AS metros_cuadrados,\n    p.bedrooms AS habitaciones,\n    p.bathrooms AS banos,\n    p.parking_spaces AS parqueaderos,\n    p.street AS direccion_zona,\n    p.city AS ciudad,\n    COALESCE(t.name, 'Propiedad') AS tipo_propiedad,\n    CASE p.offer_type WHEN 'sale' THEN 'Venta' ELSE 'Arriendo' END AS oferta,\n    CASE\n        WHEN p.wp_post_id IS NOT NULL AND p.wp_post_id > 0 THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id\n        ELSE NULL\n    END AS link_propiedad,\n    p.wp_post_id,\n    p.property_score AS puntuacion,\n    (\n        (SELECT COALESCE(COUNT(*),0) * 10\n         FROM unnest(string_to_array('{{ $json.ubicacion_norm || \"\" }}', ' ')) w\n         WHERE length(w) >= 3\n           AND lower(translate(COALESCE(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n               ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n        + (SELECT COALESCE(COUNT(*),0) * 7\n           FROM unnest(string_to_array('{{ $json.ubicacion_norm || \"\" }}', ' ')) w\n           WHERE length(w) >= 3\n             AND lower(translate(COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n                 ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n        + (SELECT COALESCE(COUNT(*),0) * 5\n           FROM unnest(string_to_array('{{ $json.ubicacion_norm || \"\" }}', ' ')) w\n           WHERE length(w) >= 3\n             AND lower(translate(COALESCE(p.city,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n                 ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n        + (SELECT COALESCE(COUNT(*),0) * 5\n           FROM unnest(string_to_array('{{ $json.busqueda_libre_norm || \"\" }}', ' ')) w\n           WHERE length(w) >= 3\n             AND lower(translate(COALESCE(p.title,'') || ' ' || COALESCE(p.description,'') || ' ' || COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n                 ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n        + CASE WHEN p.price <= {{ $json.presupuesto_max || 999999999 }} THEN 5 ELSE 0 END\n        + CASE WHEN COALESCE(p.bedrooms,0) >= {{ $json.habitaciones_min || 0 }} THEN 3 ELSE 0 END\n    ) AS relevancia\nFROM estate_property p\nLEFT JOIN estate_property_type t ON p.property_type_id = t.id\nWHERE p.state = 'available'\n  AND p.active = true\n  AND p.price > 0\n  AND p.price <= ({{ $json.presupuesto_max || 999999999 }} * 1.15)\n  AND (\n    '{{ $json.tipo_propiedad_norm || \"\" }}' = ''\n    OR lower(translate(COALESCE(t.name,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n       ILIKE '%' || '{{ $json.tipo_propiedad_norm || \"\" }}' || '%'\n  )\n  AND (\n    '{{ $json.tipo_oferta || \"\" }}' = ''\n    OR p.offer_type = '{{ $json.tipo_oferta }}'\n  )\n  AND COALESCE(p.bedrooms, 0)       >= {{ $json.habitaciones_min || 0 }}\n  AND COALESCE(p.bathrooms, 0)      >= {{ $json.banos_min || 0 }}\n  AND COALESCE(p.parking_spaces, 0) >= {{ $json.parqueaderos_min || 0 }}\n  AND (\n    '{{ $json.ubicacion_norm || \"\" }}' = ''\n    OR EXISTS (\n      SELECT 1 FROM unnest(string_to_array('{{ $json.ubicacion_norm }}', ' ')) w\n      WHERE length(w) >= 3\n        AND lower(translate(\n              COALESCE(p.title,'') || ' ' || COALESCE(p.street,'') || ' ' ||\n              COALESCE(p.city,'') || ' ' || COALESCE(p.sector_keywords,''),\n              'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n            ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%'\n    )\n  )\n  AND (\n    '{{ $json.busqueda_libre_norm || \"\" }}' = ''\n    OR EXISTS (\n      SELECT 1 FROM unnest(string_to_array('{{ $json.busqueda_libre_norm }}', ' ')) w\n      WHERE length(w) >= 3\n        AND lower(translate(\n              COALESCE(p.title,'') || ' ' || COALESCE(p.description,'') || ' ' || COALESCE(p.sector_keywords,''),\n              'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n            ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%'\n    )\n  )\nORDER BY relevancia DESC, p.property_score DESC NULLS LAST, p.price ASC\nLIMIT 8;",
+        "options": {}
       },
       "id": "postgres-query",
       "name": "Buscar en PostgreSQL",
@@ -79,11 +44,30 @@
       "typeVersion": 2.5,
       "position": [640, 300],
       "credentials": {
-        "postgres": {
-          "id": "CONFIGURAR_CREDENCIAL_POSTGRES",
-          "name": "Odoo PostgreSQL"
-        }
+        "postgres": {"id": "hpxXcbKUCIUvlbJn", "name": "Inmobi"}
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "cond-pro",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-results-pro",
+      "name": "¿Hay Resultados?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [864, 300]
     },
     {
       "parameters": {
@@ -103,7 +87,33 @@
       "name": "Formatear Respuesta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [860, 300]
+      "position": [1088, 160]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sr-pro",
+              "name": "response",
+              "value": "=[]",
+              "type": "string"
+            },
+            {
+              "id": "sr-pro2",
+              "name": "sin_resultados",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sin-resultados-pro",
+      "name": "Sin Resultados",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1088, 440]
     }
   ],
   "connections": {
@@ -114,8 +124,15 @@
       "main": [[{"node": "Buscar en PostgreSQL", "type": "main", "index": 0}]]
     },
     "Buscar en PostgreSQL": {
-      "main": [[{"node": "Formatear Respuesta", "type": "main", "index": 0}]]
+      "main": [[{"node": "¿Hay Resultados?", "type": "main", "index": 0}]]
+    },
+    "¿Hay Resultados?": {
+      "main": [
+        [{"node": "Formatear Respuesta", "type": "main", "index": 0}],
+        [{"node": "Sin Resultados", "type": "main", "index": 0}]
+      ]
     }
   },
+  "active": true,
   "settings": {"executionOrder": "v1"}
 }

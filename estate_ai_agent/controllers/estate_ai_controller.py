@@ -3686,3 +3686,217 @@ TOP 10 DISPONIBLES:
                 json.dumps({'error': err_safe}),
                 headers=[('Content-Type', 'application/json')]
             )
+
+    # ── Property Chatter Summary ──────────────────────────────────────────────
+
+    @http.route('/estate/property/chatter_summary', type='jsonrpc', auth='user', methods=['POST'])
+    def property_chatter_summary(self, property_id, **kw):
+        """Return all data needed by the PropertySummary chatter panel."""
+        prop = request.env['estate.property'].browse(property_id).exists()
+        if not prop:
+            return {}
+
+        fields_to_read = [
+            'name', 'state', 'price', 'city', 'offer_type',
+            'meeting_count', 'property_invoice_count', 'commission_count',
+            'offer_count', 'expense_count', 'days_on_market',
+            'price_history_count',
+            'ai_property_summary', 'ai_summary_date',
+        ]
+        data = prop.read(fields_to_read)[0]
+
+        # Leads interesados (estate_crm)
+        lead_count = 0
+        if 'target_property_id' in request.env['crm.lead']._fields:
+            lead_count = request.env['crm.lead'].sudo().search_count([
+                ('target_property_id', '=', property_id)
+            ])
+        data['lead_count'] = lead_count
+
+        # Documentos (estate_document)
+        doc_count = 0
+        if 'estate.document' in request.env:
+            doc_count = request.env['estate.document'].sudo().search_count([
+                ('property_id', '=', property_id)
+            ])
+        data['document_count'] = doc_count
+
+        # Format datetime for display
+        if data.get('ai_summary_date'):
+            data['ai_summary_date'] = data['ai_summary_date'].strftime('%d %b, %H:%M')
+
+        # ai_property_summary is Html field - ensure it's a plain string
+        if data.get('ai_property_summary'):
+            data['ai_property_summary'] = str(data['ai_property_summary'])
+
+        return data
+
+    @http.route('/estate/property/regenerate_summary', type='jsonrpc', auth='user', methods=['POST'])
+    def property_regenerate_summary(self, property_id, **kw):
+        """Trigger AI summary regeneration for the given property."""
+        prop = request.env['estate.property'].browse(property_id).exists()
+        if not prop:
+            return {'error': 'Property not found'}
+        try:
+            prop.action_generate_property_summary()
+            return {'ok': True}
+        except Exception as e:
+            _logger.error("Error regenerating property summary: %s", str(e))
+            return {'error': str(e)}
+
+    @http.route('/estate/property/chat_stream', type='http', auth='user', methods=['POST'], csrf=False)
+    def property_chat_stream(self, **kwargs):
+        """Streaming SSE endpoint: chat contextual sobre una propiedad específica."""
+        import re as _re
+        try:
+            data = json.loads(request.httprequest.data or '{}')
+        except Exception:
+            data = {}
+        property_id = int(data.get('property_id') or 0)
+        question = (data.get('question') or '').strip()
+        history_raw = data.get('history') or []
+
+        def _err_stream(msg):
+            def _g():
+                yield f'data: {json.dumps({"text": msg})}\n\ndata: [DONE]\n\n'
+            return request.make_response(_g(), headers=[
+                ('Content-Type', 'text/event-stream; charset=utf-8'),
+                ('Cache-Control', 'no-cache'),
+                ('X-Accel-Buffering', 'no'),
+            ])
+
+        if not property_id or not question:
+            return _err_stream('Faltan parámetros.')
+
+        prop = request.env['estate.property'].browse(property_id).exists()
+        if not prop:
+            return _err_stream('Propiedad no encontrada.')
+
+        ICP = request.env['ir.config_parameter'].sudo()
+        api_key = ICP.get_param('estate_ai.api_key', '')
+        if not api_key or not GEMINI_AVAILABLE:
+            return _err_stream('IA no configurada. Configure la API Key en Ajustes.')
+
+        # ── Construir contexto completo de la propiedad ──────────────────────
+        p = prop
+        tipo = p.property_type_id.name if p.property_type_id else 'Inmueble'
+        operacion = 'Venta' if p.offer_type == 'sale' else 'Arriendo'
+        estado = dict(p._fields['state'].selection).get(p.state, p.state)
+        precio = f"${p.price:,.2f}" if p.price else 'No definido'
+
+        # Historial de precios
+        ph_lines = []
+        for ph in p.price_history_ids[:10]:
+            motivo = ph.change_reason or ''
+            ph_lines.append(
+                f"  {ph.date.strftime('%d/%m/%Y')}: ${ph.old_price:,.0f}→${ph.new_price:,.0f} "
+                f"({ph.change_pct:+.1f}%) {motivo}"
+            )
+
+        # Leads interesados
+        lead_lines = []
+        if 'target_property_id' in request.env['crm.lead']._fields:
+            leads = request.env['crm.lead'].search(
+                [('target_property_id', '=', p.id)], limit=20
+            )
+            temp_map = {'cold': 'Frío', 'warm': 'Tibio', 'hot': 'Caliente', 'boiling': 'Hirviendo'}
+            for l in leads:
+                nombre = (l.partner_id.name if l.partner_id else None) or l.partner_name or l.name or 'Sin nombre'
+                budget = f"${l.client_budget:,.0f}" if l.client_budget else 'N/A'
+                temp = temp_map.get(l.lead_temperature, l.lead_temperature or '—')
+                stage = l.stage_id.name if l.stage_id else 'Sin etapa'
+                lead_lines.append(f"  {nombre} | Presupuesto: {budget} | Temperatura: {temp} | Etapa: {stage}")
+
+        # Visitas / citas
+        visit_lines = []
+        if 'property_id' in request.env['calendar.event']._fields:
+            visits = request.env['calendar.event'].search(
+                [('property_id', '=', p.id)], order='start desc', limit=10
+            )
+            rating_map = {'1': '⭐', '2': '⭐⭐', '3': '⭐⭐⭐', '4': '⭐⭐⭐⭐', '5': '⭐⭐⭐⭐⭐'}
+            for v in visits:
+                attendees = ', '.join(a.partner_id.name for a in v.attendee_ids if a.partner_id) or 'Sin asistentes'
+                rating = rating_map.get(str(getattr(v, 'visit_rating', '') or ''), '')
+                visit_lines.append(f"  {v.start.strftime('%d/%m/%Y %H:%M')}: {attendees} {rating}")
+
+        # Mensajes del chatter
+        msgs = request.env['mail.message'].search([
+            ('res_id', '=', p.id), ('model', '=', 'estate.property'),
+            ('message_type', 'in', ['comment', 'email']),
+        ], order='date desc', limit=8)
+        msg_lines = []
+        for m in msgs:
+            body = _re.sub('<[^<]+?>', '', m.body or '').strip()[:200]
+            if body:
+                msg_lines.append(f"  [{m.date.strftime('%d/%m/%Y')}] {m.author_id.name if m.author_id else 'Sistema'}: {body}")
+
+        context_text = f"""PROPIEDAD: {p.name} | Código: {getattr(p,'ref','') or p.id}
+Tipo: {tipo} | Operación: {operacion} | Estado: {estado}
+Ubicación: {p.street or ''}, {p.city or ''} {p.state_id.name if p.state_id else ''}
+Área: {p.area or 0}m² | Habitaciones: {p.bedrooms or 0} | Baños: {p.bathrooms or 0} | Parqueaderos: {p.parking_spaces or 0}
+Precio: {precio} | Días en mercado: {p.days_on_market or 0}
+AVM: {'$'+str(f"{p.avm_estimated_price:,.2f}") if p.avm_estimated_price else 'No calculado'}
+Propietario: {p.owner_id.name if p.owner_id else 'Sin asignar'}
+Asesor: {p.user_id.name if p.user_id else 'Sin asignar'}
+
+HISTORIAL DE PRECIOS ({len(ph_lines)} cambio(s)):
+{chr(10).join(ph_lines) if ph_lines else '  Sin cambios registrados'}
+
+LEADS INTERESADOS ({len(lead_lines)} lead(s)):
+{chr(10).join(lead_lines) if lead_lines else '  Sin leads registrados'}
+
+VISITAS REALIZADAS ({len(visit_lines)} visita(s)):
+{chr(10).join(visit_lines) if visit_lines else '  Sin visitas registradas'}
+
+NOTAS Y MENSAJES RECIENTES:
+{chr(10).join(msg_lines) if msg_lines else '  Sin mensajes'}"""
+
+        system_prompt = (
+            "Eres un asistente inmobiliario experto. Tienes acceso completo a los datos de la siguiente propiedad. "
+            "Responde SIEMPRE en español. Sé directo, preciso y útil. "
+            "Cuando menciones personas usa sus nombres exactos. "
+            "Si el dato no está disponible, dilo claramente y sugiere cómo obtenerlo.\n\n"
+            f"DATOS DE LA PROPIEDAD:\n{context_text}"
+        )
+
+        # Historial de conversación previa
+        contents = []
+        for msg in history_raw[-8:]:  # últimos 8 mensajes
+            role = 'user' if msg.get('role') == 'user' else 'model'
+            contents.append({'role': role, 'parts': [{'text': msg.get('text', '')}]})
+        contents.append({'role': 'user', 'parts': [{'text': question}]})
+
+        # Pre-capturar variables antes de que se cierre el cursor
+        _api_key = api_key
+        _system = system_prompt
+        _contents = contents
+
+        def generate():
+            try:
+                client = new_genai.Client(
+                    api_key=_api_key,
+                    http_options=new_genai.types.HttpOptions(api_version='v1beta'),
+                )
+                response = client.models.generate_content_stream(
+                    model='gemini-2.5-flash',
+                    contents=_contents,
+                    config=new_genai.types.GenerateContentConfig(
+                        system_instruction=_system,
+                        temperature=0.4,
+                        max_output_tokens=1500,
+                    ),
+                )
+                for chunk in response:
+                    text = getattr(chunk, 'text', None)
+                    if text:
+                        yield f'data: {json.dumps({"text": text}, ensure_ascii=False)}\n\n'
+                yield 'data: [DONE]\n\n'
+            except Exception as exc:
+                _logger.error("Property chat stream error: %s", exc)
+                yield f'data: {json.dumps({"text": f"Error: {exc}"})}\n\ndata: [DONE]\n\n'
+
+        return request.make_response(generate(), headers=[
+            ('Content-Type', 'text/event-stream; charset=utf-8'),
+            ('Cache-Control', 'no-cache'),
+            ('X-Accel-Buffering', 'no'),
+        ])

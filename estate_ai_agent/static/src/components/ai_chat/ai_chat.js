@@ -32,6 +32,11 @@ export class EstateAIChat extends Component {
         onMounted(async () => {
             await this.loadHistory();
             await this.loadSuggestions();
+            // Pre-fill input if opened from a property or with a specific context
+            const defaultMsg = this.props.action?.context?.default_message;
+            if (defaultMsg) {
+                this.state.inputText = defaultMsg;
+            }
         });
     }
 

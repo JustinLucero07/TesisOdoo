@@ -3,10 +3,10 @@ import json
 import logging
 import threading
 
-import odoo
 import requests
 
 from odoo import models, api
+from odoo.modules.registry import Registry
 
 _logger = logging.getLogger(__name__)
 
@@ -481,7 +481,7 @@ class EstatePropertyWordPress(models.Model):
 
         def _do_sync():
             try:
-                with odoo.registry(dbname).cursor() as cr:
+                with Registry(dbname).cursor() as cr:
                     env = api.Environment(cr, uid, {'no_wp_sync': True, 'active_test': False})
                     prop = env['estate.property'].browse(prop_id)
                     if not prop.exists():
@@ -511,7 +511,7 @@ class EstatePropertyWordPress(models.Model):
     # MAIN PUBLISH ACTION
     # -------------------------------------------------------------------------
     def action_publish_wordpress(self):
-        """Publish property to WordPress/Houzez — full auto-mapped integration."""
+        """Publica/actualiza la propiedad en WordPress en segundo plano (no bloquea)."""
         self.ensure_one()
         cfg = self._get_wp_config()
 
@@ -522,49 +522,12 @@ class EstatePropertyWordPress(models.Model):
             return self._show_notification(
                 '⚠️ Configuración incompleta', 'Falta la URL de WordPress.')
 
-        try:
-            # --- Step 1: Upload images ---
-            featured_id, gallery_ids = self._wp_upload_all_images(cfg)
-
-            # --- Step 2: Create/update post with taxonomies ---
-            wp_id = self._wp_create_or_update_post(cfg, featured_id)
-            if not wp_id:
-                return self._show_notification(
-                    '❌ Error', 'No se pudo crear la propiedad en WordPress.')
-
-            # --- Step 3: Save ALL Houzez meta fields ---
-            meta = self._build_houzez_meta(cfg, featured_id, gallery_ids)
-            meta_saved = self._wp_save_meta(cfg, wp_id, meta)
-
-            # --- Step 4: Fallback taxonomy assignment ---
-            self._wp_set_taxonomies(cfg, wp_id)
-
-            # --- Update Odoo ---
-            self.write({'wp_post_id': wp_id, 'wp_published': True})
-
-            # --- Build result ---
-            type_name = self.property_type_id.name if self.property_type_id else '?'
-            city_name = self.city or '?'
-            info = [
-                f"ID: {wp_id}",
-                f"Tipo: {type_name}",
-                f"Ciudad: {city_name}",
-            ]
-            if gallery_ids:
-                info.append(f"{len(gallery_ids)} imgs")
-            if featured_id:
-                info.append("Portada ")
-            if self.latitude and self.longitude:
-                info.append("Mapa ")
-            if meta_saved:
-                info.append("Meta ")
-
-            return self._show_notification(
-                ' Publicado en WordPress', ' | '.join(info))
-
-        except Exception as e:
-            _logger.error(f"WordPress publish error: {str(e)}")
-            return self._show_notification('❌ Error de conexión', str(e))
+        self._trigger_wp_sync_async()
+        return self._show_notification(
+            '⏳ Subiendo a WordPress en segundo plano',
+            f'La propiedad "{self.title or self.name}" se está publicando. '
+            'En unos segundos el estado se actualizará automáticamente.'
+        )
 
     # -------------------------------------------------------------------------
     # UNPUBLISH

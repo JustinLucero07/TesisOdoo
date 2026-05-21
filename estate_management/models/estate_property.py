@@ -179,10 +179,10 @@ class EstateProperty(models.Model):
     # --- Características ---
     price = fields.Float(string='Precio', tracking=True)
     bottom_price = fields.Float(string='Precio Tope (Mínimo)', tracking=True, help='El precio mínimo que el propietario está dispuesto a aceptar en una negociación.')
-    area = fields.Float(string='Área (m²)')
-    bedrooms = fields.Integer(string='Habitaciones', default=0)
-    bathrooms = fields.Float(string='Baños', default=0.0)
-    parking_spaces = fields.Integer(string='Parqueaderos', default=0)
+    area = fields.Float(string='Área (m²)', tracking=True)
+    bedrooms = fields.Integer(string='Habitaciones', default=0, tracking=True)
+    bathrooms = fields.Float(string='Baños', default=0.0, tracking=True)
+    parking_spaces = fields.Integer(string='Parqueaderos', default=0, tracking=True)
     floor = fields.Integer(string='Piso/Planta')
     year_built = fields.Integer(string='Año de Construcción')
     
@@ -497,10 +497,11 @@ class EstateProperty(models.Model):
 
     # --- Estado ---
     state = fields.Selection([
+        ('draft', 'Borrador'),
         ('available', 'Disponible'),
         ('reserved', 'Reservado'),
         ('sold', 'Vendido'),
-    ], string='Estado', default='available', tracking=True, required=True)
+    ], string='Estado', default='draft', tracking=True, required=True)
 
     active = fields.Boolean(string='Activo', default=True)
 
@@ -566,7 +567,7 @@ class EstateProperty(models.Model):
     )
 
     # --- Relaciones y Ventas ---
-    owner_id = fields.Many2one('res.partner', string='Propietario')
+    owner_id = fields.Many2one('res.partner', string='Propietario', tracking=True)
     buyer_id = fields.Many2one('res.partner', string='Comprador', tracking=True)
     user_id = fields.Many2one('res.users', string='Asesor Responsable', default=lambda self: self.env.user, tracking=True)
     co_user_id = fields.Many2one('res.users', string='Co-Asesor', tracking=True,
@@ -1007,6 +1008,28 @@ class EstateProperty(models.Model):
                 if prop.buyer_id:
                     prop.buyer_id._apply_estate_category('estate_management.partner_category_buyer')
         return res
+
+    def action_publish(self):
+        """Borrador → Disponible: primera publicación al mercado."""
+        for prop in self:
+            if not prop.date_listed:
+                prop.write({'date_listed': fields.Date.today()})
+            prop.write({'state': 'available'})
+            prop.message_post(
+                body='Propiedad publicada en el mercado.',
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+
+    def action_set_draft(self):
+        """Volver a borrador (desde Disponible o Reservado)."""
+        for prop in self:
+            prop.write({'state': 'draft'})
+            prop.message_post(
+                body='Propiedad guardada como borrador (retirada del mercado temporalmente).',
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
 
     def action_set_available(self):
         for prop in self:

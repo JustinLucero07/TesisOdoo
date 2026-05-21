@@ -18,49 +18,57 @@
     <menuitem id="estate_menu_ventas_root"
               name="Ventas"
               parent="estate_management.estate_menu_intel_root"
-              sequence="10"/>
+              sequence="10"
+              groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_by_month"
                   name="Ventas por Mes"
                   parent="estate_menu_ventas_root"
                   action="action_sales_by_month"
-                  sequence="10"/>
+                  sequence="10"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_by_user"
                   name="Ranking de Asesores"
                   parent="estate_menu_ventas_root"
                   action="action_sales_by_user"
-                  sequence="20"/>
+                  sequence="20"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_by_type"
                   name="Por Tipo de Propiedad"
                   parent="estate_menu_ventas_root"
                   action="action_sales_by_type"
-                  sequence="30"/>
+                  sequence="30"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_days"
                   name="Dias en Mercado"
                   parent="estate_menu_ventas_root"
                   action="action_sales_days_market"
-                  sequence="40"/>
+                  sequence="40"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_commissions"
                   name="Comisiones de Asesores"
                   parent="estate_menu_ventas_root"
                   action="estate_management.action_estate_commission_dashboard"
-                  sequence="50"/>
+                  sequence="50"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_avg"
                   name="Promedio de Ventas"
                   parent="estate_menu_ventas_root"
                   action="action_sales_avg_month"
-                  sequence="55"/>
+                  sequence="55"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_kpi_wizard"
                   name="KPIs y Descargar Reporte"
                   parent="estate_menu_ventas_root"
                   action="action_estate_sales_report_wizard"
-                  sequence="60"/>
+                  sequence="60"
+                  groups="estate_management.estate_group_manager"/>
 
     <!-- ════════════════════════════════════════════════════
          2. ANÁLISIS — Pivots y gráficos por modelo
@@ -80,37 +88,43 @@
                   name="Contratos"
                   parent="estate_menu_analytics_root"
                   action="estate_analytics_contract_action"
-                  sequence="20"/>
+                  sequence="20"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_analytics_payment"
                   name="Pagos"
                   parent="estate_menu_analytics_root"
                   action="estate_analytics_payment_action"
-                  sequence="30"/>
+                  sequence="30"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_analytics_offer"
                   name="Ofertas"
                   parent="estate_menu_analytics_root"
                   action="estate_analytics_offer_action"
-                  sequence="40"/>
+                  sequence="40"
+                  groups="estate_management.estate_group_agent"/>
 
         <menuitem id="estate_menu_analytics_expense"
                   name="Gastos"
                   parent="estate_menu_analytics_root"
                   action="estate_analytics_expense_action"
-                  sequence="50"/>
+                  sequence="50"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_analytics_appraisal"
                   name="Tasaciones"
                   parent="estate_menu_analytics_root"
                   action="estate_analytics_appraisal_action"
-                  sequence="60"/>
+                  sequence="60"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_analytics_maintenance"
                   name="Mantenimiento"
                   parent="estate_menu_analytics_root"
                   action="estate_analytics_maintenance_action"
-                  sequence="70"/>
+                  sequence="70"
+                  groups="estate_management.estate_group_manager"/>
 
     <!-- ════════════════════════════════════════════════════
          3. EXPORTAR — Wizards de descarga PDF / Excel
@@ -118,36 +132,42 @@
     <menuitem id="estate_menu_reports_root"
               name="Exportar"
               parent="estate_management.estate_menu_intel_root"
-              sequence="60"/>
+              sequence="60"
+              groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_report_report_wizard"
                   name="Generar PDF / Excel"
                   parent="estate_menu_reports_root"
                   action="estate_report_wizard_action"
-                  sequence="10"/>
+                  sequence="10"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_commission_wizard"
                   name="Liquidación de Comisiones"
                   parent="estate_menu_reports_root"
                   action="estate_commission_wizard_action"
-                  sequence="20"/>
+                  sequence="20"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_visitor_report"
                   name="Reporte de Visitas PDF"
                   parent="estate_menu_reports_root"
                   action="estate_visitor_report_action"
-                  sequence="30"/>
+                  sequence="30"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_sales_report"
                   name="Promedio de Ventas PDF"
                   parent="estate_menu_reports_root"
                   action="action_estate_sales_report_wizard"
-                  sequence="40"/>
+                  sequence="40"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_comparator_report"
                   name="Comparar Propiedades"
                   parent="estate_menu_reports_root"
                   action="estate_management.estate_property_comparator_wizard_action"
-                  sequence="50"/>
+                  sequence="50"
+                  groups="estate_management.estate_group_manager"/>
 
 </odoo>

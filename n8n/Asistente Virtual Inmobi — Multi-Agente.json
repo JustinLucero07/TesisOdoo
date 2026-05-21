@@ -8,13 +8,13 @@
         "width": 500,
         "color": 4
       },
-      "id": "c19c81a1-d7f3-45f7-addb-b5d5db94fa9a",
+      "id": "8dee98fb-75f2-40b7-a67a-96ba5a464c5a",
       "name": "Arquitectura",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        124160,
-        45328
+        126304,
+        45456
       ]
     },
     {
@@ -23,13 +23,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "4a9c0f1e-1478-4496-8965-6b9eaf5798a5",
+      "id": "e971a18c-879c-49b0-a9ac-a446d78b94f4",
       "name": "Webhook GET (Verificación)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        124160,
-        45712
+        126304,
+        45840
       ],
       "webhookId": "eba947ba-6299-470b-bd8f-c5d291c0a808"
     },
@@ -41,13 +41,13 @@
           "responseCode": 200
         }
       },
-      "id": "e9d7cfc7-92d7-4cfd-841d-3a79a9e70837",
+      "id": "bfc9ba93-7b21-4c0b-9561-bf139ec49bf6",
       "name": "Responder Verificación",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        124384,
-        45712
+        126528,
+        45840
       ]
     },
     {
@@ -57,13 +57,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "9158a42d-48c6-4e3b-8db8-5fe3857fb047",
+      "id": "9eabeba6-8892-483c-9134-1b5920f65e4d",
       "name": "Webhook POST (Mensajes)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        124160,
-        46000
+        126304,
+        46128
       ],
       "webhookId": "f93f41a6-e85a-4527-91ec-db03938e79b1"
     },
@@ -111,13 +111,13 @@
         },
         "options": {}
       },
-      "id": "cbff530f-adea-46fe-960f-4841a6ddbae5",
+      "id": "d698548e-7e63-41cc-a16d-1c7ad5c94730",
       "name": "Extraer Datos",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        124384,
-        46000
+        126528,
+        46128
       ]
     },
     {
@@ -143,13 +143,13 @@
         },
         "options": {}
       },
-      "id": "c29c98ae-6e03-462f-a6ac-c8c3109ffa38",
+      "id": "5d613948-2a12-4572-b9f0-68b3c3d56049",
       "name": "¿Es texto?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        124640,
-        46000
+        126784,
+        46128
       ]
     },
     {
@@ -175,13 +175,13 @@
         },
         "options": {}
       },
-      "id": "6b993362-620f-439c-be0b-a9f06869163b",
+      "id": "ef431eec-91f4-48cb-b341-a8a2dbdbae67",
       "name": "¿Es audio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        124896,
-        46192
+        127040,
+        46320
       ]
     },
     {
@@ -192,13 +192,13 @@
           "responseCode": 200
         }
       },
-      "id": "767890d0-a2db-4304-a0a5-4eb9b85e3e27",
+      "id": "725077d7-2e93-4eee-ab44-03a8a753a16f",
       "name": "Ignorar (no es texto/audio)",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        124896,
-        46400
+        127040,
+        46528
       ]
     },
     {
@@ -208,13 +208,13 @@
         "nodeCredentialType": "whatsAppApi",
         "options": {}
       },
-      "id": "a75a914e-b15e-4999-b1b3-a45b061c04a3",
+      "id": "d67fd16e-9a23-49cb-ad54-88d85584c91d",
       "name": "Obtener URL del Audio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        125168,
-        46192
+        127312,
+        46320
       ],
       "credentials": {
         "whatsAppApi": {
@@ -236,13 +236,13 @@
           }
         }
       },
-      "id": "c8ee46cf-ad60-40d9-a31e-0cb8e0615fbe",
+      "id": "9c54d490-1d3e-47f9-9259-0bb80f8b5a58",
       "name": "Descargar Audio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        125424,
-        46192
+        127568,
+        46320
       ],
       "credentials": {
         "whatsAppApi": {
@@ -268,10 +268,10 @@
       "type": "@n8n/n8n-nodes-langchain.googleGemini",
       "typeVersion": 1.1,
       "position": [
-        125680,
-        46192
+        127824,
+        46320
       ],
-      "id": "961f37c2-cf5a-427f-8c9c-ce3ea54e5b4d",
+      "id": "4902a4a1-f142-47b7-b604-ae04e690d8ee",
       "name": "Analyze audio",
       "credentials": {
         "googlePalmApi": {
@@ -312,13 +312,13 @@
         },
         "options": {}
       },
-      "id": "67450040-17ac-476a-8582-754d050839a1",
+      "id": "d14da5ac-c7c0-4c16-a47a-9415d78a2703",
       "name": "Armar Mensaje de Audio",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        125936,
-        46192
+        128080,
+        46320
       ]
     },
     {
@@ -327,13 +327,13 @@
         "query": "SELECT\n  COALESCE(s.phone, '') AS phone,\n  COALESCE(s.nombre, '') AS nombre,\n  COALESCE(s.intent, 'UNKNOWN') AS intent,\n  COALESCE(s.history::text, '[]') AS history,\n  s.selected_property_id,\n  s.selected_wp_post_id,\n  COALESCE(s.selected_property_title, '') AS selected_property_title,\n  s.lead_id,\n  s.appointment_id,\n  s.budget,\n  COALESCE(s.sector, '') AS sector,\n  COALESCE(s.tipo_propiedad, '') AS tipo_propiedad,\n  COALESCE(s.etapa, 'INICIAL') AS etapa,\n  COALESCE(s.lead_registered, FALSE) AS lead_registered,\n  COALESCE(s.appointment_created, FALSE) AS appointment_created,\n  COALESCE(s.advisor_notified, FALSE) AS advisor_notified,\n  COALESCE(s.last_tool, '') AS last_tool\nFROM (SELECT 1) t\nLEFT JOIN wa_sessions s ON s.phone = '{{ $('Extraer Datos').first().json.numero }}'\nLIMIT 1;",
         "options": {}
       },
-      "id": "f2185817-12ac-4e3d-95ca-e91576efb0f6",
+      "id": "e1ccd3b5-66bc-45e7-8a21-63f5440b5532",
       "name": "Leer Sesion DB",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        124896,
-        46000
+        127040,
+        46128
       ],
       "credentials": {
         "postgres": {
@@ -346,26 +346,26 @@
       "parameters": {
         "jsCode": "// Merge DB session with original message data + structured state\nconst extractData = $('Extraer Datos').first().json;\nconst dbItems = $input.all();\n\nlet mensaje = extractData.mensaje || '';\ntry {\n  const audioData = $('Armar Mensaje de Audio').first().json;\n  if (audioData?.mensaje) mensaje = audioData.mensaje;\n} catch(e) {}\n\n// Parse DB session\nlet intent_db = 'UNKNOWN';\nlet history = [];\nlet state = {\n  selected_property_id: null,\n  selected_wp_post_id: null,\n  selected_property_title: '',\n  lead_id: null,\n  appointment_id: null,\n  budget: null,\n  sector: '',\n  tipo_propiedad: '',\n  etapa: 'INICIAL',\n  lead_registered: false,\n  appointment_created: false,\n  advisor_notified: false,\n  last_tool: ''\n};\nlet nombre = '';\n\nif (dbItems.length > 0 && dbItems[0].json && dbItems[0].json.phone) {\n  const row = dbItems[0].json;\n  intent_db = row.intent || 'UNKNOWN';\n  nombre = row.nombre || '';\n  const raw = row.history;\n  if (Array.isArray(raw)) history = raw;\n  else if (typeof raw === 'string') { try { history = JSON.parse(raw); } catch(e) { history = []; } }\n  else if (raw && typeof raw === 'object') history = Object.values(raw).length ? raw : [];\n\n  state.selected_property_id = row.selected_property_id;\n  state.selected_wp_post_id = row.selected_wp_post_id;\n  state.selected_property_title = row.selected_property_title || '';\n  state.lead_id = row.lead_id;\n  state.appointment_id = row.appointment_id;\n  state.budget = row.budget;\n  state.sector = row.sector || '';\n  state.tipo_propiedad = row.tipo_propiedad || '';\n  state.etapa = row.etapa || 'INICIAL';\n  state.lead_registered = !!row.lead_registered;\n  state.appointment_created = !!row.appointment_created;\n  state.advisor_notified = !!row.advisor_notified;\n  state.last_tool = row.last_tool || '';\n}\n\n// Keep only last 4 messages\nif (history.length > 4) history = history.slice(-4);\n\n// Filter out \"no tengo\" contamination\nhistory = history.filter(m => {\n  if (m.role !== 'assistant') return true;\n  const c = (m.content || '').toLowerCase();\n  return !c.includes('por ahora no tengo') && !c.includes('no tengo algo que se ajuste');\n});\n\n\n// RESET STATE on new search intent — el cliente quiere algo nuevo, no continuar lo anterior\nconst msgLower = mensaje.toLowerCase();\nconst nuevaBusquedaKW = ['estoy interesado','quiero otra','busco otra','busco una','busco un','quiero ver','quiero una','quiero un','quiero comprar','muestrame otra','muéstrame otra','tienen alguna','tienes alguna','vi una propiedad','y por'];\nconst esNuevaBusqueda = nuevaBusquedaKW.some(k => msgLower.includes(k));\nconst continuaPropiedad = msgLower.includes('esa misma') || msgLower.includes('esa propiedad') || msgLower.includes('la misma') || msgLower.includes('agendar') || msgLower.includes('fotos') || msgLower.includes('detalles') || msgLower.includes('cita');\n\nif (esNuevaBusqueda && !continuaPropiedad) {\n  // El cliente quiere algo nuevo, limpia la propiedad seleccionada anterior\n  state.selected_property_id = null;\n  state.selected_wp_post_id = null;\n  state.selected_property_title = '';\n  state.sector = '';\n  state.tipo_propiedad = '';\n  state.budget = null;\n  state.etapa = 'BUSCANDO';\n  state.lead_registered = false;\n  state.appointment_created = false;\n  state.advisor_notified = false;\n}\n\nconst tiene_sesion = (intent_db === 'COMPRADOR' || intent_db === 'VENDEDOR');\n\n// Date context\nconst ahora = new Date();\nconst offset = -5 * 60;\nconst local = new Date(ahora.getTime() + ahora.getTimezoneOffset() * 60000 + offset * 60000);\nconst dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];\nconst meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];\nfunction iso(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }\n\nconst hoy = iso(local);\nconst manana = new Date(local); manana.setDate(local.getDate()+1);\nconst pasadoManana = new Date(local); pasadoManana.setDate(local.getDate()+2);\n\nconst fecha_contexto = `📅 CONTEXTO DE FECHAS (uso interno - nunca mencionar al cliente):\\nHoy: ${dias[local.getDay()]} ${local.getDate()} de ${meses[local.getMonth()]} de ${local.getFullYear()} [${hoy}]\\nMañana: ${dias[manana.getDay()]} ${manana.getDate()} de ${meses[manana.getMonth()]} [${iso(manana)}]\\n`;\n\n// === Build [ESTADO ACTUAL] block — la clave del state engineering ===\nconst estado_actual = `[ESTADO ACTUAL — datos persistentes de la conversación]\nnombre: ${nombre || 'desconocido'}\ntelefono: ${extractData.numero}\nselected_property_id: ${state.selected_property_id || 'ninguna'}\nselected_wp_post_id: ${state.selected_wp_post_id || 'ninguno'}\npropiedad_titulo: ${state.selected_property_title || 'ninguna'}\nsector_busqueda: ${state.sector || 'sin definir'}\ntipo_propiedad: ${state.tipo_propiedad || 'sin definir'}\npresupuesto: ${state.budget || 'sin definir'}\netapa: ${state.etapa}\nlead_registered: ${state.lead_registered}\nappointment_created: ${state.appointment_created}\nadvisor_notified: ${state.advisor_notified}\nlast_tool: ${state.last_tool || 'ninguno'}\n\n[REGLAS DE ESTADO]\n- Si lead_registered=true → NO llames registrar_lead otra vez.\n- Si appointment_created=true → NO llames agendar_cita otra vez.\n- Si advisor_notified=true → NO llames notificar_asesor otra vez.\n- Si selected_property_id está definido → úsalo para registrar_lead, agendar_cita, obtener_detalle.\n- Si selected_property_id es null y vas a registrar lead/cita → primero busca o pide al cliente que elija.\n`;\n\nreturn [{ json: {\n  ...extractData,\n  mensaje,\n  nombre,\n  intent_db,\n  tiene_sesion,\n  history_json: JSON.stringify(history),\n  fecha_contexto,\n  estado_actual,\n  state: state\n}}];\n"
       },
-      "id": "4c1cd0c8-3484-4658-96c3-13701d24b5b8",
+      "id": "64c400a5-45b0-40d4-80ad-0c3e96b41180",
       "name": "Resolver Sesion",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        125168,
-        46000
+        127312,
+        46128
       ]
     },
     {
       "parameters": {
         "jsCode": "// Clasificador: COMPRADOR/VENDEDOR + SEARCH intent + entidades\nconst d = $input.first().json;\nconst msg = (d.mensaje || '').toLowerCase().trim();\nconst history = (() => { try { return JSON.parse(d.history_json || '[]'); } catch(e) { return []; }})();\n\n// Intent VENDEDOR vs COMPRADOR\nconst venderKW = ['vender mi','quiero vender','vendo mi','tengo una propiedad para vender','poner en venta','captacion','captación'];\nconst avaluoKW = ['avalúo','avaluo','valuación','valoración','valor de mi','cuánto vale','cuanto vale'];\nconst comprarKW = ['busco','buscando','quiero una','quiero un','quiero ver','quiero comprar','me interesa una','tienes alguna','tiene alguna','tienes propiedad','crédito vip','credito vip','biess','propiedad con','casa con','vi una propiedad','vi una casa','muéstrame','muestrame'];\nconst saludoKW = ['hola','buenas','buenos días','buenos dias','buenas tardes','buenas noches','hi','hello','holi','que tal','qué tal'];\n\nlet intent = d.intent_db;\nconst esSaludoPuro = saludoKW.some(k => msg === k || msg === k+'!' || msg === k+'.' || msg === k+',');\nif (esSaludoPuro) intent = 'COMPRADOR';\nelse if (comprarKW.some(k => msg.includes(k))) intent = 'COMPRADOR';\nelse if (avaluoKW.some(k => msg.includes(k))) intent = 'VENDEDOR';\nelse if (venderKW.some(k => msg.includes(k))) intent = 'VENDEDOR';\nelse if (!intent || intent === 'UNKNOWN') intent = 'COMPRADOR';\n\n// Extraer entidades\nconst tiposKW = {'casa':'Casa','casas':'Casa','depto':'Departamento','departamento':'Departamento','dpto':'Departamento','dptos':'Departamento','terreno':'Terreno','terrenos':'Terreno','suite':'Suite','local':'Local','oficina':'Oficina'};\nconst sectoresKW = ['totoracocha','el valle','baños','ricaurte','racar','paccha','misicata','challuabamba','sinincay','yanuncay','narancay','sayausí','sayausi','don bosco','maracay','miraflores','batán','batan','baguanchi','patamarca','12 de octubre','9 de octubre','huayna capac','remigio crespo','visorrey','el plateado','nulti','feria libre'];\nconst vipKW = ['crédito vip','credito vip','biess','iess','amueblado','amoblado','estrenar','plusvalía','plusvalia'];\n\nconst todoHistorial = history.map(h => (h.content||'')).join(' ').toLowerCase();\n\nlet tipo_propiedad = '';\nfor (const [k,v] of Object.entries(tiposKW)) { if (msg.includes(k)) { tipo_propiedad = v; break; } }\nif (!tipo_propiedad) for (const [k,v] of Object.entries(tiposKW)) { if (todoHistorial.includes(k)) { tipo_propiedad = v; break; } }\n\nlet ubicacion = '';\nfor (const s of sectoresKW) { if (msg.includes(s)) { ubicacion = s; break; } }\nif (!ubicacion) for (const s of sectoresKW) { if (todoHistorial.includes(s)) { ubicacion = s; break; } }\n\nlet busqueda_libre = '';\nfor (const v of vipKW) { if (msg.includes(v)) { busqueda_libre = v; break; } }\n\nlet presupuesto_max = 0;\nconst presupuestoMatch = msg.match(/(\\d{2,4})\\s*mil/) || msg.match(/\\$?\\s?(\\d{1,3}[\\.,]?\\d{3,})/);\nif (presupuestoMatch) {\n  let raw = presupuestoMatch[1].replace(/[\\.,]/g,'');\n  if (msg.includes('mil')) raw = raw + '000';\n  presupuesto_max = parseInt(raw);\n}\n\n// Detectar SEARCH intent\nconst buscarKW = ['busco','buscando','quiero una','quiero un','quiero ver','muéstrame','muestrame','tienes','tiene alguna','algo en','opciones','recomiend','interesado','interesada','necesito','dame','catálogo','catalogo','propiedades','disponibles','ofreces','vi una'];\n\nlet needs_search = false;\nif (intent === 'COMPRADOR') {\n  // SEARCH si: hay tipo+sector, o keyword de búsqueda, o solo sector, o busqueda_libre\n  const tieneTipoYSector = tipo_propiedad && ubicacion;\n  const esBusquedaExplicita = buscarKW.some(k => msg.includes(k));\n  const soloSector = ubicacion && !tipo_propiedad;\n  const conVIP = busqueda_libre;\n  needs_search = tieneTipoYSector || conVIP || (esBusquedaExplicita && (tipo_propiedad || ubicacion));\n}\n\nreturn [{ json: { ...d, intent, tipo_propiedad, ubicacion, busqueda_libre, presupuesto_max, needs_search } }];\n"
       },
-      "id": "20801eea-07cb-4db3-a39f-71309b0c0263",
+      "id": "3b322d94-6b1a-4098-bc5a-cca503b7b07a",
       "name": "Clasificar Intent",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        125648,
-        46000
+        127792,
+        46128
       ]
     },
     {
@@ -391,13 +391,13 @@
         },
         "options": {}
       },
-      "id": "7b050237-6751-46a7-9a2c-b159baf72ab0",
+      "id": "d619b102-8d49-4d48-b6f8-6cafb539bad4",
       "name": "¿Tiene Sesion?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        125424,
-        46000
+        127568,
+        46128
       ]
     },
     {
@@ -423,13 +423,13 @@
         },
         "options": {}
       },
-      "id": "9ed83ef0-a76d-4e23-a064-802890c6cde5",
+      "id": "8294d91c-4756-4174-9dd4-8ffc6339684d",
       "name": "¿Es Comprador?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        125888,
-        46000
+        128032,
+        46128
       ]
     },
     {
@@ -439,13 +439,13 @@
           "temperature": 0
         }
       },
-      "id": "ee772f28-807e-41e5-a0b3-c3f7ea49f5a3",
+      "id": "9da7bf18-f83b-4ecc-b746-d713e088fd87",
       "name": "Gemini — Comprador",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        126208,
-        45728
+        128352,
+        45856
       ],
       "credentials": {
         "googlePalmApi": {
@@ -498,13 +498,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "ef082476-f2dc-450d-a867-1c8acdbf6730",
+      "id": "758a9e3a-05ff-47b3-a9e6-30bbb1115f88",
       "name": "Tool: Buscar Propiedades",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        125616,
-        45280
+        127760,
+        45408
       ]
     },
     {
@@ -607,13 +607,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "14a39238-a648-421d-95b4-d16895ac7936",
+      "id": "c0115166-abed-46ac-92e1-5a88a7f92564",
       "name": "Tool: Buscar Propiedades Pro",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        125808,
-        45280
+        127952,
+        45408
       ]
     },
     {
@@ -660,13 +660,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "774c2d0c-a366-4bf1-9942-618a95b4d05a",
+      "id": "fb03ecb3-a27f-4a9e-bbd0-6373ca1caec7",
       "name": "Tool: Detalles Inmueble",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        125984,
-        45280
+        128128,
+        45408
       ]
     },
     {
@@ -724,13 +724,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "170a7e4c-24c1-451d-9548-bcd7fe20e423",
+      "id": "5b861a56-748b-4a08-9a74-cf6e825215d6",
       "name": "Tool: Verificar Disponibilidad",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126160,
-        45280
+        128304,
+        45408
       ]
     },
     {
@@ -832,13 +832,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "a39b1954-fd15-4952-b68c-510cb38d1de8",
+      "id": "c94504eb-521c-44e6-806a-8f93ae4e87b0",
       "name": "Tool: Registrar Lead",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126336,
-        45280
+        128480,
+        45408
       ]
     },
     {
@@ -951,13 +951,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "a4161e81-ec15-4287-847d-f1d735d28437",
+      "id": "05727075-2303-41a1-b7db-6503da97d35a",
       "name": "Tool: Agendar Cita",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126528,
-        45280
+        128672,
+        45408
       ]
     },
     {
@@ -1059,13 +1059,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "2d873cba-1733-4d5f-bf5d-08376372ce62",
+      "id": "a6a8b7aa-c0c1-4865-aa58-de9b1ac69300",
       "name": "Tool: Notificar Asesor",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126704,
-        45280
+        128848,
+        45408
       ]
     },
     {
@@ -1156,13 +1156,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "730f35fe-345c-4e0b-a5d5-df456229212a",
+      "id": "07999ecf-ee47-49bc-a62b-64a831e3cbb0",
       "name": "Tool: Clientes Pendientes",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126880,
-        45280
+        129024,
+        45408
       ]
     },
     {
@@ -1231,13 +1231,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "047aa3d7-4764-46e8-85d8-2ce4ac9b646c",
+      "id": "8da037be-fd70-428c-a138-8ff9be09f69a",
       "name": "Tool: Enviar Fotos",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        127056,
-        45280
+        129200,
+        45408
       ]
     },
     {
@@ -1245,18 +1245,18 @@
         "promptType": "define",
         "text": "={{ $json.fecha_contexto + '\\n\\n' + ($json.estado_actual || '') + '\\n\\nCliente: ' + $json.mensaje }}",
         "options": {
-          "systemMessage": "Eres asesor virtual de Inmobi en Cuenca, Ecuador. Atiendes por WhatsApp.\nSi preguntan si eres IA: \"Jaja no, soy del equipo de Inmobi 😄\"\n\n══════════════════════════\nREGLA #-1 — UN TOOL POR ACCIÓN, UNA VEZ (CRÍTICO)\n══════════════════════════\nANTES de llamar cualquier tool, revisa tu checklist interno:\n\n¿Ya llamé verificar_disponibilidad_asesor en este turno? → NO lo repitas. Usa el resultado anterior.\n¿Ya llamé registrar_lead? → NO lo repitas. Continúa al siguiente paso.\n¿Ya llamé agendar_cita? → NO lo repitas. Continúa al siguiente paso.\n¿Ya llamé notificar_asesor? → NO lo repitas. Solo responde al cliente.\n¿Ya llamé clientes_pendientes? → NO lo repitas.\n\nREGLA DE REINTENTO DE BÚSQUEDA — IRROMPIBLE:\nSi llamé buscar_propiedades_pro con ubicacion=<sector> y devolvió VACÍO:\n→ OBLIGATORIO llamar buscar_propiedades_pro otra vez con ubicacion=\"\" (sin sector) ANTES de responder.\n→ PROHIBIDO decir \"no tengo nada\" sin haber hecho esta segunda llamada.\n→ Solo si la segunda llamada también devuelve vacío → entonces responde al cliente.\n\nESTADO PERSISTENTE — revisa [ESTADO ACTUAL] al inicio de cada turno:\n- lead_registered=true → NUNCA llames registrar_lead.\n- appointment_created=true → NUNCA llames agendar_cita.\n- advisor_notified=true → NUNCA llames notificar_asesor.\n\nRESPUESTA FINAL:\nGenera UNA SOLA respuesta de texto al cliente. Luego DETENTE. No más tools. No más texto. Espera el próximo mensaje.\n\nSI UN TOOL FALLA:\nNo lo retomes en este turno. Si era crítico (ej. agendar_cita), responde: \"Listo, tu solicitud quedó registrada. Pronto un asesor te contacta.\"\n\n══════════════════════════\nREGLA #0 — ANTI-LOOP\n══════════════════════════\nDespués de agendar_cita exitoso:\n→ Responde UNA VEZ: \"Listo, tu cita quedó registrada. Pronto un asesor te contacta para confirmar los detalles.\"\n→ Llama notificar_asesor UNA VEZ.\n→ DETENTE.\n\nDespués de registrar_lead exitoso:\n→ NO lo vuelvas a llamar. Continúa a agendar_cita una sola vez.\n\nSi el cliente dice \"gracias\" después de confirmar la cita:\n→ Responde solo: \"Con gusto, [nombre] 😊\" y nada más.\n\nNUNCA repitas el saludo si ya hay historial de conversación.\n\n══════════════════════════\nREGLA #1 — DISPARADOR DE BÚSQUEDA (CRÍTICO)\n══════════════════════════\nSi el cliente menciona UN SECTOR en cualquier mensaje → LLAMA buscar_propiedades_pro INMEDIATO.\nSi el cliente menciona UN TIPO (casa/depto/terreno) → pregunta sector si no lo dio, luego busca.\nNUNCA digas \"no tengo nada\" sin haber llamado buscar_propiedades_pro primero.\nNUNCA esperes tener tipo Y sector para buscar — con solo uno de los dos ya puedes y debes buscar.\n\nDISPARADORES DE SECTOR (ejemplos): \"batán\", \"racar\", \"totoracocha\", \"visorrey\", \"el valle\",\n\"por la feria libre\", \"sector de...\", \"zona de...\", \"por el lado de...\" → BUSCA INMEDIATO.\n\n══════════════════════════\nREGLA #2 — CALIFICACIÓN OBLIGATORIA (CRÍTICO)\n══════════════════════════\nDespués de mostrar propiedades, los siguientes mensajes DEBEN seguir este orden exacto:\nMENSAJE A: \"¿Ese precio está dentro de lo que tienes pensado?\"\nMENSAJE B: \"¿Y cómo tenías pensado manejar la compra, con crédito o ya tienes los fondos disponibles?\"\nEstos dos mensajes son OBLIGATORIOS antes de agendar. No hay excepciones.\n\n══════════════════════════\nESTADO Y MEMORIA\n══════════════════════════\nRecibes [ESTADO ACTUAL] con datos persistentes. ÚSALOS siempre:\n- selected_property_id → para registrar_lead / agendar_cita / obtener_detalle_inmueble\n- selected_wp_post_id → para enviar_fotos_propiedad\n- lead_registered / appointment_created / advisor_notified → si están en true, NO repitas el tool\n- sector / tipo_propiedad / budget / nombre → datos ya recopilados, NO vuelvas a preguntar\n\n══════════════════════════\nSALUDO Y NOMBRE\n══════════════════════════\nPrimer mensaje (sin historial, o \"hola\", \"buenas\", mensaje muy corto):\n→ \"¡Hola! Soy del equipo de Inmobi 😊 ¿Con quién tengo el gusto?\"\n\nSi el cliente da su nombre y dice \"mucho gusto\" o similar:\n→ \"Mucho gusto, [nombre]! ¿Estás buscando comprar, vender o arrendar algo?\"\n\nSi en el primer mensaje ya dijo qué busca:\n→ Saluda igual + pide nombre + continúa el flujo.\n\nSi NO da su nombre: no insistas. Continúa con \"tú\" y guarda el nombre cuando lo dé espontáneamente.\nNO pidas teléfono (ya lo tienes).\n\n══════════════════════════\nCALIFICACIÓN PROGRESIVA\n══════════════════════════\nSe hace de forma natural, dentro del flujo, UNA pregunta por mensaje.\nOrden: tipo → sector → (búsqueda) → presupuesto → forma de pago.\nNUNCA dos preguntas en el mismo mensaje.\nNUNCA repitas una pregunta ya respondida.\nNUNCA califiques antes de mostrar propiedades.\nSi el cliente ya tuvo una cita agendada pero ahora pregunta por una propiedad nueva → trata como conversación nueva: muestra propiedades y califica normalmente.\n\nCALIFICACIÓN OBLIGATORIA después de mostrar cualquier propiedad:\n→ Mensaje 1 tras mostrar: \"¿Ese precio está dentro de lo que tienes pensado?\"\n→ Mensaje 2 tras confirmar precio: \"¿Y cómo tenías pensado manejar la compra, con crédito o ya tienes los fondos disponibles?\"\nNUNCA omitas estos dos pasos antes de agendar. Son obligatorios en toda conversación.\n\nPregunta de presupuesto (justo después de mostrar propiedades):\n\"¿Ese precio está dentro de lo que tienes pensado?\"\n\nPregunta de forma de pago (si confirma el precio):\n\"¿Y cómo tenías pensado manejar la compra, con crédito o ya tienes los fondos disponibles?\"\n\nRespuestas posibles:\n- Crédito BIESS o banco → \"¿Ya tienes la precalificación lista?\"\n- Crédito VIP / MIDUVI / bono VIP / vivienda de interés público → LLAMA buscar_propiedades_vip() inmediato → muestra con: \"Mira, estas propiedades califican para crédito VIP:\" → continúa flujo normal\n- Contado / fondos propios → avanza directo a agendar\n- \"No sé\" / \"eso lo ve mi familia\" / \"aún no decido\" → acepta y avanza\n\n══════════════════════════\nPERFILES DE CLIENTE — DETECTA EL CASO\n══════════════════════════\n\nCASO A — Cliente llega con propiedad específica (la vio en anuncio):\nEj: \"vi una casa en la 12 de octubre\", \"depto en racar de 99 mil\", \"inmobi.com.ec/?p=27802\"\n→ LLAMA obtener_detalle_inmueble inmediato con los datos que dio\n→ Muestra el detalle completo (ver sección DETALLE INMUEBLE)\n→ Pregunta: \"¿Te llama la atención?\"\n→ Si confirma interés → calificación (presupuesto → forma de pago)\n\nCASO B — Cliente vago (sin tipo ni sector):\nEj: \"quiero comprar\", \"busco algo\", \"estoy interesado\"\n→ NO busques todavía. PRIMERO recopila lo necesario para poder buscar:\n  Pregunta 1: \"¿Estás buscando casa, departamento o terreno?\"\n  Pregunta 2 (mensaje siguiente): \"¿Y en qué sector de Cuenca te gustaría buscar?\"\n→ Cuando tengas tipo + sector → CASO D inmediato (búsqueda)\n→ NUNCA digas \"no tengo nada\" sin haber intentado buscar primero.\n\nCASO C — Cliente da solo el tipo (sin sector):\nEj: \"una casa\", \"un departamento\", \"un terreno\"\n→ NO busques todavía. Pregunta: \"¿En qué sector de Cuenca te gustaría buscar?\"\n→ Cuando dé el sector → CASO D inmediato\n→ NUNCA respondas \"no tengo nada\" sin haber buscado primero.\n\nCASO C2 — Cliente da solo el sector (sin tipo):\nEj: \"necesito algo por el batán\", \"busco por totoracocha\", \"una propiedad en racar\"\n→ LLAMA buscar_propiedades_pro(tipo_propiedad=null, ubicacion=<sector>) INMEDIATO\n→ Muestra resultados → luego pregunta: \"¿Cuál tipo te interesa más, casa, departamento o terreno?\"\n→ Si vacío → segundo intento sin sector → si igual vacío → avisa y clientes_pendientes\n\nCASO D — Cliente da tipo + sector (o solo sector):\nEj: \"una casa en totoracocha\", \"depto por racar\", \"alguna casa por racar\", \"algo por el batán\"\n\nANTES de llamar el tool, extrae obligatoriamente:\n- tipo_propiedad: \"casa\" si dijo casa, \"departamento\" si dijo depto/departamento, \"terreno\" si dijo terreno. Si dijo \"algo\", \"propiedad\" o no especificó tipo → usa null.\n- ubicacion: el sector exacto del mensaje. Ej: \"el batán\" → \"Batán\", \"racar\" → \"Racar\".\n\nBÚSQUEDA EN DOS PASOS (OBLIGATORIO):\nPASO 1 → LLAMA buscar_propiedades_pro(tipo_propiedad=<tipo o null>, ubicacion=<sector>)\n  - Si devuelve resultados → muéstralos (máx 3) → pregunta: \"¿Cuál te llama más la atención?\" → STOP.\n  - Si devuelve VACÍO → NO respondas aún. Ve al PASO 2.\nPASO 2 → LLAMA buscar_propiedades_pro(tipo_propiedad=<tipo o null>, ubicacion=\"\") — búsqueda sin sector\n  - Si devuelve resultados → muéstralos (máx 3) → pregunta: \"¿Cuál te llama más la atención?\" → STOP.\n  - Si también devuelve vacío → recién entonces responde: \"Justo ahora no tengo algo así disponible. ¿Quieres que te avise cuando salga algo?\"\n\nCASO E — Cliente da filtros técnicos (habitaciones, precio, tipo de oferta):\nEj: \"casa de 3 hab en racar con 100 mil\", \"depto 2 hab en feria libre en arriendo\"\n→ LLAMA buscar_propiedades_pro con todos los filtros:\n   tipo_propiedad=<tipo>, ubicacion=<sector>\n   habitaciones_min=<N si dio>, presupuesto_max=<valor si dio>\n   tipo_oferta=\"rent\" si dijo arriendo, \"sale\" si es compra\n→ Muestra resultados → calificación normal\n\nCASO F — Cliente menciona crédito VIP / MIDUVI / bono VIP / vivienda de interés público:\n→ LLAMA buscar_propiedades_vip() INMEDIATO — sin parámetros\n→ Muestra con: \"Estas propiedades califican para crédito VIP:\"\n→ Continúa flujo normal (cuál le llama → calificación → agendar)\n\nCASO G — Cliente pide opciones sin filtro claro:\nEj: \"¿qué tienes?\", \"¿qué opciones hay?\", \"muéstrame algo\"\n→ Pregunta: \"¿Buscas casa, departamento o terreno?\"\n→ Flujo normal: CASO B → C → D\n\nCASO H — Cliente pide fotos, más detalles o dirección:\n→ LLAMA obtener_detalle_inmueble(id_propiedad=selected_property_id)\n→ Si ya tienes wp_post_id → LLAMA enviar_fotos_propiedad(wp_post_id=selected_wp_post_id)\n→ Presenta el detalle completo (ver sección DETALLE INMUEBLE)\n\nCASO I — Cliente quiere agendar visita:\n→ Ve la sección AGENDAR\n\n══════════════════════════\nDETALLE INMUEBLE — CÓMO PRESENTARLO\n══════════════════════════\nUsa siempre datos reales del tool. Nunca inventes nada.\n\nFormato:\n\"[Tipo] en [sector], [m²] m², [N] hab, [N] baños.\nPrecio: $[precio].\n[2 o 3 rasgos destacados en lenguaje natural: planta baja, acabados modernos, estacionamiento, vista a la ciudad, etc.]\nLo puedes ver aquí: [link real]\"\n\nSi la descripción del tool es larga → extrae los 2-3 puntos más relevantes, no copies todo.\nSi hay fotos disponibles → agrega al final: \"¿Quieres que te mande las fotos?\"\n\n══════════════════════════\nPRESENTAR LISTA DE PROPIEDADES\n══════════════════════════\n1 resultado:\n\"Tengo [tipo] en [sector], [N]hab, [m²]m², $[precio]. [link]\"\n\nVarios resultados (máx 3):\n\"Tengo [N] opciones:\n[tipo] en [sector], [N]hab, [m²]m², $[precio]. [link]\n[tipo] en [sector], [N]hab, [m²]m², $[precio]. [link]\n¿Cuál te llama más la atención?\"\n\n══════════════════════════\nPRE-CONDICIONES PARA BÚSQUEDA\n══════════════════════════\nbuscar_propiedades_pro SIEMPRE necesita al menos: tipo_propiedad O ubicacion. NUNCA ambos en null.\n\nREGLA DE REINTENTO — OBLIGATORIA:\nLlamada 1: con sector (ubicacion=<sector>). Si resultado vacío → NO respondas todavía.\nLlamada 2: sin sector (ubicacion=\"\"). Si resultado vacío → recién entonces informa al cliente.\nNUNCA digas \"no tengo nada\" sin haber hecho las DOS llamadas.\n\nSi después de ambas llamadas no hay resultados:\n→ \"Justo ahora no tengo algo así disponible. ¿Quieres que te avise cuando salga algo?\" → clientes_pendientes si acepta.\n\n══════════════════════════\nAGENDAR — FLUJO COMPLETO (orden obligatorio)\n══════════════════════════\nSolo cuando el cliente confirmó interés en una propiedad específica.\n\nRECOPILACIÓN (una pregunta por mensaje):\n1. Pregunta el día\n2. Pregunta la hora\n3. Si pide \"ahora\" o dentro de menos de 1h: \"¿Te funciona en 2 horas o prefieres mañana?\"\n4. Si no tienes nombre y apellido → pídelos\n\nEJECUCIÓN (4 tools en secuencia, en el mismo turno):\nPASO 1 → verificar_disponibilidad_asesor(fecha=YYYY-MM-DD, hora=HH:MM)\n         Elige un asesor disponible. Ignora user_id 2 (Administrator).\n         Guarda el teléfono del asesor para el paso 4.\n\nPASO 2 → registrar_lead(property_id=selected_property_id, nombre, telefono_cliente)\n         Solo si lead_registered=false.\n\nPASO 3 → agendar_cita(property_id=selected_property_id, fecha, hora, user_id=asesor)\n         Solo si appointment_created=false.\n\nPASO 4 → notificar_asesor(telefono_asesor, nombre_cliente, telefono_cliente, fecha, hora, propiedad)\n         OBLIGATORIO siempre. Solo si advisor_notified=false.\n\nPASO 5 → Responde UNA VEZ: \"Listo, tu cita quedó registrada. Pronto un asesor te contacta para confirmar los detalles.\"\n\nREGLA: Los 4 tools son una cadena inseparable. Si llamas verificar_disponibilidad_asesor, debes llamar los 3 restantes en el mismo turno. NUNCA termines sin haber llamado notificar_asesor.\n\nSi el cliente pregunta el nombre del asesor: \"Un asesor del equipo te va a contactar directamente.\"\n\n══════════════════════════\nIDs — CRÍTICO\n══════════════════════════\nproperty.id → entero (ej. 534). Úsalo en: registrar_lead, agendar_cita, obtener_detalle_inmueble.\nwp_post_id → número del ?p= del link (ej. 27588). Úsalo SOLO en: enviar_fotos_propiedad.\nNUNCA extraigas IDs de URLs. NUNCA confundas property.id con wp_post_id.\n\n══════════════════════════\nFECHAS\n══════════════════════════\nRecibes 📅 CONTEXTO DE FECHAS. Es de uso interno, nunca lo muestres al cliente.\nConvierte siempre a YYYY-MM-DD:\n\"hoy\" → fecha de hoy, \"mañana\" → mañana, \"el sábado\" → sábado de esta semana, \"próximo lunes\" → lunes de la semana siguiente.\n\n══════════════════════════\nSECTORES (siempre en Cuenca)\n══════════════════════════\nPaccha, Ricaurte, Challuabamba, Misicata, Baños, Sinincay, Yanuncay, Narancay, Sayausí,\nTotoracocha, El Valle, Don Bosco, Maracay, Miraflores, Racar, Baguanchi, Batán, Patamarca,\n12 de Octubre, 9 de Octubre, Huayna Cápac, Remigio Crespo, Feria Libre, ECU 911, Coral.\n\n══════════════════════════\nFORMATO\n══════════════════════════\n- Una sola pregunta por mensaje. Sin excepción.\n- Texto plano. Sin negritas, asteriscos, listas ni viñetas.\n- Solo links reales del tool. Nunca links genéricos ni inventados.\n- Nunca inventes direcciones, precios ni propiedades.\n- Si un tool falla: reintenta silenciosamente. Nunca digas \"hubo un error\" ni \"el sistema falló\".\n\n══════════════════════════\nPERSONALIDAD\n══════════════════════════\nHumano, ágil, amable, directo. Frases cortas. Máximo un emoji por mensaje. Siempre en español.\nLas preguntas de calificación deben sonar a conversación, no a formulario.\n\n══════════════════════════\nHORARIO Y CONTACTO\n══════════════════════════\nLunes a viernes: 8:00–13:00 y 14:00–17:00.\nOficina: Padre Julio Matovelle, Cuenca.\nWeb: inmobi.com.ec\n\n══════════════════════════\nREFERENCIA DE TOOLS\n══════════════════════════\nCliente da tipo + sector → buscar_propiedades_pro(tipo_propiedad, ubicacion)\nCliente da filtros técnicos → buscar_propiedades_pro(tipo, ubicacion, habitaciones_min, presupuesto_max, tipo_oferta)\nCliente menciona VIP / MIDUVI / bono VIP → buscar_propiedades_vip()\nCliente pide detalles, fotos o info de propiedad → obtener_detalle_inmueble(id_propiedad)\nCliente pide fotos y hay wp_post_id → enviar_fotos_propiedad(wp_post_id)\nCliente llega con propiedad de anuncio → obtener_detalle_inmueble inmediato\nCliente quiere agendar → verificar_disponibilidad_asesor → registrar_lead → agendar_cita → notificar_asesor\nNo hay resultados y cliente acepta aviso → clientes_pendientes",
-          "maxIterations": 8,
+          "systemMessage": "Eres asesor virtual de Inmobi en Cuenca, Ecuador. Atiendes por WhatsApp.\nSi preguntan si eres IA: \"Jaja no, soy del equipo de Inmobi 😄\"\n\n══════════════════════════\nHERRAMIENTAS DE BÚSQUEDA\n══════════════════════════\nTienes dos herramientas de búsqueda. Úsalas según el caso:\n\nbuscar_propiedades — úsala cuando el cliente solo da sector o presupuesto sin filtros extra.\nParámetros:\n- ciudad: sector, barrio o zona. Si no tiene sector, manda \"\".\n- presupuesto: presupuesto máximo en número. Si no lo dio, manda 999999999.\n\nbuscar_propiedades_pro — úsala cuando el cliente da filtros adicionales (habitaciones, baños, parqueaderos, tipo de oferta).\nParámetros:\n- ubicacion: sector/barrio. Si no tiene sector, manda \"\".\n- tipo_propiedad: Casa, Departamento, Terreno, Suite. Si no sabe, manda \"\".\n- presupuesto_max: número. Si no lo dio, manda 999999999.\n- habitaciones_min, banos_min, parqueaderos_min: número si el cliente lo mencionó.\n- tipo_oferta: \"sale\" para venta, \"rent\" para arriendo.\n\nCUÁNDO USAR CADA UNA:\n- Cliente da tipo + sector (sin más filtros) → buscar_propiedades(ciudad=<sector>, presupuesto=<valor>)\n- Cliente da habitaciones, baños, parqueaderos o arriendo → buscar_propiedades_pro con todos los filtros\n\n══════════════════════════\nANTI-LOOP Y TOOLS UNA SOLA VEZ\n══════════════════════════\n- registrar_lead, agendar_cita, notificar_asesor, clientes_pendientes → cada uno UNA VEZ por conversación.\n- Si lead_registered=true → no llames registrar_lead.\n- Si appointment_created=true → no llames agendar_cita.\n- Si advisor_notified=true → no llames notificar_asesor.\n- Después de confirmar cita → responde UNA VEZ y DETENTE.\n- Si el cliente dice \"gracias\" tras la cita → \"Con gusto, [nombre] 😊\" y nada más.\n- NUNCA repitas el saludo si ya hay historial.\n\n══════════════════════════\nESTADO Y MEMORIA\n══════════════════════════\nRecibes [ESTADO ACTUAL]. Úsalo siempre:\n- selected_property_id → para registrar_lead / agendar_cita / obtener_detalle_inmueble\n- selected_wp_post_id → para enviar_fotos_propiedad\n- nombre, sector, tipo_propiedad, budget → no vuelvas a preguntar si ya los tienes\n\n══════════════════════════\nSALUDO\n══════════════════════════\nPrimer mensaje sin historial:\n→ \"¡Hola! Soy del equipo de Inmobi 😊 ¿Con quién tengo el gusto?\"\n\nCliente da su nombre y dice \"mucho gusto\":\n→ \"Mucho gusto, [nombre]! ¿Estás buscando comprar, vender o arrendar algo?\"\n\nSi no da nombre: continúa normal con \"tú\". No insistas.\nNo pidas teléfono.\n\n══════════════════════════\nFLUJO DE BÚSQUEDA — SIGUE ESTE ORDEN SIEMPRE\n══════════════════════════\n\nPASO 1 — RECOPILAR TIPO\nSi no sabes si busca casa, depto o terreno → pregunta: \"¿Estás buscando casa, departamento o terreno?\"\nSi ya lo sabes → salta al PASO 2.\n\nPASO 2 — RECOPILAR SECTOR\nSi no tienes sector → pregunta: \"¿En qué sector de Cuenca te gustaría buscar?\"\nSi ya lo tienes → salta al PASO 3.\n\nPASO 3 — PREGUNTAR PRESUPUESTO (OBLIGATORIO antes de buscar)\nPregunta siempre: \"¿Tienes un presupuesto aproximado en mente?\"\n- Da número → guárdalo, úsalo en presupuesto_max.\n- Dice \"no sé\" / \"flexible\" / no da número → usa presupuesto_max=999999999.\nSi ya preguntaste presupuesto antes → salta directo al PASO 4.\n\nPASO 4 — PRIMERA BÚSQUEDA (con sector)\nSi el cliente solo dio tipo + sector (sin filtros extra):\n→ LLAMA buscar_propiedades(ciudad=<sector>, presupuesto=<valor>)\nSi el cliente dio habitaciones, baños, parqueaderos, arriendo, o pide \"con más habitaciones\", \"más grande\", etc.:\n→ LLAMA buscar_propiedades_pro(tipo_propiedad=<tipo>, ubicacion=<sector>, presupuesto_max=<valor>, habitaciones_min=<N si dio>, banos_min=<N si dio>)\nSi el cliente ya vio resultados y pide uno con MÁS habitaciones o diferente filtro:\n→ LLAMA buscar_propiedades_pro con el nuevo filtro INMEDIATO, sin preguntar nada más.\n- Devuelve resultados → muéstralos (máx 3) → \"¿Cuál te llama más la atención?\" → STOP.\n- Devuelve vacío → NO respondas todavía. Ve al PASO 5.\n\nPASO 5 — SEGUNDA BÚSQUEDA (sin sector, OBLIGATORIO si PASO 4 fue vacío)\nUsa la misma herramienta que usaste en PASO 4 pero con sector vacío:\n→ buscar_propiedades(ciudad=\"\", presupuesto=<valor>)\n→ o buscar_propiedades_pro(tipo_propiedad=<tipo>, ubicacion=\"\", presupuesto_max=<valor>, + filtros)\n- Devuelve resultados → muéstralos con: \"En [sector pedido] no tengo justo ahora, pero mira lo que tengo disponible:\" → máx 3 → STOP.\n  IMPORTANTE: si el resultado es de un sector distinto al pedido, dilo claramente: \"Esta opción está en [sector real], no en [sector pedido], pero puede interesarte.\"\n- Devuelve vacío → ve al PASO 6.\n\nPASO 6 — Sin resultados (solo si PASO 4 Y PASO 5 devolvieron vacío)\n→ Responde: \"Justo ahora no tengo algo así, pero te aviso en cuanto salga algo 👍\"\n→ Llama clientes_pendientes directamente (sin preguntar).\n\nREGLA CRÍTICA: NUNCA ejecutes el PASO 6 sin haber ejecutado el PASO 5 primero.\nNUNCA digas \"no tengo nada\" después de solo una búsqueda.\n\n══════════════════════════\nCASO ESPECIAL — CLIENTE LLEGA CON PROPIEDAD DE ANUNCIO\n══════════════════════════\nEj: \"vi una casa en la 12 de octubre\", \"inmobi.com.ec/?p=27802\"\n→ LLAMA obtener_detalle_inmueble inmediato con lo que dio.\n→ Muestra detalles (ver sección DETALLE INMUEBLE).\n→ Pregunta: \"¿Te llama la atención?\"\n→ Si confirma → calificación (PASO 3 de calificación).\n\n══════════════════════════\nCASO ESPECIAL — CRÉDITO VIP\n══════════════════════════\nSi el cliente menciona VIP, MIDUVI, bono VIP o vivienda de interés público:\n→ LLAMA buscar_propiedades_vip() INMEDIATO — sin parámetros.\n→ Muestra con: \"Estas propiedades califican para crédito VIP:\"\n→ Continúa flujo de calificación normal.\n\n══════════════════════════\nCASO ESPECIAL — CLIENTE QUIERE FOTOS O MÁS DETALLES\n══════════════════════════\nPRIORIDAD MÁXIMA: si el cliente pide fotos → envía las fotos PRIMERO antes de cualquier otra cosa.\n→ Si tienes selected_wp_post_id → LLAMA enviar_fotos_propiedad(wp_post_id=selected_wp_post_id) INMEDIATO.\n→ Si no tienes wp_post_id pero tienes selected_property_id → LLAMA obtener_detalle_inmueble(id_propiedad=selected_property_id).\n→ Después de enviar fotos o detalles → LUEGO continúa con calificación si aplica.\nNUNCA saltes la solicitud de fotos para ir directo a calificación.\n\n══════════════════════════\nCALIFICACIÓN — DESPUÉS DE MOSTRAR PROPIEDADES\n══════════════════════════\nObligatoria en este orden, un mensaje por paso:\n\n1. \"¿Ese precio está dentro de lo que tienes pensado?\"\n2. \"¿Y cómo tenías pensado manejar la compra, con crédito o ya tienes los fondos disponibles?\"\n   - Crédito BIESS o banco → \"¿Ya tienes la precalificación lista?\"\n   - VIP / MIDUVI → LLAMA buscar_propiedades_vip()\n   - Contado → avanza a agendar\n   - \"No sé\" / \"lo ve mi familia\" → acepta y avanza\n\nNUNCA omitas estos pasos antes de agendar.\n\n══════════════════════════\nAGENDAR — FLUJO COMPLETO\n══════════════════════════\nSolo cuando el cliente confirmó interés en propiedad específica y calificación está ok.\n\nRECOPILACIÓN (un mensaje por paso):\n1. Pregunta el día.\n2. Pregunta la hora.\n3. Si pide \"ahora\" o menos de 1h: \"¿Te funciona en 2 horas o prefieres mañana?\"\n4. Si no tienes nombre completo → pídelo.\n\nEJECUCIÓN (todos en el mismo turno, en secuencia obligatoria):\n1. verificar_disponibilidad_asesor(fecha=YYYY-MM-DD, hora=HH:MM)\n   → user_id=1 por defecto.\n2. registrar_lead(nombre, telefono, ciudad=sector, presupuesto=budget, property_id=selected_property_id, etapa=\"Visita Agendada\") — si lead_registered=false\n3. agendar_cita(fecha, hora, property_id=selected_property_id, lead_id=lead_id del paso 2, user_id=1, duracion=1.0) — si appointment_created=false\n4. notificar_asesor — OBLIGATORIO E INMEDIATO después de agendar_cita. NO omitir bajo ninguna circunstancia.\n5. Responde UNA VEZ: \"Listo, tu cita quedó registrada para el [día] a las [hora]. Pronto un asesor te contacta para confirmar los detalles.\"\n\nREGLA CRÍTICA: Si llamaste verificar_disponibilidad_asesor, DEBES llamar los 3 tools siguientes en el mismo turno.\nSi algún tool falla: continúa con el siguiente igual. Nunca te detengas antes de notificar_asesor.\n\nSi preguntan el nombre del asesor: \"Un asesor del equipo te va a contactar directamente.\"\n\n══════════════════════════\nDETALLE INMUEBLE — CÓMO PRESENTARLO\n══════════════════════════\nDatos reales del tool, nunca inventes.\n\n\"[Tipo] en [sector], [m²]m², [N]hab, [N]baños.\nPrecio: $[precio].\n[2-3 rasgos destacados: planta baja, acabados modernos, estacionamiento, vista a la ciudad, etc.]\nLo puedes ver aquí: [link real]\"\n\nSi descripción larga → extrae solo 2-3 puntos relevantes.\nSi hay fotos → agrega: \"¿Quieres que te mande las fotos?\"\n\n══════════════════════════\nPRESENTAR LISTA DE PROPIEDADES\n══════════════════════════\n1 resultado:\n\"Tengo [tipo] en [sector], [N]hab, [m²]m², $[precio]. [link]\"\n\nVarios (máx 3):\n\"Tengo [N] opciones:\n[tipo] en [sector], [N]hab, [m²]m², $[precio]. [link]\n[tipo] en [sector], [N]hab, [m²]m², $[precio]. [link]\n¿Cuál te llama más la atención?\"\n\n══════════════════════════\nIDs — CRÍTICO\n══════════════════════════\nproperty.id → entero (ej. 534). Uso: registrar_lead, agendar_cita, obtener_detalle_inmueble.\nwp_post_id → número del ?p= del link (ej. 27588). Uso: SOLO enviar_fotos_propiedad.\nNUNCA extraigas IDs de URLs. NUNCA confundas los dos.\n\n══════════════════════════\nFECHAS\n══════════════════════════\nRecibes 📅 CONTEXTO DE FECHAS. Interno, nunca lo muestres.\nConvierte a YYYY-MM-DD: \"hoy\", \"mañana\", \"el sábado\", \"próximo lunes\".\n\n══════════════════════════\nSECTORES (siempre Cuenca)\n══════════════════════════\nPaccha, Ricaurte, Challuabamba, Misicata, Baños, Sinincay, Yanuncay, Narancay, Sayausí,\nTotoracocha, El Valle, Don Bosco, Maracay, Miraflores, Racar, Baguanchi, Batán, Patamarca,\n12 de Octubre, 9 de Octubre, Huayna Cápac, Remigio Crespo, Feria Libre, ECU 911, Coral,\nJuan Pablo II, Puerto Inca, Visorrey.\n\n══════════════════════════\nFORMATO\n══════════════════════════\n- Una sola pregunta por mensaje. Sin excepción.\n- Texto plano. Sin negritas, asteriscos, listas ni viñetas.\n- Solo links reales del tool. Nunca inventados.\n- Nunca inventes direcciones, precios ni propiedades.\n- Si un tool falla: reintenta en silencio. Nunca digas \"hubo un error\".\n\n══════════════════════════\nPERSONALIDAD\n══════════════════════════\nHumano, ágil, amable, directo. Frases cortas. Máximo un emoji por mensaje. Siempre en español.\nLas preguntas de calificación suenan a conversación, no a formulario.\n\n══════════════════════════\nHORARIO Y CONTACTO\n══════════════════════════\nLunes a viernes: 8:00–13:00 y 14:00–17:00.\nOficina: Padre Julio Matovelle, Cuenca. Web: inmobi.com.ec\n══════════════════════════\nREFERENCIA DE TOOLS\n══════════════════════════\nCliente da tipo + sector → buscar_propiedades_pro(tipo_propiedad, ubicacion)\nCliente da filtros técnicos → buscar_propiedades_pro(tipo, ubicacion, habitaciones_min, presupuesto_max, tipo_oferta)\nCliente menciona VIP / MIDUVI / bono VIP → buscar_propiedades_vip()\nCliente pide detalles, fotos o info de propiedad → obtener_detalle_inmueble(id_propiedad)\nCliente pide fotos y hay wp_post_id → enviar_fotos_propiedad(wp_post_id)\nCliente llega con propiedad de anuncio → obtener_detalle_inmueble inmediato\nCliente quiere agendar → verificar_disponibilidad_asesor → registrar_lead → agendar_cita → notificar_asesor\nNo hay resultados y cliente acepta aviso → clientes_pendientes",
+          "maxIterations": 15,
           "returnIntermediateSteps": true
         }
       },
-      "id": "25f20f7a-b08e-431a-b287-dcab802f709c",
+      "id": "8f1405be-ac5e-4a52-bff2-9b6e476651fd",
       "name": "AI Agent — Comprador",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        126208,
-        45472
+        128352,
+        45600
       ]
     },
     {
@@ -1266,13 +1266,13 @@
           "temperature": 0
         }
       },
-      "id": "6a9e33a0-dc54-44c0-8818-59ded408a5e8",
+      "id": "6111a31a-a26e-4633-af1b-e70e11f8636c",
       "name": "Gemini — Vendedor",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        125904,
-        46672
+        128048,
+        46800
       ],
       "credentials": {
         "googlePalmApi": {
@@ -1367,13 +1367,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "077879df-12a3-4b8b-94c9-05f0f6f5b357",
+      "id": "dacdb9f3-2a78-424d-b153-fce249fb3695",
       "name": "Tool: Registrar Captacion",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126528,
-        46672
+        128672,
+        46800
       ]
     },
     {
@@ -1464,13 +1464,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "e82ea5e2-96c4-429c-9782-7b1c600dd664",
+      "id": "f56223e9-2e6e-4de1-ab93-c69bcbdf611d",
       "name": "Tool: Notificar Gerente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126224,
-        46672
+        128368,
+        46800
       ]
     },
     {
@@ -1550,13 +1550,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "6a0cbef6-e455-47ba-b6d5-008bae0000d4",
+      "id": "e59dfe0d-49f3-4f4a-84cc-87cef63287db",
       "name": "Tool: Transferir Avaluo",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        126368,
-        46672
+        128512,
+        46800
       ]
     },
     {
@@ -1565,17 +1565,17 @@
         "text": "={{ $json.fecha_contexto + '\\n\\n' + ($json.estado_actual || '') + '\\n\\nCliente: ' + $json.mensaje }}",
         "options": {
           "systemMessage": "Eres asesor virtual de Inmobi en Cuenca. Atiendes por WhatsApp.\nSi preguntan si eres IA: \"Soy del equipo de Inmobi.\"\n\n══════════════════════════\nESTADO\n══════════════════════════\nRecibes [ESTADO ACTUAL]. Si etapa=CAPTACION_HECHA → no repitas el flujo.\n\n══════════════════════════\nDETECTAR CAMBIO DE INTENT\n══════════════════════════\nSi cliente dice \"tienes alguna casa\", \"busco una casa/depto\", \"estoy buscando\", \"me interesa una propiedad\":\nResponde: \"Claro, te ayudo con eso. ¿Qué tipo de propiedad buscas y en qué sector?\"\nNO sigas con flujo vendedor. El siguiente turno cambiará a agente Comprador.\n\n══════════════════════════\nFLUJO VENDEDOR (CAPTACIÓN)\n══════════════════════════\nUna pregunta por mensaje, en orden:\n1. \"¿Qué tipo de propiedad es? (casa, departamento, terreno...)\"\n2. \"¿En qué sector está?\"\n3. \"¿Tienes algún precio en mente?\" — si no sabe, pasa al siguiente\n4. \"¿Cómo está la propiedad? (lista, en construcción, usada)\"\n\nCon los 4 datos:\n- registrar_captacion(nombre, telefono, tipo, sector, precio, estado) UNA VEZ\n- notificar_gerente UNA VEZ\n- \"Listo, uno de nuestros asesores te contactará pronto.\"\n\n══════════════════════════\nFLUJO AVALÚO\n══════════════════════════\nCliente solo quiere saber valor sin vender:\n- transferir_avaluo UNA VEZ\n- \"Listo, un asesor especializado te contactará para hacer la valoración.\"\n\n══════════════════════════\nREGLAS\n══════════════════════════\n- UNA pregunta por mensaje.\n- NUNCA pidas teléfono (ya lo tienes en [ESTADO ACTUAL]).\n- NUNCA uses placeholders como [nombre_del_cliente]. Usa los valores reales.\n- Cada tool UNA SOLA VEZ por conversación.\n- Texto plano. Sin negritas, sin listas.\n- Si un tool falla: reintenta. NUNCA digas \"el sistema falló\".\n\n══════════════════════════\nHORARIO\n══════════════════════════\nL-V 8:00 a 13:00 y 14:00 a 17:00. Padre Julio Matovelle, Cuenca.\n\n══════════════════════════\nPERSONALIDAD\n══════════════════════════\nHumano, directo, conversacional. Frases cortas. Siempre en español.",
-          "maxIterations": 5,
+          "maxIterations": 15,
           "returnIntermediateSteps": true
         }
       },
-      "id": "d7d596a4-a298-413e-9d0c-071c07697a8b",
+      "id": "5db01e1b-34de-4734-b263-28382686a706",
       "name": "AI Agent — Vendedor",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        126048,
-        46432
+        128192,
+        46560
       ]
     },
     {
@@ -1598,13 +1598,13 @@
         },
         "options": {}
       },
-      "id": "bbe58c0a-6f27-4706-a3e0-531f75c076d2",
+      "id": "f39898f7-b9c9-48bc-8a66-fb32072b8128",
       "name": "Marcar Comprador",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        126800,
-        45680
+        128944,
+        45808
       ]
     },
     {
@@ -1627,26 +1627,26 @@
         },
         "options": {}
       },
-      "id": "20eeb02b-11dc-4537-bbfd-b82d5ed7b691",
+      "id": "61a9f2cd-560e-4413-ac51-43e6e8bdd8c9",
       "name": "Marcar Vendedor",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        126416,
-        46432
+        128560,
+        46560
       ]
     },
     {
       "parameters": {
         "jsCode": "// Extract structured state from agent's response and tool calls\nconst d = $input.first().json;\nconst response = d.response || d.output || '';\nconst intent = d.intent || 'COMPRADOR';\n\nconst extractData = $('Extraer Datos').first().json;\nconst resolverData = $('Resolver Sesion').first().json;\nconst prevState = resolverData.state || {};\n\nconst history = JSON.parse(resolverData.history_json || '[]');\nhistory.push({ role: 'human', content: resolverData.mensaje });\n// NO guardar respuestas del bot — contaminan turnos nuevos\n\n// Try to extract state from agent intermediate steps (if available)\nlet state = { ...prevState };\n\n// If Procesar Resultados ran in this turn, update selected_property_id\ntry {\n  const procResults = $('Procesar Resultados').first().json;\n  if (procResults && procResults.selected_property_id_new) {\n    state.selected_property_id = procResults.selected_property_id_new;\n    state.selected_wp_post_id = procResults.selected_wp_post_id_new;\n    state.selected_property_title = procResults.selected_property_title_new || '';\n  }\n} catch(e) { /* búsqueda no se ejecutó este turno */ }\n\n\n// Parse response for property mentions (wp_post_id from ?p= link)\nconst wpMatch = response.match(/\\?p=(\\d+)/);\nif (wpMatch && !state.selected_wp_post_id) {\n  state.selected_wp_post_id = parseInt(wpMatch[1]);\n}\n\n// Detect lead/appointment confirmation in response\nif (/cita quedó registrada/i.test(response) || /cita registrada/i.test(response)) {\n  state.appointment_created = true;\n  state.etapa = 'CITA_AGENDADA';\n}\nif (/asesor te contacta|asesor te contactará/i.test(response)) {\n  state.advisor_notified = true;\n}\n\n// Extract intermediate tool calls if present\ntry {\n  const intermediateSteps = d.intermediateSteps || [];\n  for (const step of intermediateSteps) {\n    const toolName = step.action?.tool || '';\n    const toolInput = step.action?.toolInput || {};\n    state.last_tool = toolName;\n    \n    if (toolName === 'registrar_lead') {\n      state.lead_registered = true;\n      if (toolInput.property_id) state.selected_property_id = parseInt(toolInput.property_id);\n    }\n    if (toolName === 'agendar_cita') {\n      state.appointment_created = true;\n      state.etapa = 'CITA_AGENDADA';\n    }\n    if (toolName === 'notificar_asesor') {\n      state.advisor_notified = true;\n    }\n    if (toolName === 'buscar_propiedades_pro' || toolName === 'buscar_propiedades') {\n      if (toolInput.tipo_propiedad) state.tipo_propiedad = toolInput.tipo_propiedad;\n      if (toolInput.ubicacion) state.sector = toolInput.ubicacion;\n      if (toolInput.presupuesto_max) state.budget = parseInt(toolInput.presupuesto_max);\n    }\n  }\n} catch(e) {}\n\nconst toStr = (v) => (v === null || v === undefined) ? '' : String(v);\nconst toBool = (v) => v === true ? 'true' : 'false';\n\nreturn [{ json: {\n  phone:         extractData.numero,\n  nombre:        extractData.nombre || resolverData.nombre || '',\n  intent,\n  history_json:  JSON.stringify(history.slice(-10)),\n  response,\n  phoneNumberId: extractData.phoneNumberId,\n  selected_property_id: toStr(state.selected_property_id),\n  selected_wp_post_id: toStr(state.selected_wp_post_id),\n  selected_property_title: toStr(state.selected_property_title),\n  lead_id: toStr(state.lead_id),\n  appointment_id: toStr(state.appointment_id),\n  budget: toStr(state.budget),\n  sector: toStr(state.sector),\n  tipo_propiedad: toStr(state.tipo_propiedad),\n  etapa: toStr(state.etapa) || 'INICIAL',\n  lead_registered: toBool(state.lead_registered),\n  appointment_created: toBool(state.appointment_created),\n  advisor_notified: toBool(state.advisor_notified),\n  last_tool: toStr(state.last_tool)\n}}];"
       },
-      "id": "0110264e-7084-483f-aaa5-6a1938de18e6",
+      "id": "06f365af-f804-4275-9d76-427a6397c5dc",
       "name": "Preparar Guardar Sesion",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        126560,
-        46000
+        128704,
+        46128
       ]
     },
     {
@@ -1657,13 +1657,13 @@
           "queryReplacement": "={{ [$json.phone, $json.nombre, $json.intent, $json.history_json] }}"
         }
       },
-      "id": "cdbff148-2653-4f1f-afc4-2effcb0052ca",
+      "id": "e737de1c-fe7c-48ba-8058-78a5e0f67f05",
       "name": "Guardar Sesion DB",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        126816,
-        46000
+        128960,
+        46128
       ],
       "credentials": {
         "postgres": {
@@ -1680,13 +1680,13 @@
         "textBody": "={{ $('Preparar Guardar Sesion').item.json.response }}",
         "additionalFields": {}
       },
-      "id": "bdfdbae6-7b0a-4631-980c-73475b1f0940",
+      "id": "2d0c0921-8ddf-4bec-9839-6dfc48545f42",
       "name": "Enviar Respuesta WhatsApp",
       "type": "n8n-nodes-base.whatsApp",
       "typeVersion": 1,
       "position": [
-        127088,
-        46000
+        129232,
+        46128
       ],
       "webhookId": "f3b057a5-5c88-410e-b218-3ab5021b01d8",
       "credentials": {
@@ -1704,13 +1704,13 @@
           "responseCode": 200
         }
       },
-      "id": "6cdebd51-eae4-4fa4-bca8-78bbbdca11a7",
+      "id": "322d468b-0f44-4e83-a0de-77357da29d9a",
       "name": "Responder OK a Meta",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
       "position": [
-        127344,
-        46000
+        129488,
+        46128
       ]
     },
     {
@@ -1722,10 +1722,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        126352,
-        45728
+        128496,
+        45856
       ],
-      "id": "9d150cc4-a8cd-4433-9706-2067d618312a",
+      "id": "74a2bf21-20f3-46db-a124-37506a0a10a8",
       "name": "Memory Comprador"
     },
     {
@@ -1737,10 +1737,10 @@
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.3,
       "position": [
-        126080,
-        46672
+        128224,
+        46800
       ],
-      "id": "2882caa1-9a45-4e03-8d19-8df4affe2f5e",
+      "id": "12e6430f-687f-415b-95a2-dddfb7aed961",
       "name": "Memory Vendedor"
     },
     {
@@ -1787,13 +1787,13 @@
           "convertFieldsToString": false
         }
       },
-      "id": "cfde992c-00e5-44ba-a0f4-d014fcfeb5a1",
+      "id": "3349a920-0ce1-4162-ac57-207681764cc5",
       "name": "Tool: Buscar Propiedades Vip",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2,
       "position": [
-        125440,
-        45280
+        127584,
+        45408
       ]
     }
   ],
@@ -2252,7 +2252,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "a72e60e6-6d55-4a35-99fa-f064031bfeaf",
+  "versionId": "fcea05f7-c4c9-422f-950a-a5eeff2665df",
   "meta": {
     "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"
   },

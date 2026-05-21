@@ -5,13 +5,8 @@
       "parameters": {
         "workflowInputs": {
           "values": [
-            {
-              "name": "ciudad"
-            },
-            {
-              "name": "presupuesto",
-              "type": "number"
-            }
+            {"name": "ciudad"},
+            {"name": "presupuesto", "type": "number"}
           ]
         }
       },
@@ -19,33 +14,15 @@
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
-      "position": [
-        4416,
-        960
-      ]
+      "position": [4416, 960]
     },
     {
       "parameters": {
         "assignments": {
           "assignments": [
-            {
-              "id": "p1",
-              "name": "ciudad",
-              "value": "={{ $json.ciudad || '' }}",
-              "type": "string"
-            },
-            {
-              "id": "p2",
-              "name": "presupuesto",
-              "value": "={{ Number($json.presupuesto) || 999999999 }}",
-              "type": "number"
-            },
-            {
-              "id": "norm1",
-              "name": "ubicacion_norm",
-              "value": "={{ ($json.ubicacion || $json.ciudad || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim() }}",
-              "type": "string"
-            }
+            {"id": "p1", "name": "ciudad", "value": "={{ $json.ciudad || '' }}", "type": "string"},
+            {"id": "p2", "name": "presupuesto", "value": "={{ Number($json.presupuesto) || 999999999 }}", "type": "number"},
+            {"id": "norm1", "name": "ubicacion_norm", "value": "={{ ($json.ubicacion || $json.ciudad || '').toString().toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim() }}", "type": "string"}
           ]
         },
         "options": {}
@@ -54,31 +31,44 @@
       "name": "Preparar Parametros",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        4640,
-        960
-      ]
+      "position": [4640, 960]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT \n    p.id, \n    p.name AS referencia,\n    p.title AS titulo, \n    p.price AS precio, \n    p.area AS metraje_m2, \n    p.bedrooms AS habitaciones, \n    p.street AS sector,\n    p.city AS ciudad,\n    COALESCE(t.name, 'Inmueble') AS tipo_propiedad,\n    CASE \n        WHEN p.wp_post_id IS NOT NULL AND p.wp_post_id > 0 THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id \n        ELSE NULL \n    END AS link_propiedad,\n    p.wp_post_id\nFROM estate_property p \nLEFT JOIN estate_property_type t ON p.property_type_id = t.id \nWHERE p.state = 'available' \n  AND p.active = true\n  AND p.price > 0\n  AND (\n    '{{ $json.ubicacion_norm || \"\" }}' = '' \n    OR lower(translate(coalesce(p.city,''), 'áéíóúñÁÉÍÓÚÑ', 'aeiounAEIOUN')) ILIKE '%' || '{{ $json.ubicacion_norm }}' || '%' \n    OR lower(translate(coalesce(p.street,''), 'áéíóúñÁÉÍÓÚÑ', 'aeiounAEIOUN')) ILIKE '%' || '{{ $json.ubicacion_norm }}' || '%'\n    OR lower(translate(coalesce(p.title,''), 'áéíóúñÁÉÍÓÚÑ', 'aeiounAEIOUN')) ILIKE '%' || '{{ $json.ubicacion_norm }}' || '%'\n    OR lower(translate(coalesce(p.sector_keywords,''), 'áéíóúñÁÉÍÓÚÑ', 'aeiounAEIOUN')) ILIKE '%' || '{{ $json.ubicacion_norm }}' || '%'\n    OR lower(translate(coalesce(p.title,'') || ' ' || coalesce(p.street,'') || ' ' || coalesce(p.city,'') || ' ' || coalesce(p.sector_keywords,''), 'áéíóúñÁÉÍÓÚÑ', 'aeiounAEIOUN')) ILIKE '%' || replace('{{ $json.ubicacion_norm }}', ' ', '%') || '%'\n  )\n  AND p.price <= ({{ $json.presupuesto_max || $json.presupuesto || 999999999 }} * 1.10)\nORDER BY p.price ASC\nLIMIT 10;",
+        "query": "SELECT \n    p.id, \n    p.name AS referencia,\n    p.title AS titulo, \n    p.price AS precio, \n    p.area AS metraje_m2, \n    p.bedrooms AS habitaciones, \n    p.street AS sector,\n    p.city AS ciudad,\n    COALESCE(t.name, 'Inmueble') AS tipo_propiedad,\n    CASE \n        WHEN p.wp_post_id IS NOT NULL AND p.wp_post_id > 0 \n        THEN 'https://inmobi.com.ec/?p=' || p.wp_post_id \n        ELSE NULL \n    END AS link_propiedad,\n    p.wp_post_id,\n    (\n        (SELECT COALESCE(COUNT(*),0) * 10\n         FROM unnest(string_to_array('{{ $json.ubicacion_norm || \"\" }}', ' ')) w\n         WHERE length(w) >= 3\n           AND lower(translate(COALESCE(p.title,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n               ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n        + (SELECT COALESCE(COUNT(*),0) * 7\n           FROM unnest(string_to_array('{{ $json.ubicacion_norm || \"\" }}', ' ')) w\n           WHERE length(w) >= 3\n             AND lower(translate(COALESCE(p.sector_keywords,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n                 ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n        + (SELECT COALESCE(COUNT(*),0) * 5\n           FROM unnest(string_to_array('{{ $json.ubicacion_norm || \"\" }}', ' ')) w\n           WHERE length(w) >= 3\n             AND lower(translate(COALESCE(p.city,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n                 ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n        + (SELECT COALESCE(COUNT(*),0) * 3\n           FROM unnest(string_to_array('{{ $json.ubicacion_norm || \"\" }}', ' ')) w\n           WHERE length(w) >= 3\n             AND lower(translate(COALESCE(p.street,''),'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n                 ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%')\n    ) AS relevancia\nFROM estate_property p \nLEFT JOIN estate_property_type t ON p.property_type_id = t.id \nWHERE p.state = 'available' \n  AND p.active = true\n  AND p.price > 0\n  AND p.price <= ({{ $json.presupuesto_max || $json.presupuesto || 999999999 }} * 1.10)\n  AND (\n    '{{ $json.ubicacion_norm || \"\" }}' = ''\n    OR EXISTS (\n      SELECT 1 FROM unnest(string_to_array('{{ $json.ubicacion_norm }}', ' ')) w\n      WHERE length(w) >= 3\n        AND lower(translate(\n              COALESCE(p.title,'') || ' ' || COALESCE(p.street,'') || ' ' ||\n              COALESCE(p.city,'') || ' ' || COALESCE(p.sector_keywords,''),\n              'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN'))\n            ILIKE '%' || lower(translate(w,'áéíóúñÁÉÍÓÚÑ','aeiounAEIOUN')) || '%'\n    )\n  )\nORDER BY relevancia DESC, p.price ASC\nLIMIT 10;",
         "options": {}
       },
       "id": "4f352ff2-e792-45c6-83f8-e76ef1976928",
       "name": "Buscar en PostgreSQL",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
-      "position": [
-        4864,
-        960
-      ],
+      "position": [4864, 960],
       "credentials": {
-        "postgres": {
-          "id": "hpxXcbKUCIUvlbJn",
-          "name": "Inmobi"
-        }
+        "postgres": {"id": "hpxXcbKUCIUvlbJn", "name": "Inmobi"}
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "strict"},
+          "conditions": [
+            {
+              "id": "cond1",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {"type": "number", "operation": "gt"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-results-prop",
+      "name": "¿Hay Resultados?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [5088, 960]
     },
     {
       "parameters": {
@@ -98,55 +88,56 @@
       "name": "Formatear Respuesta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [
-        5088,
-        960
-      ]
+      "position": [5312, 820]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sr1",
+              "name": "response",
+              "value": "=[]",
+              "type": "string"
+            },
+            {
+              "id": "sr2",
+              "name": "sin_resultados",
+              "value": true,
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "sin-resultados-prop",
+      "name": "Sin Resultados",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [5312, 1100]
     }
   ],
   "pinData": {},
   "connections": {
     "Execute Workflow Trigger": {
-      "main": [
-        [
-          {
-            "node": "Preparar Parametros",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Preparar Parametros", "type": "main", "index": 0}]]
     },
     "Preparar Parametros": {
-      "main": [
-        [
-          {
-            "node": "Buscar en PostgreSQL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{"node": "Buscar en PostgreSQL", "type": "main", "index": 0}]]
     },
     "Buscar en PostgreSQL": {
+      "main": [[{"node": "¿Hay Resultados?", "type": "main", "index": 0}]]
+    },
+    "¿Hay Resultados?": {
       "main": [
-        [
-          {
-            "node": "Formatear Respuesta",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{"node": "Formatear Respuesta", "type": "main", "index": 0}],
+        [{"node": "Sin Resultados", "type": "main", "index": 0}]
       ]
     }
   },
   "active": true,
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
-  },
-  "versionId": "ccaae447-cf82-48bc-8c6c-fc9e8eaa49f8",
+  "settings": {"executionOrder": "v1", "binaryMode": "separate", "availableInMCP": false},
+  "versionId": "88d4c60a-ac7a-4fbb-ab58-cba1b5b12bcc",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "62edc0b2d82f039c4d16af406cde29ae991bb1cc3f3ca7a770b94dc4b286a810"

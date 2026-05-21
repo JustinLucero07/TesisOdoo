@@ -32,6 +32,9 @@
             'estate_ai_agent/static/src/components/ai_chat/ai_chat.css',
             'estate_ai_agent/static/src/components/**/*.js',
             'estate_ai_agent/static/src/components/**/*.xml',
+            # Chatter patch — must load after the components
+            'estate_ai_agent/static/src/chatter_patch.js',
+            'estate_ai_agent/static/src/chatter_patch.xml',
         ],
     },
     'installable': True,

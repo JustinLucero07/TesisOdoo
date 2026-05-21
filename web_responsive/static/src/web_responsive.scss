@@ -1,0 +1,674 @@
+// =============================================================================
+// Web Responsive — Odoo 19 backend improvements for mobile & tablet
+// =============================================================================
+
+// =============================================================================
+// APP DRAWER — fullscreen app menu
+// Uses $o-navbar-background (= $o-brand-primary) para seguir el tema de Odoo.
+// =============================================================================
+
+// Colores derivados del tema — cambian automáticamente con el color de Odoo
+$_wr-bg:        $o-navbar-background !default;
+$_wr-bg-dark:   darken($_wr-bg, 14%) !default;
+$_wr-bg-darker: darken($_wr-bg, 22%) !default;
+
+// Backdrop
+.o-wr-AppDrawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 1050;
+    animation: wr-fadeIn 0.18s ease;
+}
+
+// Drawer panel (centra el box)
+.o-wr-AppDrawer {
+    position: fixed;
+    inset: 0;
+    z-index: 1051;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    animation: wr-slideUp 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+// Header bar
+.o-wr-AppDrawer-header {
+    pointer-events: all;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 95vw;
+    max-width: 960px;
+    padding: 16px 20px 12px;
+    background: linear-gradient(135deg, $_wr-bg 0%, $_wr-bg-dark 100%);
+    border-radius: 20px 20px 0 0;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+
+    .o-wr-AppDrawer-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        white-space: nowrap;
+        flex-shrink: 0;
+
+        .oi-apps { font-size: 1.2rem; opacity: 0.9; }
+    }
+
+    .o-wr-AppDrawer-search {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 40px;
+        padding: 7px 14px;
+        transition: background 0.2s;
+
+        &:focus-within {
+            background: rgba(255,255,255,0.18);
+            border-color: rgba(255,255,255,0.4);
+        }
+
+        .fa-search { color: rgba(255,255,255,0.6); font-size: 0.9rem; }
+
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 0.95rem;
+            &::placeholder { color: rgba(255,255,255,0.45); }
+        }
+
+        .o-wr-AppDrawer-clearSearch {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            &:hover { color: #fff; }
+        }
+    }
+
+    .o-wr-AppDrawer-close {
+        flex-shrink: 0;
+        background: transparent;
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 50%;
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255,255,255,0.7);
+        cursor: pointer;
+        transition: all 0.15s;
+        &:hover { background: rgba(255,255,255,0.15); color: #fff; }
+    }
+}
+
+// App grid container
+.o-wr-AppDrawer-grid {
+    pointer-events: all;
+    width: 95vw;
+    max-width: 960px;
+    max-height: 70vh;
+    overflow-y: auto;
+    background: $_wr-bg-dark;
+    border-radius: 0 0 20px 20px;
+    padding: 20px 24px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-content: flex-start;
+
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+}
+
+// Individual app card
+.o-wr-AppCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 96px;
+    padding: 12px 8px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+    text-decoration: none !important;
+    color: rgba(255,255,255,0.85) !important;
+    transition: background 0.15s, transform 0.15s;
+    border: 1px solid transparent;
+
+    &:hover {
+        background: rgba(255,255,255,0.1);
+        color: #fff !important;
+        transform: translateY(-2px);
+    }
+
+    &.o-wr-AppCard--active {
+        background: rgba(255,255,255,0.15);
+        border-color: rgba(255,255,255,0.3);
+        color: #fff !important;
+    }
+
+    .o-wr-AppCard-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background: rgba(255,255,255,0.1);
+        flex-shrink: 0;
+
+        &--fallback {
+            background: linear-gradient(135deg, $_wr-bg, $_wr-bg-darker);
+            span {
+                font-size: 1.6rem;
+                font-weight: 700;
+                color: #fff;
+            }
+        }
+    }
+
+    .o-wr-AppCard-name {
+        font-size: 0.72rem;
+        font-weight: 500;
+        text-align: center;
+        line-height: 1.3;
+        max-width: 88px;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+}
+
+// No results
+.o-wr-AppDrawer-noResults {
+    width: 100%;
+    text-align: center;
+    color: rgba(255,255,255,0.4);
+    padding: 40px 20px;
+
+    .fa { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+    p { font-size: 0.9rem; }
+    strong { color: rgba(255,255,255,0.65); }
+}
+
+// Botón activo (cuando el drawer está abierto)
+.o_navbar_apps_menu button.o-wr-active {
+    background: rgba(255,255,255,0.15) !important;
+    border-radius: 8px;
+}
+
+// Animations
+@keyframes wr-fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes wr-slideUp {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+// Variables
+$breakpoint-mobile: 576px;
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 992px;
+
+// =============================================================================
+// 1. NAVBAR — better wrapping at intermediate widths
+// =============================================================================
+
+.o_main_navbar {
+    // Allow navbar to shrink text on small-medium screens
+    @media (max-width: $breakpoint-tablet) {
+        .o_menu_brand {
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    @media (max-width: $breakpoint-mobile) {
+        .o_menu_brand {
+            display: none !important;
+        }
+    }
+}
+
+// =============================================================================
+// 2. CONTROL PANEL — wrap buttons on narrow screens
+// =============================================================================
+
+.o_control_panel {
+    @media (max-width: $breakpoint-tablet) {
+        flex-wrap: wrap;
+        height: auto !important;
+        padding: 4px 8px !important;
+        gap: 4px;
+
+        .o_control_panel_main {
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .o_control_panel_breadcrumbs {
+            flex: 1 1 100%;
+            min-width: 0;
+        }
+
+        .o_control_panel_actions {
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .o_control_panel_navigation {
+            flex-wrap: wrap;
+        }
+
+        // Smaller buttons on mobile
+        .btn {
+            padding: 4px 8px;
+            font-size: 0.82rem;
+        }
+
+        // Pager compact
+        .o_pager {
+            .o_pager_limit, .o_pager_value {
+                font-size: 0.8rem;
+            }
+        }
+    }
+
+    @media (max-width: $breakpoint-mobile) {
+        .o_searchview {
+            min-width: 0 !important;
+        }
+
+        // Stack breadcrumbs vertically if too long
+        .o_breadcrumb {
+            .o_breadcrumb_item {
+                &:not(:last-child) {
+                    display: none;
+                }
+            }
+        }
+    }
+}
+
+// =============================================================================
+// 3. FORM VIEW — single-column stacking on mobile
+// =============================================================================
+
+.o_form_view {
+    @media (max-width: $breakpoint-tablet) {
+        .o_form_sheet {
+            padding: 12px !important;
+            margin: 0 !important;
+        }
+
+        // Stack 2-column groups into single column
+        .o_group {
+            display: block !important;
+
+            > table,
+            .o_group_col_6 {
+                display: block !important;
+                width: 100% !important;
+            }
+
+            // Group columns become full width
+            .o_wrap_field {
+                display: flex !important;
+                flex-direction: column;
+                width: 100% !important;
+            }
+
+            .o_td_label {
+                width: 100% !important;
+                padding-right: 0 !important;
+                padding-bottom: 2px;
+                font-weight: 600;
+                font-size: 0.82rem;
+                color: #666;
+            }
+
+            .o_field_widget {
+                width: 100% !important;
+            }
+        }
+
+        // Status bar horizontal scroll
+        .o_statusbar_status {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            -webkit-overflow-scrolling: touch;
+
+            .o_statusbar_status_button {
+                flex-shrink: 0;
+                font-size: 0.78rem;
+                padding: 4px 8px;
+            }
+        }
+
+        // Header buttons wrap
+        .o_form_buttons_view,
+        .o_statusbar_buttons {
+            flex-wrap: wrap;
+            gap: 4px;
+
+            .btn {
+                font-size: 0.82rem;
+                padding: 4px 10px;
+            }
+        }
+
+        // Avatar/image smaller on mobile
+        .o_form_sheet_bg .o_field_image img {
+            max-width: 80px !important;
+            max-height: 80px !important;
+        }
+
+        // Notebook tabs scroll horizontally
+        .o_notebook > .nav-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+
+            .nav-link {
+                white-space: nowrap;
+                font-size: 0.85rem;
+                padding: 6px 10px;
+            }
+        }
+    }
+
+    @media (max-width: $breakpoint-mobile) {
+        .o_form_sheet {
+            padding: 8px !important;
+        }
+
+        // Very small: even more compact
+        .o_group .o_td_label {
+            font-size: 0.78rem;
+        }
+    }
+}
+
+// =============================================================================
+// 4. LIST VIEW — horizontal scroll on narrow screens
+// =============================================================================
+
+@media (max-width: $breakpoint-tablet) {
+    .o_list_view {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+
+        .o_list_table {
+            min-width: 600px; // Prevent column collapse
+        }
+
+        // Smaller text in cells
+        td, th {
+            font-size: 0.82rem;
+            padding: 6px 8px !important;
+            white-space: nowrap;
+        }
+
+        // Checkbox column stays small
+        .o_list_record_selector {
+            min-width: 36px;
+            width: 36px;
+        }
+    }
+
+    // Optional columns hide on narrow screens
+    .o_optional_columns_dropdown {
+        display: none;
+    }
+}
+
+// =============================================================================
+// 5. KANBAN VIEW — single column on mobile, 2 columns on tablet
+// =============================================================================
+
+@media (max-width: $breakpoint-mobile) {
+    .o_kanban_view:not(.o_kanban_grouped) {
+        .o_kanban_record {
+            width: 100% !important;
+            min-width: unset !important;
+        }
+    }
+
+    .o_kanban_view.o_kanban_grouped {
+        .o_kanban_group {
+            min-width: 260px;
+            max-width: 85vw;
+        }
+    }
+}
+
+@media (min-width: $breakpoint-mobile) and (max-width: $breakpoint-tablet) {
+    .o_kanban_view:not(.o_kanban_grouped) {
+        .o_kanban_record {
+            width: calc(50% - 8px) !important;
+        }
+    }
+}
+
+// =============================================================================
+// 6. CHATTER / THREAD — better mobile layout
+// =============================================================================
+
+@media (max-width: $breakpoint-tablet) {
+    .o_form_view .o_chatter {
+        padding: 8px !important;
+
+        .o_chatter_topbar {
+            flex-wrap: wrap;
+            gap: 4px;
+
+            .o_chatter_topbar_left,
+            .o_chatter_topbar_right {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+
+            .btn {
+                font-size: 0.8rem;
+                padding: 4px 8px;
+            }
+        }
+
+        // Message composer
+        .o_composer {
+            .o_composer_input {
+                font-size: 0.9rem;
+            }
+        }
+    }
+}
+
+// =============================================================================
+// 7. DIALOGS / MODALS — full-screen on mobile
+// =============================================================================
+
+@media (max-width: $breakpoint-mobile) {
+    .modal-dialog {
+        margin: 0 !important;
+        max-width: 100vw !important;
+        min-height: 100vh;
+
+        .modal-content {
+            border-radius: 0 !important;
+            border: none !important;
+            min-height: 100vh;
+        }
+
+        .modal-body {
+            padding: 10px !important;
+        }
+    }
+
+    // Wizard dialogs also full screen
+    .o_dialog {
+        .modal-dialog {
+            margin: 0 !important;
+            max-width: 100vw !important;
+        }
+    }
+}
+
+@media (min-width: $breakpoint-mobile) and (max-width: $breakpoint-tablet) {
+    .modal-dialog:not(.modal-xl):not(.modal-lg) {
+        max-width: 90vw !important;
+        margin: 16px auto !important;
+    }
+}
+
+// =============================================================================
+// 8. TOUCH — larger tap targets and no hover effects on touch
+// =============================================================================
+
+@media (max-width: $breakpoint-tablet) {
+    // Ensure minimum touch target of 44px
+    .btn, .o_menu_entry, .nav-link, .o_pager_previous, .o_pager_next {
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    // Action menu items larger
+    .o_cp_action_menus .dropdown-item,
+    .o_action_menus .dropdown-item {
+        padding: 10px 16px !important;
+        font-size: 0.9rem;
+    }
+
+    // Dropdown menus: min width so items are tappable
+    .dropdown-menu {
+        min-width: 180px;
+    }
+}
+
+// =============================================================================
+// 9. SIDEBAR / APP MENU — collapsible on desktop
+// =============================================================================
+
+// The sidebar toggle adds .o_responsive_sidebar_collapsed to body
+body.o_responsive_sidebar_collapsed {
+    .o_menu_sections {
+        display: none !important;
+    }
+
+    .o_action_manager {
+        width: 100% !important;
+    }
+}
+
+// Sidebar collapse button (added by JS)
+.o_responsive_sidebar_toggle {
+    display: none;
+
+    @media (min-width: $breakpoint-desktop) {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0 8px;
+        color: inherit;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+
+        &:hover {
+            opacity: 1;
+        }
+
+        &::before {
+            content: '\f053'; // fa-chevron-left
+            font-family: 'FontAwesome';
+            font-size: 0.75rem;
+        }
+
+        body.o_responsive_sidebar_collapsed & {
+            &::before {
+                content: '\f054'; // fa-chevron-right
+            }
+        }
+    }
+}
+
+// =============================================================================
+// 10. GENERAL OVERFLOW FIXES
+// =============================================================================
+
+@media (max-width: $breakpoint-tablet) {
+    // Prevent body scroll bleed on iOS
+    .o_web_client {
+        -webkit-overflow-scrolling: touch;
+    }
+
+    // Fields with many2many tags: allow wrap
+    .o_field_many2many_tags .badge {
+        margin: 2px;
+        font-size: 0.75rem;
+    }
+
+    // Long text in cells wrap
+    .o_field_char, .o_field_text {
+        word-break: break-word;
+    }
+
+    // Statusbar stays compact
+    .o_status_bar_status {
+        font-size: 0.8rem;
+    }
+
+    // Search panel on mobile
+    .o_search_panel {
+        max-width: 220px;
+    }
+
+    // Pivot/graph view: allow scroll
+    .o_pivot, .o_graph_renderer {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+// =============================================================================
+// 11. ESTATE PROPERTY specific — property card on mobile
+// =============================================================================
+
+@media (max-width: $breakpoint-tablet) {
+    // Make sure property image galleries work on mobile
+    .o_field_image_multi {
+        .o_image_multi_grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+    }
+
+    // AVM status inline on mobile
+    .o_field_avm_status {
+        font-size: 0.82rem;
+    }
+}
