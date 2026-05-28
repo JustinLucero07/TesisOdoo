@@ -4,40 +4,61 @@
         ================================================================
         INTEGRACIÓN CON MÓDULOS ESTÁNDAR DE ODOO 19
         ================================================================
-        Asigna grupos de Ventas, Contabilidad, RR.HH. y Asistencia
-        a cada rol inmobiliario mediante implied_ids.
+        CONCEPTO CLAVE: implied_ids = herencia de permisos
+        ─────────────────────────────────────────────────────────────────
+        Cuando un grupo estate hereda de un grupo estándar de Odoo,
+        AUTOMÁTICAMENTE obtiene todos los permisos que ese grupo
+        estándar tiene sobre sus modelos, sin necesitar CSV duplicados.
 
-        No se agregan ir.rule aquí porque los módulos base de Odoo
-        ya definen las restricciones correctas para cada grupo:
+        Ejemplo:
+          estate_group_manager → implica → hr.group_hr_user
+                                               ↓ (automático)
+                                 hr.employee, hr.contract, hr.department,
+                                 hr.skill, hr.leave.type... TODO incluido
 
-          sales_team.group_sale_salesman          → owns orders + own invoices (READ)
-          sales_team.group_sale_salesman_all_leads → all orders + all outgoing invoices
-          account.group_account_user               → full accounting (all move types)
-          hr.group_hr_user                         → all employees (HR officer)
-          hr_attendance.group_hr_attendance_user   → all attendance records
+        MÓDULOS ESTÁNDAR INSTALADOS Y SU COBERTURA:
+        ──────────────────────────────────────────────────────────────
+        MÓDULO               GRUPO ESTÁNDAR              ROL QUE LO TIENE
+        ────────────────     ─────────────────────────   ────────────────
+        sales_team/crm       group_sale_salesman          Asesor+Marketing
+        sales_team           group_sale_salesman_all_leads Gerente+Admin
+        sales_team           group_sale_manager           Gerente+Admin
+        crm                  group_use_lead               Asesor+Mktg+Gte
+        crm                  group_use_recurring_revenues Gerente+Admin
+        account              group_account_invoice        Marketing
+        account              group_account_user           Gerente+Admin
+        account              group_account_manager        Admin
+        analytic             group_analytic_accounting    Gerente+Admin
+        hr                   group_hr_user                Gerente+Admin
+        hr                   group_hr_manager             Admin
+        hr_attendance        group_hr_attendance_user     Gerente+Admin
+        hr_attendance        group_hr_attendance_manager  Admin
+        base                 group_partner_manager        Gerente+Admin
+        spreadsheet          group_spreadsheet_user       Gerente+Admin
 
-        MATRIZ DE ACCESO FINAL:
-        ┌─────────────────────┬────────────────┬──────────────────┬───────────────────┐
-        │ Módulo              │ Asesor         │ Gerente          │ Administrador     │
-        ├─────────────────────┼────────────────┼──────────────────┼───────────────────┤
-        │ CRM / Pipeline      │ Leads propios  │ Todos los leads  │ Admin + config    │
-        │ Pedidos de venta    │ Los propios    │ Todos            │ Admin ventas      │
-        │ Facturas cliente    │ Las propias    │ Todas            │ Config contable   │
-        │ Contabilidad        │ Sin acceso     │ Completa         │ Config avanzada   │
-        │ Empleados (RRHH)    │ Sin acceso     │ Ver/gestionar    │ Admin total       │
-        │ Asistencia          │ Solo la suya*  │ Gestionar todas  │ Admin total       │
-        └─────────────────────┴────────────────┴──────────────────┴───────────────────┘
-        * base.group_user ya implica group_hr_attendance_own_reader
+        ACCESO POR ROL (módulos estándar):
+        ┌──────────────────────────┬──────────┬──────────┬──────────┬──────────┐
+        │ Área                     │ Asesor   │ Mktg     │ Gerente  │ Admin    │
+        ├──────────────────────────┼──────────┼──────────┼──────────┼──────────┤
+        │ CRM / Pipeline           │ Propios  │ Todos    │ Todos    │ Config   │
+        │ Pedidos de venta         │ Propios  │ Propios  │ Todos    │ Admin    │
+        │ Facturas / Contabilidad  │ Propias  │ Solo lec │ Completa │ Config   │
+        │ Analítica / Costos       │ Sin acc. │ Sin acc. │ Completa │ Completa │
+        │ Contactos (res.partner)  │ Gestión  │ Gestión  │ Admin    │ Admin    │
+        │ Empleados / RRHH         │ Sin acc. │ Sin acc. │ Oficial  │ Admin    │
+        │ Asistencia               │ Solo suya│ Sin acc. │ Todas    │ Admin    │
+        │ Spreadsheets/Dashboard   │ Sin acc. │ Sin acc. │ Acceso   │ Acceso   │
+        │ Calendario               │ Gestión  │ Gestión  │ Gestión  │ Admin    │
+        │ SMS / WhatsApp base      │ Envío    │ Envío    │ Gestión  │ Admin    │
+        └──────────────────────────┴──────────┴──────────┴──────────┴──────────┘
         ================================================================
     -->
 
-    <!-- ── ASESOR ─────────────────────────────────────────────────────
-         sales_team.group_sale_salesman proporciona automáticamente:
-           • CRM: ver y crear leads/oportunidades asignadas a él
-           • Ventas: crear/ver sus propios pedidos (user_id = me)
-           • Facturas: READ de facturas salientes donde es responsable
-             (via account_invoice_rule_see_personal del módulo sale)
-         ──────────────────────────────────────────────────────────── -->
+    <!-- ── ASESOR ──────────────────────────────────────────────────────
+         Comercial de campo: gestiona sus propias propiedades y leads.
+         • group_sale_salesman → CRM propios, pedidos propios, contactos
+         • crm.group_use_lead  → pipeline de leads habilitado (ya en estate_crm_security)
+         ─────────────────────────────────────────────────────────────── -->
     <record id="estate_management.estate_group_agent" model="res.groups">
         <field name="implied_ids" eval="[
             (4, ref('sales_team.group_sale_salesman')),
@@ -45,48 +66,57 @@
     </record>
 
     <!-- ── MARKETING ──────────────────────────────────────────────────
-         Igual que Asesor en ventas/CRM; sin acceso a finanzas ni RRHH.
-         ──────────────────────────────────────────────────────────── -->
+         Visibilidad total del pipeline CRM y publicación en canales.
+         • group_sale_salesman_all_leads → ve todos los leads/oportunidades
+           (necesario para analizar el pipeline completo)
+         • group_account_invoice → puede ver facturas para reporting,
+           sin acceso a configuración contable
+         • group_partner_manager → gestión completa de contactos
+         ─────────────────────────────────────────────────────────────── -->
     <record id="estate_management.estate_group_marketing" model="res.groups">
         <field name="implied_ids" eval="[
             (4, ref('sales_team.group_sale_salesman')),
+            (4, ref('sales_team.group_sale_salesman_all_leads')),
+            (4, ref('account.group_account_invoice')),
+            (4, ref('base.group_partner_manager')),
         ]"/>
     </record>
 
     <!-- ── GERENTE ────────────────────────────────────────────────────
-         Suma al Asesor los siguientes grupos:
-           • group_sale_salesman_all_leads → todos los pedidos + todas
-             las facturas salientes (sale_order_see_all / account rule)
-           • group_sale_manager → admin de equipos, config CRM
-           • account.group_account_user → contador completo: facturas,
-             notas de crédito, pagos, diarios, conciliación, informes
-             (no incluye config avanzada como periodos o planes de cta.)
-           • hr.group_hr_user → oficial RRHH: ver/gestionar empleados,
-             contratos, cargos, departamentos
-           • hr_attendance.group_hr_attendance_user → ver/corregir
-             asistencia de todos los empleados
-         ──────────────────────────────────────────────────────────── -->
+         Dirección operativa: ve y gestiona todo el negocio.
+         • group_sale_salesman_all_leads → todos los pedidos y facturas
+         • group_sale_manager → admin de equipos de venta, config CRM
+         • group_account_user → contador completo: facturas, pagos,
+           diarios, conciliación, informes (sin config avanzada)
+         • group_analytic_accounting → centros de costo y analítica
+         • group_partner_manager → admin completo de contactos
+         • hr.group_hr_user → ver/gestionar empleados, contratos,
+           departamentos, skills, org chart
+         • hr_attendance.group_hr_attendance_user → ver/corregir
+           asistencia de todos los empleados
+         ─────────────────────────────────────────────────────────────── -->
     <record id="estate_management.estate_group_manager" model="res.groups">
         <field name="implied_ids" eval="[
             (4, ref('estate_management.estate_group_agent')),
             (4, ref('sales_team.group_sale_salesman_all_leads')),
             (4, ref('sales_team.group_sale_manager')),
             (4, ref('account.group_account_user')),
+            (4, ref('analytic.group_analytic_accounting')),
+            (4, ref('base.group_partner_manager')),
             (4, ref('hr.group_hr_user')),
             (4, ref('hr_attendance.group_hr_attendance_user')),
         ]"/>
     </record>
 
-    <!-- ── ADMINISTRADOR ──────────────────────────────────────────────
-         Suma al Gerente los siguientes grupos:
-           • account.group_account_manager → contador senior: periodos
-             contables, planes de cuentas, impuestos, cierre de año,
-             toda la configuración contable
-           • hr.group_hr_manager → admin total RRHH: estructura salarial,
-             tipos de contrato, configuración, archivado de empleados
-           • hr_attendance.group_hr_attendance_manager → admin asistencia:
-             reglas de horas extra, kioscos, dispositivos IoT
-         ──────────────────────────────────────────────────────────── -->
+    <!-- ── ADMINISTRADOR ─────────────────────────────────────────────
+         Control total del sistema incluyendo configuración avanzada.
+         • account.group_account_manager → config contable: períodos,
+           planes de cuentas, impuestos, cierre de año
+         • hr.group_hr_manager → admin RRHH: estructura salarial,
+           tipos de contrato, archivado de empleados
+         • hr_attendance.group_hr_attendance_manager → admin asistencia:
+           horas extra, kioscos, dispositivos IoT
+         ─────────────────────────────────────────────────────────────── -->
     <record id="estate_management.estate_group_admin" model="res.groups">
         <field name="implied_ids" eval="[
             (4, ref('estate_management.estate_group_manager')),

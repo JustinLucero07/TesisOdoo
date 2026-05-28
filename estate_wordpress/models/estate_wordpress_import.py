@@ -652,9 +652,9 @@ class EstateWordpressImportWizard(models.TransientModel):
             vals['year_built'] = year_raw
 
         if lat:
-            vals['latitude'] = lat
+            vals['latitude'] = -abs(lat)
         if lng:
-            vals['longitude'] = lng
+            vals['longitude'] = -abs(lng)
 
         return vals
 
@@ -785,8 +785,8 @@ class EstateWordpressImportWizard(models.TransientModel):
                 data = resp.json()
                 if data:
                     prop.with_context(no_wp_sync=True).write({
-                        'latitude': float(data[0]['lat']),
-                        'longitude': float(data[0]['lon']),
+                        'latitude': -abs(float(data[0]['lat'])),
+                        'longitude': -abs(float(data[0]['lon'])),
                     })
                     _logger.info("Geocodificado '%s': %.6f, %.6f", query, float(data[0]['lat']), float(data[0]['lon']))
         except Exception as e:

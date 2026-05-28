@@ -48,7 +48,7 @@
                             invisible="state not in ('available', 'reserved')"
                             confirm="¿Retirar del mercado y guardar como borrador?"/>
 
-                    <!-- Disponible → Reservado → Vendido -->
+                    <!-- Disponible → Reservado → Vendido / Arrendado -->
                     <button name="action_set_available" string="Disponible" type="object"
                             class="oe_highlight" invisible="state != 'reserved'"
                             confirm="¿Marcar esta propiedad como disponible nuevamente?"/>
@@ -57,28 +57,34 @@
                             confirm="¿Reservar esta propiedad? Quedará bloqueada para otros compradores."/>
                     <button name="action_open_sale_wizard" string="Vender Propiedad" type="object"
                             class="btn-success oe_highlight" icon="fa-handshake-o"
-                            invisible="state not in ('available', 'reserved')"
+                            invisible="state not in ('available', 'reserved') or offer_type == 'rent'"
                             confirm="¿Iniciar el proceso de venta para esta propiedad?"/>
+                    <button name="action_set_rented" string="Arrendar Propiedad" type="object"
+                            class="btn-success oe_highlight" icon="fa-key"
+                            invisible="state not in ('available', 'reserved') or offer_type == 'sale'"
+                            confirm="¿Confirmar arriendo? Se registrará la comisión del primer mes."/>
                     <button name="action_relist" string="Re-listar en Mercado" type="object"
                             class="btn-warning"
-                            invisible="state != 'sold'"
-                            confirm="¿Confirmas re-listar esta propiedad? Se borrarán los datos de comprador y fecha de venta anteriores."/>
+                            invisible="state not in ('sold', 'rented')"
+                            confirm="¿Confirmas re-listar esta propiedad? Se borrarán los datos anteriores."/>
 
                     <!-- Acciones secundarias (solo cuando no es borrador) -->
                     <button name="action_open_map" string="Ver en Mapa" type="object"
                             class="btn-info" invisible="not map_url"/>
                     <button name="action_calculate_avm" string="Calcular AVM" type="object"
-                            class="btn-warning" invisible="state in ('draft', 'sold')"/>
+                            class="btn-warning" invisible="state in ('draft', 'sold', 'rented')"/>
                     <button name="action_create_invoice" string="Generar Factura" type="object"
                             class="btn-primary" icon="fa-file-text-o"
-                            invisible="state in ('draft', 'sold')"/>
+                            invisible="state in ('draft', 'sold', 'rented')"/>
 
-                    <field name="state" widget="statusbar" statusbar_visible="draft,available,reserved,sold"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,available,reserved,sold,rented"/>
                 </header>
                 <sheet>
                     <!-- Sellos de estado visibles en la esquina superior -->
                     <widget name="web_ribbon" title="VENDIDO" bg_color="text-bg-danger"
                             invisible="state != 'sold'"/>
+                    <widget name="web_ribbon" title="ARRENDADO" bg_color="text-bg-success"
+                            invisible="state != 'rented'"/>
                     <widget name="web_ribbon" title="BORRADOR" bg_color="text-bg-secondary"
                             invisible="state != 'draft'"/>
                     <div class="oe_title">
@@ -343,12 +349,17 @@
                         </page>
                         <page string="Ventas y Mercado" name="sales_metrics">
                             <group>
+                                <group string="Arriendo" invisible="offer_type != 'rent'">
+                                    <field name="rental_price" widget="monetary"/>
+                                    <field name="tenant_id"/>
+                                    <field name="date_rented"/>
+                                </group>
                                 <group string="Métricas de Venta">
                                     <field name="date_listed"/>
-                                    <field name="date_sold"/>
+                                    <field name="date_sold" invisible="state != 'sold'"/>
                                     <field name="days_on_market"/>
                                     <field name="predicted_days_on_market"/>
-                                    <field name="sold_by"/>
+                                    <field name="sold_by" invisible="state != 'sold'"/>
                                 </group>
                                 <group string="Puntuación del Expediente">
                                     <field name="property_score"/>
@@ -417,6 +428,7 @@
                 <filter name="filter_available" string="Disponibles" domain="[('state', '=', 'available')]"/>
                 <filter name="filter_reserved" string="Reservadas" domain="[('state', '=', 'reserved')]"/>
                 <filter name="filter_sold" string="Vendidas" domain="[('state', '=', 'sold')]"/>
+                <filter name="filter_rented" string="Arrendadas" domain="[('state', '=', 'rented')]"/>
                 <separator/>
                 <filter name="filter_wp_linked" string="Enlazadas con WordPress" domain="[('wp_published', '=', True)]"/>
                 <filter name="filter_wp_unlinked" string="Desvinculadas de WordPress" domain="[('wp_unlinked', '=', True)]"/>

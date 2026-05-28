@@ -22,6 +22,7 @@
         'security/estate_security.xml',
         'security/estate_standard_modules_security.xml',
         'security/ir.model.access.csv',
+        'security/standard/ir.model.access.csv',
         'data/estate_sequence_data.xml',
         'data/estate_property_type_data.xml',
         'data/res_partner_category_data.xml',

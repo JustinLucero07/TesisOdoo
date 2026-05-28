@@ -42,6 +42,7 @@ class EstateProperty(models.Model):
     
     offer_type = fields.Selection([
         ('sale', 'Venta'),
+        ('rent', 'Arrendamiento'),
     ], string='Tipo de Oferta', default='sale', tracking=True)
 
     # --- Ubicación ---
@@ -642,6 +643,7 @@ class EstateProperty(models.Model):
         ('available', 'Disponible'),
         ('reserved', 'Reservado'),
         ('sold', 'Vendido'),
+        ('rented', 'Arrendado'),
     ], string='Estado', default='draft', tracking=True, required=True)
 
     active = fields.Boolean(string='Activo', default=True)
@@ -658,6 +660,12 @@ class EstateProperty(models.Model):
         ('agency', 'Vendido por la Agencia'),
         ('owner', 'Vendido por el Dueño'),
     ], string='¿Quién Vendió?', tracking=True)
+
+    # --- Arriendo ---
+    date_rented = fields.Date(string='Fecha de Arrendamiento', tracking=True)
+    tenant_id = fields.Many2one('res.partner', string='Arrendatario', tracking=True)
+    rental_price = fields.Float(string='Canon Mensual de Arriendo ($)', tracking=True,
+        help='Valor mensual del arriendo. La comisión se cobra solo sobre el primer mes.')
 
     # --- Contratos ---
     contract_end_date = fields.Date(string='Vencimiento de Contrato', tracking=True,
@@ -1224,7 +1232,7 @@ class EstateProperty(models.Model):
         self.write({'state': 'available'})
 
     def action_relist(self):
-        """Re-listar una propiedad ya vendida/alquilada para volver al mercado."""
+        """Re-listar una propiedad ya vendida/arrendada para volver al mercado."""
         self.ensure_one()
         active_contracts = self.env['estate.contract'].search_count([
             ('property_id', '=', self.id),
@@ -1240,6 +1248,8 @@ class EstateProperty(models.Model):
             'buyer_id': False,
             'date_sold': False,
             'sold_by': False,
+            'tenant_id': False,
+            'date_rented': False,
         })
         self.message_post(
             body='Propiedad re-listada en el mercado. Datos de venta anteriores archivados.',
@@ -1292,7 +1302,27 @@ class EstateProperty(models.Model):
         self.with_context(no_wp_sync=True).write(vals)
         self._create_commission_records('sale', self.commission_amount, self.price, self.commission_percentage)
 
+    def action_set_rented(self):
+        self.ensure_one()
+        if self.state not in ('available', 'reserved'):
+            raise UserError('Solo se puede arrendar una propiedad Disponible o Reservada.')
+        if not self.rental_price:
+            raise UserError('Debes ingresar el Canon Mensual de Arriendo antes de continuar.')
 
+        if self.wp_published and self.wp_post_id and hasattr(self, 'action_unpublish_wordpress'):
+            try:
+                self.action_unpublish_wordpress()
+            except Exception as e:
+                _logger.warning('WP unpublish al arrendar propiedad %s falló: %s', self.id, e)
+
+        vals = {'state': 'rented', 'offer_type': 'rent'}
+        if not self.date_rented:
+            vals['date_rented'] = fields.Date.today()
+        self.with_context(no_wp_sync=True).write(vals)
+
+        # Comisión solo del PRIMER mes de arriendo
+        first_month_commission = self.rental_price * (self.commission_percentage / 100.0)
+        self._create_commission_records('rent', first_month_commission, self.rental_price, self.commission_percentage)
 
     def _create_commission_records(self, commission_type, total_amount, sale_price, pct):
         """Crea registros de comisión, dividiendo entre asesor y co-asesor si aplica."""
