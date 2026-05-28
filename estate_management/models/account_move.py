@@ -38,7 +38,7 @@ class AccountMove(models.Model):
                 if estate_payments:
                     estate_payments.write({'state': 'paid'})
                     move.message_post(
-                        body=f'💰 Pago inmobiliario <b>{", ".join(estate_payments.mapped("name"))}</b> '
+                        body=f'Pago inmobiliario <b>{", ".join(estate_payments.mapped("name"))}</b> '
                              f'marcado como <b>Pagado</b> automáticamente al confirmar la factura.')
         return result
 
@@ -55,9 +55,9 @@ class AccountMove(models.Model):
                 f'La propiedad ya está en estado "{prop.state}". Solo se puede actualizar desde Reservada o Disponible.')
         prop.write({'state': 'sold'})
         prop.message_post(
-            body=f'✅ Propiedad marcada como <b>VENDIDA</b> desde la factura <b>{self.name}</b>.')
+            body=f'Propiedad marcada como <b>VENDIDA</b> desde la factura <b>{self.name}</b>.')
         self.message_post(
-            body=f'✅ Propiedad <b>{prop.title}</b> marcada como VENDIDA.')
+            body=f'Propiedad <b>{prop.title}</b> marcada como VENDIDA.')
 
     @api.model
     def _cron_sync_property_state_from_invoices(self):
@@ -72,5 +72,5 @@ class AccountMove(models.Model):
             prop = move.property_id
             prop.write({'state': 'sold'})
             prop.message_post(
-                body=f'✅ Propiedad marcada como <b>VENDIDA</b> automáticamente '
+                body=f'Propiedad marcada como <b>VENDIDA</b> automáticamente '
                      f'(factura <b>{move.name}</b> pagada).')

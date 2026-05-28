@@ -41,7 +41,7 @@ class ResPartner(models.Model):
             domain = ['|'] + domain + [('contract_id', 'in', contracts.ids)]
         return {
             'type': 'ir.actions.act_window',
-            'name': f'📂 Carpeta de {self.name}',
+            'name': f'Carpeta de {self.name}',
             'res_model': 'estate.document',
             'view_mode': 'kanban,list,form',
             'domain': domain,

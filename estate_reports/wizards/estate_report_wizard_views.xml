@@ -4,29 +4,52 @@
         <field name="name">estate.report.wizard.form</field>
         <field name="model">estate.report.wizard</field>
         <field name="arch" type="xml">
-            <form string="Exportar Datos a Excel">
-                <group>
-                    <group string="Tipo de Reporte">
-                        <field name="report_type" widget="radio"/>
-                        <field name="export_format" invisible="1"/>
+            <form string="Exportar Datos" create="false" delete="false">
+                <sheet>
+
+                    <!-- Botones de acción -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-file-excel-o"
+                                type="object" name="action_generate_report"
+                                context="{'export_format': 'excel'}">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Descargar Excel</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-file-pdf-o"
+                                type="object" name="action_generate_report"
+                                context="{'export_format': 'pdf'}">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Descargar PDF</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Título -->
+                    <div class="oe_title">
+                        <h1>Exportar Datos</h1>
+                    </div>
+
+                    <!-- Filtros -->
+                    <group string="Configuración">
+                        <group string="Tipo de Reporte">
+                            <field name="report_type" widget="radio"/>
+                        </group>
+                        <group string="Período (opcional)">
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
                     </group>
-                    <group string="Período (opcional)">
-                        <field name="date_from"/>
-                        <field name="date_to"/>
-                    </group>
-                </group>
-                <footer>
-                    <button name="action_generate_report" string="Exportar Excel" type="object" class="oe_highlight" icon="fa-download"/>
-                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
-                </footer>
+
+                </sheet>
             </form>
         </field>
     </record>
 
     <record id="estate_report_wizard_action" model="ir.actions.act_window">
-        <field name="name">Exportar Datos a Excel</field>
+        <field name="name">Exportar Datos</field>
         <field name="res_model">estate.report.wizard</field>
         <field name="view_mode">form</field>
-        <field name="target">new</field>
+        <field name="target">current</field>
     </record>
 </odoo>

@@ -60,10 +60,10 @@
                     class="oe_highlight" icon="fa-file-text"
                     invisible="not target_property_id or type == 'lead' or contract_count &gt; 0"
                     confirm="¿Crear un contrato para este lead con la propiedad seleccionada?"/>
-                <button name="action_mark_pending_need" string="📌 Marcar Con Necesidad" type="object"
+                <button name="action_mark_pending_need" string="Marcar Con Necesidad" type="object"
                     class="btn-warning" icon="fa-bookmark"
                     invisible="pending_needs_active or type == 'lead'"/>
-                <button name="action_clear_pending_need" string="✅ Resolver Necesidad" type="object"
+                <button name="action_clear_pending_need" string="Resolver Necesidad" type="object"
                     class="btn-outline-success" icon="fa-check-circle"
                     invisible="not pending_needs_active"/>
             </xpath>
@@ -135,7 +135,7 @@
                     <field name="preferred_min_area" string="Área Mín. (m²)"/>
                     <field name="preferred_max_area" string="Área Máx. (m²)"/>
                     <field name="client_needs" placeholder="Ej. Cerca de parques, crédito pre-aprobado..."/>
-                    <separator string="📌 Necesidad Pendiente"/>
+                    <separator string="Necesidad Pendiente"/>
                     <field name="pending_needs_active" widget="boolean_toggle"/>
                     <field name="pending_needs_last_check" invisible="not pending_needs_active"/>
                     <field name="pending_needs_notified_property_ids" widget="many2many_tags" invisible="not pending_needs_active"/>
@@ -184,7 +184,7 @@
                 <div class="o_kanban_record_subtitle mt-1 mb-1">
                     <field name="lead_score" widget="badge" decoration-danger="lead_score == 'high'" decoration-warning="lead_score == 'medium'" decoration-info="lead_score == 'low'"/>
                     <span class="ms-2 fw-bold text-primary" t-if="record.expected_revenue.raw_value > 0">
-                        <i class="fa fa-money"/> $<field name="expected_revenue"/>
+                        <i class="fa fa-money" title="Ingreso esperado"/> $<field name="expected_revenue"/>
                     </span>
                     <span class="ms-2 badge text-bg-secondary small" t-if="record.lead_source.raw_value">
                         <field name="lead_source"/>
@@ -192,13 +192,13 @@
                 </div>
                 <div t-if="record.match_percentage.raw_value > 0" class="mt-1">
                     <span class="badge rounded-pill text-bg-success" t-if="record.match_percentage.raw_value &gt;= 80">
-                        <i class="fa fa-star"/> Match: <field name="match_percentage"/>%
+                        <i class="fa fa-star" title="Match alto"/> Match: <field name="match_percentage"/>%
                     </span>
                     <span class="badge rounded-pill text-bg-warning" t-if="record.match_percentage.raw_value &lt; 80 and record.match_percentage.raw_value &gt;= 50">
-                        <i class="fa fa-star-half-o"/> Match: <field name="match_percentage"/>%
+                        <i class="fa fa-star-half-o" title="Match medio"/> Match: <field name="match_percentage"/>%
                     </span>
                     <span class="badge rounded-pill text-bg-danger" t-if="record.match_percentage.raw_value &lt; 50">
-                        <i class="fa fa-star-o"/> Match: <field name="match_percentage"/>%
+                        <i class="fa fa-star-o" title="Match bajo"/> Match: <field name="match_percentage"/>%
                     </span>
                 </div>
             </xpath>

@@ -73,6 +73,16 @@ class EstatePropertyOffer(models.Model):
                 vals['name'] = self.env['ir.sequence'].next_by_code('estate.property.offer') or 'OFERTA-001'
         return super().create(vals_list)
 
+    def unlink(self):
+        blocked = self.filtered(lambda o: o.state in ('accepted', 'countered', 'submitted'))
+        if blocked:
+            names = ', '.join(blocked.mapped('name'))
+            raise UserError(
+                f"No se puede eliminar una oferta activa o aceptada: {names}.\n\n"
+                "Rechace la oferta antes de eliminarla."
+            )
+        return super().unlink()
+
     def _advance_lead_stage(self, xmlid):
         """Avanza el lead vinculado (o el del partner) a la etapa indicada."""
         for rec in self:
@@ -209,20 +219,20 @@ class EstatePropertyOffer(models.Model):
             'date_start': fields.Date.today(),
         })
         # Notificar en chatter de la oferta, propiedad y lead
-        self.message_post(body=f'📄 Contrato <b>{contract.name}</b> generado desde esta oferta.')
+        self.message_post(body=f'Contrato <b>{contract.name}</b> generado desde esta oferta.')
         self.property_id.message_post(
-            body=f'📄 Contrato <b>{contract.name}</b> creado para <b>{self.partner_id.name}</b> '
+            body=f'Contrato <b>{contract.name}</b> creado para <b>{self.partner_id.name}</b> '
                  f'(Oferta: {self.name}, Monto: ${contract.amount:,.2f}).')
         if self.lead_id:
             # Mensaje destacado en el chatter del lead con link directo al contrato
             self.lead_id.message_post(
                 body=(
                     f'<div class="alert alert-success" role="alert">'
-                    f'<strong>📄 Contrato generado</strong><br/>'
+                    f'<strong>Contrato generado</strong><br/>'
                     f'Se creó el contrato <b>{contract.name}</b> para la propiedad '
                     f'<b>{self.property_id.title}</b> · Monto: ${contract.amount:,.2f}.<br/>'
                     f'<a href="/odoo/action-base.action_view_contract/{contract.id}">'
-                    f'👉 Abrir contrato</a>'
+                    f'Abrir contrato</a>'
                     f'</div>'
                 ),
                 subject=f'Contrato {contract.name} generado'
@@ -230,7 +240,7 @@ class EstatePropertyOffer(models.Model):
         # Notificación al usuario actual con botón "Abrir contrato"
         return {
             'type': 'ir.actions.act_window',
-            'name': f'📄 Contrato {contract.name} generado',
+            'name': f'Contrato {contract.name} generado',
             'res_model': 'estate.contract',
             'view_mode': 'form',
             'res_id': contract.id,
@@ -264,13 +274,13 @@ class EstatePropertyOffer(models.Model):
             })]
         order = self.env['sale.order'].create(order_vals)
         # Notificar en chatter de la oferta, propiedad y lead de origen
-        self.message_post(body=f'🛒 Orden de venta <b>{order.name}</b> creada desde esta oferta.')
+        self.message_post(body=f'Orden de venta <b>{order.name}</b> creada desde esta oferta.')
         self.property_id.message_post(
-            body=f'🛒 Orden de venta <b>{order.name}</b> creada para <b>{self.partner_id.name}</b> '
+            body=f'Orden de venta <b>{order.name}</b> creada para <b>{self.partner_id.name}</b> '
                  f'desde oferta <b>{self.name}</b> por ${self.final_agreed_amount or self.offer_amount:,.2f}.')
         if self.lead_id:
             self.lead_id.message_post(
-                body=f'🛒 Orden de venta <b>{order.name}</b> generada para la propiedad '
+                body=f'Orden de venta <b>{order.name}</b> generada para la propiedad '
                      f'<b>{self.property_id.title}</b>.')
         return {
             'type': 'ir.actions.act_window',

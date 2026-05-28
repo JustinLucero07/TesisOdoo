@@ -20,6 +20,7 @@
     'depends': ['base', 'mail', 'sale_management', 'account', 'portal', 'calendar', 'hr_attendance'],
     'data': [
         'security/estate_security.xml',
+        'security/estate_standard_modules_security.xml',
         'security/ir.model.access.csv',
         'data/estate_sequence_data.xml',
         'data/estate_property_type_data.xml',
@@ -33,6 +34,7 @@
         'views/estate_tenant_views.xml',
         'views/estate_appraisal_views.xml',
         'views/estate_account_views.xml',
+        'data/estate_paperformat.xml',
         'report/estate_contract_report.xml',
         'report/estate_capture_sheet_report.xml',
         'views/estate_sale_views.xml',
@@ -46,6 +48,7 @@
         'views/estate_menus.xml',
         'views/estate_finance_menu.xml',
         'data/estate_users_roles.xml',
+        'data/estate_defaults_fix.xml',
     ],
     'demo': [
         'data/estate_demo_data.xml',
@@ -56,6 +59,7 @@
         ],
         'web.assets_backend': [
             'estate_management/static/src/components/**/*',
+            'estate_management/static/src/js/estate_auto_geocode.js',
         ],
     },
     'installable': True,

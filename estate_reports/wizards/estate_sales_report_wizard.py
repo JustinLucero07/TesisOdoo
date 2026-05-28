@@ -67,6 +67,13 @@ class EstateSalesReportWizard(models.TransientModel):
     # ── JSON con datos detallados (para gráficos del template) ───────────────
     chart_data = fields.Char(compute='_compute_kpis')
 
+    # ── Gráficos inline SVG ───────────────────────────────────────────────────
+    inline_chart_html = fields.Html(
+        string='Gráficos de Tendencia',
+        compute='_compute_inline_chart',
+        sanitize=False,
+    )
+
     # ────────────────────────────────────────────────────────────────────────
     # Compute principal
     # ────────────────────────────────────────────────────────────────────────
@@ -233,8 +240,160 @@ class EstateSalesReportWizard(models.TransientModel):
         }
 
     # ────────────────────────────────────────────────────────────────────────
+    # Gráficos inline
+    # ────────────────────────────────────────────────────────────────────────
+    @api.depends('period', 'date_from', 'date_to', 'operation_type',
+                 'property_type_ids', 'city', 'user_ids')
+    def _compute_inline_chart(self):
+        from collections import defaultdict
+        from datetime import datetime as dt
+        for wiz in self:
+            try:
+                d_from, d_to = wiz._get_period_range()
+            except Exception:
+                wiz.inline_chart_html = ''
+                continue
+
+            domain = [
+                ('state', '=', 'sold'),
+                ('date_sold', '!=', False),
+                ('date_sold', '>=', d_from),
+                ('date_sold', '<=', d_to),
+                ('price', '>', 0),
+            ]
+            if wiz.property_type_ids:
+                domain.append(('property_type_id', 'in', wiz.property_type_ids.ids))
+            if wiz.city:
+                domain.append(('city', 'ilike', wiz.city))
+            if wiz.user_ids:
+                domain.append(('user_id', 'in', wiz.user_ids.ids))
+
+            sold = wiz.env['estate.property'].sudo().search(domain)
+            if not sold:
+                wiz.inline_chart_html = ''
+                continue
+
+            by_month = defaultdict(list)
+            for p in sold:
+                key = p.date_sold.strftime('%Y-%m')
+                by_month[key].append(p.price)
+
+            monthly = []
+            for key in sorted(by_month.keys()):
+                prices = by_month[key]
+                monthly.append({
+                    'key': key,
+                    'label': dt.strptime(key, '%Y-%m').strftime('%b \'%y'),
+                    'count': len(prices),
+                    'avg_price': round(sum(prices) / len(prices)),
+                    'total': round(sum(prices)),
+                })
+
+            price_svg = wiz._svg_line(monthly, 'avg_price', 'Precio Promedio de Venta', '#1e40af')
+            count_svg = wiz._svg_bars(monthly, 'count', 'Ventas por Mes', '#1e40af')
+
+            wiz.inline_chart_html = f'''
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:260px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
+            {price_svg}
+        </div>
+        <div style="flex:0 0 220px;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px;">
+            {count_svg}
+        </div>
+    </div>
+</div>'''
+
+    def _svg_line(self, monthly, field, title, color='#1e40af', w=520, h=180):
+        PAD_L, PAD_R, PAD_T, PAD_B = 58, 14, 22, 32
+        iw = w - PAD_L - PAD_R
+        ih = h - PAD_T - PAD_B
+        vals = [d[field] for d in monthly]
+        if not vals:
+            return ''
+        max_v = max(vals) * 1.1 or 1
+        min_v = min(vals) * 0.88 if min(vals) > 0 else 0
+        rng = max_v - min_v or 1
+        n = len(monthly)
+        step = iw / (n - 1) if n > 1 else iw
+
+        def px(i): return PAD_L + i * step
+        def py(v): return PAD_T + ih - (v - min_v) / rng * ih
+
+        grid = ''
+        for level in [0, 0.25, 0.5, 0.75, 1.0]:
+            v = min_v + rng * level
+            y = py(v)
+            grid += f'<line x1="{PAD_L}" y1="{y:.1f}" x2="{PAD_L+iw}" y2="{y:.1f}" stroke="#f3f4f6" stroke-width="1"/>'
+            lbl = f'${v/1000:.0f}k' if v >= 1000 else f'${v:.0f}'
+            grid += f'<text x="{PAD_L-5}" y="{y:.1f}" text-anchor="end" dominant-baseline="middle" font-size="8" fill="#9ca3af">{lbl}</text>'
+
+        pts = ' '.join(f'{px(i):.1f},{py(d[field]):.1f}' for i, d in enumerate(monthly))
+        area = f'{PAD_L:.1f},{PAD_T+ih:.1f} {pts} {px(n-1):.1f},{PAD_T+ih:.1f}'
+        uid = abs(hash(title)) % 9999
+
+        dots = ''
+        xlbls = ''
+        for i, d in enumerate(monthly):
+            x, y = px(i), py(d[field])
+            dots += f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" fill="{color}" stroke="white" stroke-width="1.5"/>'
+            if n <= 8 or i % max(1, n // 8) == 0:
+                xlbls += f'<text x="{x:.1f}" y="{PAD_T+ih+16}" text-anchor="middle" font-size="7.5" fill="#9ca3af">{d["label"]}</text>'
+
+        return f'''
+<text x="{PAD_L}" y="12" font-size="9" font-weight="700" fill="#6b7280">{title.upper()}</text>
+<svg viewBox="0 0 {w} {h}" style="width:100%;display:block;margin-top:4px;">
+  <defs><linearGradient id="ag{uid}" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="{color}" stop-opacity="0.18"/>
+    <stop offset="100%" stop-color="{color}" stop-opacity="0.02"/>
+  </linearGradient></defs>
+  {grid}
+  <polygon points="{area}" fill="url(#ag{uid})"/>
+  <polyline points="{pts}" fill="none" stroke="{color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+  {dots}
+  {xlbls}
+</svg>'''
+
+    def _svg_bars(self, monthly, field, title, color='#1e40af', w=200, h=180):
+        PAD_L, PAD_R, PAD_T, PAD_B = 28, 10, 22, 32
+        iw = w - PAD_L - PAD_R
+        ih = h - PAD_T - PAD_B
+        vals = [d[field] for d in monthly]
+        if not vals:
+            return ''
+        max_v = max(vals) * 1.15 or 1
+        n = len(monthly)
+        gap = 4
+        bar_w = max((iw - gap * (n - 1)) / n, 4)
+        step = bar_w + gap
+
+        bars = ''
+        for i, d in enumerate(monthly):
+            v = d[field]
+            x = PAD_L + i * step
+            bh = v / max_v * ih
+            y = PAD_T + ih - bh
+            bars += f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{bh:.1f}" fill="{color}" rx="2"/>'
+            if v > 0:
+                bars += f'<text x="{x+bar_w/2:.1f}" y="{y-3:.1f}" text-anchor="middle" font-size="8" fill="{color}" font-weight="600">{v}</text>'
+            if n <= 6 or i % max(1, n // 5) == 0:
+                bars += f'<text x="{x+bar_w/2:.1f}" y="{PAD_T+ih+14}" text-anchor="middle" font-size="7" fill="#9ca3af">{d["label"].split()[0]}</text>'
+
+        return f'''
+<text x="{PAD_L}" y="12" font-size="9" font-weight="700" fill="#6b7280">{title.upper()}</text>
+<svg viewBox="0 0 {w} {h}" style="width:100%;display:block;margin-top:4px;">
+  <line x1="{PAD_L}" y1="{PAD_T}" x2="{PAD_L}" y2="{PAD_T+ih}" stroke="#e5e7eb" stroke-width="1"/>
+  <line x1="{PAD_L}" y1="{PAD_T+ih}" x2="{PAD_L+iw}" y2="{PAD_T+ih}" stroke="#e5e7eb" stroke-width="1"/>
+  {bars}
+</svg>'''
+
+    # ────────────────────────────────────────────────────────────────────────
     # Acciones de exportación
     # ────────────────────────────────────────────────────────────────────────
+    def action_open_graph(self):
+        self.ensure_one()
+        return self.env.ref('estate_reports.action_sales_avg_month').read()[0]
+
     def action_generate_pdf(self):
         self.ensure_one()
         return self.env.ref('estate_reports.action_report_avg_sales').report_action(self)

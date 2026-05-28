@@ -1,6 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Acceso rápido a visitas de hoy -->
+    <record id="estate_today_visits_action" model="ir.actions.act_window">
+        <field name="name">Mis Visitas de Hoy</field>
+        <field name="res_model">calendar.event</field>
+        <field name="view_mode">list,form,calendar</field>
+        <field name="domain">[('property_id', '!=', False)]</field>
+        <field name="context">{
+            'search_default_mymeetings': 1,
+            'search_default_filter_visits': 1,
+            'search_default_filter_today': 1,
+        }</field>
+        <field name="view_id" ref="view_calendar_event_tree_visits"/>
+    </record>
+
     <!-- Visitas integradas en Agenda (Planificación) -->
+    <menuitem id="estate_menu_today_visits"
+              name="Mis Visitas de Hoy"
+              parent="estate_management.estate_menu_planning_root"
+              action="estate_today_visits_action"
+              sequence="10"/>
+
+    <menuitem id="estate_menu_visit_pipeline"
+              name="Pipeline de Visitas"
+              parent="estate_management.estate_menu_planning_root"
+              action="estate_visit_pipeline_action"
+              sequence="15"/>
+
     <menuitem id="estate_menu_visits_done"
               name="Visitas Realizadas"
               parent="estate_management.estate_menu_planning_root"

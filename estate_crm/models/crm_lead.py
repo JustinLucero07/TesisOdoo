@@ -13,18 +13,18 @@ class CrmLead(models.Model):
 
     # --- Canal de captación ---
     lead_source = fields.Selection([
-        ('website',   '🌐 Sitio Web'),
-        ('wordpress', '📰 WordPress/Houzez'),
-        ('whatsapp',  '💬 WhatsApp'),
-        ('instagram', '📸 Instagram'),
-        ('facebook',  '📘 Facebook'),
-        ('google',    '🔍 Google Business'),
-        ('referral',  '🤝 Referido'),
-        ('phone',     '📞 Llamada Telefónica'),
-        ('walk_in',   '🚶 Visita Directa'),
-        ('portal',    '👤 Portal del Cliente'),
-        ('ai_agent',  '🤖 Agente IA'),
-        ('other',     '📌 Otro'),
+        ('website',   'Sitio Web'),
+        ('wordpress', 'WordPress/Houzez'),
+        ('whatsapp',  'WhatsApp'),
+        ('instagram', 'Instagram'),
+        ('facebook',  'Facebook'),
+        ('google',    'Google Business'),
+        ('referral',  'Referido'),
+        ('phone',     'Llamada Telefónica'),
+        ('walk_in',   'Visita Directa'),
+        ('portal',    'Portal del Cliente'),
+        ('ai_agent',  'Agente IA'),
+        ('other',     'Otro'),
     ], string='Fuente del Lead', default='website', tracking=True,
        help='Canal por el que llegó este prospecto')
 
@@ -257,7 +257,7 @@ class CrmLead(models.Model):
                 })]
         order = self.env['sale.order'].create(order_vals)
         self.message_post(
-            body=f'🛒 Orden de venta <b>{order.name}</b> creada desde este lead.')
+            body=f'Orden de venta <b>{order.name}</b> creada desde este lead.')
         return {
             'type': 'ir.actions.act_window',
             'name': 'Orden de Venta',
@@ -388,7 +388,7 @@ class CrmLead(models.Model):
             prop_name = lead.target_property_id.title if lead.target_property_id else ''
             client_name = lead.partner_id.name or lead.contact_name or lead.name
             message = (
-                f'🔥 Lead de alto score: {client_name}'
+                f'Lead de alto score: {client_name}'
                 + (f' → {prop_name}' if prop_name else '')
                 + f' ({lead.match_percentage}% match, presupuesto ${lead.client_budget:,.0f})'
             )
@@ -578,7 +578,7 @@ class CrmLead(models.Model):
                 if pending_stage:
                     lead.stage_id = pending_stage.id
                 lead.message_post(
-                    body='📌 No se encontró match en el catálogo actual. '
+                    body='No se encontró match en el catálogo actual. '
                          'Lead marcado como <b>Con Necesidad Pendiente</b>. '
                          'El cron cada 6h buscará automáticamente nuevas propiedades compatibles.',
                     message_type='comment', subtype_xmlid='mail.mt_note')
@@ -586,7 +586,7 @@ class CrmLead(models.Model):
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
-                        'title': '📌 Sin Match — Necesidad Pendiente',
+                        'title': 'Sin Match — Necesidad Pendiente',
                         'message': 'No hay propiedades compatibles ahora. Lead marcado como "Con Necesidad Pendiente". '
                                    'Se buscará automáticamente cada 6 horas.',
                         'type': 'warning',
@@ -633,7 +633,7 @@ class CrmLead(models.Model):
         if not prop.buyer_id and self.partner_id:
             prop.buyer_id = self.partner_id
         self.message_post(
-            body=f'🔒 Propiedad <strong>{prop.title}</strong> marcada como <strong>Reservada</strong> desde esta oportunidad.'
+            body=f'Propiedad <strong>{prop.title}</strong> marcada como <strong>Reservada</strong> desde esta oportunidad.'
         )
         return {
             'type': 'ir.actions.client',
@@ -795,10 +795,10 @@ class CrmLead(models.Model):
             if lead.last_activity_days >= 14:
                 if lead.lead_temperature == 'boiling':
                     lead.lead_temperature = 'hot'
-                    lead.message_post(body='🥶 Temperatura degradada automáticamente: Hirviendo → Caliente (sin actividad por 14+ días).')
+                    lead.message_post(body='Temperatura degradada automáticamente: Hirviendo → Caliente (sin actividad por 14+ días).')
                 elif lead.lead_temperature == 'hot':
                     lead.lead_temperature = 'warm'
-                    lead.message_post(body='❄️ Temperatura degradada automáticamente: Caliente → Tibio (sin actividad por 14+ días).')
+                    lead.message_post(body='Temperatura degradada automáticamente: Caliente → Tibio (sin actividad por 14+ días).')
 
 
     @api.model
@@ -807,9 +807,9 @@ class CrmLead(models.Model):
         Optimizado: prefetch de actividades drip existentes en una sola query."""
         today = fields.Date.today()
         drip_steps = [
-            (2, '📩 Seguimiento Día 2', 'Contactar al cliente para confirmar su interés y resolver dudas iniciales.'),
-            (7, '📞 Seguimiento Día 7', 'Segunda llamada: explorar objeciones y proponer visita si no se ha concretado.'),
-            (14, '🚨 Seguimiento Día 14 — Último intento', 'Ultimo intento de recuperación: ofrecer alternativas o cerrar el lead.'),
+            (2, 'Seguimiento Día 2', 'Contactar al cliente para confirmar su interés y resolver dudas iniciales.'),
+            (7, 'Seguimiento Día 7', 'Segunda llamada: explorar objeciones y proponer visita si no se ha concretado.'),
+            (14, 'Seguimiento Día 14 — Último intento', 'Ultimo intento de recuperación: ofrecer alternativas o cerrar el lead.'),
         ]
         leads = self.search([
             ('type', '=', 'lead'),
@@ -898,7 +898,7 @@ class CrmLead(models.Model):
                 'res_id': lead.id,
                 'res_model_id': crm_lead_model_id,
                 'activity_type_id': activity_type_id,
-                'summary': f'🔥 Lead HIRVIENDO sin respuesta (48h+)',
+                'summary': f'Lead HIRVIENDO sin respuesta (48h+)',
                 'note': (
                     f'El lead "{lead.partner_id.name or lead.contact_name or "Cliente"}" '
                     f'tiene temperatura HIRVIENDO pero no ha tenido actividad en 48+ horas. '
@@ -930,14 +930,14 @@ class CrmLead(models.Model):
             referrer = lead.referral_partner_id
             lead.message_post(
                 body=(
-                    f'🤝 <b>Referidor notificado:</b> {referrer.name} refirió este cliente. '
+                    f'<b>Referidor notificado:</b> {referrer.name} refirió este cliente. '
                     f'Recordar reconocimiento o beneficio del programa de referidos.'
                 )
             )
             # Crear actividad para el agente
             lead.activity_schedule(
                 'mail.mail_activity_data_todo',
-                summary=f'🎁 Reconocimiento a referidor: {referrer.name}',
+                summary=f'Reconocimiento a referidor: {referrer.name}',
                 note=(
                     f'La venta de "{lead.name}" fue referida por <b>{referrer.name}</b>. '
                     f'Contactar para agradecer y entregar el beneficio del programa de referidos.'
@@ -957,7 +957,7 @@ class CrmLead(models.Model):
         """Notificación interna al asesor asignado y al canal del equipo."""
         source_label = dict(self._fields['lead_source'].selection).get(lead.lead_source or 'other', 'Desconocido')
         msg = (
-            f'🔔 <b>Nuevo lead recibido</b> vía <b>{source_label}</b>.<br/>'
+            f'<b>Nuevo lead recibido</b> vía <b>{source_label}</b>.<br/>'
             f'<b>Cliente:</b> {lead.partner_id.name or lead.contact_name or "Sin nombre"}<br/>'
             f'<b>Presupuesto:</b> ${lead.client_budget:,.0f}<br/>'
             f'<b>Ciudad preferida:</b> {lead.preferred_city or "No especificada"}'
@@ -986,14 +986,14 @@ class CrmLead(models.Model):
             vals['stage_id'] = pending_stage.id
         self.write(vals)
         self.message_post(
-            body='📌 Lead marcado como <b>Con Necesidad Pendiente</b> manualmente. '
+            body='Lead marcado como <b>Con Necesidad Pendiente</b> manualmente. '
                  'El sistema buscará propiedades compatibles cada 6 horas.',
             message_type='comment', subtype_xmlid='mail.mt_note')
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': '📌 Necesidad Pendiente Activada',
+                'title': 'Necesidad Pendiente Activada',
                 'message': 'El lead se moverá a la etapa "Con Necesidad Pendiente" y el cron '
                            'buscará propiedades cada 6 horas.',
                 'type': 'success', 'sticky': False,
@@ -1005,7 +1005,7 @@ class CrmLead(models.Model):
         self.ensure_one()
         self.write({'pending_needs_active': False})
         self.message_post(
-            body='✅ Necesidad pendiente resuelta manualmente.',
+            body='Necesidad pendiente resuelta manualmente.',
             message_type='comment', subtype_xmlid='mail.mt_note')
 
     @api.model
@@ -1083,12 +1083,12 @@ class CrmLead(models.Model):
                 client_name = lead.partner_id.name or lead.contact_name or 'Cliente'
                 if phone:
                     msg = (
-                        f'🏠 ¡Hola {client_name}! Tenemos una propiedad ideal para ti:\n\n'
-                        f'📍 *{best_match.title}*\n'
-                        f'📌 {best_match.city or "Ciudad no especificada"}\n'
-                        f'💰 ${best_match.price:,.0f}\n'
-                        f'🛏️ {best_match.bedrooms or 0} hab. · {best_match.area or 0} m²\n\n'
-                        f'📞 Contáctanos para agendar una visita.'
+                        f'Hola {client_name}, tenemos una propiedad ideal para ti:\n\n'
+                        f'*{best_match.title}*\n'
+                        f'{best_match.city or "Ciudad no especificada"}\n'
+                        f'${best_match.price:,.0f}\n'
+                        f'{best_match.bedrooms or 0} hab. · {best_match.area or 0} m2\n\n'
+                        f'Contactanos para agendar una visita.'
                     )
                     try:
                         CalendarEvent._send_whatsapp_text(phone, msg)
@@ -1101,7 +1101,7 @@ class CrmLead(models.Model):
                 # Crear actividad para el asesor
                 lead.activity_schedule(
                     'mail.mail_activity_data_todo',
-                    summary=f'🏠 Match encontrado: {best_match.title} ({best_score}%)',
+                    summary=f'Match encontrado: {best_match.title} ({best_score}%)',
                     note=f'El cron encontró una propiedad compatible para el cliente '
                          f'{client_name}. Propiedad: {best_match.title} '
                          f'(${best_match.price:,.0f}, {best_match.city}). '
@@ -1112,7 +1112,7 @@ class CrmLead(models.Model):
                 # Log en chatter
                 lead.message_post(
                     body=(
-                        f'🎯 <b>Match automático encontrado</b> ({best_score}% compatibilidad)<br/>'
+                        f'<b>Match automático encontrado</b> ({best_score}% compatibilidad)<br/>'
                         f'Propiedad: <b>{best_match.title}</b> — '
                         f'{best_match.city} — ${best_match.price:,.0f}<br/>'
                         f'Se envió WhatsApp al cliente y se creó actividad para el asesor.'

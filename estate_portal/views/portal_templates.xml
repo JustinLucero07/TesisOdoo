@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- Agrego el conteo de propiedades a la página principal del Portal -->
-    <template id="portal_my_home_menu_property" name="Portal layout : property menu entries" inherit_id="portal.portal_breadcrumbs" priority="20">
+    <template id="portal_my_home_menu_property" name="Portal layout : property menu entries" inherit_id="portal.portal_breadcrumbs" priority="25">
         <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
             <li t-if="page_name == 'property' or property" t-attf-class="breadcrumb-item #{'active ' if not property else ''}">
                 <a t-if="property" t-attf-href="/my/properties?{{ keep_query() }}">Mis Propiedades</a>
@@ -20,7 +20,7 @@
         </xpath>
     </template>
 
-    <template id="portal_my_home_property" name="Portal My Home : property entries" inherit_id="portal.portal_my_home" priority="20">
+    <template id="portal_my_home_property" name="Portal My Home : property entries" inherit_id="portal.portal_my_home" priority="25">
         <xpath expr="//div[hasclass('o_portal_docs')]" position="inside">
             <t t-call="portal.portal_docs_entry">
                 <t t-set="title">Mis Propiedades</t>
@@ -33,7 +33,7 @@
                 <t t-set="placeholder_count" t-value="'contract_count'"/>
             </t>
             <t t-call="portal.portal_docs_entry">
-                <t t-set="title">🤝 Referir un Amigo</t>
+                <t t-set="title">Referir un Amigo</t>
                 <t t-set="url" t-value="'/my/referral'"/>
                 <t t-set="placeholder_count" t-value="'0'"/>
             </t>
@@ -46,7 +46,7 @@
         <xpath expr="//ol[hasclass('o_portal_submenu')]" position="inside">
             <li t-if="page_name == 'referral'"
                 class="breadcrumb-item active">
-                🤝 Programa de Referidos
+                Programa de Referidos
             </li>
         </xpath>
     </template>
@@ -143,7 +143,7 @@
                                         <li class="list-group-item border-0 px-0" t-if="property.avm_estimated_price">
                                             <div class="d-flex justify-content-between mb-1">
                                                 <small class="text-muted">Precio vs. Valor de Mercado (AVM)</small>
-                                                <small t-if="property.avm_status == 'fair'" class="text-success fw-bold">✓ Precio Justo</small>
+                                                <small t-if="property.avm_status == 'fair'" class="text-success fw-bold">Precio Justo</small>
                                                 <small t-if="property.avm_status == 'high'" class="text-danger fw-bold">↑ Sobrevalorado</small>
                                                 <small t-if="property.avm_status == 'low'" class="text-warning fw-bold">↓ Oportunidad</small>
                                                 <small t-if="property.avm_status == 'insufficient'" class="text-muted">Sin datos AVM</small>
@@ -642,36 +642,36 @@
             <!-- Mensajes de éxito / error -->
             <t t-if="success">
                 <div class="alert alert-success alert-dismissible fade show mt-3" role="alert">
-                    <strong>✅ ¡Referido enviado!</strong>
+                    <strong>¡Referido enviado!</strong>
                     Gracias por referir a un amigo. Te avisaremos cuando avance en el proceso.
                     <button type="button" class="btn-close" data-bs-dismiss="alert"/>
                 </div>
             </t>
             <t t-if="error">
                 <div class="alert alert-danger alert-dismissible fade show mt-3" role="alert">
-                    <strong>⚠️ Error:</strong> <t t-esc="error"/>
+                    <strong>Error:</strong> <t t-esc="error"/>
                     <button type="button" class="btn-close" data-bs-dismiss="alert"/>
                 </div>
             </t>
 
             <!-- Hero del programa -->
             <div class="bg-light rounded-3 p-4 mb-4 mt-3 text-center">
-                <h2>🤝 Programa de Referidos</h2>
+                <h2>Programa de Referidos</h2>
                 <p class="lead text-muted">
                     ¿Conoces a alguien que busca comprar, vender o arrendar una propiedad?
                     <br/>Refierelos y <strong>recibe beneficios exclusivos</strong> cuando se concrete la transacción.
                 </p>
                 <div class="row justify-content-center mt-3">
                     <div class="col-md-3 text-center mb-3">
-                        <div class="display-6">📋</div>
+                        <div class="display-6"><i class="fa fa-list-alt"/></div>
                         <p class="small mt-1"><strong>1. Llena el formulario</strong><br/>Con los datos de tu referido</p>
                     </div>
                     <div class="col-md-3 text-center mb-3">
-                        <div class="display-6">📞</div>
+                        <div class="display-6"><i class="fa fa-phone"/></div>
                         <p class="small mt-1"><strong>2. Lo contactamos</strong><br/>Nuestro equipo lo asesora</p>
                     </div>
                     <div class="col-md-3 text-center mb-3">
-                        <div class="display-6">🎁</div>
+                        <div class="display-6"><i class="fa fa-gift"/></div>
                         <p class="small mt-1"><strong>3. Recibe tu beneficio</strong><br/>Al cerrarse la transacción</p>
                     </div>
                 </div>
@@ -680,7 +680,7 @@
             <!-- Formulario de referido -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">📝 Datos de tu Referido</h5>
+                    <h5 class="mb-0">Datos de tu Referido</h5>
                 </div>
                 <div class="card-body">
                     <form action="/my/referral/submit" method="post">
@@ -725,7 +725,7 @@
                         </div>
                         <div class="mt-4 text-end">
                             <button type="submit" class="btn btn-primary btn-lg">
-                                🤝 Enviar Referido
+                                Enviar Referido
                             </button>
                         </div>
                     </form>
@@ -736,7 +736,7 @@
             <t t-if="referred_leads">
                 <div class="card shadow-sm">
                     <div class="card-header">
-                        <h5 class="mb-0">📊 Mis Referidos</h5>
+                        <h5 class="mb-0">Mis Referidos</h5>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
@@ -756,7 +756,7 @@
                                         <td><t t-esc="rl.stage_id.name or '—'"/></td>
                                         <td>
                                             <t t-if="rl.stage_id.is_won">
-                                                <span class="badge bg-success">✅ Cerrado</span>
+                                                <span class="badge bg-success">Cerrado</span>
                                             </t>
                                             <t t-elif="not rl.active">
                                                 <span class="badge bg-secondary">Archivado</span>

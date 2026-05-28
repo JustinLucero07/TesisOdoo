@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>13 — Agenda Semanal de Visitas</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .week {
+      display:grid;
+      grid-template-columns: 18mm repeat(7, 1fr);
+      border:1px solid var(--border);
+    }
+    .week .h {
+      background:var(--navy);
+      color:#fff;
+      padding:2.5mm 2mm;
+      font-size:8pt;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-weight:600;
+      text-align:center;
+      border-right:1px solid rgba(255,255,255,.15);
+    }
+    .week .h.day-num { font-size:11pt; font-weight:700; margin-top:0.5mm; }
+    .week .h:last-child { border-right:none; }
+    .week .h.corner { background:var(--navy-90); }
+    .week .h .sub { font-size:7pt; opacity:.65; font-weight:500; letter-spacing:.08em; margin-top:0.5mm; }
+    .week .hour {
+      padding:2mm 2mm;
+      font-size:8pt;
+      color:var(--muted);
+      text-align:right;
+      border-top:1px solid var(--border);
+      border-right:1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+      font-weight:600;
+    }
+    .week .cell {
+      border-top:1px solid var(--border);
+      border-right:1px solid var(--border);
+      min-height:13mm;
+      padding:1mm;
+      position:relative;
+    }
+    .week .cell:last-child{border-right:none}
+    .week .ev {
+      background:var(--navy);
+      color:#fff;
+      padding:1.5mm 2mm;
+      font-size:7.5pt;
+      line-height:1.25;
+      border-left:2mm solid var(--red);
+      border-radius:1px;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+    .week .ev .who { font-weight:700; }
+    .week .ev .where { opacity:.75; font-size:7pt; margin-top:0.5mm; }
+    .week .ev.soft { background:#eef1f5; color:var(--navy); border-left-color:var(--navy); }
+    .week .ev.warn { background:#fdf3e2; color:#5a4308; border-left-color:#c08a17; }
+  </style>
+</head>
+<body>
+  <div class="viewer-stage" style="padding:0;gap:0">
+    <div class="page" style="width:297mm;min-height:210mm">
+      <!-- Página horizontal A4 -->
+      <header class="doc-header">
+        <div class="logo-block">
+          <img src="../assets/logo.png" alt="Logo" class="logo">
+          <div class="tagline">Bienes Raíces · Santa Cruz de la Sierra</div>
+        </div>
+        <div class="meta">
+          <div class="doc-type">Agenda Semanal</div>
+          <div class="doc-id">AG-2026-W22</div>
+          <div class="doc-date">Semana 25 – 31 mayo 2026</div>
+        </div>
+      </header>
+
+      <section class="doc-title">
+        <div class="eyebrow">Planificación · Equipo Comercial</div>
+        <h1>Agenda Semanal de Visitas</h1>
+        <div class="subtitle">28 visitas programadas · 7 asesores · Coordinador: Andrés Vargas</div>
+      </section>
+
+      <div class="page-body">
+
+        <div class="stat-row" style="grid-template-columns: repeat(5, 1fr); margin-bottom:5mm">
+          <div class="stat"><div class="label">Visitas programadas</div><div class="value">28</div></div>
+          <div class="stat"><div class="label">Clientes únicos</div><div class="value">22</div></div>
+          <div class="stat"><div class="label">Propiedades a mostrar</div><div class="value">19</div></div>
+          <div class="stat"><div class="label">Open houses</div><div class="value">2</div></div>
+          <div class="stat accent"><div class="label">Reuniones internas</div><div class="value">3</div></div>
+        </div>
+
+        <div class="week">
+          <!-- Header row -->
+          <div class="h corner">Hora</div>
+          <div class="h">Lunes<div class="day-num">25</div><div class="sub">May</div></div>
+          <div class="h">Martes<div class="day-num">26</div><div class="sub">May</div></div>
+          <div class="h">Miércoles<div class="day-num">27</div><div class="sub">May</div></div>
+          <div class="h">Jueves<div class="day-num">28</div><div class="sub">May</div></div>
+          <div class="h">Viernes<div class="day-num">29</div><div class="sub">May</div></div>
+          <div class="h">Sábado<div class="day-num">30</div><div class="sub">May</div></div>
+          <div class="h">Domingo<div class="day-num">31</div><div class="sub">May</div></div>
+
+          <!-- 09:00 -->
+          <div class="hour">09:00</div>
+          <div class="cell"><div class="ev soft"><div class="who">Reunión equipo</div><div class="where">Oficina · Todos</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">Fam. Cuéllar</div><div class="where">Las Palmas L-24 · CMR</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">A. Pinto (lead)</div><div class="where">Urubó Country 7 · LVQ</div></div></div>
+          <div class="cell"><div class="ev warn"><div class="who">Open House</div><div class="where">Equipetrol 8B · CMR + LVQ</div></div></div>
+          <div class="cell"></div>
+
+          <!-- 10:30 -->
+          <div class="hour">10:30</div>
+          <div class="cell"><div class="ev"><div class="who">L. Cabrera</div><div class="where">Loft Urubó 12 · APR</div></div></div>
+          <div class="cell"><div class="ev"><div class="who">J. Mendoza</div><div class="where">Las Palmas L-24 · CMR</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">Inversor Sr. Gil</div><div class="where">Centro Of. 502 · ASL</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">Fam. Aramayo</div><div class="where">Las Palmas L-24 · CMR</div></div></div>
+          <div class="cell"></div>
+
+          <!-- 12:00 -->
+          <div class="hour">12:00</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev soft"><div class="who">Almuerzo cliente</div><div class="where">Restaurante · CMR</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">D. Torrico</div><div class="where">Jardines del N. 12 · PNQ</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+
+          <!-- 14:00 -->
+          <div class="hour">14:00</div>
+          <div class="cell"><div class="ev"><div class="who">Fam. Rojas</div><div class="where">Equipetrol 8B · LVQ</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">L. Ortega</div><div class="where">Centro Apt 4D · ASL</div></div></div>
+          <div class="cell"><div class="ev"><div class="who">Inmob. SUR</div><div class="where">Plan 3000 · PNQ</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">Sra. Quispe</div><div class="where">Terreno Urubó · APR</div></div></div>
+          <div class="cell"></div>
+
+          <!-- 15:30 -->
+          <div class="hour">15:30</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">Inspección técnica</div><div class="where">Las Palmas L-24 · Op.</div></div></div>
+          <div class="cell"><div class="ev"><div class="who">Notaría</div><div class="where">CT-2026-0061 · CMR</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">M. Salazar</div><div class="where">Oficina · Revisión RG · CMR</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+
+          <!-- 17:00 -->
+          <div class="hour">17:00</div>
+          <div class="cell"><div class="ev"><div class="who">G. Iturralde</div><div class="where">Cond. Las Acacias · PNQ</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev"><div class="who">Empresa Nexa</div><div class="where">Local Av. Cristo · ASL</div></div></div>
+          <div class="cell"><div class="ev"><div class="who">Cierre semana</div><div class="where">Oficina · Coord.</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+
+          <!-- 18:30 -->
+          <div class="hour">18:30</div>
+          <div class="cell"></div>
+          <div class="cell"><div class="ev soft"><div class="who">Capacitación</div><div class="where">Sala 2 · CRM v3 · Todos</div></div></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+          <div class="cell"></div>
+        </div>
+
+        <div class="row-3 mt-5" style="gap:4mm">
+          <div>
+            <div class="section-bar">Leyenda asesores</div>
+            <ul class="clean" style="font-size:8.5pt">
+              <li>CMR · Carlos Méndez R.<span class="text-muted">8 visitas</span></li>
+              <li>LVQ · Lucía Vargas Q.<span class="text-muted">5 visitas</span></li>
+              <li>APR · Andrés Pinto R.<span class="text-muted">4 visitas</span></li>
+              <li>PNQ · Patricia Núñez Q.<span class="text-muted">5 visitas</span></li>
+              <li>ASL · Sebastián López<span class="text-muted">3 visitas</span></li>
+            </ul>
+          </div>
+          <div>
+            <div class="section-bar">Convenciones</div>
+            <ul class="clean" style="font-size:8.5pt">
+              <li><span style="display:inline-block;width:6mm;height:3mm;background:var(--navy);border-left:2mm solid var(--red);margin-right:3mm;vertical-align:middle"></span>Visita comercial</li>
+              <li><span style="display:inline-block;width:6mm;height:3mm;background:#eef1f5;border-left:2mm solid var(--navy);margin-right:3mm;vertical-align:middle"></span>Interna / equipo</li>
+              <li><span style="display:inline-block;width:6mm;height:3mm;background:#fdf3e2;border-left:2mm solid #c08a17;margin-right:3mm;vertical-align:middle"></span>Open house</li>
+            </ul>
+          </div>
+          <div>
+            <div class="section-bar">Notas</div>
+            <p style="font-size:8.5pt;color:var(--muted);margin:0">
+              Confirmar visitas 24 horas antes vía WhatsApp. Las inspecciones técnicas requieren la presencia del
+              propietario. Toda re-programación debe registrarse en Odoo · módulo <strong>estate_calendar</strong>.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <footer class="doc-footer">
+        <div class="left">
+          <strong>Av. Monseñor Rivero 234, Edif. Torre Norte Of. 502</strong>
+          Santa Cruz · contacto@bienesraices.com · +591 3 333 4455
+        </div>
+        <div class="center">Bienes Raíces</div>
+        <div class="right">
+          <span class="pg">Página 1 de 1</span>
+          AG-2026-W22 · Emitido 26/05/2026
+        </div>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

@@ -21,6 +21,11 @@
         'views/estate_wordpress_menus.xml',
         'views/res_users_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'estate_wordpress/static/src/js/estate_wp_sync_dialog.js',
+        ],
+    },
     'external_dependencies': {
         'python': ['requests'],
     },

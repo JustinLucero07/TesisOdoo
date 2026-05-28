@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields
+from odoo import models, fields, api
 
 
 class EstateCommissionWizard(models.TransientModel):
@@ -17,6 +17,73 @@ class EstateCommissionWizard(models.TransientModel):
         string='Incluir todas las comisiones',
         default=False,
         help='Si está activo, incluye borradores y canceladas. Por defecto solo aprobadas y pagadas.')
+
+    commission_count = fields.Integer(compute='_compute_commission_html')
+    total_commissions = fields.Float(compute='_compute_commission_html')
+    total_paid = fields.Float(compute='_compute_commission_html')
+    total_pending = fields.Float(compute='_compute_commission_html')
+    commission_html = fields.Html(string='Comisiones', compute='_compute_commission_html', sanitize=False)
+
+    @api.depends('user_id', 'date_from', 'date_to', 'include_all_states')
+    def _compute_commission_html(self):
+        for wiz in self:
+            domain = wiz._get_commission_domain()
+            commissions = wiz.env['estate.commission'].search(domain, order='date desc')
+            wiz.commission_count = len(commissions)
+            wiz.total_commissions = sum(c.amount for c in commissions)
+            wiz.total_paid = sum(c.amount for c in commissions if c.state == 'paid')
+            wiz.total_pending = sum(c.amount for c in commissions if c.state == 'approved')
+
+            if not commissions:
+                wiz.commission_html = '<p style="color:#9ca3af;font-style:italic;padding:16px;">Sin comisiones para los filtros seleccionados.</p>'
+                continue
+
+            state_labels = {'draft': 'Borrador', 'approved': 'Aprobada', 'paid': 'Pagada', 'cancelled': 'Cancelada'}
+            state_colors = {'draft': '#6b7280', 'approved': '#d97706', 'paid': '#16a34a', 'cancelled': '#dc2626'}
+            rows = ''
+            for i, c in enumerate(commissions):
+                bg = '#f9fafb' if i % 2 == 0 else '#ffffff'
+                state_color = state_colors.get(c.state, '#6b7280')
+                state_label = state_labels.get(c.state, c.state)
+                prop_name = c.property_id.title or c.property_id.name if c.property_id else '—'
+                rows += (
+                    f'<tr style="background:{bg};">'
+                    f'<td style="padding:8px 12px;font-weight:600;color:#1e40af;">{prop_name}</td>'
+                    f'<td style="padding:8px 12px;color:#6b7280;">{c.user_id.name or "—"}</td>'
+                    f'<td style="padding:8px 12px;text-align:right;">${c.sale_amount:,.2f}</td>'
+                    f'<td style="padding:8px 12px;text-align:center;">{c.commission_pct or 0:.1f}%</td>'
+                    f'<td style="padding:8px 12px;text-align:right;font-weight:700;color:#16a34a;">${c.amount:,.2f}</td>'
+                    f'<td style="padding:8px 12px;text-align:center;color:#6b7280;">{str(c.date) if c.date else "—"}</td>'
+                    f'<td style="padding:8px 12px;text-align:center;">'
+                    f'<span style="font-size:10px;font-weight:700;padding:2px 8px;background:{state_color}20;color:{state_color};border:1px solid {state_color}40;">{state_label}</span>'
+                    f'</td>'
+                    f'</tr>'
+                )
+
+            wiz.commission_html = f'''
+<table style="width:100%;border-collapse:collapse;font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <thead>
+    <tr style="background:#1e40af;color:white;">
+      <th style="padding:10px 12px;text-align:left;">Propiedad</th>
+      <th style="padding:10px 12px;text-align:left;">Asesor</th>
+      <th style="padding:10px 12px;text-align:right;">Monto Venta</th>
+      <th style="padding:10px 12px;text-align:center;">%</th>
+      <th style="padding:10px 12px;text-align:right;">Comisión</th>
+      <th style="padding:10px 12px;text-align:center;">Fecha</th>
+      <th style="padding:10px 12px;text-align:center;">Estado</th>
+    </tr>
+  </thead>
+  <tbody>{rows}</tbody>
+  <tfoot>
+    <tr style="background:#1e40af;color:white;font-weight:700;">
+      <td colspan="4" style="padding:10px 12px;">Total — {len(commissions)} comisiones</td>
+      <td style="padding:10px 12px;text-align:right;font-size:14px;">${wiz.total_commissions:,.2f}</td>
+      <td colspan="2" style="padding:10px 12px;text-align:right;font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);">
+        Pagado: ${wiz.total_paid:,.2f} | Pendiente: ${wiz.total_pending:,.2f}
+      </td>
+    </tr>
+  </tfoot>
+</table>'''
 
     def action_print_commission_report(self):
         """Genera el PDF de liquidación de comisiones para el asesor/período seleccionado."""

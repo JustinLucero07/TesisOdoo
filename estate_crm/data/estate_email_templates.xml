@@ -12,7 +12,7 @@
             <field name="body_html"><![CDATA[
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
   <div style="background: #1B4F72; padding: 24px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 22px;">🏠 Inmobi — Gestión Inmobiliaria</h1>
+    <h1 style="color: white; margin: 0; font-size: 22px;">Inmobi — Gestión Inmobiliaria</h1>
   </div>
   <div style="padding: 32px;">
     <p style="font-size: 16px;">Hola <strong>{{ object.partner_id.name or object.contact_name or 'estimado cliente' }}</strong>,</p>
@@ -21,7 +21,7 @@
     {% if object.preferred_city %}<p><strong>Ciudad de interés:</strong> {{ object.preferred_city }}</p>{% endif %}
     <p style="margin-top: 24px;">Mientras tanto, te invitamos a explorar nuestro catálogo de propiedades.</p>
     <div style="text-align: center; margin: 32px 0;">
-      <a href="https://wa.me/{{ (object.user_id.partner_id.mobile or object.user_id.partner_id.phone or '593XXXXXXXXX') | replace('+','') | replace(' ','') | replace('-','') }}" style="background: #25D366; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;">💬 Escríbenos por WhatsApp</a>
+      <a href="https://wa.me/{{ (object.user_id.partner_id.mobile or object.user_id.partner_id.phone or '593XXXXXXXXX') | replace('+','') | replace(' ','') | replace('-','') }}" style="background: #25D366; color: white; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold;">Escríbenos por WhatsApp</a>
     </div>
     <p style="color: #888; font-size: 13px;">Equipo Inmobi · Cuenca, Ecuador</p>
   </div>
@@ -39,7 +39,7 @@
             <field name="body_html"><![CDATA[
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
   <div style="background: #2E86C1; padding: 24px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 22px;">🔍 Seguimos buscando para ti</h1>
+    <h1 style="color: white; margin: 0; font-size: 22px;">Seguimos buscando para ti</h1>
   </div>
   <div style="padding: 32px;">
     <p>Hola <strong>{{ object.partner_id.name or object.contact_name or 'estimado cliente' }}</strong>,</p>
@@ -89,7 +89,7 @@
             <field name="body_html"><![CDATA[
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
   <div style="background: #27AE60; padding: 24px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 22px;">📅 Nueva visita para tu propiedad</h1>
+    <h1 style="color: white; margin: 0; font-size: 22px;">Nueva visita para tu propiedad</h1>
   </div>
   <div style="padding: 32px;">
     <p>Estimado/a <strong>{{ object.owner_id.name }}</strong>,</p>
@@ -116,7 +116,7 @@
             <field name="body_html"><![CDATA[
 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
   <div style="background: #1B4F72; padding: 24px; text-align: center;">
-    <h1 style="color: white; margin: 0; font-size: 20px;">📊 Reporte Mensual de Gestión</h1>
+    <h1 style="color: white; margin: 0; font-size: 20px;">Reporte Mensual de Gestión</h1>
     <p style="color: #aed6f1; margin: 8px 0 0 0;">{{ object.title }}</p>
   </div>
   <div style="padding: 32px;">
@@ -125,27 +125,27 @@
 
     <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
       <tr style="background: #f8f9fa;">
-        <td style="padding: 10px; border: 1px solid #dee2e6;">📍 Propiedad</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">Propiedad</td>
         <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.title }}</strong></td>
       </tr>
       <tr>
-        <td style="padding: 10px; border: 1px solid #dee2e6;">💰 Precio Actual</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">Precio Actual</td>
         <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>${{ "{:,.0f}".format(object.price) }}</strong></td>
       </tr>
       <tr style="background: #f8f9fa;">
-        <td style="padding: 10px; border: 1px solid #dee2e6;">📅 Días en el Mercado</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">Días en el Mercado</td>
         <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.days_on_market }}</strong> días</td>
       </tr>
       <tr>
-        <td style="padding: 10px; border: 1px solid #dee2e6;">👁️ Visitas Realizadas</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">Visitas Realizadas</td>
         <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.meeting_count }}</strong></td>
       </tr>
       <tr style="background: #f8f9fa;">
-        <td style="padding: 10px; border: 1px solid #dee2e6;">📈 Estado AVM</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">Estado AVM</td>
         <td style="padding: 10px; border: 1px solid #dee2e6;">{{ object.avm_status or 'Sin calcular' }}</td>
       </tr>
       <tr>
-        <td style="padding: 10px; border: 1px solid #dee2e6;">⭐ Score de la Propiedad</td>
+        <td style="padding: 10px; border: 1px solid #dee2e6;">Score de la Propiedad</td>
         <td style="padding: 10px; border: 1px solid #dee2e6;"><strong>{{ object.property_score }}/100</strong> — {{ object.property_score_label }}</td>
       </tr>
     </table>

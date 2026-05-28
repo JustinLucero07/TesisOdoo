@@ -517,10 +517,10 @@ class EstatePropertyWordPress(models.Model):
 
         if cfg['active'] != 'True':
             return self._show_notification(
-                '⚠️ Integración desactivada', 'Activar en Ajustes → WordPress')
+                'Integración desactivada', 'Activar en Ajustes → WordPress')
         if not cfg['url']:
             return self._show_notification(
-                '⚠️ Configuración incompleta', 'Falta la URL de WordPress.')
+                'Configuración incompleta', 'Falta la URL de WordPress.')
 
         self._trigger_wp_sync_async()
         return self._show_notification(
@@ -547,21 +547,21 @@ class EstatePropertyWordPress(models.Model):
                     
                 if response.status_code in (200, 204):
                     self.write({'wp_post_id': 0, 'wp_published': False})
-                    return self._show_notification('✅ Eliminado de WordPress', 'La propiedad fue borrada exitosamente.')
+                    return self._show_notification('Eliminado de WordPress', 'La propiedad fue borrada exitosamente.')
                 elif response.status_code == 404:
                     # If it's already gone from WP, just clear it locally.
                     self.write({'wp_post_id': 0, 'wp_published': False})
-                    return self._show_notification('✅ Sincronizado', 'La propiedad ya había sido eliminada en WordPress, se desenlazó en Odoo.')
+                    return self._show_notification('Sincronizado', 'La propiedad ya había sido eliminada en WordPress, se desenlazó en Odoo.')
                 else:
                     error_msg = f"No se pudo eliminar en WP. Código {response.status_code}: {response.text[:100]}"
                     _logger.error(error_msg)
-                    return self._show_notification('❌ Error al Eliminar', error_msg)
+                    return self._show_notification('Error al Eliminar', error_msg)
             except Exception as e:
                 _logger.error(f"WordPress unpublish error: {str(e)}")
-                return self._show_notification('❌ Error de conexión', str(e))
+                return self._show_notification('Error de conexión', str(e))
         else:
             self.write({'wp_published': False})
-            return self._show_notification('✅ Acción completada', 'Se marcó como no publicado localmente (no existía en WP).')
+            return self._show_notification('Acción completada', 'Se marcó como no publicado localmente (no existía en WP).')
 
     def _show_notification(self, title, message):
         return {
@@ -587,7 +587,7 @@ class EstatePropertyWordPress(models.Model):
             'wp_unlinked': True,
         })
         return self._show_notification(
-            '⛓️‍💥 Propiedad Desvinculada',
+            'Propiedad Desvinculada',
             f'Se ha quitado el vínculo con WordPress. El post (ID: {backup_id}) sigue existiendo en tu sitio web. '
             f'Puedes re-enlazar esta propiedad en cualquier momento desde el botón "Re-enlazar".'
         )
@@ -597,7 +597,7 @@ class EstatePropertyWordPress(models.Model):
         self.ensure_one()
         if not self.wp_post_id_backup:
             return self._show_notification(
-                '⚠️ Sin referencia',
+                'Sin referencia',
                 'No hay Post ID de WordPress guardado. Usa el botón "Enlazar Manualmente" para vincular con un post específico.')
 
         # Verificar que el post aún existe en WordPress
@@ -632,7 +632,7 @@ class EstatePropertyWordPress(models.Model):
                    f'pero no se pudo verificar que el post aún existe en WordPress. '
                    f'Verifica manualmente en tu sitio.')
 
-        return self._show_notification('🔗 Re-enlazado a WordPress', msg)
+        return self._show_notification('Re-enlazado a WordPress', msg)
 
     def action_pull_from_wordpress(self):
         """Trae los datos actuales desde WordPress y actualiza esta propiedad en Odoo.
@@ -641,13 +641,13 @@ class EstatePropertyWordPress(models.Model):
 
         if not self.wp_post_id:
             return self._show_notification(
-                '⚠️ Sin enlace',
+                'Sin enlace',
                 'Esta propiedad no está enlazada a un post de WordPress.')
 
         cfg = self._get_wp_config()
         if cfg['active'] != 'True':
             return self._show_notification(
-                '⚠️ Integración desactivada', 'Activar en Ajustes → WordPress')
+                'Integración desactivada', 'Activar en Ajustes → WordPress')
 
         try:
             # Usar el wizard de importación para aprovechar la cascada de meta
@@ -664,7 +664,7 @@ class EstatePropertyWordPress(models.Model):
 
             if resp.status_code != 200:
                 return self._show_notification(
-                    '❌ Error al leer WordPress',
+                    'Error al leer WordPress',
                     f'No se pudo obtener el post ID {self.wp_post_id}. Código: {resp.status_code}')
 
             wp_prop = resp.json()
@@ -697,7 +697,7 @@ class EstatePropertyWordPress(models.Model):
 
             if not changes:
                 return self._show_notification(
-                    '✅ Sin cambios',
+                    'Sin cambios',
                     'Los datos de WordPress coinciden con los de Odoo. No se actualizó nada.')
 
             # Aplicar cambios con contexto no_wp_sync para evitar loop infinito
@@ -706,15 +706,15 @@ class EstatePropertyWordPress(models.Model):
             # Registrar en chatter
             change_text = '\n'.join(changes)
             self.message_post(
-                body=f'<p><strong>📥 Datos actualizados desde WordPress (Post ID: {self.wp_post_id})</strong></p>'
+                body=f'<p><strong>Datos actualizados desde WordPress (Post ID: {self.wp_post_id})</strong></p>'
                      f'<pre>{change_text}</pre>',
                 message_type='notification',
             )
 
             return self._show_notification(
-                '📥 Datos traídos de WordPress',
+                'Datos traídos de WordPress',
                 f'Se actualizaron {len(changes)} campo(s) desde WordPress:\n' + '\n'.join(changes[:5]))
 
         except Exception as e:
             _logger.error(f"WordPress pull error: {str(e)}")
-            return self._show_notification('❌ Error de conexión', str(e))
+            return self._show_notification('Error de conexión', str(e))

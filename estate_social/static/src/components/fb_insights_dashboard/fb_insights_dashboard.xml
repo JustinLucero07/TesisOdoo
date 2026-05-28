@@ -86,27 +86,27 @@
                 <h4 class="o_fbi_subheader">Reacción por tipo</h4>
                 <div class="o_fbi_reactions_row">
                     <div class="o_fbi_reaction">
-                        <span class="o_fbi_emoji o_fbi_like">👍</span>
+                        <span class="o_fbi_emoji o_fbi_like"><i class="fa fa-thumbs-up"/></span>
                         <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.likes"/>
                     </div>
                     <div class="o_fbi_reaction">
-                        <span class="o_fbi_emoji o_fbi_love">❤️</span>
+                        <span class="o_fbi_emoji o_fbi_love"><i class="fa fa-heart"/></span>
                         <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.loves"/>
                     </div>
                     <div class="o_fbi_reaction">
-                        <span class="o_fbi_emoji">🤗</span>
+                        <span class="o_fbi_emoji"><i class="fa fa-smile-o"/></span>
                         <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.hahas"/>
                     </div>
                     <div class="o_fbi_reaction">
-                        <span class="o_fbi_emoji">😮</span>
+                        <span class="o_fbi_emoji"><i class="fa fa-surprise"/></span>
                         <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.wows"/>
                     </div>
                     <div class="o_fbi_reaction">
-                        <span class="o_fbi_emoji">😢</span>
+                        <span class="o_fbi_emoji"><i class="fa fa-frown-o"/></span>
                         <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.sads"/>
                     </div>
                     <div class="o_fbi_reaction">
-                        <span class="o_fbi_emoji o_fbi_angry">😡</span>
+                        <span class="o_fbi_emoji o_fbi_angry"><i class="fa fa-angry"/></span>
                         <div class="o_fbi_reaction_value" t-esc="state.data.reactions_by_type.angries"/>
                     </div>
                 </div>

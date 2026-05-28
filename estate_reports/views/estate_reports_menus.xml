@@ -5,12 +5,20 @@
          Calendario, etc. Consolida todos los reportes del sistema.
     ═══════════════════════════════════════════════════════════ -->
 
-    <!-- ── Dashboard (acceso directo) ────────────────────── -->
+    <!-- ── Dashboard nativo (board con gráficos Odoo) ──── -->
     <menuitem id="estate_menu_dashboard_direct"
               name="Dashboard General"
               parent="estate_management.estate_menu_intel_root"
-              action="estate_dashboard_action"
+              action="estate_board_action"
               sequence="5"/>
+
+    <!-- ── KPIs y métricas detalladas (dashboard HTML) ── -->
+    <menuitem id="estate_menu_dashboard_kpis"
+              name="KPIs y Métricas"
+              parent="estate_management.estate_menu_intel_root"
+              action="estate_dashboard_action"
+              sequence="6"
+              groups="estate_management.estate_group_manager"/>
 
     <!-- ════════════════════════════════════════════════════
          1. VENTAS — Gráficos y KPIs de cierres
@@ -130,13 +138,13 @@
          3. EXPORTAR — Wizards de descarga PDF / Excel
     ════════════════════════════════════════════════════ -->
     <menuitem id="estate_menu_reports_root"
-              name="Exportar"
+              name="Informes"
               parent="estate_management.estate_menu_intel_root"
               sequence="60"
               groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_report_report_wizard"
-                  name="Generar PDF / Excel"
+                  name="Exportar Datos"
                   parent="estate_menu_reports_root"
                   action="estate_report_wizard_action"
                   sequence="10"
@@ -150,14 +158,14 @@
                   groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_visitor_report"
-                  name="Reporte de Visitas PDF"
+                  name="Reporte de Visitas"
                   parent="estate_menu_reports_root"
                   action="estate_visitor_report_action"
                   sequence="30"
                   groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_sales_report"
-                  name="Promedio de Ventas PDF"
+                  name="Promedio de Ventas"
                   parent="estate_menu_reports_root"
                   action="action_estate_sales_report_wizard"
                   sequence="40"

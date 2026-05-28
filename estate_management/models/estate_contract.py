@@ -152,6 +152,17 @@ class EstateContract(models.Model):
                     rec.property_id.sudo().contract_end_date = vals['date_end']
         return res
 
+    def unlink(self):
+        _BLOCKED = ('active', 'suspended', 'renewing', 'renewed')
+        blocked = self.filtered(lambda c: c.state in _BLOCKED)
+        if blocked:
+            names = ', '.join(blocked.mapped('name'))
+            raise UserError(
+                f"No se puede eliminar un contrato en estado activo o en proceso: {names}.\n\n"
+                "Cancele el contrato primero antes de eliminarlo."
+            )
+        return super().unlink()
+
     @api.depends('name', 'property_id', 'partner_id')
     def _compute_display_name(self):
         for rec in self:
@@ -247,7 +258,7 @@ class EstateContract(models.Model):
         self._check_state_transition('renewing')
         for rec in self:
             rec.state = 'renewing'
-            rec.message_post(body='🔄 Contrato en proceso de renovación.')
+            rec.message_post(body='Contrato en proceso de renovación.')
 
     def action_create_renewal(self):
         """Crea un contrato hijo (renovación) y marca el actual como renovado."""
@@ -268,7 +279,7 @@ class EstateContract(models.Model):
         self._VALID_STATE_TRANSITIONS['expired'].append('renewed')
         self.write({'state': 'renewed'})
         self.message_post(
-            body=f'🔄 Renovado mediante el nuevo contrato <b>{new_contract.name}</b>.')
+            body=f'Renovado mediante el nuevo contrato <b>{new_contract.name}</b>.')
         return {
             'type': 'ir.actions.act_window',
             'name': f'Renovación de {self.name}',

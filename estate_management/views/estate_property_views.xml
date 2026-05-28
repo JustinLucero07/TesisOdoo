@@ -41,7 +41,8 @@
                     <!-- Borrador: acción principal = Publicar -->
                     <button name="action_publish" string="Publicar en Mercado" type="object"
                             class="btn-primary oe_highlight" icon="fa-rocket"
-                            invisible="state != 'draft'"/>
+                            invisible="state != 'draft'"
+                            confirm="¿Confirmas publicar esta propiedad en el mercado?"/>
                     <button name="action_set_draft" string="Volver a Borrador" type="object"
                             class="btn-secondary"
                             invisible="state not in ('available', 'reserved')"
@@ -49,12 +50,15 @@
 
                     <!-- Disponible → Reservado → Vendido -->
                     <button name="action_set_available" string="Disponible" type="object"
-                            class="oe_highlight" invisible="state != 'reserved'"/>
+                            class="oe_highlight" invisible="state != 'reserved'"
+                            confirm="¿Marcar esta propiedad como disponible nuevamente?"/>
                     <button name="action_set_reserved" string="Reservar" type="object"
-                            invisible="state != 'available'"/>
+                            invisible="state != 'available'"
+                            confirm="¿Reservar esta propiedad? Quedará bloqueada para otros compradores."/>
                     <button name="action_open_sale_wizard" string="Vender Propiedad" type="object"
                             class="btn-success oe_highlight" icon="fa-handshake-o"
-                            invisible="state not in ('available', 'reserved')"/>
+                            invisible="state not in ('available', 'reserved')"
+                            confirm="¿Iniciar el proceso de venta para esta propiedad?"/>
                     <button name="action_relist" string="Re-listar en Mercado" type="object"
                             class="btn-warning"
                             invisible="state != 'sold'"
@@ -142,13 +146,18 @@
                         <group string="Información General">
                             <field name="property_type_id" readonly="state == 'sold'"/>
                             <field name="offer_type" invisible="1"/>
-                            <field name="price" widget="monetary" readonly="state == 'sold'"/>
-                            <field name="bottom_price" widget="monetary" readonly="state == 'sold'"/>
+                            <field name="price" widget="monetary" readonly="state == 'sold'"
+                                   placeholder="Ej: 125000"/>
+                            <field name="bottom_price" widget="monetary" readonly="state == 'sold'"
+                                   placeholder="Precio mínimo aceptable"
+                                   groups="estate_management.estate_group_manager"/>
                             <field name="commission_percentage" readonly="state == 'sold'"/>
                             <field name="commission_amount" widget="monetary"/>
-                            <field name="area" readonly="state == 'sold'"/>
-                            <field name="owner_id" readonly="state == 'sold'"/>
-                            <field name="buyer_id" readonly="state == 'sold'"/>
+                            <field name="area" readonly="state == 'sold'" placeholder="m²"/>
+                            <field name="owner_id" readonly="state == 'sold'"
+                                   placeholder="Buscar propietario..."/>
+                            <field name="buyer_id" readonly="state == 'sold'"
+                                   placeholder="Se asigna al vender"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="co_user_id" widget="many2one_avatar_user"/>
                             <field name="commission_split_pct" invisible="not co_user_id"/>
@@ -159,37 +168,97 @@
                             <field name="is_exclusive" widget="boolean_toggle"/>
                             <field name="exclusive_user_id" widget="many2one_avatar_user" invisible="not is_exclusive"/>
                         </group>
-                        <group string="Características">
-                            <field name="bedrooms"/>
-                            <field name="bathrooms"/>
-                            <field name="parking_spaces"/>
-                            <field name="floor"/>
-                            <field name="year_built"/>
+                        <field name="is_land_type" invisible="1"/>
+                        <group string="Terreno / Solar" invisible="not is_land_type">
+                            <field name="has_iprus" widget="boolean_toggle"
+                                   string="Tiene IPRUS"
+                                   help="Informe de Regulación Metropolitana emitido por el municipio"/>
+                            <field name="iprus_number"
+                                   invisible="not has_iprus"
+                                   placeholder="Ej: IPRUS-2024-001234"/>
                         </group>
                     </group>
+
+                    <!-- Características físicas — fila de 5 tarjetas con iconos -->
+                    <div class="o_horizontal_separator mt-2 mb-0 px-0 fw-bold small text-uppercase text-muted"
+                         style="letter-spacing:.06em;font-size:0.7rem;padding:4px 12px;">
+                        Características Físicas
+                    </div>
+                    <div class="row g-0 mx-0 mb-3 border rounded overflow-hidden">
+                        <div class="col text-center py-3 border-end">
+                            <i class="fa fa-bed fa-lg text-primary d-block mb-1" title="Habitaciones"/>
+                            <div class="small text-muted" style="font-size:0.72rem;">Habitaciones</div>
+                            <div class="fw-bold fs-5 lh-1 mt-1">
+                                <field name="bedrooms" nolabel="1" readonly="state == 'sold'"/>
+                            </div>
+                        </div>
+                        <div class="col text-center py-3 border-end">
+                            <i class="fa fa-bath fa-lg text-primary d-block mb-1" title="Baños"/>
+                            <div class="small text-muted" style="font-size:0.72rem;">Baños</div>
+                            <div class="fw-bold fs-5 lh-1 mt-1">
+                                <field name="bathrooms" nolabel="1" readonly="state == 'sold'"/>
+                            </div>
+                        </div>
+                        <div class="col text-center py-3 border-end">
+                            <i class="fa fa-car fa-lg text-primary d-block mb-1" title="Parqueaderos"/>
+                            <div class="small text-muted" style="font-size:0.72rem;">Parqueaderos</div>
+                            <div class="fw-bold fs-5 lh-1 mt-1">
+                                <field name="parking_spaces" nolabel="1" readonly="state == 'sold'"/>
+                            </div>
+                        </div>
+                        <div class="col text-center py-3 border-end">
+                            <i class="fa fa-building-o fa-lg text-primary d-block mb-1" title="Piso / Planta"/>
+                            <div class="small text-muted" style="font-size:0.72rem;">Piso / Planta</div>
+                            <div class="fw-bold fs-5 lh-1 mt-1">
+                                <field name="floor" nolabel="1"/>
+                            </div>
+                        </div>
+                        <div class="col text-center py-3">
+                            <i class="fa fa-calendar-o fa-lg text-primary d-block mb-1" title="Año Construcción"/>
+                            <div class="small text-muted" style="font-size:0.72rem;">Año Construcción</div>
+                            <div class="fw-bold fs-5 lh-1 mt-1">
+                                <field name="year_built" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
                     <group string="Ubicación">
-                        <group>
-                            <field name="street" placeholder="Ej: Av. 9 de Octubre y Pedro Carbo"/>
-                            <field name="city"/>
-                            <field name="sector_keywords" placeholder="Ej: Paccha, El Valle, Ricaurte"/>
+                        <group string="Dirección">
+                            <field name="street" placeholder="Ej: Av. 12 de Octubre y Tarqui"/>
+                            <field name="city" placeholder="Cuenca"/>
                             <field name="state_id"/>
-                        </group>
-                        <group>
                             <field name="country_id"/>
-                            <field name="zip_code"/>
+                        </group>
+                        <group string="Detalles">
+                            <field name="zip_code" placeholder="010101"/>
+                            <field name="sector_keywords" placeholder="Ej: Paccha, El Valle, Ricaurte"/>
                             <field name="wp_publish_location" widget="boolean_toggle"/>
-                            <button name="action_geocode_address" string="  Ubicar en Mapa" type="object"
-                                    class="btn-primary btn-sm" icon="fa-map-marker"
-                                    title="Busca la dirección y actualiza lat/lon automáticamente"/>
+                            <div class="o_field_widget mt-2" colspan="2"
+                                 invisible="latitude and longitude">
+                                <button name="action_geocode_address"
+                                        string="Ubicar en Mapa automáticamente"
+                                        type="object"
+                                        class="btn btn-primary"
+                                        icon="fa-map-marker"
+                                        title="Busca la dirección exacta y actualiza el mapa"/>
+                            </div>
                         </group>
-                        <group col="4" string="Coordenadas (auto-generadas)">
-                            <field name="latitude" readonly="1"/>
-                            <field name="longitude" readonly="1"/>
+                        <group string="Coordenadas GPS (auto)" col="4"
+                               invisible="not latitude and not longitude">
+                            <field name="latitude" readonly="1" string="Latitud"/>
+                            <field name="longitude" readonly="1" string="Longitud"/>
                         </group>
                     </group>
-                    <group>
+                    <div invisible="not latitude and not longitude" class="mb-2">
                         <field name="map_iframe" nolabel="1" widget="html" readonly="1"/>
-                    </group>
+                    </div>
+                    <div invisible="latitude or longitude"
+                         class="text-center py-3 text-muted"
+                         style="border:1px dashed #cbd5e1;border-radius:8px;margin-bottom:8px;">
+                        <i class="fa fa-map-marker fa-2x mb-2 d-block text-primary" title="Sin ubicación en mapa"/>
+                        <strong>Sin ubicación en mapa</strong><br/>
+                        <small>Ingresa la dirección y ciudad, luego haz clic en
+                            <em>Ubicar en Mapa automáticamente</em></small>
+                    </div>
                     <notebook>
                         <page string="Descripción" name="description">
                             <field name="description"/>
@@ -231,7 +300,7 @@
                                 </group>
                             </group>
                             <p class="text-muted">
-                                <i class="fa fa-info-circle"/> Cálculo referencial basado en sistema francés de amortización.
+                                <i class="fa fa-info-circle" title="Información"/> Cálculo referencial basado en sistema francés de amortización.
                                 Tasas referenciales Ecuador: BIESS 8.69%, bancos privados 9-11%.
                             </p>
                         </page>
@@ -309,7 +378,7 @@
                                 </group>
                             </group>
                             <p class="text-muted">
-                                <i class="fa fa-info-circle"/> Los recordatorios automáticos se generan cuando el contrato está próximo a vencer. Revise sus Actividades Planificadas.
+                                <i class="fa fa-info-circle" title="Información"/> Los recordatorios automáticos se generan cuando el contrato está próximo a vencer. Revise sus Actividades Planificadas.
                             </p>
                         </page>
                         <!-- Mejora 14: Tour Virtual 360° -->
@@ -321,7 +390,7 @@
                                 </group>
                             </group>
                             <div invisible="not tour_360_url or not tour_360_active" class="mt-3">
-                                <p class="text-muted"><i class="fa fa-info-circle"/> El tour 360° se mostrará automáticamente en el portal de propietarios cuando esté activo.</p>
+                                <p class="text-muted"><i class="fa fa-info-circle" title="Información"/> El tour 360° se mostrará automáticamente en el portal de propietarios cuando esté activo.</p>
                             </div>
                         </page>
                     </notebook>

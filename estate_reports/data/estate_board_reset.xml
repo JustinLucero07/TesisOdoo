@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="0">
+    <!-- Borra customizaciones de usuario para el board, forzando el layout por defecto -->
+    <function model="estate.dashboard" name="_reset_board_customizations"/>
+</odoo>

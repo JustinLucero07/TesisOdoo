@@ -1,127 +1,163 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <template id="report_weekly_calendar">
-        <t t-call="web.html_container">
-            <t t-call="web.external_layout">
-                <div class="page">
-                    <!-- Header -->
-                    <div class="text-center mb-4">
-                        <h2>Agenda Semanal de Visitas</h2>
-                        <p class="text-muted" style="font-size:14px;">
-                            <strong>Asesor:</strong> <t t-esc="user_name"/>
-                            <span class="mx-2">|</span>
-                            <strong>Período:</strong>
-                            <t t-esc="date_from" t-options='{"widget": "date"}'/> —
-                            <t t-esc="date_to" t-options='{"widget": "date"}'/>
-                            <span class="mx-2">|</span>
-                            <strong>Total:</strong> <t t-esc="total_events"/> cita(s)
-                        </p>
+<template id="report_weekly_calendar">
+    <t t-call="web.html_container">
+        <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#1a1a1a; font-size:9pt;">
+
+        <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
+        <table style="width:100%; border-collapse:collapse; margin-bottom:8px;">
+            <tr>
+                <td style="background:#1C2B4A; padding:10px 16px; vertical-align:middle; width:65%;">
+                    <div style="font-size:17px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:white;">
+                        Agenda Semanal de Visitas
                     </div>
+                    <div style="font-size:9px; color:#a8bcdb; margin-top:3px; letter-spacing:0.5px;">
+                        ASESOR: <t t-out="user_name"/>
+                        &#160;&#183;&#160;
+                        SEMANA: <strong style="color:white;"><t t-esc="date_from_str"/></strong> al <strong style="color:white;"><t t-esc="date_to_str"/></strong>
+                    </div>
+                </td>
+                <td style="background:#263d61; padding:10px 16px; text-align:right; vertical-align:middle; width:35%;">
+                    <div style="color:white; font-size:22px; font-weight:900; line-height:1;">
+                        <t t-esc="total_events"/>
+                        <span style="font-size:10px; font-weight:400; color:#a8bcdb;"> cita(s)</span>
+                    </div>
+                    <div style="color:#a8bcdb; font-size:8px; margin-top:3px;">
+                        Generado: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                    </div>
+                </td>
+            </tr>
+        </table>
 
-                    <!-- Days -->
+        <!-- ══ LEYENDA ═════════════════════════════════════════════════ -->
+        <table style="width:100%; border-collapse:collapse; margin-bottom:8px; font-size:8px; color:#444; background:#F0F3F8; padding:4px 8px;">
+            <tr>
+                <td style="padding:4px 8px;">
+                    <span style="color:#2563EB; font-size:12px; font-weight:900;">&#9632;</span>&#160;Visita
+                </td>
+                <td style="padding:4px 8px;">
+                    <span style="color:#16A34A; font-size:12px; font-weight:900;">&#9632;</span>&#160;Firma / Escritura
+                </td>
+                <td style="padding:4px 8px;">
+                    <span style="color:#D97706; font-size:12px; font-weight:900;">&#9632;</span>&#160;Llamada
+                </td>
+                <td style="padding:4px 8px;">
+                    <span style="color:#7C3AED; font-size:12px; font-weight:900;">&#9632;</span>&#160;Reuni&#243;n
+                </td>
+                <td style="padding:4px 8px; text-align:right; color:#888;">
+                    &#9679; Programada &#160; &#10003; Realizada &#160; &#10005; Cancelada
+                </td>
+            </tr>
+        </table>
+
+        <!-- ══ GRILLA DEL CALENDARIO ═══════════════════════════════════ -->
+        <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+
+            <!-- Cabeceras de días -->
+            <thead>
+                <tr>
                     <t t-foreach="days" t-as="day">
-                        <div class="mb-3" style="page-break-inside: avoid;">
-                            <h4 style="background-color: #017e84; color: white; padding: 8px 12px; border-radius: 4px; margin-bottom: 0;">
-                                <t t-esc="day['day_name']"/>
-                                <span style="float:right; font-size:14px; font-weight:normal;">
-                                    <t t-esc="day['date']" t-options='{"widget": "date"}'/>
-                                </span>
-                            </h4>
+                        <th t-att-style="'background:%s; text-align:center; padding:0; border-right:2px solid white; border-bottom:3px solid #2563EB; vertical-align:middle;' % ('#2563EB' if day['event_count'] > 0 else '#1C2B4A')">
+                            <div style="padding:6px 4px 4px 4px;">
+                                <div style="font-size:7px; font-weight:700; color:#a8bcdb; text-transform:uppercase; letter-spacing:1.5px;">
+                                    <t t-out="day['day_name']"/>
+                                </div>
+                                <div style="font-size:26px; font-weight:900; color:white; line-height:1; margin-top:1px;">
+                                    <t t-esc="day['day_num']"/>
+                                </div>
+                                <div style="font-size:8px; color:#c9d9f0; margin-top:1px;">
+                                    <t t-esc="day['month_name']"/>
+                                </div>
+                                <t t-if="day['event_count'] > 0">
+                                    <div style="background:white; color:#2563EB; font-size:7px; font-weight:900; padding:1px 5px; margin-top:4px; margin-bottom:2px;">
+                                        <t t-esc="day['event_count']"/> cita(s)
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div style="color:#607d9a; font-size:7px; margin-top:4px; margin-bottom:2px; font-style:italic;">libre</div>
+                                </t>
+                            </div>
+                        </th>
+                    </t>
+                </tr>
+            </thead>
 
+            <!-- Celdas de eventos -->
+            <tbody>
+                <tr>
+                    <t t-foreach="days" t-as="day">
+                        <td style="border:1px solid #d1d9e6; border-top:none; vertical-align:top; padding:0; background:white;">
                             <t t-if="day['events']">
-                                <table class="table table-sm table-bordered" style="font-size:12px; margin-top:0;">
-                                    <thead>
-                                        <tr style="background-color: #f0f4f8;">
-                                            <th style="width:12%;">Hora</th>
-                                            <th style="width:25%;">Propiedad</th>
-                                            <th style="width:20%;">Cliente</th>
-                                            <th style="width:15%;">Asesor</th>
-                                            <th style="width:13%;">Tipo</th>
-                                            <th style="width:15%;">Estado</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <t t-foreach="day['events']" t-as="ev">
-                                            <tr>
-                                                <td>
-                                                    <strong>
-                                                        <t t-esc="ev.start" t-options='{"widget": "datetime", "format": "HH:mm"}'/>
-                                                    </strong>
-                                                    <t t-if="ev.stop"> —
-                                                        <t t-esc="ev.stop" t-options='{"widget": "datetime", "format": "HH:mm"}'/>
-                                                    </t>
-                                                </td>
-                                                <td>
-                                                    <t t-if="ev.property_id">
-                                                        <strong><t t-esc="ev.property_id.title"/></strong>
-                                                        <br/>
-                                                        <small class="text-muted">
-                                                            <t t-esc="ev.property_id.street or ''"/>
-                                                            <t t-if="ev.property_id.city">, <t t-esc="ev.property_id.city"/></t>
-                                                        </small>
-                                                    </t>
-                                                    <t t-else="">
-                                                        <t t-esc="ev.name"/>
-                                                    </t>
-                                                </td>
-                                                <td>
-                                                    <t t-esc="ev.partner_id.name or '—'"/>
-                                                    <t t-if="ev.partner_id.phone">
-                                                        <br/>
-                                                        <small class="text-muted"><t t-esc="ev.partner_id.phone"/></small>
-                                                    </t>
-                                                </td>
-                                                <td><t t-esc="ev.user_id.name or '—'"/></td>
-                                                <td>
-                                                    <t t-if="ev.appointment_type == 'visit'">Visita</t>
-                                                    <t t-elif="ev.appointment_type == 'meeting'">Reunión</t>
-                                                    <t t-elif="ev.appointment_type == 'call'">Llamada</t>
-                                                    <t t-elif="ev.appointment_type == 'signing'">Firma</t>
-                                                    <t t-else=""><t t-esc="ev.appointment_type or '—'"/></t>
-                                                </td>
-                                                <td>
-                                                    <t t-if="ev.visit_state == 'scheduled'">
-                                                        <span style="color: #2196F3;">Programada</span>
-                                                    </t>
-                                                    <t t-elif="ev.visit_state == 'done'">
-                                                        <span style="color: #4CAF50;">Realizada</span>
-                                                    </t>
-                                                    <t t-elif="ev.visit_state == 'cancelled'">
-                                                        <span style="color: #F44336;">Cancelada</span>
-                                                    </t>
-                                                    <t t-else="">—</t>
-                                                </td>
-                                            </tr>
+                                <t t-foreach="day['events']" t-as="ev">
+                                    <t t-set="ev_color"
+                                       t-value="'#2563EB' if ev.appointment_type == 'visit' else '#16A34A' if ev.appointment_type == 'signing' else '#D97706' if ev.appointment_type == 'call' else '#7C3AED'"/>
+                                    <div t-att-style="'border-left:3px solid %s; padding:5px 6px; border-bottom:1px solid #edf0f5; background:%s;' % (ev_color, '#F3F6FB' if ev_index % 2 == 0 else 'white')">
+                                        <!-- Hora -->
+                                        <div style="font-size:8px; font-weight:900; color:#1C2B4A; margin-bottom:2px;">
+                                            <t t-esc="fmt_time(ev)"/>
+                                        </div>
+                                        <!-- Propiedad -->
+                                        <t t-if="ev.property_id">
+                                            <div style="font-size:8px; font-weight:700; color:#333; margin-bottom:1px; word-break:break-word;">
+                                                <t t-esc="(ev.property_id.title or ev.property_id.name or '')[:40]"/>
+                                            </div>
+                                            <t t-if="ev.property_id.city">
+                                                <div style="font-size:7px; color:#888; margin-bottom:1px;">
+                                                    <t t-esc="ev.property_id.city"/>
+                                                </div>
+                                            </t>
                                         </t>
-                                    </tbody>
-                                </table>
+                                        <t t-else="">
+                                            <div style="font-size:8px; color:#555; margin-bottom:1px; word-break:break-word;">
+                                                <t t-esc="(ev.name or '')[:40]"/>
+                                            </div>
+                                        </t>
+                                        <!-- Cliente -->
+                                        <t t-if="ev.partner_id">
+                                            <div style="font-size:7px; color:#555; margin-bottom:2px;">
+                                                <t t-esc="ev.partner_id.name"/>
+                                            </div>
+                                        </t>
+                                        <!-- Tipo + estado en una línea -->
+                                        <div style="font-size:7px; color:#888; margin-top:1px;">
+                                            <t t-out="fmt_type(ev.appointment_type)"/>
+                                            <t t-if="ev.visit_state == 'done'">
+                                                &#160;<span style="color:#16A34A; font-weight:700;">&#10003;</span>
+                                            </t>
+                                            <t t-elif="ev.visit_state == 'cancelled'">
+                                                &#160;<span style="color:#DC2626;">&#10005;</span>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </t>
                             </t>
                             <t t-else="">
-                                <p class="text-muted text-center" style="font-size:12px; padding: 10px; border: 1px solid #eee; margin-top:0;">
-                                    Sin citas programadas
-                                </p>
+                                <div style="padding:30px 0; text-align:center; font-size:8px; color:#d0d5e0; font-style:italic;">
+                                    &#8212;
+                                </div>
                             </t>
-                        </div>
+                        </td>
                     </t>
+                </tr>
+            </tbody>
+        </table>
 
-                    <!-- Footer -->
-                    <div class="text-center text-muted mt-4" style="font-size:11px;">
-                        <p>Generado automáticamente por el Sistema Inmobiliario —
-                           <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
-                        </p>
-                    </div>
-                </div>
-            </t>
-        </t>
-    </template>
+        <!-- ══ PIE ══════════════════════════════════════════════════════ -->
+        <div style="margin-top:6px; font-size:7px; color:#aaa; text-align:center; border-top:1px solid #ddd; padding-top:4px;">
+            Sistema de Gesti&#243;n Inmobiliaria &#8212; Agenda Semanal de Visitas
+        </div>
 
-    <!-- Report action -->
-    <record id="action_report_weekly_calendar" model="ir.actions.report">
-        <field name="name">Agenda Semanal</field>
-        <field name="model">calendar.print.wizard</field>
-        <field name="report_type">qweb-pdf</field>
-        <field name="report_name">estate_calendar.report_weekly_calendar</field>
-        <field name="report_file">estate_calendar.report_weekly_calendar</field>
-        <field name="print_report_name">'Agenda_Semanal_%s_%s' % (object.date_from, object.date_to)</field>
-    </record>
+        </div>
+    </t>
+</template>
+
+<record id="action_report_weekly_calendar" model="ir.actions.report">
+    <field name="name">Agenda Semanal</field>
+    <field name="model">calendar.print.wizard</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">estate_calendar.report_weekly_calendar</field>
+    <field name="report_file">estate_calendar.report_weekly_calendar</field>
+    <field name="print_report_name">'Agenda_Semanal_%s_%s' % (object.date_from, object.date_to)</field>
+    <field name="paperformat_id" ref="estate_management.paperformat_estate_a4_landscape"/>
+</record>
 </odoo>

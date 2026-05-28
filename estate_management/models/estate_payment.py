@@ -218,7 +218,7 @@ class EstatePayment(models.Model):
                 payment.activity_schedule(
                     'mail.mail_activity_data_todo',
                     date_deadline=today,
-                    summary=f'💸 Pago vencido hace {days_late} día(s)',
+                    summary=f'Pago vencido hace {days_late} día(s)',
                     note=(
                         f'El pago <strong>{payment.name}</strong> por '
                         f'${payment.amount:,.2f} del contrato '

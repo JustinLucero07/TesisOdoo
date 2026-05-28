@@ -46,7 +46,7 @@ class EstateAIChatHistory(models.Model):
             total_overdue = sum(p.amount for p in overdue_payments)
             oldest = min(overdue_payments.mapped('date'))
             alerts.append(
-                f"⚠️ *{len(overdue_payments)} pagos vencidos* por un total de ${total_overdue:,.2f}.\n"
+                f"*{len(overdue_payments)} pagos vencidos* por un total de ${total_overdue:,.2f}.\n"
                 f"  → El más antiguo desde: {oldest}.\n"
                 f"  → Acción: Ir a CRM > Pagos > Vencidos y contactar al cliente."
             )
@@ -59,7 +59,7 @@ class EstateAIChatHistory(models.Model):
         if stale_props:
             names = ', '.join(stale_props[:3].mapped('title'))
             alerts.append(
-                f"🏠 *{len(stale_props)} propiedades* llevan más de 90 días disponibles: {names}{'...' if len(stale_props) > 3 else ''}.\n"
+                f"*{len(stale_props)} propiedades* llevan más de 90 días disponibles: {names}{'...' if len(stale_props) > 3 else ''}.\n"
                 f"  → Acción: Revisar precio con AVM, mejorar descripción o ajustar comisión."
             )
 
@@ -72,7 +72,7 @@ class EstateAIChatHistory(models.Model):
         if expiring:
             nearest = min(expiring.mapped('date_end'))
             alerts.append(
-                f"📄 *{len(expiring)} contratos* vencen en los próximos 30 días (el más próximo: {nearest}).\n"
+                f"*{len(expiring)} contratos* vencen en los próximos 30 días (el más próximo: {nearest}).\n"
                 f"  → Acción: Contactar arrendatarios para renovación antes del vencimiento."
             )
 
@@ -86,7 +86,7 @@ class EstateAIChatHistory(models.Model):
         if stale_leads:
             lead_names = ', '.join(l.contact_name or l.name for l in stale_leads[:3])
             alerts.append(
-                f"🔥 *{len(stale_leads)} leads calientes* sin actividad por más de 7 días: {lead_names}{'...' if len(stale_leads) > 3 else ''}.\n"
+                f"*{len(stale_leads)} leads calientes* sin actividad por más de 7 días: {lead_names}{'...' if len(stale_leads) > 3 else ''}.\n"
                 f"  → Acción: Crear actividad de seguimiento o llamada para cada uno."
             )
 
@@ -97,7 +97,7 @@ class EstateAIChatHistory(models.Model):
         ])
         if new_leads:
             alerts.append(
-                f"📥 *{new_leads} nuevos leads* ingresaron en las últimas 24 horas.\n"
+                f"*{new_leads} nuevos leads* ingresaron en las últimas 24 horas.\n"
                 f"  → Acción: Calificarlos y asignar asesor."
             )
 
@@ -109,15 +109,15 @@ class EstateAIChatHistory(models.Model):
         ])
         if today_visits:
             alerts.append(
-                f"📅 *{today_visits} visitas programadas* para hoy.\n"
+                f"*{today_visits} visitas programadas* para hoy.\n"
                 f"  → Recordatorio: Confirmar con los clientes y preparar fichas de propiedades."
             )
 
         if not alerts:
-            alerts.append("✅ Todo en orden — sin alertas críticas para hoy.")
+            alerts.append("Todo en orden — sin alertas críticas para hoy.")
 
         alert_text = "\n".join(alerts)
-        summary_msg = f"📊 *Resumen diario del Agente IA — {today.strftime('%d/%m/%Y')}*\n\n{alert_text}"
+        summary_msg = f"*Resumen diario del Agente IA — {today.strftime('%d/%m/%Y')}*\n\n{alert_text}"
 
         # Send notification to all managers and admins
         manager_group = self.env.ref('estate_management.estate_group_manager', raise_if_not_found=False)
@@ -135,7 +135,7 @@ class EstateAIChatHistory(models.Model):
                     partner,
                     'simple_notification',
                     {
-                        'title': '📊 Agente IA — Resumen Diario',
+                        'title': 'Agente IA — Resumen Diario',
                         'message': summary_msg,
                         'type': 'info',
                         'sticky': True,

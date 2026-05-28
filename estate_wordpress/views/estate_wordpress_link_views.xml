@@ -32,7 +32,7 @@
                                     <code>?post=1234</code> — ese número (1234) es el Post ID.
                                 </p>
                                 <p class="text-info">
-                                    <i class="fa fa-shield"/> Este proceso <b>NO modifica nada</b>
+                                    <i class="fa fa-shield" title="Seguro"/> Este proceso <b>NO modifica nada</b>
                                     en WordPress. Solo marca la relación en Odoo.
                                 </p>
                             </div>

@@ -320,7 +320,6 @@ export class AIChatFloatContainer extends Component {
                             this.state.messages[botIdx].statusPhase = null;
                             // Detect confirmation requirement via JSON flag or text pattern
                             if (chunk.requires_confirmation ||
-                                accumulated.toLowerCase().includes('⚠') ||
                                 accumulated.includes('CONFIRMACIÓN REQUERIDA')) {
                                 this.state.messages[botIdx].requiresConfirmation = true;
                             }

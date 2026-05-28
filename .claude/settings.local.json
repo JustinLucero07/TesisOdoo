@@ -278,7 +278,11 @@
       "Bash(grep -rn '$o-brand-primary\\\\|$o-navbar-background\\\\|$o-action-manager-bg\\\\|--o-main-primary' /home/justin/Documentos/odoo19/addons/web/static/src/scss/)",
       "Bash(awk -F, '{print $3}')",
       "Bash([ -f \"/home/justin/Documentos/Tesis/$module/security/ir.model.access.csv\" ])",
-      "Bash(awk -F, '$4 == \"\" {print FILENAME \": \" $2 \" \\(\" $3 \"\\)\"}' /home/justin/Documentos/Tesis/__TRACKED_VAR__/security/ir.model.access.csv)"
+      "Bash(awk -F, '$4 == \"\" {print FILENAME \": \" $2 \" \\(\" $3 \"\\)\"}' /home/justin/Documentos/Tesis/__TRACKED_VAR__/security/ir.model.access.csv)",
+      "Bash(wkhtmltopdf --help)",
+      "Bash(curl -s \"http://localhost:8070/web/login\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8070/web/login)",
+      "Bash(awk '{print $2}')"
     ],
     "additionalDirectories": [
       "/tmp",

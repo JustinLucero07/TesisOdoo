@@ -11,7 +11,7 @@
             <field name="sequence">2</field>
         </record>
         <record id="stage_lead2b_estate_con_necesidad" model="crm.stage">
-            <field name="name">📌 Con Necesidad Pendiente</field>
+            <field name="name">Con Necesidad Pendiente</field>
             <field name="sequence">2</field>
         </record>
         <record id="stage_lead3_estate_visita" model="crm.stage">

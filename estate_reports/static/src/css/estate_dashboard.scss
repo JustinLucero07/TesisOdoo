@@ -1,0 +1,68 @@
+// =============================================================================
+// Dashboard Inmobiliario — full-width + responsive overrides
+// The marker class .o_estate_db is added to the first div inside <sheet>
+// so the :has() selector can walk up to .o_form_sheet_bg and remove its
+// built-in max-width: 1400px constraint.
+// =============================================================================
+
+// ── Full-width form sheet ────────────────────────────────────────────────────
+.o_form_sheet_bg:has(.o_estate_db) {
+    max-width: 100% !important;
+    --formView-sheetBg-padding-x: 20px;
+}
+
+.o_form_sheet:has(.o_estate_db) {
+    max-width: 100% !important;
+}
+
+// ── Stat buttons: fix value + text stacking at any width ─────────────────────
+.o_estate_db {
+    .oe_button_box .oe_stat_button {
+        min-width: 90px;
+
+        .o_stat_info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+
+            .o_stat_value {
+                font-size: 1.15rem;
+                font-weight: 700;
+                line-height: 1;
+            }
+
+            .o_stat_text {
+                font-size: 0.68rem;
+                opacity: 0.75;
+                white-space: nowrap;
+            }
+        }
+    }
+
+    // ── Notebook tabs: full stretch ──────────────────────────────────────────
+    .o_notebook .nav-tabs {
+        gap: 2px;
+
+        .nav-link {
+            font-size: 0.82rem;
+            padding: 6px 14px;
+        }
+    }
+
+    // ── Charts: force full width on containers ───────────────────────────────
+    .o_field_html {
+        width: 100%;
+    }
+
+    // ── Responsive: stack chart row on small screens ─────────────────────────
+    @media (max-width: 768px) {
+        .oe_button_box {
+            flex-wrap: wrap;
+
+            .oe_stat_button {
+                flex: 1 1 80px;
+            }
+        }
+    }
+}

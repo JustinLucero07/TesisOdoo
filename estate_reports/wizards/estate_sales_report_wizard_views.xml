@@ -5,130 +5,162 @@
         <field name="name">estate.sales.report.wizard.form</field>
         <field name="model">estate.sales.report.wizard</field>
         <field name="arch" type="xml">
-            <form string="Reporte de Promedio de Ventas">
+            <form string="Promedio de Ventas" create="false" delete="false">
                 <sheet>
-                    <div class="oe_title">
-                        <h1>Reporte de Promedio de Ventas</h1>
-                        <p class="text-muted">
-                            Análisis agregado del rendimiento de ventas o alquileres en un período,
-                            con comparativa contra el período anterior.
-                        </p>
+
+                    <!-- Stat buttons: KPIs + exportar -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-hashtag"
+                                type="object" name="action_open_detail"
+                                invisible="not has_data">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="kpi_count" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Operaciones</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-dollar"
+                                type="object" name="action_open_detail"
+                                invisible="not has_data">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="kpi_avg_price" widget="monetary" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Precio Promedio</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-calendar"
+                                type="object" name="action_open_detail"
+                                invisible="not has_data">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="kpi_avg_days" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Días Promedio</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-percent"
+                                type="object" name="action_open_detail"
+                                invisible="not has_data">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="kpi_close_rate" widget="percentage" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Tasa de Cierre</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-file-pdf-o"
+                                type="object" name="action_generate_pdf"
+                                invisible="not has_data">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Descargar PDF</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-file-excel-o"
+                                type="object" name="action_generate_xlsx"
+                                invisible="not has_data">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Descargar Excel</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-bar-chart"
+                                type="object" name="action_open_graph">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Ver Gráfico</span>
+                            </div>
+                        </button>
                     </div>
 
-                    <!-- ── Filtros ──────────────────────────────── -->
+                    <!-- Título -->
+                    <div class="oe_title">
+                        <h1>Promedio de Ventas</h1>
+                    </div>
+
+                    <!-- Filtros -->
                     <group string="Filtros">
                         <group>
                             <field name="period"/>
-                            <field name="date_from" invisible="period != 'custom'"
+                            <field name="date_from"
+                                   invisible="period != 'custom'"
                                    required="period == 'custom'"/>
-                            <field name="date_to" invisible="period != 'custom'"
+                            <field name="date_to"
+                                   invisible="period != 'custom'"
                                    required="period == 'custom'"/>
-                            <field name="operation_type" widget="radio" options="{'horizontal': true}"/>
+                            <field name="operation_type" widget="radio"
+                                   options="{'horizontal': true}"/>
                         </group>
                         <group>
                             <field name="property_type_ids" widget="many2many_tags"/>
-                            <field name="city" placeholder="Ej: Cuenca, Quito..."/>
+                            <field name="city" placeholder="Todas las ciudades"/>
                             <field name="user_ids" widget="many2many_tags"/>
                         </group>
                     </group>
 
-                    <!-- ── Mensaje sin datos ──────────────────────── -->
-                    <div class="alert alert-info mb-3" role="alert" invisible="has_data">
-                        <i class="fa fa-info-circle me-1" title="Sin datos"/>
+                    <!-- Sin datos -->
+                    <div class="alert alert-info" role="alert" invisible="has_data">
+                        <i class="fa fa-info-circle" title="Sin datos"/>
                         <strong>Sin operaciones en el período seleccionado.</strong>
                         Ajuste los filtros o el rango de fechas.
                     </div>
 
-                    <!-- ── Notebook con 4 tabs ────────────────────── -->
-                    <notebook invisible="not has_data">
+                    <!-- Resultados -->
+                    <div invisible="not has_data">
 
-                        <!-- TAB 1: Resumen KPIs -->
-                        <page string="Resumen" name="summary">
-                            <div class="o_horizontal_separator">Indicadores Clave</div>
+                        <div class="o_horizontal_separator">Indicadores del Período</div>
 
-                            <group>
-                                <group string="Volumen">
-                                    <field name="kpi_count" string="Operaciones"/>
-                                    <field name="kpi_close_rate" widget="percentage"/>
-                                </group>
-                                <group string="Precios">
-                                    <field name="kpi_avg_price" widget="monetary"/>
-                                    <field name="kpi_median_price" widget="monetary"/>
-                                    <field name="kpi_min_price" widget="monetary"/>
-                                    <field name="kpi_max_price" widget="monetary"/>
-                                </group>
+                        <group>
+                            <group string="Precios">
+                                <field name="kpi_avg_price" widget="monetary" readonly="1"
+                                       string="Precio promedio"/>
+                                <field name="kpi_median_price" widget="monetary" readonly="1"
+                                       string="Mediana"/>
+                                <field name="kpi_min_price" widget="monetary" readonly="1"
+                                       string="Mínimo"/>
+                                <field name="kpi_max_price" widget="monetary" readonly="1"
+                                       string="Máximo"/>
                             </group>
-
-                            <group>
-                                <group string="Comparación con listado">
-                                    <field name="kpi_avg_listed" widget="monetary"/>
-                                    <field name="kpi_pct_vs_listed" widget="percentage"/>
-                                </group>
-                                <group string="Tiempo en mercado">
-                                    <field name="kpi_avg_days" string="Días promedio"/>
-                                </group>
+                            <group string="Rendimiento">
+                                <field name="kpi_avg_listed" widget="monetary" readonly="1"
+                                       string="Precio listado promedio"/>
+                                <field name="kpi_pct_vs_listed" widget="percentage" readonly="1"
+                                       string="% logrado vs listado"/>
+                                <field name="kpi_avg_days" readonly="1"
+                                       string="Días promedio en mercado"/>
+                                <field name="kpi_close_rate" widget="percentage" readonly="1"
+                                       string="Tasa de cierre"/>
                             </group>
+                        </group>
 
-                            <div class="o_horizontal_separator">Comparativa con período anterior</div>
+                        <div class="o_horizontal_separator">Comparativa con Período Anterior</div>
 
-                            <group>
-                                <group string="Promedio anterior vs actual">
-                                    <field name="prev_avg_price" widget="monetary" readonly="1"/>
-                                    <field name="pct_change_avg" widget="percentage"
-                                           class="text-success" readonly="1"/>
-                                </group>
-                                <group string="Días en mercado anterior vs actual">
-                                    <field name="prev_avg_days" readonly="1"/>
-                                    <field name="pct_change_days" string="Cambio (días)" readonly="1"/>
-                                </group>
+                        <group>
+                            <group string="Precios">
+                                <field name="prev_avg_price" widget="monetary" readonly="1"
+                                       string="Promedio anterior"/>
+                                <field name="pct_change_avg" widget="percentage" readonly="1"
+                                       string="Variación %"/>
                             </group>
-                        </page>
+                            <group string="Tiempo en Mercado">
+                                <field name="prev_avg_days" readonly="1"
+                                       string="Días anteriores"/>
+                                <field name="pct_change_days" readonly="1"
+                                       string="Cambio en días"/>
+                            </group>
+                        </group>
 
-                        <!-- TAB 2: Datos detallados -->
-                        <page string="Detalle" name="detail">
-                            <p class="text-muted mb-3">
-                                Use el botón <b>"Ver propiedades"</b> abajo para abrir la lista completa
-                                de operaciones incluidas en este reporte.
-                            </p>
-                            <button name="action_open_detail" type="object"
-                                    string="Ver propiedades del período"
-                                    icon="fa-search"
-                                    class="btn-primary"/>
-                        </page>
+                    </div>
 
-                        <!-- TAB 3: Datos para gráficos (debug/inspección) -->
-                        <page string="Datos crudos" name="raw_data" groups="base.group_no_one">
-                            <field name="chart_data" widget="text" readonly="1"/>
-                        </page>
-
-                        <!-- TAB 4: Exportar -->
-                        <page string="Exportar" name="export">
-                            <p class="text-muted">Descargue el reporte en el formato deseado:</p>
-                            <div class="d-flex gap-2">
-                                <button name="action_generate_pdf" type="object"
-                                        string="Descargar PDF"
-                                        icon="fa-file-pdf-o"
-                                        class="btn-primary"/>
-                                <button name="action_generate_xlsx" type="object"
-                                        string="Descargar Excel"
-                                        icon="fa-file-excel-o"
-                                        class="btn-success"/>
-                            </div>
-                        </page>
-                    </notebook>
                 </sheet>
-                <footer>
-                    <button string="Cerrar" class="btn-secondary" special="cancel"/>
-                </footer>
             </form>
         </field>
     </record>
 
     <record id="action_estate_sales_report_wizard" model="ir.actions.act_window">
-        <field name="name">Reporte de Promedio de Ventas</field>
+        <field name="name">Promedio de Ventas</field>
         <field name="res_model">estate.sales.report.wizard</field>
         <field name="view_mode">form</field>
-        <field name="target">new</field>
+        <field name="target">current</field>
     </record>
 
 </odoo>

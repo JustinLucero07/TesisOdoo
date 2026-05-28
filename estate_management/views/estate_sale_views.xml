@@ -30,7 +30,7 @@
                     </group>
                     <div class="alert alert-info" role="alert"
                          invisible="customer_signature">
-                        <i class="fa fa-info-circle"/>
+                        <i class="fa fa-info-circle" title="Información"/>
                         El cliente puede firmar directamente sobre este campo.
                         La firma queda registrada con fecha y hora automáticamente.
                     </div>

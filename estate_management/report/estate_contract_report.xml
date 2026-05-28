@@ -9,51 +9,198 @@
         <field name="print_report_name">'Contrato_%s' % (object.name)</field>
         <field name="binding_model_id" ref="sale.model_sale_order"/>
         <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
     </record>
 
     <template id="report_estate_contract_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="o">
-                <t t-call="web.external_layout">
-                    <div class="page">
-                        <div class="text-center mb-4">
-                            <h2 t-if="o.estate_transaction_type == 'sale'">CONTRATO DE COMPRAVENTA INMOBILIARIA</h2>
-                            <h2 t-if="o.estate_transaction_type == 'rent'">CONTRATO DE ARRENDAMIENTO INMOBILIARIO</h2>
-                            <h2 t-if="o.estate_transaction_type not in ('sale', 'rent')">ACUERDO INMOBILIARIO</h2>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <p>
-                                Conste por el presente documento, el 
-                                <strong><span t-field="o.estate_transaction_type"/></strong> 
-                                que celebran por una parte la Agencia Inmobiliaria y por otra el cliente:
-                            </p>
-                            <p><strong>El Cliente (Arrendatario/Comprador):</strong> <span t-field="o.partner_id.name"/></p>
-                            <p t-if="o.property_id">
-                                <strong>Sobre la Propiedad:</strong> <span t-field="o.property_id.title"/> ubicada en <span t-field="o.property_id.city"/>.
-                            </p>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <h4>CLÁUSULAS DEL AI CONTRACT GENERATOR</h4>
-                            <p><strong>PRIMERA:</strong> Que el Cliente ha inspeccionado la propiedad y declara encontrarse conforme con las condiciones físicas de la misma, tal como el sistema AI Matchmaker de la inmobiliaria recomendó originalmente.</p>
-                            <p><strong>SEGUNDA:</strong> La contraprestación monetaria acordada es de <strong><span t-field="o.amount_total"/></strong>, que el Cliente abonará según el esquema de pagos adjunto.</p>
-                            <p><strong>TERCERA:</strong> El presente documento es autogenerado por el Módulo de Contratos y está validado como borrador o documento oficial según las políticas vigentes de la Inmobiliaria.</p>
-                        </div>
-                        
-                        <div class="row mt-5 pt-5 text-center">
-                            <div class="col-6">
-                                <hr style="width: 70%;" />
-                                <p><strong>FIRMA INMOBILIARIA</strong></p>
+                    <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px; line-height:1.6;">
+
+                        <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                            <tr>
+                                <td style="padding:10px 16px; vertical-align:middle; width:60%;">
+                                    <t t-if="env.company.logo">
+                                        <img t-att-src="image_data_uri(env.company.logo)" style="height:28px; max-width:110px;"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="font-size:15px; font-weight:900; color:white;"><t t-esc="env.company.name"/></span>
+                                    </t>
+                                </td>
+                                <td style="padding:10px 16px; vertical-align:middle; text-align:right; width:40%;">
+                                    <div style="font-size:13px; font-weight:900; color:white; text-transform:uppercase; letter-spacing:2px;">
+                                        <t t-if="o.estate_transaction_type == 'sale'">Contrato de Compraventa</t>
+                                        <t t-elif="o.estate_transaction_type == 'rent'">Contrato de Arrendamiento</t>
+                                        <t t-else="">Acuerdo Inmobiliario</t>
+                                    </div>
+                                    <div style="font-size:9px; color:#a8bcdb; margin-top:3px;">
+                                        <t t-esc="o.name"/> &#183; <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
+                        <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
+                            <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">
+                                <t t-if="o.estate_transaction_type == 'sale'">Compraventa &#183; Documento Privado</t>
+                                <t t-elif="o.estate_transaction_type == 'rent'">Arrendamiento &#183; Documento Privado</t>
+                                <t t-else="">Acuerdo Inmobiliario</t>
                             </div>
-                            <div class="col-6">
-                                <hr style="width: 70%;" />
-                                <p><strong><span t-field="o.partner_id.name"/></strong></p>
-                                <p><strong>FIRMA CLIENTE</strong></p>
+                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;">
+                                <t t-if="o.estate_transaction_type == 'sale'">Contrato de Compraventa de Bien Inmueble</t>
+                                <t t-elif="o.estate_transaction_type == 'rent'">Contrato de Arrendamiento Inmobiliario</t>
+                                <t t-else="">Acuerdo Inmobiliario</t>
+                            </div>
+                            <div style="font-size:9px; color:#666; margin-top:3px;">
+                                <t t-if="o.property_id">
+                                    <t t-esc="o.property_id.title or o.property_id.name"/>
+                                    <t t-if="o.property_id.city"> &#183; <t t-esc="o.property_id.city"/></t>
+                                </t>
                             </div>
                         </div>
+
+                        <!-- ══ IDENTIFICACIÓN DE LAS PARTES ═══════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            Identificaci&#243;n de las partes
+                        </div>
+                        <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                            <tr>
+                                <td style="width:30%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">
+                                    <t t-if="o.estate_transaction_type == 'sale'">Vendedor</t>
+                                    <t t-elif="o.estate_transaction_type == 'rent'">Arrendador</t>
+                                    <t t-else="">Parte A</t>
+                                </td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">
+                                    <t t-if="o.property_id and o.property_id.owner_id">
+                                        <strong><t t-esc="o.property_id.owner_id.name"/></strong>
+                                    </t>
+                                    <t t-else="">____________________________</t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">
+                                    <t t-if="o.estate_transaction_type == 'sale'">Comprador</t>
+                                    <t t-elif="o.estate_transaction_type == 'rent'">Arrendatario</t>
+                                    <t t-else="">Parte B</t>
+                                </td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">
+                                    <strong><t t-esc="o.partner_id.name"/></strong>
+                                </td>
+                            </tr>
+                            <t t-if="o.partner_id.street or o.partner_id.city">
+                                <tr>
+                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Domicilio comprador</td>
+                                    <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">
+                                        <t t-esc="o.partner_id.street or ''"/>
+                                        <t t-if="o.partner_id.city">, <t t-esc="o.partner_id.city"/></t>
+                                    </td>
+                                </tr>
+                            </t>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">Intermediario</td>
+                                <td style="padding:5px 10px;"><t t-esc="env.company.name"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- ══ IDENTIFICACIÓN DEL INMUEBLE ════════════════════════════ -->
+                        <t t-if="o.property_id">
+                            <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                                Identificaci&#243;n del inmueble
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                                <tr>
+                                    <td style="width:30%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Propiedad</td>
+                                    <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700;"><t t-esc="o.property_id.title or o.property_id.name"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Direcci&#243;n</td>
+                                    <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">
+                                        <t t-esc="o.property_id.street or ''"/>
+                                        <t t-if="o.property_id.city">, <t t-esc="o.property_id.city"/></t>
+                                    </td>
+                                </tr>
+                                <t t-if="o.property_id.area">
+                                    <tr>
+                                        <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Superficie</td>
+                                        <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="'{:,.0f}'.format(o.property_id.area)"/> m&#178;</td>
+                                    </tr>
+                                </t>
+                                <tr>
+                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">C&#243;digo</td>
+                                    <td style="padding:5px 10px;"><t t-esc="o.property_id.name"/></td>
+                                </tr>
+                            </table>
+                        </t>
+
+                        <!-- ══ CLÁUSULAS ════════════════════════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            Cl&#225;usulas del Contrato
+                        </div>
+                        <div style="border:1px solid #D8DCE5; border-top:none; padding:14px; margin-bottom:14px; font-size:11px; line-height:1.7; color:#333;">
+                            <p style="margin:0 0 10px 0;">
+                                <strong>PRIMERA &#8212; Objeto:</strong>
+                                Que el Cliente ha inspeccionado la propiedad y declara encontrarse conforme con las condiciones f&#237;sicas de la misma. El presente contrato tiene por objeto formalizar el acuerdo de
+                                <strong><t t-esc="dict([('sale','compraventa'),('rent','arrendamiento')]).get(o.estate_transaction_type, 'transacci&#243;n inmobiliaria')"/></strong>
+                                entre las partes se&#241;aladas.
+                            </p>
+                            <p style="margin:0 0 10px 0;">
+                                <strong>SEGUNDA &#8212; Contraprestaci&#243;n:</strong>
+                                La contraprestaci&#243;n monetaria acordada es de
+                                <strong>$<t t-esc="'{:,.2f}'.format(o.amount_total or 0)"/></strong>,
+                                que el Cliente abonar&#225; seg&#250;n el esquema de pagos acordado entre las partes.
+                            </p>
+                            <p style="margin:0 0 10px 0;">
+                                <strong>TERCERA &#8212; Validez:</strong>
+                                El presente documento es autogenerado por el Sistema de Gesti&#243;n Inmobiliaria y est&#225; validado como documento oficial seg&#250;n las pol&#237;ticas vigentes de
+                                <t t-esc="env.company.name"/>.
+                            </p>
+                            <p style="margin:0;">
+                                <strong>CUARTA &#8212; Jurisdicci&#243;n:</strong>
+                                Para cualquier controversia derivada del presente contrato, las partes se someten expresamente a la jurisdicci&#243;n de los tribunales ordinarios competentes, renunciando a cualquier otro fuero que pudiera corresponderles.
+                            </p>
+                        </div>
+
+                        <!-- ══ FIRMAS ════════════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; margin-top:44px;">
+                            <tr>
+                                <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px;">
+                                    <strong>
+                                        <t t-if="o.estate_transaction_type == 'sale'">FIRMA VENDEDOR</t>
+                                        <t t-elif="o.estate_transaction_type == 'rent'">FIRMA ARRENDADOR</t>
+                                        <t t-else="">FIRMA PARTE A</t>
+                                    </strong>
+                                </td>
+                                <td style="width:10%;"/>
+                                <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px;">
+                                    <strong><t t-esc="o.partner_id.name"/></strong><br/>
+                                    <t t-if="o.estate_transaction_type == 'sale'">FIRMA COMPRADOR</t>
+                                    <t t-elif="o.estate_transaction_type == 'rent'">FIRMA ARRENDATARIO</t>
+                                    <t t-else="">FIRMA PARTE B</t>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                            <tr>
+                                <td style="padding:5px 0; width:50%;">
+                                    <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
+                                    <t t-if="env.company.city"> &#183; <t t-esc="env.company.city"/></t>
+                                    <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                    <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
+                                </td>
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                    <t t-esc="env.company.name"/>
+                                </td>
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                    <t t-esc="o.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                </td>
+                            </tr>
+                        </table>
+
                     </div>
-                </t>
             </t>
         </t>
     </template>

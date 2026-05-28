@@ -71,7 +71,7 @@ class MetaWebhookController(http.Controller):
             if existing:
                 # Agregar el nuevo mensaje al chatter del lead existente
                 existing.message_post(
-                    body=f'📨 Nuevo mensaje vía {source}: {message}',
+                    body=f'Nuevo mensaje vía {source}: {message}',
                     message_type='comment',
                     subtype_xmlid='mail.mt_note',
                 )
@@ -87,7 +87,7 @@ class MetaWebhookController(http.Controller):
         }
         lead_title = f"Consulta vía {source_labels.get(source, source)} — {name or phone or 'Sin nombre'}"
 
-        lead = Lead.create({
+        lead_vals = {
             'name': lead_title,
             'partner_id': partner.id,
             'contact_name': name or False,
@@ -99,7 +99,11 @@ class MetaWebhookController(http.Controller):
                 f'Sender ID: {sender_id}\n'
                 f'Mensaje: {message}'
             ) if sender_id else message,
-        })
+        }
+        first_stage = env.ref('estate_crm.stage_lead1_estate_nuevo', raise_if_not_found=False)
+        if first_stage:
+            lead_vals['stage_id'] = first_stage.id
+        lead = Lead.create(lead_vals)
         _logger.info('Meta webhook: lead #%d creado (fuente=%s, remitente=%s)',
                      lead.id, source, phone or sender_id)
         return lead

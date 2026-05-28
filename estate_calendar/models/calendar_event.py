@@ -7,12 +7,13 @@ _logger = logging.getLogger(__name__)
 
 
 class CalendarEvent(models.Model):
+    _name = 'calendar.event'
     _inherit = ['calendar.event', 'estate.phone.mixin']
 
     partner_id = fields.Many2one(
         'res.partner', string='Cliente')
     property_id = fields.Many2one(
-        'estate.property', string='Propiedad')
+        'estate.property', string='Propiedad', ondelete='set null')
 
     appointment_type = fields.Selection([
         ('visit', 'Visita'),
@@ -66,6 +67,20 @@ class CalendarEvent(models.Model):
                 rec.visit_color = type_map[rec.appointment_type]
             else:
                 rec.visit_color = 4
+
+    # --- Datos rápidos de propiedad y cliente (para no tener que navegar) ---
+    property_price = fields.Float(
+        related='property_id.price', string='Precio', readonly=True)
+    property_type_name = fields.Char(
+        related='property_id.property_type_id.name', string='Tipo de Propiedad', readonly=True)
+    property_owner_name = fields.Char(
+        related='property_id.owner_id.name', string='Propietario', readonly=True)
+    property_owner_phone = fields.Char(
+        related='property_id.owner_id.phone', string='Tel. Propietario', readonly=True)
+    client_phone = fields.Char(
+        related='partner_id.phone', string='Tel. Cliente', readonly=True)
+    client_mobile = fields.Char(
+        related='partner_id.mobile', string='Cel. Cliente', readonly=True)
 
     # --- Lead CRM de origen ---
     lead_id = fields.Many2one(
@@ -122,7 +137,7 @@ class CalendarEvent(models.Model):
                 if leads:
                     leads.write({'lead_temperature': 'boiling'})
                     leads.message_post(
-                        body=f'🔥 Temperatura actualizada a HIRVIENDO: oferta realizada durante visita a "{event.property_id.title or ""}".')
+                        body=f'Temperatura actualizada a HIRVIENDO: oferta realizada durante visita a "{event.property_id.title or ""}".')
 
             # 2. Crear actividad de seguimiento si la valoración fue baja
             if event.visit_rating and int(event.visit_rating) <= 2 and event.property_id:
@@ -130,7 +145,7 @@ class CalendarEvent(models.Model):
                 event.property_id.activity_schedule(
                     'mail.mail_activity_data_todo',
                     date_deadline=fields.Date.today(),
-                    summary=f'⚠️ Visita con calificación baja ({event.visit_rating}/5) — {event.partner_id.name or "Cliente"}',
+                    summary=f'Visita con calificación baja ({event.visit_rating}/5) — {event.partner_id.name or "Cliente"}',
                     note=(
                         f'La visita a "{event.property_id.title}" recibió calificación {event.visit_rating}/5. '
                         f'Resultado: {result_label}. '
@@ -215,17 +230,17 @@ class CalendarEvent(models.Model):
         client_name = self.partner_id.name or 'estimado cliente'
         asesor = self.user_id.name if self.user_id else 'nuestro asesor'
         msg = (
-            f"¡Hola {client_name}! 🏠\n\n"
+            f"Hola {client_name},\n\n"
             f"Gracias por tu visita a *{prop_title}*.\n"
-            f"Tu opinión nos importa mucho. ¿Podrías calificar tu experiencia?\n\n"
-            f"⭐ 1 - Muy mala\n"
-            f"⭐⭐ 2 - Mala\n"
-            f"⭐⭐⭐ 3 - Regular\n"
-            f"⭐⭐⭐⭐ 4 - Buena\n"
-            f"⭐⭐⭐⭐⭐ 5 - Excelente\n\n"
-            f"Solo responde con el número de estrellas (1-5).\n"
+            f"Tu opinion nos importa mucho. Podrias calificar tu experiencia?\n\n"
+            f"1 - Muy mala\n"
+            f"2 - Mala\n"
+            f"3 - Regular\n"
+            f"4 - Buena\n"
+            f"5 - Excelente\n\n"
+            f"Solo responde con el numero (1-5).\n"
             f"Atendido por: {asesor}\n"
-            f"¡Gracias! 🙏"
+            f"Gracias!"
         )
         number = (self.partner_id.mobile or self.partner_id.phone or '').replace(' ', '').replace('-', '').replace('+', '')
         wa_url = f"https://wa.me/{number}?text={urllib.parse.quote(msg)}"

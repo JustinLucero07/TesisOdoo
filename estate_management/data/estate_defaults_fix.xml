@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- noupdate="0" → se ejecuta en CADA actualización del módulo -->
+    <data noupdate="0">
+        <function model="estate.property" name="_fix_country_defaults"/>
+        <function model="estate.property" name="_fix_ecuador_coordinates"/>
+    </data>
+</odoo>

@@ -162,12 +162,15 @@ class EstateLeadWebhookController(http.Controller):
             vals['referral_partner_id'] = referral_partner.id
             vals['lead_source'] = 'referral'
 
+        first_stage = env.ref('estate_crm.stage_lead1_estate_nuevo', raise_if_not_found=False)
+        if first_stage:
+            vals['stage_id'] = first_stage.id
         lead = env['crm.lead'].sudo().create(vals)
 
         # Notificar al equipo de ventas
         lead.message_post(
             body=(
-                f'📥 <b>Lead recibido via webhook</b> — Fuente: <b>{source}</b><br/>'
+                f'<b>Lead recibido via webhook</b> — Fuente: <b>{source}</b><br/>'
                 f'Canal: {request.httprequest.remote_addr}'
             )
         )

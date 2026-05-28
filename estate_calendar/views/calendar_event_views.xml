@@ -24,6 +24,26 @@
                 <field name="lead_id" domain="[('type','=','opportunity')]"
                        options="{'no_create': True}"
                        placeholder="Lead CRM relacionado (opcional)"/>
+
+                <!-- Datos clave: sin necesidad de abrir la propiedad o el contacto -->
+                <group string="Datos Clave" invisible="property_id == False">
+                    <group string="Propiedad">
+                        <field name="property_price" widget="monetary" readonly="1"
+                               string="Precio de venta"/>
+                        <field name="property_type_name" readonly="1"
+                               string="Tipo"/>
+                        <field name="property_owner_name" readonly="1"
+                               string="Propietario"/>
+                        <field name="property_owner_phone" readonly="1" widget="phone"
+                               string="Tel. Propietario"/>
+                    </group>
+                    <group string="Cliente" invisible="partner_id == False">
+                        <field name="client_phone" readonly="1" widget="phone"
+                               string="Teléfono"/>
+                        <field name="client_mobile" readonly="1" widget="phone"
+                               string="Celular"/>
+                    </group>
+                </group>
             </xpath>
             <xpath expr="//sheet" position="inside">
                 <group string=" Resultado de la Visita" invisible="visit_state != 'done' or property_id == False">
@@ -113,6 +133,15 @@
                 <filter name="filter_visits" string="Visitas Inmobiliarias" domain="[('property_id', '!=', False)]"/>
                 <filter name="filter_visits_done" string="Visitas Realizadas" domain="[('property_id', '!=', False), ('visit_state', '=', 'done')]"/>
                 <filter name="filter_visits_scheduled" string="Visitas Programadas" domain="[('property_id', '!=', False), ('visit_state', '=', 'scheduled')]"/>
+                <separator/>
+                <filter name="filter_today" string="Hoy" domain="[('start', '&gt;=', context_today().strftime('%Y-%m-%d')), ('start', '&lt;', (context_today() + relativedelta(days=1)).strftime('%Y-%m-%d'))]"/>
+                <filter name="filter_week" string="Esta Semana" domain="[('start', '&gt;=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d')), ('start', '&lt;', (context_today() + relativedelta(days=7 - context_today().weekday())).strftime('%Y-%m-%d'))]"/>
+            </xpath>
+            <xpath expr="//search/group" position="inside">
+                <separator/>
+                <filter name="group_by_state" string="Estado de Visita" context="{'group_by': 'visit_state'}"/>
+                <filter name="group_by_type" string="Tipo de Cita" context="{'group_by': 'appointment_type'}"/>
+                <filter name="group_by_property" string="Propiedad" context="{'group_by': 'property_id'}"/>
             </xpath>
         </field>
     </record>
@@ -136,6 +165,69 @@
         </field>
     </record>
 
+    <!-- ==================== KANBAN VIEW FOR VISITS ==================== -->
+    <record id="view_calendar_event_kanban_visits" model="ir.ui.view">
+        <field name="name">calendar.event.kanban.visits</field>
+        <field name="model">calendar.event</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="visit_state" class="o_kanban_small_column"
+                    group_create="false" group_delete="false">
+                <field name="visit_state"/>
+                <field name="visit_color"/>
+                <field name="appointment_type"/>
+                <field name="property_id"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="start"/>
+                <field name="stop"/>
+                <field name="visit_result"/>
+                <field name="visit_rating"/>
+                <progressbar field="visit_result"
+                    colors='{"offer_made": "success", "interested": "info", "follow_up": "warning", "not_interested": "danger"}'/>
+                <templates>
+                    <t t-name="card">
+                        <div class="oe_kanban_card oe_kanban_global_click">
+                            <!-- Top: time + type badge -->
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <small class="text-muted fw-semibold">
+                                    <t t-esc="record.start.value ? record.start.value.substr(11,5) : '—'"/>
+                                    <t t-if="record.stop.value"> – <t t-esc="record.stop.value.substr(11,5)"/></t>
+                                </small>
+                                <span t-if="record.appointment_type.value"
+                                      class="badge"
+                                      t-attf-class="badge #{record.appointment_type.raw_value == 'visit' ? 'text-bg-primary' : record.appointment_type.raw_value == 'signing' ? 'text-bg-success' : record.appointment_type.raw_value == 'call' ? 'text-bg-warning' : 'text-bg-secondary'}">
+                                    <t t-esc="record.appointment_type.value"/>
+                                </span>
+                            </div>
+                            <!-- Property -->
+                            <div class="fw-bold text-truncate mb-1" t-if="record.property_id.value">
+                                <i class="fa fa-home me-1 text-primary"/>
+                                <t t-esc="record.property_id.value"/>
+                            </div>
+                            <!-- Client -->
+                            <div class="text-truncate mb-2" t-if="record.partner_id.value">
+                                <i class="fa fa-user me-1 text-muted"/>
+                                <t t-esc="record.partner_id.value"/>
+                            </div>
+                            <!-- Bottom: advisor + rating -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="fa fa-user-tie me-1"/>
+                                    <t t-esc="record.user_id.value or '—'"/>
+                                </small>
+                                <div t-if="record.visit_rating.raw_value">
+                                    <t t-foreach="[1,2,3,4,5]" t-as="s">
+                                        <i t-att-class="'fa fa-star' + (s &lt;= record.visit_rating.raw_value ? ' text-warning' : ' text-muted')" t-att-title="'Calificación ' + s"/>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
     <!-- ==================== ACTIONS ==================== -->
     <!-- Restaurar acción base pero con filtros extra opcionales -->
     <record id="calendar.action_calendar_event" model="ir.actions.act_window">
@@ -155,5 +247,25 @@
             </p>
         </field>
     </record>
-</odoo>
 
+    <!-- Acción Pipeline de Visitas (Kanban) -->
+    <record id="estate_visit_pipeline_action" model="ir.actions.act_window">
+        <field name="name">Pipeline de Visitas</field>
+        <field name="res_model">calendar.event</field>
+        <field name="view_mode">kanban,list,calendar,form</field>
+        <field name="domain">[('property_id', '!=', False)]</field>
+        <field name="context">{'search_default_filter_visits': 1}</field>
+        <field name="views" eval="[
+            (ref('view_calendar_event_kanban_visits'), 'kanban'),
+            (ref('view_calendar_event_tree_visits'), 'list'),
+            (False, 'calendar'),
+            (False, 'form'),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No hay visitas inmobiliarias registradas.
+            </p>
+            <p>Crea una visita desde el Calendario o desde el CRM.</p>
+        </field>
+    </record>
+</odoo>

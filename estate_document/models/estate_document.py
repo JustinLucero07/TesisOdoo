@@ -148,7 +148,7 @@ class EstateDocument(models.Model):
                 if rec.state == 'pending':
                     vals = dict(vals)
                     vals.setdefault('state', 'received')
-                    rec.message_post(body='📥 Documento cargado, marcado como Recibido.')
+                    rec.message_post(body='Documento cargado, marcado como Recibido.')
                     break
         return super().write(vals)
 
@@ -168,7 +168,7 @@ class EstateDocument(models.Model):
                 'verified_date': fields.Datetime.now(),
                 'rejection_reason': False,
             })
-            rec.message_post(body=f'✅ Documento verificado por {self.env.user.name}.')
+            rec.message_post(body=f'Documento verificado por {self.env.user.name}.')
 
     def action_reject(self):
         """Abre wizard simple para indicar razón de rechazo."""
@@ -185,7 +185,7 @@ class EstateDocument(models.Model):
     def action_archive_doc(self):
         for rec in self:
             rec.state = 'archived'
-            rec.message_post(body=f'📦 Documento archivado por {self.env.user.name}.')
+            rec.message_post(body=f'Documento archivado por {self.env.user.name}.')
 
     def action_reset_to_pending(self):
         for rec in self:
@@ -291,7 +291,7 @@ class EstateDocument(models.Model):
 
         self.write({'ocr_result': extracted_text})
         self.message_post(
-            body=f'🔍 <b>OCR completado con Gemini Vision.</b><br/>'
+            body=f'<b>OCR completado con Gemini Vision.</b><br/>'
                  f'<pre style="font-size:12px">{extracted_text[:500]}{"..." if len(extracted_text) > 500 else ""}</pre>'
         )
         return {
@@ -321,5 +321,5 @@ class EstateDocumentRejectWizard(models.TransientModel):
             'rejection_reason': self.reason,
         })
         self.document_id.message_post(
-            body=f'❌ Documento rechazado: {self.reason}')
+            body=f'Documento rechazado: {self.reason}')
         return {'type': 'ir.actions.act_window_close'}

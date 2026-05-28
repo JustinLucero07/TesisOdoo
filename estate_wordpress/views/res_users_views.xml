@@ -10,7 +10,7 @@
                     <group>
                         <field name="wp_agent_id"/>
                     </group>
-                    <p class="text-muted"><i class="fa fa-info-circle"/> Vincula tu usuario de Odoo con tu Perfil Púbico en Houzez para que los clientes te puedan contactar a ti cuando publiques una propiedad.</p>
+                    <p class="text-muted"><i class="fa fa-info-circle" title="Información"/> Vincula tu usuario de Odoo con tu Perfil Púbico en Houzez para que los clientes te puedan contactar a ti cuando publiques una propiedad.</p>
                 </page>
             </xpath>
         </field>

@@ -28,10 +28,10 @@ class MetaWebhookEvent(models.Model):
         'crm.lead', string='Lead generado', ondelete='set null')
     payload_summary = fields.Char(string='Resumen', size=255)
 
-    _sql_constraints = [
-        ('event_id_unique', 'UNIQUE(event_id)',
-         'Este evento de webhook ya fue procesado anteriormente.'),
-    ]
+    _event_id_unique = models.Constraint(
+        'UNIQUE(event_id)',
+        'Este evento de webhook ya fue procesado anteriormente.',
+    )
 
     @api.model
     def is_already_processed(self, event_id):

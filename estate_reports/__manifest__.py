@@ -13,7 +13,7 @@
     """,
     'author': 'Tesis - Sistema Inmobiliario',
     'license': 'LGPL-3',
-    'depends': ['estate_management', 'estate_crm'],
+    'depends': ['estate_management', 'estate_crm', 'board'],
     'data': [
         'security/ir.model.access.csv',
         'data/estate_reports_cron.xml',
@@ -30,7 +30,14 @@
         'views/estate_analytics_views.xml',
         'views/estate_sales_analytics_views.xml',
         'views/estate_reports_menus.xml',
+        'data/estate_board_reset.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'estate_reports/static/src/css/estate_dashboard.scss',
+            'estate_reports/static/src/js/estate_dashboard.js',
+        ],
+    },
     'installable': True,
     'auto_install': False,
 }

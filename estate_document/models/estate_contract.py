@@ -54,6 +54,6 @@ class EstateContract(models.Model):
                              'Suba el archivo correspondiente.',
                 })
             contract.message_post(
-                body='📎 Se crearon documentos pendientes para este contrato. '
+                body='Se crearon documentos pendientes para este contrato. '
                      'Revisa la pestaña Documentos.')
         return res

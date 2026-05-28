@@ -189,7 +189,7 @@ export class PropertySummary extends Component {
         try {
             const result = await rpc("/estate/property/chatter_summary", { property_id: id });
             this.state.data = result;
-            this.state.summaryHtml = markup(result.ai_property_summary || "");
+            this.state.summaryHtml = markup(this._processSummary(result.ai_property_summary || ""));
             // Auto-generar si no hay resumen
             if (!result.ai_property_summary) {
                 this.regenerate();
@@ -212,7 +212,7 @@ export class PropertySummary extends Component {
             await rpc("/estate/property/regenerate_summary", { property_id: this.props.recordId });
             const result = await rpc("/estate/property/chatter_summary", { property_id: this.props.recordId });
             this.state.data = result;
-            this.state.summaryHtml = markup(result.ai_property_summary || "");
+            this.state.summaryHtml = markup(this._processSummary(result.ai_property_summary || ""));
         } catch (e) {
             console.warn("[PropertySummary] regenerate error:", e);
         } finally {
@@ -313,6 +313,55 @@ export class PropertySummary extends Component {
             this.state.chatStreaming = false;
             this.state.streamingHtml = markup("");
         }
+    }
+
+    // SVG icon map for AI summary section headers
+    static SECTION_ICONS = {
+        // house
+        "Ficha": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/></svg>`,
+        // tag/price
+        "Precio": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>`,
+        // users
+        "Interesados": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`,
+        // calendar
+        "Visitas": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+        // alert triangle
+        "Alertas": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+        // arrow-right-circle
+        "Acción": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+        // chart line
+        "Historial": `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    };
+
+    _processSummary(raw) {
+        if (!raw) return "";
+        // 1. Convert markdown bold/italic to HTML
+        let html = raw
+            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+            .replace(/\*(.*?)\*/g, "<em>$1</em>")
+            .replace(/`(.*?)`/g, "<code>$1</code>");
+        // 2. Replace emoji section headers with SVG icons
+        const icons = PropertySummary.SECTION_ICONS;
+        html = html.replace(
+            /(<(?:p|h[1-6])[^>]*>)\s*(?:<strong>)?\s*([\w\sáéíóúüñÁÉÍÓÚÜÑ]+?)(?:<\/strong>)?\s*(<\/(?:p|h[1-6])>)/gi,
+            (match, open, text, close) => {
+                const key = Object.keys(icons).find(k => text.trim().startsWith(k));
+                const svg = key ? icons[key] : "";
+                const label = text.trim();
+                return `${open}<strong style="display:flex;align-items:center;gap:5px;color:#1e40af;">${svg}${label}</strong>${close}`;
+            }
+        );
+        // 3. Also handle plain text section headers that may have been in <strong> without emoji
+        for (const [key, svg] of Object.entries(icons)) {
+            html = html.replace(
+                new RegExp(`(<strong[^>]*>)(${key}[^<]*)(<\/strong>)`, "g"),
+                (match, open, text, close) => {
+                    if (open.includes("color:#1e40af")) return match; // already processed
+                    return `<strong style="display:flex;align-items:center;gap:5px;color:#1e40af;">${svg}${text}</strong>`;
+                }
+            );
+        }
+        return html;
     }
 
     _format(text) {

@@ -272,7 +272,7 @@ class EstateCustomerPortal(CustomerPortal):
         lead = request.env['crm.lead'].sudo().create(vals)
         lead.message_post(
             body=(
-                f'🤝 <b>Referido desde el Portal</b><br/>'
+                f'<b>Referido desde el Portal</b><br/>'
                 f'Referidor: <b>{partner.name}</b> ({partner.email or partner.mobile or ""})<br/>'
                 f'Prospecto: {ref_name} — {ref_phone}'
             )

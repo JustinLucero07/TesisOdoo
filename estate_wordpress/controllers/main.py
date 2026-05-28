@@ -174,7 +174,7 @@ class EstateWordpressController(http.Controller):
                     'res_id': lead.id,
                     'res_model_id': request.env['ir.model'].sudo()._get_id('crm.lead'),
                     'activity_type_id': activity_type.id,
-                    'summary': f'🌐 Nuevo lead desde WordPress: {name}',
+                    'summary': f'Nuevo lead desde WordPress: {name}',
                     'note': ' · '.join(note_parts),
                     'user_id': responsible_id,
                     'date_deadline': fields.Date.today(),

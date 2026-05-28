@@ -246,9 +246,9 @@ class EstateFacebookStats(models.Model):
             msg_parts.append(f'<br/><b>Rechazados:</b> {", ".join(declined)}')
         if missing_critical:
             msg_parts.append(
-                f'<br/><b style="color:red">⚠ FALTAN críticos:</b> {", ".join(missing_critical)}')
+                f'<br/><b style="color:red">FALTAN críticos:</b> {", ".join(missing_critical)}')
         else:
-            msg_parts.append('<br/><b style="color:green">✓ Todos los permisos críticos están activos</b>')
+            msg_parts.append('<br/><b style="color:green">Todos los permisos críticos están activos</b>')
 
         return {
             'type': 'ir.actions.client',

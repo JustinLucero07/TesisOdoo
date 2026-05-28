@@ -16,6 +16,7 @@
     'license': 'LGPL-3',
     'depends': ['estate_management', 'hr'],
     'data': [
+        'security/estate_payroll_security.xml',
         'security/ir.model.access.csv',
         'data/estate_payroll_sequence.xml',
         'views/estate_payroll_views.xml',

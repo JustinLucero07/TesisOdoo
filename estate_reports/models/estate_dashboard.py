@@ -18,7 +18,7 @@ class EstateDashboard(models.TransientModel):
 
     # ── Banner HTML (KPI cards + header) ─────────────────────────────
     kpi_header_html = fields.Html(
-        string='Resumen Ejecutivo', compute='_compute_kpi_header')
+        string='Resumen Ejecutivo', compute='_compute_kpi_header', sanitize=False)
 
     # KPIs Propiedades
     total_properties = fields.Integer(
@@ -52,11 +52,15 @@ class EstateDashboard(models.TransientModel):
 
     # Mapa de Propiedades
     map_html = fields.Html(
-        string='Mapa Geográfico', compute='_compute_map_html')
+        string='Mapa Geográfico', compute='_compute_map_html', sanitize=False)
+
+    # Sidebar derecho persistente
+    sidebar_html = fields.Html(
+        string='Panel Lateral', compute='_compute_sidebar', sanitize=False)
 
     # Ranking de Asesores
     advisor_ranking_html = fields.Html(
-        string='Ranking de Asesores', compute='_compute_advisor_ranking')
+        string='Ranking de Asesores', compute='_compute_advisor_ranking', sanitize=False)
     stagnant_properties = fields.Integer(
         string='Propiedades Estancadas', compute='_compute_kpis')
 
@@ -99,17 +103,17 @@ class EstateDashboard(models.TransientModel):
     funnel_conversion_pct = fields.Float(
         string='% Conversión', compute='_compute_funnel')
     funnel_html = fields.Html(
-        string='Embudo de Conversión', compute='_compute_funnel')
+        string='Embudo de Conversión', compute='_compute_funnel', sanitize=False)
 
     # ── Pestaña Ventas — Comparativa AVM ───────────────────────────
     avm_comparison_html = fields.Html(
-        string='Comparativa AVM', compute='_compute_avm_comparison')
+        string='Comparativa AVM', compute='_compute_avm_comparison', sanitize=False)
 
     # ── Gráficos inline (sparklines) ───────────────────────────────
     sales_chart_html = fields.Html(
-        string='Ventas del Período', compute='_compute_charts')
+        string='Ventas del Período', compute='_compute_charts', sanitize=False)
     leads_chart_html = fields.Html(
-        string='Leads por Fuente', compute='_compute_charts')
+        string='Leads por Fuente', compute='_compute_charts', sanitize=False)
 
     # ── Tendencia (comparativa mes actual vs anterior) ─────────────
     trend_sales_current = fields.Integer(
@@ -125,13 +129,18 @@ class EstateDashboard(models.TransientModel):
     trend_leads_pct = fields.Float(
         string='% Variación Leads', compute='_compute_trends')
     trend_html = fields.Html(
-        string='Tendencias', compute='_compute_trends')
+        string='Tendencias', compute='_compute_trends', sanitize=False)
+
+    # ── Asistente IA inline ───────────────────────────────────────────
+    ai_query_text = fields.Char(string='Consulta al Asistente')
+    ai_response_html = fields.Html(string='Respuesta IA', sanitize=False)
 
     @api.onchange('filter_user_id', 'filter_period', 'filter_date_from', 'filter_date_to')
     def _onchange_filters(self):
         """Trigger all recomputations when filters change."""
         self._compute_kpis()
         self._compute_kpi_header()
+        self._compute_sidebar()
         self._compute_advisor_ranking()
         self._compute_funnel()
         self._compute_avm_comparison()
@@ -257,16 +266,8 @@ class EstateDashboard(models.TransientModel):
 
     @api.depends('filter_user_id', 'filter_period', 'filter_date_from', 'filter_date_to')
     def _compute_kpi_header(self):
-        """Genera tarjetas KPI con colores corporativos para la cabecera del dashboard."""
-        BLUE = '#004274'
-        LIGHT_BLUE = '#1877F2'
-        GREEN = '#16a34a'
-        ORANGE = '#d97706'
-        RED = '#dc2626'
-
         for rec in self:
             today = fields.Date.today()
-            start_month = today.replace(day=1)
             period_from, period_to = rec._get_period_dates()
             user_domain = [('user_id', '=', rec.filter_user_id.id)] if rec.filter_user_id else []
 
@@ -282,8 +283,6 @@ class EstateDashboard(models.TransientModel):
             ])
             revenue = sum(sold_period.mapped('price'))
             commissions = sum(sold_period.mapped('commission_amount'))
-
-            # Avg price per sold property in period
             avg_price = (revenue / len(sold_period)) if sold_period else 0.0
 
             lead_count = self.env['crm.lead'].search_count([
@@ -291,61 +290,230 @@ class EstateDashboard(models.TransientModel):
                 ('probability', '>', 0), ('probability', '<', 100),
             ])
 
-            def card(icon, label, value, color, bg='#f0f7ff'):
-                return (
-                    f'<div style="flex:1;min-width:140px;background:{bg};border-radius:12px;'
-                    f'padding:16px 14px;border-top:4px solid {color};box-shadow:0 2px 6px rgba(0,0,0,.06)">'
-                    f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
-                    f'<i class="fa {icon}" style="font-size:18px;color:{color}"/>'
-                    f'<span style="font-size:11px;color:#6b7280;font-weight:500;text-transform:uppercase;letter-spacing:.05em">{label}</span>'
-                    f'</div>'
-                    f'<div style="font-size:24px;font-weight:700;color:{color}">{value}</div>'
-                    f'</div>'
-                )
-
             period_label = dict([
                 ('month', 'Mes Actual'), ('quarter', 'Trimestre'), ('year', 'Año'),
                 ('last_month', 'Mes Anterior'), ('custom', 'Período Custom'),
             ]).get(rec.filter_period or 'month', 'Período')
 
-            html = f'''
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:0 0 12px">
-                <!-- Header banner -->
-                <div style="background:linear-gradient(135deg,{BLUE} 0%,{LIGHT_BLUE} 100%);
-                            border-radius:12px;padding:18px 24px;margin-bottom:16px;
-                            display:flex;align-items:center;justify-content:space-between;gap:12px">
+            def kpi(icon, label, value, color):
+                return (
+                    f'<div style="flex:1;min-width:130px;background:#fff;border-radius:8px;'
+                    f'padding:11px 13px;border:1px solid #e5e7eb;border-left:3px solid {color};">'
+                    f'<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">'
+                    f'<i class="fa {icon}" style="font-size:13px;color:{color}"/>'
+                    f'<span style="font-size:10px;color:#6b7280;font-weight:500;'
+                    f'text-transform:uppercase;letter-spacing:.05em;">{label}</span>'
+                    f'</div>'
+                    f'<div style="font-size:20px;font-weight:700;color:#111827;">{value}</div>'
+                    f'</div>'
+                )
+
+            rec.kpi_header_html = f'''
+            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:0 0 12px;">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;
+                            padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:12px;">
                     <div>
-                        <h2 style="color:white;margin:0 0 4px;font-size:20px;font-weight:700">
-                            <i class="fa fa-tachometer" style="margin-right:8px"/>Dashboard Inmobiliario
-                        </h2>
-                        <span style="color:rgba(255,255,255,.75);font-size:13px">
+                        <span style="font-size:15px;font-weight:700;color:#111827;">Dashboard Inmobiliario</span>
+                        <span style="font-size:12px;color:#6b7280;margin-left:8px;">
                             {period_label} · {today.strftime("%d/%m/%Y")}
-                            {"&nbsp;·&nbsp;<strong style='color:white'>" + rec.filter_user_id.name + "</strong>" if rec.filter_user_id else ""}
+                            {"&nbsp;·&nbsp;" + rec.filter_user_id.name if rec.filter_user_id else ""}
                         </span>
                     </div>
-                    <div style="text-align:right;color:white">
-                        <div style="font-size:28px;font-weight:800">{len(sold_period)}</div>
-                        <div style="font-size:11px;opacity:.8">ventas en período</div>
-                    </div>
+                    <span style="font-size:12px;color:#6b7280;white-space:nowrap;">
+                        <strong style="color:#111827;">{len(sold_period)}</strong> ventas en período
+                    </span>
                 </div>
-
-                <!-- KPI cards row -->
-                <div style="display:flex;flex-wrap:wrap;gap:10px">
-                    {card("fa-home", "Total Propiedades", total, BLUE)}
-                    {card("fa-check-circle", "Disponibles", avail, GREEN, '#f0fdf4')}
-                    {card("fa-handshake-o", "Vendidas", sold, LIGHT_BLUE)}
-                    {card("fa-users", "Leads Activos", lead_count, ORANGE, '#fffbeb')}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+                    {kpi("fa-home", "Total Propiedades", total, "#1e40af")}
+                    {kpi("fa-check-circle", "Disponibles", avail, "#1e40af")}
+                    {kpi("fa-handshake-o", "Vendidas", sold, "#1e40af")}
+                    {kpi("fa-users", "Leads Activos", lead_count, "#1e40af")}
                 </div>
-
-                <!-- Financial summary -->
-                <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">
-                    {card("fa-dollar", f"Ingresos ({period_label})", f"${revenue:,.0f}", GREEN, '#f0fdf4')}
-                    {card("fa-percent", f"Comisiones ({period_label})", f"${commissions:,.0f}", ORANGE, '#fffbeb')}
-                    {card("fa-bar-chart", "Precio Promedio Venta", f"${avg_price:,.0f}", LIGHT_BLUE)}
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                    {kpi("fa-dollar", f"Ingresos ({period_label})", f"${revenue:,.0f}", "#1e40af")}
+                    {kpi("fa-percent", f"Comisiones ({period_label})", f"${commissions:,.0f}", "#1e40af")}
+                    {kpi("fa-bar-chart", "Precio Prom. Venta", f"${avg_price:,.0f}", "#1e40af")}
                 </div>
             </div>
             '''
-            rec.kpi_header_html = html
+
+    @api.depends('filter_user_id', 'filter_period', 'filter_date_from', 'filter_date_to')
+    def _compute_sidebar(self):
+        for rec in self:
+            today = fields.Date.today()
+            period_from, period_to = rec._get_period_dates()
+            user_domain = [('user_id', '=', rec.filter_user_id.id)] if rec.filter_user_id else []
+            Property = self.env['estate.property']
+
+            # ── Mini resumen de período ─────────────────────────────
+            sold_period = Property.search(user_domain + [
+                ('state', '=', 'sold'),
+                ('date_sold', '>=', period_from),
+                ('date_sold', '<=', period_to),
+            ])
+            revenue = sum(sold_period.mapped('price'))
+            commissions = sum(sold_period.mapped('commission_amount'))
+            avail = Property.search_count(user_domain + [('state', '=', 'available')])
+            lead_count = self.env['crm.lead'].search_count([
+                ('type', '=', 'opportunity'), ('probability', '>', 0), ('probability', '<', 100),
+            ])
+            visits_month = self.env['calendar.event'].search_count([
+                ('property_id', '!=', False), ('visit_state', '=', 'done'),
+                ('start', '>=', str(today.replace(day=1))),
+            ])
+
+            period_label = dict([
+                ('month', 'Mes Actual'), ('quarter', 'Trimestre'), ('year', 'Año'),
+                ('last_month', 'Mes Anterior'), ('custom', 'Personalizado'),
+            ]).get(rec.filter_period or 'month', 'Período')
+
+            def stat_row(icon, label, value, color='#374151'):
+                return (
+                    f'<div style="display:flex;align-items:center;justify-content:space-between;'
+                    f'padding:7px 0;border-bottom:1px solid #f3f4f6;">'
+                    f'<span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280;">'
+                    f'<i class="fa {icon}" style="color:{color};width:14px;text-align:center;"/>{label}</span>'
+                    f'<span style="font-weight:700;font-size:13px;color:{color};">{value}</span>'
+                    f'</div>'
+                )
+
+            # ── Alertas ─────────────────────────────────────────────
+            overdue_count = self.env['estate.payment'].search_count([
+                ('state', '=', 'pending'), ('date', '<', today),
+            ])
+            expiring_15 = Property.search_count([
+                ('contract_end_date', '!=', False),
+                ('contract_end_date', '<=', today + timedelta(days=15)),
+                ('state', 'in', ('available', 'reserved')),
+            ])
+            hot_stale = self.env['crm.lead'].search_count([
+                ('lead_temperature', 'in', ['hot', 'boiling']),
+                ('write_date', '<=', str(fields.Datetime.now() - timedelta(days=7))),
+                ('type', '=', 'opportunity'),
+            ])
+
+            alerts_html = ''
+            if overdue_count:
+                alerts_html += (
+                    f'<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
+                    f'background:#fef2f2;border-radius:6px;margin-bottom:4px;">'
+                    f'<i class="fa fa-exclamation-circle" style="color:#dc2626;"/>'
+                    f'<span style="font-size:12px;color:#dc2626;font-weight:600;">'
+                    f'{overdue_count} pago{"s" if overdue_count > 1 else ""} vencido{"s" if overdue_count > 1 else ""}</span></div>'
+                )
+            if expiring_15:
+                alerts_html += (
+                    f'<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
+                    f'background:#fffbeb;border-radius:6px;margin-bottom:4px;">'
+                    f'<i class="fa fa-calendar-times-o" style="color:#d97706;"/>'
+                    f'<span style="font-size:12px;color:#d97706;font-weight:600;">'
+                    f'{expiring_15} contrato{"s" if expiring_15 > 1 else ""} por vencer</span></div>'
+                )
+            if hot_stale:
+                alerts_html += (
+                    f'<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
+                    f'background:#fffbeb;border-radius:6px;margin-bottom:4px;">'
+                    f'<i class="fa fa-fire" style="color:#d97706;"/>'
+                    f'<span style="font-size:12px;color:#d97706;font-weight:600;">'
+                    f'{hot_stale} lead{"s" if hot_stale > 1 else ""} caliente{"s" if hot_stale > 1 else ""} inactivo{"s" if hot_stale > 1 else ""}</span></div>'
+                )
+            if not alerts_html:
+                alerts_html = (
+                    '<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
+                    'background:#f0fdf4;border-radius:6px;">'
+                    '<i class="fa fa-check-circle" style="color:#16a34a;"/>'
+                    '<span style="font-size:12px;color:#16a34a;font-weight:600;">Sin alertas críticas</span></div>'
+                )
+
+            # ── Visitas de hoy ───────────────────────────────────────
+            today_visits = self.env['calendar.event'].search([
+                ('property_id', '!=', False),
+                ('start', '>=', str(today) + ' 00:00:00'),
+                ('start', '<=', str(today) + ' 23:59:59'),
+                ('visit_state', '!=', 'cancelled'),
+            ], order='start asc', limit=5)
+
+            visits_rows = ''
+            for v in today_visits:
+                time_str = v.start.strftime('%H:%M') if v.start else '—'
+                prop_name = (v.property_id.title or v.property_id.name or v.name or '—')[:24]
+                partner_name = (v.partner_id.name or '—')[:18]
+                state_map = {'scheduled': ('fa-clock-o', '#d97706'), 'done': ('fa-check-circle', '#16a34a')}
+                ic, ic_c = state_map.get(v.visit_state, ('fa-circle-o', '#9ca3af'))
+                visits_rows += (
+                    f'<div style="display:flex;gap:6px;padding:6px 0;border-bottom:1px solid #f3f4f6;">'
+                    f'<i class="fa {ic}" style="color:{ic_c};font-size:11px;margin-top:2px;flex-shrink:0;"/>'
+                    f'<div style="flex:1;min-width:0;">'
+                    f'<div style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;'
+                    f'overflow:hidden;text-overflow:ellipsis;">{time_str} · {prop_name}</div>'
+                    f'<div style="font-size:10px;color:#9ca3af;">{partner_name}</div>'
+                    f'</div></div>'
+                )
+            if not visits_rows:
+                visits_rows = (
+                    '<div style="padding:8px 0;color:#9ca3af;font-size:11px;font-style:italic;text-align:center;">'
+                    'Sin visitas programadas hoy</div>'
+                )
+
+            # ── Resumen de propiedades disponibles ──────────────────
+            top_available = Property.search(
+                user_domain + [('state', '=', 'available')],
+                order='price desc', limit=3
+            )
+            props_rows = ''
+            for p in top_available:
+                props_rows += (
+                    f'<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;">'
+                    f'<div style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;'
+                    f'overflow:hidden;text-overflow:ellipsis;">{(p.title or p.name or "—")[:24]}</div>'
+                    f'<div style="display:flex;justify-content:space-between;margin-top:1px;">'
+                    f'<span style="font-size:10px;color:#6b7280;">{p.city or "—"}</span>'
+                    f'<span style="font-size:11px;font-weight:700;color:#2563eb;">${p.price:,.0f}</span>'
+                    f'</div></div>'
+                )
+            if not props_rows:
+                props_rows = '<div style="padding:6px 0;color:#9ca3af;font-size:11px;font-style:italic;text-align:center;">Sin propiedades disponibles</div>'
+
+            def section(title, icon, color, content):
+                return (
+                    f'<div style="margin-bottom:14px;">'
+                    f'<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;'
+                    f'letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
+                    f'<i class="fa {icon}" style="color:{color};"/>{title}</div>'
+                    f'{content}</div>'
+                )
+
+            def card(title, icon, color, content):
+                return (
+                    f'<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;'
+                    f'padding:14px;margin-bottom:12px;">'
+                    f'<div style="font-size:10px;font-weight:700;color:{color};text-transform:uppercase;'
+                    f'letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px;">'
+                    f'<i class="fa {icon}"/>{title}</div>'
+                    f'{content}'
+                    f'</div>'
+                )
+
+            metrics_html = (
+                stat_row("fa-handshake-o", "Ventas", len(sold_period), "#1e40af") +
+                stat_row("fa-dollar", "Ingresos", f"${revenue:,.0f}", "#1e40af") +
+                stat_row("fa-percent", "Comisiones", f"${commissions:,.0f}", "#1e40af") +
+                stat_row("fa-home", "Disponibles", avail, "#1e40af") +
+                stat_row("fa-users", "Leads Activos", lead_count, "#1e40af") +
+                stat_row("fa-calendar-check-o", "Visitas (mes)", visits_month, "#1e40af")
+            )
+
+            rec.sidebar_html = (
+                f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
+                + card(period_label, "fa-bar-chart", "#1e40af", metrics_html)
+                + card("Alertas", "fa-bell", "#1e40af", alerts_html)
+                + card("Visitas de Hoy", "fa-calendar-check-o", "#1e40af",
+                       visits_rows + '<div style="margin-top:10px;font-size:10px;font-weight:700;'
+                       f'color:#1e40af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;'
+                       f'display:flex;align-items:center;gap:5px;"><i class="fa fa-star"/>Propiedades Destacadas</div>'
+                       + props_rows)
+                + '</div>'
+            )
 
     def _compute_advisor_ranking(self):
         """Mejora 7: Ranking mensual de asesores por ventas y comisiones."""
@@ -372,7 +540,7 @@ class EstateDashboard(models.TransientModel):
 
             ranking = sorted(advisor_data.values(), key=lambda x: x['sales'], reverse=True)
 
-            medals = ['🥇', '🥈', '🥉']
+            medals = ['1.', '2.', '3.']
             rows = ''
             for i, adv in enumerate(ranking[:10]):
                 medal = medals[i] if i < 3 else f'{i+1}.'
@@ -393,7 +561,7 @@ class EstateDashboard(models.TransientModel):
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
                 <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                     <thead>
-                        <tr style="background:linear-gradient(135deg,#1a56db,#2E5AAC);color:white;">
+                        <tr style="background:#1e40af;color:white;">
                             <th style="padding:12px 10px;text-align:left">#</th>
                             <th style="padding:12px 10px;text-align:left">Asesor</th>
                             <th style="padding:12px 10px;text-align:center">Ventas</th>
@@ -408,56 +576,13 @@ class EstateDashboard(models.TransientModel):
             rec.advisor_ranking_html = html
 
     def _compute_map_html(self):
-        """Generates the Leaflet map HTML with property pins."""
+        """Renders the property map via an iframe pointing to the dedicated map endpoint."""
         for rec in self:
-            props = self.env['estate.property'].search([
-                ('latitude', '!=', 0), 
-                ('longitude', '!=', 0)
-            ])
-            
-            pins_js = ""
-            for p in props:
-                color = 'blue'
-                if p.state == 'sold': color = 'red'
-                elif p.state == 'reserved': color = 'orange'
-                elif p.state == 'available': color = 'blue'
-                
-                popup = f"<b>{p.title}</b><br/>{p.city}<br/>${p.price:,.2f}"
-                pins_js += f"""
-                    L.marker([{p.latitude}, {p.longitude}], {{
-                        icon: L.divIcon({{
-                            className: 'custom-div-icon',
-                            html: "<div style='background-color:{color};' class='marker-pin'></div><i class='fa fa-home' style='color:white;position:absolute;top:3px;left:4.5px;font-size:10px;'></i>",
-                            iconSize: [20, 30],
-                            iconAnchor: [10, 30]
-                        }})
-                    }}).addTo(map).bindPopup("{popup}");
-                """
-
-            rec.map_html = f"""
-                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-                <style>
-                    #estate_map {{ height: 400px; width: 100%; border-radius: 15px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }}
-                    .marker-pin {{
-                        width: 20px; height: 20px; border-radius: 50% 50% 50% 0;
-                        position: absolute; transform: rotate(-45deg); left: 50%; top: 50%; margin: -10px 0 0 -10px;
-                    }}
-                </style>
-                <div id="estate_map"></div>
-                <script>
-                    setTimeout(function() {{
-                        var map = L.map('estate_map').setView([-2.897, -79.004], 13); // Default Cuenca
-                        L.tileLayer('https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png').addTo(map);
-                        {pins_js}
-                        // Adjust view to fit all markers if any
-                        var group = new L.featureGroup(map._layers);
-                        if (Object.keys(map._layers).length > 2) {{
-                            map.fitBounds(group.getBounds());
-                        }}
-                    }}, 500);
-                </script>
-            """
+            rec.map_html = (
+                '<iframe src="/estate_reports/map/embed" '
+                'style="width:100%;height:500px;border:none;border-radius:10px;" '
+                'allow="fullscreen"></iframe>'
+            )
 
     # ── Botones de navegación desde los stat buttons ──────────────────
 
@@ -704,7 +829,7 @@ class EstateDashboard(models.TransientModel):
             advisor_stats[name]['revenue'] += prop.price or 0
             advisor_stats[name]['commission'] += prop.commission_amount or 0
         top_advisors = sorted(advisor_stats.items(), key=lambda x: x[1]['sales'], reverse=True)[:5]
-        medals = ['🥇', '🥈', '🥉', '4.', '5.']
+        medals = ['1.', '2.', '3.', '4.', '5.']
 
         advisors_html = ''.join(
             f'<tr><td style="padding:10px">{medals[i]} {n}</td>'
@@ -727,21 +852,21 @@ class EstateDashboard(models.TransientModel):
         overdue_count = self.env['estate.payment'].search_count([
             ('state', '=', 'pending'), ('date', '<', today)])
         if overdue_count:
-            alerts.append(f'⚠️ {overdue_count} pagos vencidos pendientes')
+            alerts.append(f'{overdue_count} pagos vencidos pendientes')
         expiring = Property.search_count([
             ('contract_end_date', '!=', False),
             ('contract_end_date', '<=', today + timedelta(days=30)),
             ('state', 'in', ('reserved',)),
         ])
         if expiring:
-            alerts.append(f'📄 {expiring} contratos vencen en 30 días')
+            alerts.append(f'{expiring} contratos vencen en 30 días')
         hot_stale = Lead.search_count([
             ('lead_temperature', 'in', ['hot', 'boiling']),
             ('write_date', '<=', str(fields.Datetime.now() - timedelta(days=7))),
             ('type', '=', 'opportunity'),
         ])
         if hot_stale:
-            alerts.append(f'🔥 {hot_stale} leads calientes sin actividad en 7+ días')
+            alerts.append(f'{hot_stale} leads calientes sin actividad en 7+ días')
 
         alerts_html = ''
         if alerts:
@@ -755,7 +880,7 @@ class EstateDashboard(models.TransientModel):
         html_body = f"""
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;max-width:700px;margin:0 auto;">
             <div style="background:linear-gradient(135deg,#1a56db,#2E5AAC);color:white;padding:28px;border-radius:12px 12px 0 0;">
-                <h1 style="margin:0;font-size:24px;">📊 Reporte Mensual Inmobiliario</h1>
+                <h1 style="margin:0;font-size:24px;">Reporte Mensual Inmobiliario</h1>
                 <p style="margin:8px 0 0;opacity:.85;font-size:16px;">{month_name}</p>
             </div>
             <div style="background:#f8f9fa;padding:24px;border-radius:0 0 12px 12px;">
@@ -843,7 +968,7 @@ class EstateDashboard(models.TransientModel):
 
         for admin in admins:
             self.env['mail.mail'].sudo().create({
-                'subject': f'📊 Reporte Mensual Inmobiliario — {month_name}',
+                'subject': f'Reporte Mensual Inmobiliario — {month_name}',
                 'email_to': admin.email,
                 'body_html': html_body,
                 'auto_delete': True,
@@ -926,12 +1051,12 @@ class EstateDashboard(models.TransientModel):
             rec.funnel_html = f'''
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px;">
                 <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
-                    <div style="background:#eff6ff;padding:12px 20px;border-radius:10px;text-align:center;flex:1;margin-right:8px;">
-                        <div style="font-size:28px;font-weight:700;color:#1d4ed8;">{rec.funnel_conversion_pct}%</div>
+                    <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:12px 20px;border-radius:8px;text-align:center;flex:1;margin-right:8px;">
+                        <div style="font-size:28px;font-weight:700;color:#1e40af;">{rec.funnel_conversion_pct}%</div>
                         <div style="font-size:12px;color:#6b7280;">Tasa de Conversión</div>
                     </div>
-                    <div style="background:#f0fdf4;padding:12px 20px;border-radius:10px;text-align:center;flex:1;margin-left:8px;">
-                        <div style="font-size:28px;font-weight:700;color:#16a34a;">{won}</div>
+                    <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:12px 20px;border-radius:8px;text-align:center;flex:1;margin-left:8px;">
+                        <div style="font-size:28px;font-weight:700;color:#1e40af;">{won}</div>
                         <div style="font-size:12px;color:#6b7280;">Cerrados</div>
                     </div>
                 </div>
@@ -987,16 +1112,16 @@ class EstateDashboard(models.TransientModel):
             rec.avm_comparison_html = f'''
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
                 <div style="display:flex;gap:12px;margin-bottom:16px;">
-                    <div style="flex:1;background:#fef2f2;padding:14px;border-radius:10px;text-align:center;">
+                    <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:8px;text-align:center;">
                         <div style="font-size:26px;font-weight:700;color:#dc2626;">{over}</div>
                         <div style="font-size:11px;color:#6b7280;">Sobrevaluadas (&gt;10%)</div>
                     </div>
-                    <div style="flex:1;background:#eff6ff;padding:14px;border-radius:10px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#2563eb;">{fair}</div>
+                    <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:8px;text-align:center;">
+                        <div style="font-size:26px;font-weight:700;color:#1e40af;">{fair}</div>
                         <div style="font-size:11px;color:#6b7280;">Precio Justo</div>
                     </div>
-                    <div style="flex:1;background:#f0fdf4;padding:14px;border-radius:10px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#16a34a;">{under}</div>
+                    <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:8px;text-align:center;">
+                        <div style="font-size:26px;font-weight:700;color:#15803d;">{under}</div>
                         <div style="font-size:11px;color:#6b7280;">Oportunidades (&lt;-10%)</div>
                     </div>
                 </div>
@@ -1017,9 +1142,21 @@ class EstateDashboard(models.TransientModel):
     # ──────────────────────────────────────────────────────────────────
     # NIVEL 3: Gráficos inline (ventas por mes, leads por fuente)
     # ──────────────────────────────────────────────────────────────────
+    _CHART_ANIM_CSS = """
+<style>
+@keyframes barUp {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+}
+@keyframes barRight {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+}
+</style>"""
+
     def _compute_charts(self):
         for rec in self:
-            # Sales by month (last 6 months) — CSS bar chart
+            # ── Sales by month — vertical bars ───────────────────────
             self.env.cr.execute("""
                 SELECT TO_CHAR(date_sold, 'Mon') as mes,
                        COUNT(*) as total,
@@ -1034,26 +1171,29 @@ class EstateDashboard(models.TransientModel):
             max_sales = max((r['total'] for r in sales_data), default=1) or 1
 
             bars = ''
-            for r in sales_data:
-                h = max(int(r['total'] / max_sales * 120), 8)
-                bars += f'''
-                <div style="display:flex;flex-direction:column;align-items:center;flex:1;">
-                    <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:4px;">{r['total']}</div>
-                    <div style="width:32px;height:{h}px;background:linear-gradient(180deg,#3b82f6,#1d4ed8);border-radius:6px 6px 0 0;"></div>
-                    <div style="font-size:11px;color:#6b7280;margin-top:4px;">{r['mes']}</div>
-                </div>'''
+            for i, r in enumerate(sales_data):
+                h = max(int(r['total'] / max_sales * 140), 6)
+                delay = round(i * 0.08, 2)
+                bars += (
+                    f'<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;padding:0 3px;">'
+                    f'<div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">{r["total"]}</div>'
+                    f'<div style="width:min(100%,44px);height:{h}px;background:#1e40af;border-radius:3px 3px 0 0;'
+                    f'transform-origin:bottom;animation:barUp .55s ease-out {delay}s both;"></div>'
+                    f'<div style="font-size:10px;color:#9ca3af;margin-top:4px;text-align:center;">{r["mes"]}</div>'
+                    f'</div>'
+                )
             if not bars:
-                bars = '<div style="padding:20px;text-align:center;color:#9ca3af;">Sin ventas en los últimos 6 meses</div>'
+                bars = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:13px;">Sin ventas en los últimos 6 meses</div>'
 
-            rec.sales_chart_html = f'''
-            <div style="font-family:-apple-system,sans-serif;background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-                <div style="font-weight:600;font-size:14px;margin-bottom:12px;color:#374151;">Ventas (Últimos 6 meses)</div>
-                <div style="display:flex;align-items:flex-end;justify-content:space-around;min-height:160px;padding-top:8px;">
-                    {bars}
-                </div>
-            </div>'''
+            rec.sales_chart_html = (
+                self._CHART_ANIM_CSS +
+                f'<div style="display:flex;align-items:flex-end;justify-content:space-between;'
+                f'min-height:170px;width:100%;padding-top:8px;border-bottom:1px solid #f3f4f6;">'
+                f'{bars}'
+                f'</div>'
+            )
 
-            # Leads by source — horizontal bars
+            # ── Leads by source — horizontal bars ────────────────────
             self.env.cr.execute("""
                 SELECT COALESCE(lead_source, 'other') as source,
                        COUNT(*) as total
@@ -1061,40 +1201,43 @@ class EstateDashboard(models.TransientModel):
                 WHERE create_date >= (CURRENT_DATE - INTERVAL '3 months')
                 GROUP BY lead_source
                 ORDER BY total DESC
-                LIMIT 6
+                LIMIT 7
             """)
             lead_data = self.env.cr.dictfetchall()
             max_leads = max((r['total'] for r in lead_data), default=1) or 1
             source_labels = {
                 'website': 'Web', 'wordpress': 'WordPress', 'whatsapp': 'WhatsApp',
                 'instagram': 'Instagram', 'facebook': 'Facebook', 'google': 'Google',
-                'referral': 'Referido', 'phone': 'Teléfono', 'walk_in': 'Visita',
+                'referral': 'Referido', 'phone': 'Telefono', 'walk_in': 'Visita directa',
                 'portal': 'Portal', 'ai_agent': 'Agente IA', 'other': 'Otro',
             }
-            colors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#16a34a', '#ec4899', '#6366f1']
+            palette = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899', '#6366f1', '#f97316']
             hbars = ''
             for i, r in enumerate(lead_data):
-                w = max(int(r['total'] / max_leads * 100), 5)
-                color = colors[i % len(colors)]
+                w = max(int(r['total'] / max_leads * 100), 4)
+                color = palette[i % len(palette)]
                 label = source_labels.get(r['source'], r['source'])
-                hbars += f'''
-                <div style="margin-bottom:6px;">
-                    <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:2px;">
-                        <span style="color:#374151;">{label}</span>
-                        <span style="font-weight:700;color:{color};">{r['total']}</span>
-                    </div>
-                    <div style="background:#f1f5f9;border-radius:4px;height:16px;overflow:hidden;">
-                        <div style="width:{w}%;height:100%;background:{color};border-radius:4px;"></div>
-                    </div>
-                </div>'''
+                delay = round(i * 0.09, 2)
+                hbars += (
+                    f'<div style="margin-bottom:10px;">'
+                    f'<div style="display:flex;justify-content:space-between;'
+                    f'font-size:12px;color:#374151;margin-bottom:3px;">'
+                    f'<span>{label}</span>'
+                    f'<span style="font-weight:600;color:{color};">{r["total"]}</span>'
+                    f'</div>'
+                    f'<div style="background:#f3f4f6;border-radius:3px;height:10px;overflow:hidden;">'
+                    f'<div style="width:{w}%;height:100%;background:{color};border-radius:3px;'
+                    f'transform-origin:left;animation:barRight .6s ease-out {delay}s both;"></div>'
+                    f'</div>'
+                    f'</div>'
+                )
             if not hbars:
-                hbars = '<div style="padding:20px;text-align:center;color:#9ca3af;">Sin leads recientes</div>'
+                hbars = '<div style="padding:24px;text-align:center;color:#9ca3af;font-size:13px;">Sin leads recientes</div>'
 
-            rec.leads_chart_html = f'''
-            <div style="font-family:-apple-system,sans-serif;background:white;border-radius:12px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-                <div style="font-weight:600;font-size:14px;margin-bottom:12px;color:#374151;">Leads por Fuente (3 meses)</div>
-                {hbars}
-            </div>'''
+            rec.leads_chart_html = (
+                self._CHART_ANIM_CSS +
+                f'<div style="width:100%;">{hbars}</div>'
+            )
 
     # ──────────────────────────────────────────────────────────────────
     # NIVEL 3: Tendencias comparativas
@@ -1180,6 +1323,9 @@ class EstateDashboard(models.TransientModel):
             </div>'''
 
     # ── Botones de acción rápida desde dashboard ──────────────────────
+    def action_open_ai(self):
+        return {'type': 'ir.actions.client', 'tag': 'estate_ai_open_chat'}
+
     def action_open_report_wizard(self):
         return {
             'type': 'ir.actions.act_window',
@@ -1212,3 +1358,97 @@ class EstateDashboard(models.TransientModel):
             'domain': [('state', '=', 'pending'), ('date', '<', fields.Date.today())],
             'target': 'current',
         }
+
+    def action_ask_ai_dashboard(self):
+        """Query the AI about the current dashboard data."""
+        self.ensure_one()
+        import logging
+        _logger = logging.getLogger(__name__)
+
+        query = (self.ai_query_text or '').strip()
+        if not query:
+            self.write({'ai_response_html': '<p style="color:#6b7280">Escribe una consulta primero.</p>'})
+            return self._reload_dashboard()
+
+        ICP = self.env['ir.config_parameter'].sudo()
+        api_key = ICP.get_param('estate_ai.api_key', '')
+        if not api_key:
+            self.write({'ai_response_html': '<p style="color:#dc2626">No hay API Key configurada. Ve a Configuracion &gt; Agente IA.</p>'})
+            return self._reload_dashboard()
+
+        period_from, period_to = self._get_period_dates()
+        context = (
+            f"Período analizado: {period_from} al {period_to}\n"
+            f"Propiedades totales: {self.total_properties}\n"
+            f"Propiedades disponibles: {self.available_properties}\n"
+            f"Propiedades vendidas (período): {self.sold_properties}\n"
+            f"Propiedades estancadas (+90 días): {self.stagnant_properties}\n"
+            f"Clientes activos: {self.active_clients}\n"
+            f"Ofertas activas: {self.active_offers_count}\n"
+            f"Contratos activos: {self.active_contracts_count}\n"
+            f"Contratos por vencer: {self.contracts_expiring}\n"
+            f"Visitas realizadas: {self.appointments_done}\n"
+            f"Comisiones del período: ${self.monthly_commissions:,.2f}\n"
+            f"Ingresos cerrados: ${self.won_revenue_month:,.2f}\n"
+            f"Pipeline pendiente: ${self.pending_revenue:,.2f}\n"
+            f"Facturas pendientes: ${self.pending_invoices_amount:,.2f}\n"
+            f"Promedio días en mercado: {self.avg_days_on_market:.1f}\n"
+        )
+
+        prompt = (
+            "Eres un analista inmobiliario profesional. Responde la consulta sobre el "
+            "dashboard usando los datos proporcionados. Se conciso, directo y practico.\n\n"
+            f"DATOS DEL DASHBOARD:\n{context}\n"
+            f"CONSULTA: {query}\n\n"
+            "Responde en HTML simple (usa <p>, <ul>, <li>, <strong>). "
+            "Sin CSS inline, sin markdown, sin bloques de codigo."
+        )
+
+        answer = None
+        try:
+            from google import genai
+            client = genai.Client(api_key=api_key)
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            answer = (response.text or '').replace('```html', '').replace('```', '').strip()
+        except Exception as e_gemini:
+            try:
+                import openai as _openai
+                oa = _openai.OpenAI(api_key=api_key)
+                resp = oa.chat.completions.create(
+                    model='gpt-4o-mini',
+                    messages=[{'role': 'user', 'content': prompt}],
+                )
+                answer = (resp.choices[0].message.content or '').replace('```html', '').replace('```', '').strip()
+            except Exception as e_openai:
+                _logger.error("Dashboard AI error — Gemini: %s | OpenAI: %s", e_gemini, e_openai)
+                answer = f'<p style="color:#dc2626">Error al consultar la IA: {e_gemini}</p>'
+
+        self.write({'ai_response_html': answer or '<p>Sin respuesta.</p>'})
+        return self._reload_dashboard()
+
+    def _reload_dashboard(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.dashboard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_open_sales_graph(self):
+        return self.env.ref('estate_reports.action_sales_by_month').read()[0]
+
+    def action_open_advisor_graph(self):
+        return self.env.ref('estate_reports.action_sales_by_user').read()[0]
+
+    def action_open_commission_wizard(self):
+        return self.env.ref('estate_reports.estate_commission_wizard_action').read()[0]
+
+    @api.model
+    def _reset_board_customizations(self):
+        board_view = self.env.ref('estate_reports.estate_board_view', raise_if_not_found=False)
+        if board_view:
+            self.env['ir.ui.view.custom'].sudo().search([('ref_id', '=', board_view.id)]).unlink()

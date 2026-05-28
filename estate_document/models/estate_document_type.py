@@ -35,6 +35,7 @@ class EstateDocumentType(models.Model):
     description = fields.Text(string='Descripción')
     active = fields.Boolean(default=True)
 
-    _sql_constraints = [
-        ('code_unique', 'UNIQUE(code)', 'El código de tipo de documento debe ser único.'),
-    ]
+    _code_unique = models.Constraint(
+        'UNIQUE(code)',
+        'El código de tipo de documento debe ser único.',
+    )

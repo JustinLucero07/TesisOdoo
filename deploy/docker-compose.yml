@@ -32,6 +32,9 @@ services:
       PORT: 5432
       USER: ${POSTGRES_USER:-odoo}
       PASSWORD: ${POSTGRES_PASSWORD}
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     volumes:
       - odoo-data:/var/lib/odoo
       - ./odoo/conf/odoo.conf:/etc/odoo/odoo.conf:ro
@@ -46,11 +49,13 @@ services:
     image: n8nio/n8n:latest
     restart: unless-stopped
     environment:
-      - N8N_HOST=${N8N_HOST:-n8n.tudominio.com}
+      - N8N_HOST=${DOMAIN:-inmobi.tech}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
+      - N8N_PATH=/n8n/
+      - N8N_EDITOR_BASE_URL=https://${DOMAIN:-inmobi.tech}/n8n/
       - NODE_ENV=production
-      - WEBHOOK_URL=https://${N8N_HOST:-n8n.tudominio.com}/
+      - WEBHOOK_URL=https://${DOMAIN:-inmobi.tech}/n8n/
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=db

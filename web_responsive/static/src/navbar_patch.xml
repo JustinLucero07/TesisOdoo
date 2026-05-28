@@ -11,11 +11,22 @@
 
             <!-- Trigger button (keeps isScopedApp guard so t-else below stays valid) -->
             <div t-if="!isScopedApp" class="o_navbar_apps_menu">
-                <button data-hotkey="h"
+                <button class="o-wr-launcher-btn"
+                        data-hotkey="h"
                         title="Todas las Aplicaciones"
                         t-att-class="{ 'o-wr-active': state.appDrawerOpen }"
                         t-on-click="toggleAppDrawer">
-                    <i class="oi oi-apps"/>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 18 18" fill="currentColor">
+                        <rect x="1"  y="1"  width="5" height="5" rx="1.2"/>
+                        <rect x="7"  y="1"  width="5" height="5" rx="1.2"/>
+                        <rect x="13" y="1"  width="4" height="5" rx="1.2"/>
+                        <rect x="1"  y="7"  width="5" height="5" rx="1.2"/>
+                        <rect x="7"  y="7"  width="5" height="5" rx="1.2"/>
+                        <rect x="13" y="7"  width="4" height="5" rx="1.2"/>
+                        <rect x="1"  y="13" width="5" height="4" rx="1.2"/>
+                        <rect x="7"  y="13" width="5" height="4" rx="1.2"/>
+                        <rect x="13" y="13" width="4" height="4" rx="1.2"/>
+                    </svg>
                 </button>
             </div>
 
@@ -36,7 +47,7 @@
 
                             <!-- Search -->
                             <div class="o-wr-AppDrawer-search">
-                                <i class="fa fa-search"/>
+                                <i class="fa fa-search" title="Buscar"/>
                                 <input type="text"
                                        placeholder="Buscar aplicación..."
                                        t-att-value="state.appSearch"
@@ -79,7 +90,7 @@
                                 </a>
                             </t>
                             <div t-else="" class="o-wr-AppDrawer-noResults">
-                                <i class="fa fa-search-minus"/>
+                                <i class="fa fa-search-minus" title="Sin resultados"/>
                                 <p>Sin resultados para "<strong t-esc="state.appSearch"/>"</p>
                             </div>
                         </div>

@@ -2,139 +2,7 @@
 <odoo>
 
 <!-- ═══════════════════════════════════════════════════════════════════
-     LAYOUT BASE — Todos los documentos PDF de Inmobi usan este layout
-     Colores: Azul marino #1C2B4A | Rojo #C0392B | Gris claro #F5F6F8
-════════════════════════════════════════════════════════════════════ -->
-<template id="report_inmobi_base_layout">
-    <t t-call="web.html_container">
-        <t t-foreach="docs" t-as="doc">
-            <t t-set="company" t-value="env.company"/>
-            <div style="
-                font-family: 'Helvetica Neue', Arial, sans-serif;
-                font-size: 12px;
-                color: #2C3E50;
-                margin: 0;
-                padding: 0;
-                position: relative;
-            ">
-                <!-- ── HEADER ──────────────────────────────────────────── -->
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; padding: 24px 32px 16px; border-bottom: 3px solid #C0392B;">
-
-                    <!-- Logo (reemplaza con tu logo en Ajustes > Compañía) -->
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <t t-if="company.logo">
-                            <img t-att-src="image_data_uri(company.logo)"
-                                 style="max-height:60px; max-width:140px; object-fit:contain;"
-                                 alt="Logo"/>
-                        </t>
-                        <t t-else="">
-                            <!-- Placeholder de logo — sube tu logo en Ajustes > Compañía -->
-                            <div style="width:120px; height:55px; background:#1C2B4A; border-radius:4px; display:flex; align-items:center; justify-content:center;">
-                                <span style="color:white; font-weight:700; font-size:16px; letter-spacing:2px;">
-                                    <t t-esc="(company.name or 'INMOBI')[:6].upper()"/>
-                                </span>
-                            </div>
-                        </t>
-                        <div>
-                            <div style="font-weight:700; font-size:10px; color:#1C2B4A; letter-spacing:1px;">
-                                <t t-esc="company.name or 'BIENES RAÍCES'"/>
-                            </div>
-                            <div style="font-size:9px; color:#7F8C8D; letter-spacing:0.5px;">
-                                BIENES RAÍCES
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Info doc (derecha) -->
-                    <div style="text-align:right; font-size:11px; line-height:1.8;">
-                        <div>
-                            <span style="color:#7F8C8D;">📅</span>
-                            <strong style="color:#2C3E50;"> Fecha:</strong>
-                            <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d / %m / %Y')"/>
-                        </div>
-                        <t t-if="doc_code">
-                            <div>
-                                <span style="color:#7F8C8D;">🏷</span>
-                                <strong style="color:#2C3E50;"> Código:</strong>
-                                <t t-esc="doc_code"/>
-                            </div>
-                        </t>
-                        <t t-if="doc_type_label">
-                            <div>
-                                <span style="color:#7F8C8D;">📋</span>
-                                <strong style="color:#2C3E50;"> Tipo:</strong>
-                                <span style="color:#C0392B; font-weight:700;">
-                                    <t t-esc="doc_type_label"/>
-                                </span>
-                            </div>
-                        </t>
-                    </div>
-                </div>
-
-                <!-- ── TÍTULO DOCUMENTO ────────────────────────────────── -->
-                <div style="text-align:center; padding: 18px 32px 12px;">
-                    <h1 style="
-                        font-size: 22px;
-                        font-weight: 900;
-                        color: #1C2B4A;
-                        letter-spacing: 4px;
-                        text-transform: uppercase;
-                        margin: 0 0 6px;
-                    ">
-                        <t t-esc="doc_title"/>
-                    </h1>
-                    <div style="width:50px; height:3px; background:#C0392B; margin:0 auto;"/>
-                </div>
-
-                <!-- ── CONTENIDO (inyectado por cada template) ────────── -->
-                <div style="padding: 0 32px 24px;">
-                    <t t-out="0"/>
-                </div>
-
-                <!-- ── FOOTER ─────────────────────────────────────────── -->
-                <div style="
-                    position:fixed; bottom:0; left:0; right:0;
-                    padding: 10px 32px;
-                    border-top: 1px solid #E8EAED;
-                    display:flex; justify-content:space-between; align-items:center;
-                    font-size:9px; color:#95A5A6;
-                ">
-                    <div style="display:flex; gap:16px;">
-                        <span t-if="company.street">📍 <t t-esc="company.city or ''"/><t t-if="company.state_id">, <t t-esc="company.state_id.name"/></t></span>
-                        <span t-if="company.phone">📞 <t t-esc="company.phone"/></span>
-                        <span t-if="company.email">✉ <t t-esc="company.email"/></span>
-                        <span t-if="company.website">🌐 <t t-esc="company.website"/></span>
-                    </div>
-                    <div style="color:#BDC3C7;">
-                        Generado · <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
-                    </div>
-                </div>
-
-                <!-- ── DECORACIÓN GEOMÉTRICA (esquina inferior derecha) ── -->
-                <div style="position:fixed; bottom:0; right:0; width:90px; height:90px; overflow:hidden; pointer-events:none;">
-                    <div style="
-                        position:absolute; bottom:-20px; right:-20px;
-                        width:80px; height:80px;
-                        background:#1C2B4A;
-                        transform:rotate(45deg);
-                        opacity:0.85;
-                    "/>
-                    <div style="
-                        position:absolute; bottom:-30px; right:20px;
-                        width:60px; height:60px;
-                        background:#C0392B;
-                        transform:rotate(45deg);
-                        opacity:0.75;
-                    "/>
-                </div>
-            </div>
-        </t>
-    </t>
-</template>
-
-
-<!-- ═══════════════════════════════════════════════════════════════════
-     FICHA TÉCNICA — CON DATOS DE CONTACTO DEL ASESOR
+     FICHA TÉCNICA — con contacto del asesor
 ════════════════════════════════════════════════════════════════════ -->
 <record id="action_report_ficha_tecnica" model="ir.actions.report">
     <field name="name">Ficha Técnica (con contacto)</field>
@@ -144,6 +12,7 @@
     <field name="report_file">estate_reports.report_ficha_tecnica_template</field>
     <field name="binding_model_id" ref="estate_management.model_estate_property"/>
     <field name="binding_type">report</field>
+    <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
 </record>
 
 <record id="action_report_ficha_tecnica_sin_contacto" model="ir.actions.report">
@@ -154,276 +23,276 @@
     <field name="report_file">estate_reports.report_ficha_tecnica_sin_contacto_template</field>
     <field name="binding_model_id" ref="estate_management.model_estate_property"/>
     <field name="binding_type">report</field>
+    <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
 </record>
 
-<!-- Template compartido: recibe show_contact como variable -->
+<!-- ── Contenido compartido ──────────────────────────────────────── -->
 <template id="report_ficha_content">
-    <t t-set="doc_title" t-value="'FICHA TÉCNICA'"/>
-    <t t-set="doc_code" t-value="doc.name"/>
-    <t t-set="doc_type_label" t-value="'VENTA' if doc.offer_type == 'sale' else 'ARRIENDO'"/>
 
-    <!-- ── BLOQUE: DATOS PROPIEDAD + CLIENTE ──────────────────── -->
-    <div style="display:flex; gap:16px; margin-bottom:18px;">
-
-        <!-- Imagen principal -->
-        <t t-if="doc.image_main">
-            <div style="flex-shrink:0;">
-                <img t-att-src="image_data_uri(doc.image_main)"
-                     style="width:180px; height:130px; object-fit:cover; border-radius:6px; border:1px solid #E8EAED;"/>
-            </div>
-        </t>
-
-        <!-- Info básica -->
-        <div style="flex:1; background:#F5F6F8; border-radius:6px; padding:14px 16px; border:1px solid #E8EAED;">
-            <div style="font-size:9px; font-weight:700; color:#C0392B; letter-spacing:1.5px; margin-bottom:6px;">DATOS DE LA PROPIEDAD</div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tr>
-                    <td style="padding:3px 0; color:#7F8C8D; width:35%;">Propiedad:</td>
-                    <td style="padding:3px 0; font-weight:600;"><t t-esc="doc.title or doc.name"/></td>
-                </tr>
-                <tr>
-                    <td style="padding:3px 0; color:#7F8C8D;">Ubicación:</td>
-                    <td style="padding:3px 0;"><t t-esc="(doc.city or '') + (', ' + doc.state_id.name if doc.state_id else '')"/></td>
-                </tr>
-                <tr>
-                    <td style="padding:3px 0; color:#7F8C8D;">Dirección:</td>
-                    <td style="padding:3px 0;"><t t-esc="doc.street or '—'"/></td>
-                </tr>
-                <tr>
-                    <td style="padding:3px 0; color:#7F8C8D;">Tipo:</td>
-                    <td style="padding:3px 0;"><t t-esc="doc.property_type_id.name if doc.property_type_id else '—'"/></td>
-                </tr>
-                <tr>
-                    <td style="padding:3px 0; color:#7F8C8D;">Referencia:</td>
-                    <td style="padding:3px 0; font-family:monospace; font-size:10px; color:#1C2B4A;"><t t-esc="doc.name"/></td>
-                </tr>
-            </table>
-        </div>
-
-        <!-- QR -->
-        <t t-if="doc.qr_image">
-            <div style="flex-shrink:0; text-align:center;">
-                <img t-att-src="image_data_uri(doc.qr_image)" style="width:80px; height:80px;"/>
-                <div style="font-size:8px; color:#95A5A6; margin-top:3px;">Escanear</div>
-            </div>
-        </t>
-    </div>
-
-    <!-- ── PRECIO DESTACADO ───────────────────────────────────── -->
-    <div style="
-        background:#1C2B4A;
-        color:white;
-        border-radius:6px;
-        padding:12px 20px;
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        margin-bottom:18px;
-    ">
-        <div>
-            <div style="font-size:9px; letter-spacing:1.5px; opacity:0.7;">PRECIO DE VENTA</div>
-            <div style="font-size:22px; font-weight:900; letter-spacing:1px;">
-                $<t t-esc="'{:,.2f}'.format(doc.price or 0)"/>
-            </div>
-        </div>
-        <t t-if="doc.avm_estimated_price">
-            <div style="text-align:center; border-left:1px solid rgba(255,255,255,0.2); padding-left:20px;">
-                <div style="font-size:9px; letter-spacing:1px; opacity:0.7;">VALOR AVM</div>
-                <div style="font-size:16px; font-weight:700;">
-                    $<t t-esc="'{:,.2f}'.format(doc.avm_estimated_price)"/>
+    <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
+    <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+        <tr>
+            <td style="padding:10px 16px; vertical-align:middle; width:60%;">
+                <t t-if="env.company.logo">
+                    <img t-att-src="image_data_uri(env.company.logo)" style="height:28px; max-width:110px;"/>
+                </t>
+                <t t-else="">
+                    <span style="font-size:15px; font-weight:900; color:white;"><t t-esc="env.company.name"/></span>
+                </t>
+            </td>
+            <td style="padding:10px 16px; vertical-align:middle; text-align:right; width:40%;">
+                <div style="font-size:13px; font-weight:900; color:white; text-transform:uppercase; letter-spacing:2px;">Ficha T&#233;cnica</div>
+                <div style="font-size:9px; color:#a8bcdb; margin-top:3px;">
+                    <t t-esc="doc.name"/>
+                    &#160;&#183;&#160;
+                    <span style="border:1px solid rgba(255,255,255,0.5); padding:1px 7px; font-size:8px; font-weight:700; letter-spacing:1px;">
+                        <t t-esc="'VENTA' if doc.offer_type == 'sale' else 'ARRIENDO'"/>
+                    </span>
+                    &#160;&#183;&#160;
+                    <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                 </div>
-                <div style="font-size:9px; margin-top:2px;">
-                    <t t-esc="{'fair':'Alineado al mercado','high':'Sobrevalorado','low':'Oportunidad','insufficient':'Sin datos'}.get(doc.avm_status, '')"/>
-                </div>
-            </div>
-        </t>
-        <div style="text-align:right;">
-            <div style="
-                display:inline-block;
-                padding:4px 14px;
-                border-radius:20px;
-                font-size:10px;
-                font-weight:700;
-                background:#C0392B;
-            ">
-                <t t-esc="'VENTA' if doc.offer_type == 'sale' else 'ARRIENDO'"/>
-            </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- ══ TÍTULO / PROPIEDAD ════════════════════════════════════════ -->
+    <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
+        <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">
+            Propiedad en <t t-esc="'Venta' if doc.offer_type == 'sale' else 'Arriendo'"/>
+        </div>
+        <div style="font-size:15px; font-weight:900; color:#1C2B4A;"><t t-esc="doc.title or doc.name"/></div>
+        <div style="font-size:9px; color:#666; margin-top:3px;">
+            <t t-esc="(doc.city or '') + (', ' + doc.state_id.name if doc.state_id else '')"/>
+            <t t-if="doc.street"> &#183; <t t-esc="doc.street"/></t>
         </div>
     </div>
 
-    <!-- ── CARACTERÍSTICAS ───────────────────────────────────── -->
-    <div style="margin-bottom:18px;">
-        <div style="
-            font-size:9px; font-weight:700; color:#C0392B;
-            letter-spacing:1.5px; border-bottom:1px solid #E8EAED;
-            padding-bottom:6px; margin-bottom:10px;
-        ">CARACTERÍSTICAS DEL INMUEBLE</div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <t t-foreach="[
-                ('Área', str(doc.area or 0) + ' m²'),
-                ('Habitaciones', str(doc.bedrooms or 0)),
-                ('Baños', str(doc.bathrooms or 0)),
-                ('Parqueaderos', str(doc.parking_spaces or 0)),
-                ('Piso', str(doc.floor) if doc.floor else '—'),
-                ('Año construc.', str(doc.year_built) if doc.year_built else '—'),
-            ]" t-as="item">
-                <div style="
-                    background:#F5F6F8;
-                    border:1px solid #E8EAED;
-                    border-radius:6px;
-                    padding:8px 14px;
-                    text-align:center;
-                    min-width:80px;
-                ">
-                    <div style="font-size:13px; font-weight:700; color:#1C2B4A;"><t t-esc="item[1]"/></div>
-                    <div style="font-size:9px; color:#95A5A6; margin-top:2px;"><t t-esc="item[0]"/></div>
-                </div>
+    <!-- ══ FOTO + PRECIO + CARACTERÍSTICAS ════════════════════════════ -->
+    <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
+        <tr>
+            <!-- Foto -->
+            <t t-if="doc.image_main">
+                <td style="width:185px; vertical-align:top; padding-right:12px;">
+                    <img t-att-src="image_data_uri(doc.image_main)"
+                         style="width:183px; height:137px; object-fit:cover; border:1px solid #D8DCE5; display:block;"/>
+                </td>
             </t>
-        </div>
-    </div>
 
-    <!-- ── DESCRIPCIÓN ───────────────────────────────────────── -->
+            <!-- Precio + características -->
+            <td style="vertical-align:top;">
+                <!-- Barra de precio (accent) -->
+                <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:8px;">
+                    <tr>
+                        <td style="padding:10px 16px; vertical-align:middle;">
+                            <div style="font-size:8px; letter-spacing:1.5px; color:rgba(255,255,255,0.55); text-transform:uppercase; margin-bottom:2px;">Precio</div>
+                            <div style="font-size:22px; font-weight:900; color:white; letter-spacing:0.5px; line-height:1;">
+                                $<t t-esc="'{:,.2f}'.format(doc.price or 0)"/>
+                            </div>
+                        </td>
+                        <t t-if="doc.avm_estimated_price">
+                            <td style="width:130px; padding:10px 14px; vertical-align:middle; text-align:center; border-left:1px solid rgba(255,255,255,0.15);">
+                                <div style="font-size:8px; color:rgba(255,255,255,0.55); text-transform:uppercase; letter-spacing:.5px;">Valor AVM</div>
+                                <div style="font-size:14px; font-weight:700; color:white; margin-top:2px; line-height:1;">
+                                    $<t t-esc="'{:,.0f}'.format(doc.avm_estimated_price)"/>
+                                </div>
+                                <div style="font-size:8px; color:rgba(255,255,255,0.4); margin-top:1px;">
+                                    <t t-esc="{'fair':'Alineado','high':'Sobrevalorado','low':'Oportunidad'}.get(doc.avm_status, '')"/>
+                                </div>
+                            </td>
+                        </t>
+                    </tr>
+                </table>
+
+                <!-- Grid de características (tabla 6 celdas) -->
+                <table style="width:100%; border-collapse:collapse; border:1px solid #D8DCE5;">
+                    <tr>
+                        <td style="padding:7px 5px; text-align:center; background:#F8F9FB; border-right:1px solid #D8DCE5;">
+                            <div style="font-size:13px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="str(doc.area or 0)"/> m&#178;</div>
+                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">&#193;rea</div>
+                        </td>
+                        <td style="padding:7px 5px; text-align:center; background:#F8F9FB; border-right:1px solid #D8DCE5;">
+                            <div style="font-size:13px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="str(doc.bedrooms or 0)"/></div>
+                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">Habitaciones</div>
+                        </td>
+                        <td style="padding:7px 5px; text-align:center; background:#F8F9FB; border-right:1px solid #D8DCE5;">
+                            <div style="font-size:13px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="str(doc.bathrooms or 0)"/></div>
+                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">Ba&#241;os</div>
+                        </td>
+                        <td style="padding:7px 5px; text-align:center; background:#F8F9FB; border-right:1px solid #D8DCE5;">
+                            <div style="font-size:13px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="str(doc.parking_spaces or 0)"/></div>
+                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">Parqueadero</div>
+                        </td>
+                        <td style="padding:7px 5px; text-align:center; background:#F8F9FB; border-right:1px solid #D8DCE5;">
+                            <div style="font-size:13px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="str(doc.floor) if doc.floor else '&#8212;'"/></div>
+                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">Piso</div>
+                        </td>
+                        <td style="padding:7px 5px; text-align:center; background:#F8F9FB;">
+                            <div style="font-size:13px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="str(doc.year_built) if doc.year_built else '&#8212;'"/></div>
+                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">A&#241;o</div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+
+            <!-- QR -->
+            <t t-if="doc.qr_image">
+                <td style="width:78px; vertical-align:top; text-align:center; padding-left:10px;">
+                    <img t-att-src="image_data_uri(doc.qr_image)" style="width:70px; height:70px;"/>
+                    <div style="font-size:7px; color:#bbb; margin-top:3px;">Escanear</div>
+                </td>
+            </t>
+        </tr>
+    </table>
+
+    <!-- ══ DATOS DE LA PROPIEDAD ══════════════════════════════════════ -->
+    <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+        Datos de la Propiedad
+    </div>
+    <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px; line-height:1.7;">
+        <tr>
+            <td style="width:18%; background:#F8F9FB; padding:6px 12px; color:#666; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; font-weight:600;">Propiedad:</td>
+            <td style="padding:6px 12px; font-weight:700; color:#1C2B4A; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; width:32%;">
+                <t t-esc="doc.title or doc.name"/>
+            </td>
+            <td style="width:15%; background:#F8F9FB; padding:6px 12px; color:#666; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; font-weight:600;">Tipo:</td>
+            <td style="padding:6px 12px; border-bottom:1px solid #D8DCE5;">
+                <t t-esc="doc.property_type_id.name if doc.property_type_id else '&#8212;'"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="background:#F8F9FB; padding:6px 12px; color:#666; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; font-weight:600;">Ubicaci&#243;n:</td>
+            <td style="padding:6px 12px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5;">
+                <t t-esc="(doc.city or '') + (', ' + doc.state_id.name if doc.state_id else '')"/>
+            </td>
+            <td style="background:#F8F9FB; padding:6px 12px; color:#666; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; font-weight:600;">Referencia:</td>
+            <td style="padding:6px 12px; font-family:monospace; font-size:10px; font-weight:700; color:#1C2B4A; border-bottom:1px solid #D8DCE5;">
+                <t t-esc="doc.name"/>
+            </td>
+        </tr>
+        <tr>
+            <td style="background:#F8F9FB; padding:6px 12px; color:#666; border-right:1px solid #D8DCE5; font-weight:600;">Direcci&#243;n:</td>
+            <td style="padding:6px 12px; border-right:1px solid #D8DCE5;" colspan="3">
+                <t t-esc="doc.street or '&#8212;'"/>
+            </td>
+        </tr>
+    </table>
+
+    <!-- ══ DESCRIPCIÓN ════════════════════════════════════════════════ -->
     <t t-if="doc.description">
-        <div style="margin-bottom:18px;">
-            <div style="
-                font-size:9px; font-weight:700; color:#C0392B;
-                letter-spacing:1.5px; border-bottom:1px solid #E8EAED;
-                padding-bottom:6px; margin-bottom:10px;
-            ">DESCRIPCIÓN</div>
-            <div style="
-                background:#F5F6F8;
-                border:1px solid #E8EAED;
-                border-radius:6px;
-                padding:12px 16px;
-                font-size:11px;
-                line-height:1.7;
-                color:#4A5568;
-            ">
-                <t t-out="doc.description"/>
-            </div>
+        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+            Descripci&#243;n
+        </div>
+        <div style="border:1px solid #D8DCE5; border-top:none; padding:10px 14px; font-size:11px; line-height:1.7; color:#444; margin-bottom:14px;">
+            <t t-out="doc.description"/>
         </div>
     </t>
 
-    <!-- ── HIPOTECA ESTIMADA ──────────────────────────────────── -->
+    <!-- ══ CALCULADORA HIPOTECA ═══════════════════════════════════════ -->
     <t t-if="doc.mortgage_monthly_payment and doc.offer_type == 'sale'">
-        <div style="margin-bottom:18px;">
-            <div style="
-                font-size:9px; font-weight:700; color:#C0392B;
-                letter-spacing:1.5px; border-bottom:1px solid #E8EAED;
-                padding-bottom:6px; margin-bottom:10px;
-            ">CALCULADORA DE HIPOTECA ESTIMADA</div>
-            <div style="display:flex; gap:10px;">
-                <div style="flex:1; background:#F5F6F8; border:1px solid #E8EAED; border-radius:6px; padding:10px 14px;">
-                    <div style="font-size:9px; color:#7F8C8D;">Entrada (<t t-esc="doc.mortgage_down_payment_pct or 20"/>%)</div>
-                    <div style="font-size:14px; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.0f}'.format(doc.mortgage_down_payment or 0)"/></div>
-                </div>
-                <div style="flex:1; background:#F5F6F8; border:1px solid #E8EAED; border-radius:6px; padding:10px 14px;">
-                    <div style="font-size:9px; color:#7F8C8D;">A financiar</div>
-                    <div style="font-size:14px; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.0f}'.format(doc.mortgage_loan_amount or 0)"/></div>
-                </div>
-                <div style="flex:1; background:#1C2B4A; border-radius:6px; padding:10px 14px; text-align:center;">
-                    <div style="font-size:9px; color:rgba(255,255,255,0.7);">Cuota mensual est.</div>
-                    <div style="font-size:16px; font-weight:900; color:white;">$<t t-esc="'{:,.0f}'.format(doc.mortgage_monthly_payment or 0)"/></div>
-                    <div style="font-size:8px; color:rgba(255,255,255,0.5);"><t t-esc="doc.mortgage_term_years or 20"/> años · <t t-esc="doc.mortgage_rate or 9.5"/>% anual</div>
-                </div>
-            </div>
+        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; page-break-inside:avoid;">
+            Calculadora de Hipoteca Estimada
         </div>
+        <table style="width:100%; border-collapse:collapse; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px; page-break-inside:avoid;">
+            <tr>
+                <td style="width:33%; padding:12px 14px; background:#F8F9FB; vertical-align:top; border-right:1px solid #D8DCE5;">
+                    <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;">
+                        Entrada (<t t-esc="doc.mortgage_down_payment_pct or 20"/>%)
+                    </div>
+                    <div style="font-size:16px; font-weight:700; color:#1C2B4A;">
+                        $<t t-esc="'{:,.0f}'.format(doc.mortgage_down_payment or 0)"/>
+                    </div>
+                </td>
+                <td style="width:33%; padding:12px 14px; background:#F8F9FB; vertical-align:top; border-right:1px solid #D8DCE5;">
+                    <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;">A financiar</div>
+                    <div style="font-size:16px; font-weight:700; color:#1C2B4A;">
+                        $<t t-esc="'{:,.0f}'.format(doc.mortgage_loan_amount or 0)"/>
+                    </div>
+                </td>
+                <td style="width:34%; padding:12px 14px; background:#1C2B4A; text-align:center; vertical-align:middle;">
+                    <div style="font-size:8px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px;">Cuota mensual est.</div>
+                    <div style="font-size:20px; font-weight:900; color:white; line-height:1;">
+                        $<t t-esc="'{:,.0f}'.format(doc.mortgage_monthly_payment or 0)"/>
+                    </div>
+                    <div style="font-size:8px; color:rgba(255,255,255,0.5); margin-top:3px;">
+                        <t t-esc="doc.mortgage_term_years or 20"/> a&#241;os &#183; <t t-esc="doc.mortgage_rate or 9.5"/>% anual
+                    </div>
+                </td>
+            </tr>
+        </table>
     </t>
 
-    <!-- ── ASESOR (solo si show_contact=True) ──────────────────── -->
+    <!-- ══ ASESOR RESPONSABLE ═══════════════════════════════════════ -->
     <t t-if="show_contact">
-        <div style="
-            background:#F5F6F8;
-            border:1px solid #E8EAED;
-            border-radius:6px;
-            padding:14px 18px;
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            margin-bottom:18px;
-        ">
-            <div>
-                <div style="font-size:9px; font-weight:700; color:#C0392B; letter-spacing:1.5px; margin-bottom:4px;">ASESOR RESPONSABLE</div>
-                <div style="font-size:14px; font-weight:700; color:#1C2B4A;">
-                    <t t-esc="doc.user_id.name if doc.user_id else 'No asignado'"/>
-                </div>
-                <t t-if="doc.user_id.partner_id.phone">
-                    <div style="font-size:11px; color:#4A5568; margin-top:2px;">
-                        📞 <t t-esc="doc.user_id.partner_id.phone"/>
-                    </div>
-                </t>
-                <t t-if="doc.user_id.partner_id.email">
-                    <div style="font-size:11px; color:#4A5568;">
-                        ✉ <t t-esc="doc.user_id.partner_id.email"/>
-                    </div>
-                </t>
-            </div>
-            <t t-if="doc.user_id.partner_id.image_128">
-                <img t-att-src="image_data_uri(doc.user_id.partner_id.image_128)"
-                     style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid #1C2B4A;"/>
-            </t>
+        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; page-break-inside:avoid;">
+            Datos de Contacto &#183; Asesor Responsable
         </div>
+        <table style="width:100%; border-collapse:collapse; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px; page-break-inside:avoid;">
+            <tr>
+                <t t-if="doc.user_id.partner_id.image_128">
+                    <td style="width:70px; padding:12px; vertical-align:middle; text-align:center; border-right:1px solid #D8DCE5;">
+                        <img t-att-src="image_data_uri(doc.user_id.partner_id.image_128)"
+                             style="width:50px; height:50px; border:2px solid #1C2B4A;"/>
+                    </td>
+                </t>
+                <td style="padding:12px 16px; vertical-align:middle;">
+                    <div style="font-size:13px; font-weight:700; color:#1C2B4A;">
+                        <t t-esc="doc.user_id.name if doc.user_id else 'No asignado'"/>
+                    </div>
+                    <t t-if="doc.user_id.partner_id.phone">
+                        <div style="font-size:11px; color:#666; margin-top:3px;">
+                            Tel: <t t-esc="doc.user_id.partner_id.phone"/>
+                        </div>
+                    </t>
+                    <t t-if="doc.user_id.partner_id.mobile">
+                        <div style="font-size:11px; color:#666;">
+                            Cel: <t t-esc="doc.user_id.partner_id.mobile"/>
+                        </div>
+                    </t>
+                    <t t-if="doc.user_id.partner_id.email">
+                        <div style="font-size:11px; color:#666;">
+                            Email: <t t-esc="doc.user_id.partner_id.email"/>
+                        </div>
+                    </t>
+                </td>
+                <td style="padding:12px 16px; vertical-align:middle; text-align:right; font-size:10px; color:#888;">
+                    <t t-esc="env.company.name"/>
+                    <t t-if="env.company.phone">
+                        <br/><t t-esc="env.company.phone"/>
+                    </t>
+                </td>
+            </tr>
+        </table>
     </t>
+
+    <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                            <tr>
+                                <td style="padding:5px 0; width:50%;">
+                                    <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
+                                    <t t-if="env.company.city"> &#183; <t t-esc="env.company.city"/></t>
+                                    <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                    <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
+                                </td>
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                    <t t-esc="env.company.name"/>
+                                </td>
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                    <t t-esc="doc.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                </td>
+                            </tr>
+                        </table>
+
 </template>
 
 <!-- Ficha CON contacto -->
 <template id="report_ficha_tecnica_template">
     <t t-call="web.html_container">
         <t t-foreach="docs" t-as="doc">
-            <t t-set="company" t-value="env.company"/>
-            <div class="page" style="font-family:'Helvetica Neue',Arial,sans-serif; color:#2C3E50; position:relative; min-height:270mm; padding-bottom:40px;">
-                <t t-set="show_contact" t-value="True"/>
-                <t t-set="doc_title" t-value="'FICHA TÉCNICA'"/>
-                <t t-set="doc_code" t-value="doc.name"/>
-                <t t-set="doc_type_label" t-value="'VENTA' if doc.offer_type == 'sale' else 'ARRIENDO'"/>
-
-                <!-- HEADER -->
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:24px 32px 14px; border-bottom:3px solid #C0392B;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <t t-if="company.logo">
-                            <img t-att-src="image_data_uri(company.logo)" style="max-height:56px; max-width:130px; object-fit:contain;"/>
-                        </t>
-                        <t t-else="">
-                            <div style="width:110px; height:50px; background:#1C2B4A; border-radius:4px; display:flex; align-items:center; justify-content:center;">
-                                <span style="color:white; font-weight:700; font-size:14px; letter-spacing:2px;"><t t-esc="(company.name or 'INMOBI')[:6].upper()"/></span>
-                            </div>
-                        </t>
-                    </div>
-                    <div style="text-align:right; font-size:11px; line-height:1.9; color:#2C3E50;">
-                        <div>📅 <strong>Fecha:</strong> <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></div>
-                        <div>🏷 <strong>Código:</strong> <t t-esc="doc.name"/></div>
-                        <div>📋 <strong>Tipo:</strong> <span style="color:#C0392B; font-weight:700;"><t t-esc="doc_type_label"/></span></div>
-                    </div>
-                </div>
-
-                <!-- TÍTULO -->
-                <div style="text-align:center; padding:16px 32px 10px;">
-                    <h1 style="font-size:20px; font-weight:900; color:#1C2B4A; letter-spacing:4px; margin:0 0 5px;">FICHA TÉCNICA</h1>
-                    <div style="width:48px; height:3px; background:#C0392B; margin:0 auto;"/>
-                </div>
-
-                <!-- CONTENIDO -->
-                <div style="padding:0 32px 24px;">
+            <t t-set="o" t-value="doc"/>
+                <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#333; font-size:11px;">
+                    <t t-set="show_contact" t-value="True"/>
                     <t t-call="estate_reports.report_ficha_content"/>
                 </div>
-
-                <!-- FOOTER FIJO -->
-                <div style="position:fixed; bottom:0; left:0; right:0; padding:8px 32px; border-top:1px solid #E8EAED; display:flex; justify-content:space-between; font-size:9px; color:#95A5A6; background:white;">
-                    <div style="display:flex; gap:14px;">
-                        <t t-if="company.city"><span>📍 <t t-esc="company.city"/></span></t>
-                        <t t-if="company.phone"><span>📞 <t t-esc="company.phone"/></span></t>
-                        <t t-if="company.email"><span>✉ <t t-esc="company.email"/></span></t>
-                        <t t-if="company.website"><span>🌐 <t t-esc="company.website"/></span></t>
-                    </div>
-                    <span>Generado · <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></span>
-                </div>
-
-                <!-- DECORACIÓN -->
-                <div style="position:fixed; bottom:0; right:0; width:80px; height:80px; overflow:hidden;">
-                    <div style="position:absolute; bottom:-18px; right:-18px; width:70px; height:70px; background:#1C2B4A; transform:rotate(45deg); opacity:0.9;"/>
-                    <div style="position:absolute; bottom:-28px; right:18px; width:55px; height:55px; background:#C0392B; transform:rotate(45deg); opacity:0.8;"/>
-                </div>
-            </div>
         </t>
     </t>
 </template>
@@ -432,61 +301,18 @@
 <template id="report_ficha_tecnica_sin_contacto_template">
     <t t-call="web.html_container">
         <t t-foreach="docs" t-as="doc">
-            <t t-set="company" t-value="env.company"/>
-            <div class="page" style="font-family:'Helvetica Neue',Arial,sans-serif; color:#2C3E50; position:relative; min-height:270mm; padding-bottom:40px;">
-                <t t-set="show_contact" t-value="False"/>
-                <t t-set="doc_type_label" t-value="'VENTA' if doc.offer_type == 'sale' else 'ARRIENDO'"/>
-
-                <!-- HEADER (igual) -->
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:24px 32px 14px; border-bottom:3px solid #C0392B;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <t t-if="company.logo">
-                            <img t-att-src="image_data_uri(company.logo)" style="max-height:56px; max-width:130px; object-fit:contain;"/>
-                        </t>
-                        <t t-else="">
-                            <div style="width:110px; height:50px; background:#1C2B4A; border-radius:4px; display:flex; align-items:center; justify-content:center;">
-                                <span style="color:white; font-weight:700; font-size:14px; letter-spacing:2px;"><t t-esc="(company.name or 'INMOBI')[:6].upper()"/></span>
-                            </div>
-                        </t>
-                    </div>
-                    <div style="text-align:right; font-size:11px; line-height:1.9; color:#2C3E50;">
-                        <div>📅 <strong>Fecha:</strong> <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></div>
-                        <div>🏷 <strong>Código:</strong> <t t-esc="doc.name"/></div>
-                        <div>📋 <strong>Tipo:</strong> <span style="color:#C0392B; font-weight:700;"><t t-esc="doc_type_label"/></span></div>
-                    </div>
-                </div>
-
-                <!-- TÍTULO -->
-                <div style="text-align:center; padding:16px 32px 10px;">
-                    <h1 style="font-size:20px; font-weight:900; color:#1C2B4A; letter-spacing:4px; margin:0 0 5px;">FICHA TÉCNICA</h1>
-                    <div style="width:48px; height:3px; background:#C0392B; margin:0 auto;"/>
-                </div>
-
-                <div style="padding:0 32px 24px;">
+            <t t-set="o" t-value="doc"/>
+                <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#333; font-size:11px;">
+                    <t t-set="show_contact" t-value="False"/>
                     <t t-call="estate_reports.report_ficha_content"/>
                 </div>
-
-                <div style="position:fixed; bottom:0; left:0; right:0; padding:8px 32px; border-top:1px solid #E8EAED; display:flex; justify-content:space-between; font-size:9px; color:#95A5A6; background:white;">
-                    <div style="display:flex; gap:14px;">
-                        <t t-if="company.city"><span>📍 <t t-esc="company.city"/></span></t>
-                        <t t-if="company.phone"><span>📞 <t t-esc="company.phone"/></span></t>
-                        <t t-if="company.email"><span>✉ <t t-esc="company.email"/></span></t>
-                        <t t-if="company.website"><span>🌐 <t t-esc="company.website"/></span></t>
-                    </div>
-                    <span>Generado · <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></span>
-                </div>
-                <div style="position:fixed; bottom:0; right:0; width:80px; height:80px; overflow:hidden;">
-                    <div style="position:absolute; bottom:-18px; right:-18px; width:70px; height:70px; background:#1C2B4A; transform:rotate(45deg); opacity:0.9;"/>
-                    <div style="position:absolute; bottom:-28px; right:18px; width:55px; height:55px; background:#C0392B; transform:rotate(45deg); opacity:0.8;"/>
-                </div>
-            </div>
         </t>
     </t>
 </template>
 
 
 <!-- ═══════════════════════════════════════════════════════════════════
-     LIQUIDACIÓN DE COMISIONES
+     LIQUIDACIÓN DE COMISIONES (res.users)
 ════════════════════════════════════════════════════════════════════ -->
 <record id="action_report_commission_liquidation" model="ir.actions.report">
     <field name="name">Liquidación de Comisiones</field>
@@ -494,132 +320,174 @@
     <field name="report_type">qweb-pdf</field>
     <field name="report_name">estate_reports.report_commission_liquidation_template</field>
     <field name="report_file">estate_reports.report_commission_liquidation_template</field>
+    <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
 </record>
 
 <template id="report_commission_liquidation_template">
     <t t-call="web.html_container">
         <t t-foreach="docs" t-as="doc">
-            <t t-set="company" t-value="env.company"/>
-            <div class="page" style="font-family:'Helvetica Neue',Arial,sans-serif; color:#2C3E50; position:relative; min-height:270mm; padding-bottom:40px;">
+            <t t-set="o" t-value="doc"/>
+                <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
-                <!-- HEADER -->
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:24px 32px 14px; border-bottom:3px solid #C0392B;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <t t-if="company.logo">
-                            <img t-att-src="image_data_uri(company.logo)" style="max-height:56px; max-width:130px; object-fit:contain;"/>
-                        </t>
-                        <t t-else="">
-                            <div style="width:110px; height:50px; background:#1C2B4A; border-radius:4px; display:flex; align-items:center; justify-content:center;">
-                                <span style="color:white; font-weight:700; font-size:14px; letter-spacing:2px;">INMOBI</span>
-                            </div>
-                        </t>
-                    </div>
-                    <div style="text-align:right; font-size:11px; line-height:1.9; color:#2C3E50;">
-                        <div>📅 <strong>Fecha:</strong> <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></div>
-                        <div>👤 <strong>Asesor:</strong> <t t-esc="doc.name"/></div>
-                        <div>📋 <strong>Tipo:</strong> <span style="color:#C0392B; font-weight:700;">COMISIONES</span></div>
-                    </div>
-                </div>
+                    <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
+                    <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                        <tr>
+                            <td style="padding:10px 16px; vertical-align:middle; width:60%;">
+                                <t t-if="env.company.logo">
+                                    <img t-att-src="image_data_uri(env.company.logo)" style="height:28px; max-width:110px;"/>
+                                </t>
+                                <t t-else="">
+                                    <span style="font-size:15px; font-weight:900; color:white;"><t t-esc="env.company.name"/></span>
+                                </t>
+                            </td>
+                            <td style="padding:10px 16px; vertical-align:middle; text-align:right; width:40%;">
+                                <div style="font-size:13px; font-weight:900; color:white; text-transform:uppercase; letter-spacing:2px;">Liquidaci&#243;n de Comisiones</div>
+                                <div style="font-size:9px; color:#a8bcdb; margin-top:3px;">
+                                    <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
 
-                <!-- TÍTULO -->
-                <div style="text-align:center; padding:16px 32px 10px;">
-                    <h1 style="font-size:20px; font-weight:900; color:#1C2B4A; letter-spacing:4px; margin:0 0 5px;">LIQUIDACIÓN DE COMISIONES</h1>
-                    <div style="width:48px; height:3px; background:#C0392B; margin:0 auto;"/>
-                </div>
-
-                <div style="padding:0 32px 24px;">
-                    <!-- Datos del asesor -->
-                    <div style="background:#F5F6F8; border:1px solid #E8EAED; border-radius:6px; padding:12px 16px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-                        <div>
-                            <div style="font-size:9px; font-weight:700; color:#C0392B; letter-spacing:1.5px; margin-bottom:3px;">DATOS DEL ASESOR</div>
-                            <div style="font-size:15px; font-weight:700; color:#1C2B4A;"><t t-esc="doc.name"/></div>
-                            <t t-if="doc.partner_id.email"><div style="font-size:10px; color:#7F8C8D;">✉ <t t-esc="doc.partner_id.email"/></div></t>
+                    <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
+                    <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
+                        <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Documento Financiero</div>
+                        <div style="font-size:15px; font-weight:900; color:#1C2B4A;"><t t-esc="doc.name"/></div>
+                        <div style="font-size:9px; color:#666; margin-top:3px;">
+                            Generado: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                         </div>
-                        <t t-if="doc.partner_id.image_128">
-                            <img t-att-src="image_data_uri(doc.partner_id.image_128)" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid #1C2B4A;"/>
-                        </t>
                     </div>
 
-                    <!-- Tabla comisiones -->
+                    <!-- ══ DATOS DEL ASESOR ════════════════════════════════════════ -->
+                    <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        Datos del Asesor
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                        <tr>
+                            <t t-if="doc.partner_id.image_128">
+                                <td style="width:70px; padding:12px; vertical-align:middle; text-align:center; border-right:1px solid #D8DCE5;">
+                                    <img t-att-src="image_data_uri(doc.partner_id.image_128)"
+                                         style="width:50px; height:50px; border:2px solid #1C2B4A;"/>
+                                </td>
+                            </t>
+                            <td style="padding:12px 16px; vertical-align:middle;">
+                                <div style="font-size:14px; font-weight:700; color:#1C2B4A;"><t t-esc="doc.name"/></div>
+                                <t t-if="doc.partner_id.email">
+                                    <div style="font-size:10px; color:#888; margin-top:2px;"><t t-esc="doc.partner_id.email"/></div>
+                                </t>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <!-- ══ TABLA COMISIONES ════════════════════════════════════════ -->
                     <t t-set="commissions" t-value="doc.env['estate.commission'].search([('user_id','=',doc.id)], order='date desc')"/>
-                    <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+                    <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        Detalle de Comisiones
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
                         <thead>
-                            <tr style="background:#1C2B4A; color:white;">
-                                <th style="padding:10px 12px; text-align:left; font-size:10px; letter-spacing:0.5px;">PROPIEDAD</th>
-                                <th style="padding:10px 12px; text-align:center; font-size:10px;">TIPO</th>
-                                <th style="padding:10px 12px; text-align:right; font-size:10px;">MONTO VENTA</th>
-                                <th style="padding:10px 12px; text-align:center; font-size:10px;">%</th>
-                                <th style="padding:10px 12px; text-align:right; font-size:10px; color:#F5A623;">COMISIÓN</th>
-                                <th style="padding:10px 12px; text-align:center; font-size:10px;">FECHA</th>
-                                <th style="padding:10px 12px; text-align:center; font-size:10px;">ESTADO</th>
+                            <tr style="background:#263d61; color:white;">
+                                <th style="padding:7px 10px; text-align:left; font-weight:700;">Propiedad</th>
+                                <th style="padding:7px 10px; text-align:center; font-weight:700;">Tipo</th>
+                                <th style="padding:7px 10px; text-align:right; font-weight:700;">Monto Venta</th>
+                                <th style="padding:7px 10px; text-align:center; font-weight:700;">%</th>
+                                <th style="padding:7px 10px; text-align:right; font-weight:700;">Comisi&#243;n</th>
+                                <th style="padding:7px 10px; text-align:center; font-weight:700;">Fecha</th>
+                                <th style="padding:7px 10px; text-align:center; font-weight:700;">Estado</th>
                             </tr>
                         </thead>
                         <tbody>
                             <t t-set="total_commission" t-value="0"/>
                             <t t-foreach="commissions" t-as="c">
-                                <tr t-att-style="'background:#F9FAFB' if c_index % 2 == 0 else 'background:white'">
-                                    <td style="padding:9px 12px; font-size:11px; font-weight:600; color:#1C2B4A;"><t t-esc="c.property_id.title or c.property_id.name or '—'"/></td>
-                                    <td style="padding:9px 12px; text-align:center; font-size:10px; color:#7F8C8D;"><t t-esc="{'sale':'Venta','rental':'Alquiler','bonus':'Bono'}.get(c.type,'—')"/></td>
-                                    <td style="padding:9px 12px; text-align:right; font-size:11px;">$<t t-esc="'{:,.2f}'.format(c.sale_amount or 0)"/></td>
-                                    <td style="padding:9px 12px; text-align:center; font-size:11px;"><t t-esc="'%.1f' % (c.commission_pct or 0)"/>%</td>
-                                    <td style="padding:9px 12px; text-align:right; font-size:12px; font-weight:700; color:#27AE60;">$<t t-esc="'{:,.2f}'.format(c.amount or 0)"/></td>
-                                    <td style="padding:9px 12px; text-align:center; font-size:10px; color:#7F8C8D;"><t t-esc="str(c.date) if c.date else '—'"/></td>
-                                    <td style="padding:9px 12px; text-align:center;">
-                                        <span t-att-style="'font-size:9px; font-weight:700; padding:2px 8px; border-radius:10px; ' + ('background:#D5F5E3; color:#27AE60;' if c.state == 'paid' else ('background:#FDEBD0; color:#E67E22;' if c.state == 'approved' else 'background:#F5F6F8; color:#7F8C8D;'))">
-                                            <t t-esc="{'draft':'Borrador','approved':'Aprobada','paid':'Pagada','cancelled':'Cancelada'}.get(c.state,'—')"/>
+                                <tr t-att-style="'background:#F9FAFB;' if c_index % 2 == 0 else 'background:white;'">
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600; color:#1C2B4A;">
+                                        <t t-esc="c.property_id.title or c.property_id.name or '&#8212;'"/>
+                                    </td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center; color:#666;">
+                                        <t t-esc="{'sale':'Venta','rental':'Alquiler','bonus':'Bono'}.get(c.type, '&#8212;')"/>
+                                    </td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;">
+                                        $<t t-esc="'{:,.2f}'.format(c.sale_amount or 0)"/>
+                                    </td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;">
+                                        <t t-esc="'%.1f' % (c.commission_pct or 0)"/>%
+                                    </td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#15803d;">
+                                        $<t t-esc="'{:,.2f}'.format(c.amount or 0)"/>
+                                    </td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center; color:#888;">
+                                        <t t-esc="str(c.date) if c.date else '&#8212;'"/>
+                                    </td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;">
+                                        <span t-att-style="'font-size:9px; font-weight:700; padding:2px 8px; ' + ('background:#D1FAE5; color:#15803d;' if c.state == 'paid' else ('background:#FEF3C7; color:#b45309;' if c.state == 'approved' else 'background:#F9FAFB; color:#888;'))">
+                                            <t t-esc="{'draft':'Borrador','approved':'Aprobada','paid':'Pagada','cancelled':'Cancelada'}.get(c.state, '&#8212;')"/>
                                         </span>
                                     </td>
                                 </tr>
                                 <t t-set="total_commission" t-value="total_commission + (c.amount or 0)"/>
                             </t>
                             <t t-if="not commissions">
-                                <tr><td colspan="7" style="padding:20px; text-align:center; color:#BDC3C7; font-style:italic;">Sin comisiones registradas</td></tr>
+                                <tr>
+                                    <td colspan="7" style="padding:20px; text-align:center; color:#aaa; font-style:italic;">
+                                        Sin comisiones registradas
+                                    </td>
+                                </tr>
                             </t>
                         </tbody>
                         <tfoot>
                             <tr style="background:#1C2B4A; color:white; font-weight:700;">
-                                <td colspan="4" style="padding:10px 12px; font-size:11px; letter-spacing:0.5px;">TOTAL COMISIONES</td>
-                                <td style="padding:10px 12px; text-align:right; font-size:14px; color:#F5A623;">$<t t-esc="'{:,.2f}'.format(total_commission)"/></td>
-                                <td colspan="2" style="padding:10px 12px; text-align:center; font-size:10px;"><t t-esc="len(commissions)"/> registros</td>
+                                <td colspan="4" style="padding:8px 10px; font-size:11px; letter-spacing:0.5px;">Total Comisiones</td>
+                                <td style="padding:8px 10px; text-align:right; font-size:14px; color:#FCD34D;">
+                                    $<t t-esc="'{:,.2f}'.format(total_commission)"/>
+                                </td>
+                                <td colspan="2" style="padding:8px 10px; text-align:center; font-size:10px;">
+                                    <t t-esc="len(commissions)"/> registros
+                                </td>
                             </tr>
                         </tfoot>
                     </table>
 
-                    <!-- Firmas -->
-                    <div style="display:flex; justify-content:space-between; margin-top:36px;">
-                        <div style="text-align:center; width:42%;">
-                            <div style="border-top:1px solid #BDC3C7; padding-top:8px; font-size:10px; color:#7F8C8D;">
-                                Firma del Asesor<br/><strong><t t-esc="doc.name"/></strong>
-                            </div>
-                        </div>
-                        <div style="text-align:center; width:42%;">
-                            <div style="border-top:1px solid #BDC3C7; padding-top:8px; font-size:10px; color:#7F8C8D;">
-                                Firma de Gerencia<br/><strong>Director(a) Comercial</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    <!-- ══ FIRMAS ════════════════════════════════════════════════════ -->
+                    <table style="width:100%; border-collapse:collapse; margin-top:44px;">
+                        <tr>
+                            <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px; color:#555;">
+                                Firma del Asesor<br/>
+                                <strong><t t-esc="doc.name"/></strong>
+                            </td>
+                            <td style="width:10%;"/>
+                            <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px; color:#555;">
+                                Firma de Gerencia<br/>
+                                <strong>Director(a) Comercial</strong>
+                            </td>
+                        </tr>
+                    </table>
 
-                <div style="position:fixed; bottom:0; left:0; right:0; padding:8px 32px; border-top:1px solid #E8EAED; display:flex; justify-content:space-between; font-size:9px; color:#95A5A6; background:white;">
-                    <div style="display:flex; gap:14px;">
-                        <t t-if="company.city"><span>📍 <t t-esc="company.city"/></span></t>
-                        <t t-if="company.phone"><span>📞 <t t-esc="company.phone"/></span></t>
-                        <t t-if="company.email"><span>✉ <t t-esc="company.email"/></span></t>
-                    </div>
-                    <span>Generado · <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></span>
+                    <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                            <tr>
+                                <td style="padding:5px 0; width:50%;">
+                                    <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
+                                    <t t-if="env.company.city"> &#183; <t t-esc="env.company.city"/></t>
+                                    <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                    <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
+                                </td>
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                    <t t-esc="env.company.name"/>
+                                </td>
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                    Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                </td>
+                            </tr>
+                        </table>
+
                 </div>
-                <div style="position:fixed; bottom:0; right:0; width:80px; height:80px; overflow:hidden;">
-                    <div style="position:absolute; bottom:-18px; right:-18px; width:70px; height:70px; background:#1C2B4A; transform:rotate(45deg); opacity:0.9;"/>
-                    <div style="position:absolute; bottom:-28px; right:18px; width:55px; height:55px; background:#C0392B; transform:rotate(45deg); opacity:0.8;"/>
-                </div>
-            </div>
         </t>
     </t>
 </template>
 
 
 <!-- ═══════════════════════════════════════════════════════════════════
-     REPORTES GENERALES (wizard)
+     REPORTE GENERAL (wizard)
 ════════════════════════════════════════════════════════════════════ -->
 <record id="action_report_estate_general" model="ir.actions.report">
     <field name="name">Reporte Inmobiliario</field>
@@ -627,181 +495,466 @@
     <field name="report_type">qweb-pdf</field>
     <field name="report_name">estate_reports.report_estate_general_template</field>
     <field name="report_file">estate_reports.report_estate_general_template</field>
+    <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
 </record>
 
 <template id="report_estate_general_template">
     <t t-call="web.html_container">
-        <t t-foreach="docs" t-as="doc">
-            <t t-set="company" t-value="env.company"/>
-            <div class="page" style="font-family:'Helvetica Neue',Arial,sans-serif; color:#2C3E50; position:relative; min-height:270mm; padding-bottom:40px;">
-                <t t-set="report_title" t-value="data.get('form', {}).get('title', 'REPORTE INMOBILIARIO')"/>
+        <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
+            <t t-set="form"         t-value="data.get('form', {}) if data else {}"/>
+            <t t-set="report_title" t-value="form.get('title', 'Reporte Inmobiliario')"/>
+            <t t-set="rtype"        t-value="form.get('report_type', '')"/>
+            <t t-set="_rec_model"   t-value="form.get('record_model', 'estate.property')"/>
+            <t t-set="_rec_ids"     t-value="form.get('record_ids', [])"/>
+            <t t-set="records"      t-value="env[_rec_model].browse(_rec_ids)"/>
 
-                <!-- HEADER -->
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:24px 32px 14px; border-bottom:3px solid #C0392B;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <t t-if="company.logo">
-                            <img t-att-src="image_data_uri(company.logo)" style="max-height:56px; max-width:130px; object-fit:contain;"/>
+            <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
+            <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                <tr>
+                    <td style="padding:10px 16px; vertical-align:middle; width:60%;">
+                        <t t-if="env.company.logo">
+                            <img t-att-src="image_data_uri(env.company.logo)" style="height:28px; max-width:110px;"/>
                         </t>
                         <t t-else="">
-                            <div style="width:110px; height:50px; background:#1C2B4A; border-radius:4px; display:flex; align-items:center; justify-content:center;">
-                                <span style="color:white; font-weight:700; font-size:14px; letter-spacing:2px;">INMOBI</span>
-                            </div>
+                            <span style="font-size:15px; font-weight:900; color:white;"><t t-esc="env.company.name"/></span>
                         </t>
-                    </div>
-                    <div style="text-align:right; font-size:11px; line-height:1.9; color:#2C3E50;">
-                        <div>📅 <strong>Fecha:</strong> <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></div>
-                        <t t-if="data.get('form', {}).get('date_from')">
-                            <div>📆 <strong>Período:</strong> <t t-esc="data['form'].get('date_from','')"/> → <t t-esc="data['form'].get('date_to','')"/></div>
-                        </t>
-                        <div>📋 <strong>Tipo:</strong> <span style="color:#C0392B; font-weight:700;">REPORTE</span></div>
-                    </div>
-                </div>
+                    </td>
+                    <td style="padding:10px 16px; vertical-align:middle; text-align:right; width:40%;">
+                        <div style="font-size:13px; font-weight:900; color:white; text-transform:uppercase; letter-spacing:2px;">
+                            <t t-esc="report_title"/>
+                        </div>
+                        <div style="font-size:9px; color:#a8bcdb; margin-top:3px;">
+                            <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                        </div>
+                    </td>
+                </tr>
+            </table>
 
-                <!-- TÍTULO -->
-                <div style="text-align:center; padding:16px 32px 10px;">
-                    <h1 style="font-size:20px; font-weight:900; color:#1C2B4A; letter-spacing:4px; margin:0 0 5px;"><t t-esc="report_title.upper()"/></h1>
-                    <div style="width:48px; height:3px; background:#C0392B; margin:0 auto;"/>
-                </div>
-
-                <div style="padding:0 32px 24px;">
-
-                    <!-- TABLA GENÉRICA (reusable para todos los tipos) -->
-                    <t t-set="records" t-value="data.get('form', {}).get('records', [])"/>
-                    <t t-set="rtype" t-value="data.get('form', {}).get('report_type', '')"/>
-
-                    <!-- Propiedades disponibles -->
-                    <t t-if="rtype == 'available_properties'">
-                        <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:11px;">
-                            <thead>
-                                <tr style="background:#1C2B4A; color:white;">
-                                    <th style="padding:10px 10px; text-align:left;">REFERENCIA</th>
-                                    <th style="padding:10px 10px; text-align:left;">TÍTULO</th>
-                                    <th style="padding:10px 10px;">TIPO</th>
-                                    <th style="padding:10px 10px;">CIUDAD</th>
-                                    <th style="padding:10px 10px; text-align:right;">PRECIO</th>
-                                    <th style="padding:10px 10px; text-align:right;">ÁREA m²</th>
-                                    <th style="padding:10px 10px; text-align:center;">HAB.</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="records" t-as="rec">
-                                    <tr t-att-style="'background:#F9FAFB' if rec_index % 2 == 0 else 'background:white'">
-                                        <td style="padding:8px 10px; font-family:monospace; font-size:10px; color:#1C2B4A;"><t t-esc="rec.name"/></td>
-                                        <td style="padding:8px 10px; font-weight:600;"><t t-esc="rec.title"/></td>
-                                        <td style="padding:8px 10px; text-align:center; font-size:10px; color:#7F8C8D;"><t t-esc="rec.property_type_id.name"/></td>
-                                        <td style="padding:8px 10px;"><t t-esc="rec.city or '—'"/></td>
-                                        <td style="padding:8px 10px; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
-                                        <td style="padding:8px 10px; text-align:right;"><t t-esc="rec.area or 0"/></td>
-                                        <td style="padding:8px 10px; text-align:center;"><t t-esc="rec.bedrooms or 0"/></td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                            <tfoot>
-                                <tr style="background:#1C2B4A; color:white; font-weight:700;">
-                                    <td colspan="7" style="padding:10px 10px; font-size:11px;">
-                                        TOTAL: <t t-esc="len(records)"/> propiedades
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+            <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
+            <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
+                <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Reporte Inmobiliario</div>
+                <div style="font-size:15px; font-weight:900; color:#1C2B4A;"><t t-esc="report_title"/></div>
+                <div style="font-size:9px; color:#666; margin-top:3px;">
+                    Generado: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                    <t t-if="form.get('date_from')">
+                        &#183; Per&#237;odo:
+                        <t t-esc="form.get('date_from','')"/> al <t t-esc="form.get('date_to','')"/>
                     </t>
-
-                    <!-- Reporte de ventas / alquiler / comisiones / contratos / pagos / clientes / AVM / marketing -->
-                    <t t-if="rtype in ('sales_report','rental_income','agent_commissions','active_contracts','pending_payments','active_clients','geographic_avm','marketing_roi')">
-                        <table style="width:100%; border-collapse:collapse; margin-bottom:16px; font-size:11px;">
-                            <thead>
-                                <tr style="background:#1C2B4A; color:white;">
-                                    <t t-if="rtype == 'sales_report'">
-                                        <th style="padding:10px;">REFERENCIA</th><th style="padding:10px;">CLIENTE</th><th style="padding:10px;">PROPIEDAD</th><th style="padding:10px;">FECHA</th><th style="padding:10px; text-align:right;">MONTO</th>
-                                    </t>
-                                    <t t-if="rtype == 'rental_income'">
-                                        <th style="padding:10px;">REFERENCIA</th><th style="padding:10px;">CLIENTE</th><th style="padding:10px;">PROPIEDAD</th><th style="padding:10px; text-align:right;">MONTO</th><th style="padding:10px;">FECHA PAGO</th>
-                                    </t>
-                                    <t t-if="rtype == 'agent_commissions'">
-                                        <th style="padding:10px;">ASESOR</th><th style="padding:10px;">PROPIEDAD</th><th style="padding:10px;">FECHA CIERRE</th><th style="padding:10px; text-align:right;">VENTA</th><th style="padding:10px; text-align:center;">%</th><th style="padding:10px; text-align:right; color:#F5A623;">COMISIÓN</th>
-                                    </t>
-                                    <t t-if="rtype == 'active_contracts'">
-                                        <th style="padding:10px;">REFERENCIA</th><th style="padding:10px;">TIPO</th><th style="padding:10px;">CLIENTE</th><th style="padding:10px;">PROPIEDAD</th><th style="padding:10px;">INICIO</th><th style="padding:10px;">FIN</th>
-                                    </t>
-                                    <t t-if="rtype == 'pending_payments'">
-                                        <th style="padding:10px;">REFERENCIA</th><th style="padding:10px;">CLIENTE</th><th style="padding:10px;">PROPIEDAD</th><th style="padding:10px; text-align:right;">MONTO</th><th style="padding:10px;">VENCIMIENTO</th><th style="padding:10px;">ESTADO</th>
-                                    </t>
-                                    <t t-if="rtype == 'active_clients'">
-                                        <th style="padding:10px;">NOMBRE</th><th style="padding:10px;">EMAIL</th><th style="padding:10px;">CELULAR</th><th style="padding:10px;">ASESOR</th>
-                                    </t>
-                                    <t t-if="rtype == 'geographic_avm'">
-                                        <th style="padding:10px;">CÓDIGO</th><th style="padding:10px;">CIUDAD</th><th style="padding:10px; text-align:center;">DÍAS MERCADO</th><th style="padding:10px; text-align:right;">ÁREA m²</th><th style="padding:10px; text-align:right;">PRECIO</th>
-                                    </t>
-                                    <t t-if="rtype == 'marketing_roi'">
-                                        <th style="padding:10px;">LEAD</th><th style="padding:10px;">CONTACTO</th><th style="padding:10px;">FUENTE</th><th style="padding:10px;">ASESOR / ETAPA</th><th style="padding:10px; text-align:right;">INGRESO PROY.</th>
-                                    </t>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-set="grand_total" t-value="0"/>
-                                <t t-foreach="records" t-as="rec">
-                                    <tr t-att-style="'background:#F9FAFB' if rec_index % 2 == 0 else 'background:white'">
-                                        <t t-if="rtype == 'sales_report'">
-                                            <td style="padding:8px 10px; font-family:monospace; font-size:10px;"><t t-esc="rec.name"/></td>
-                                            <td style="padding:8px 10px;"><t t-esc="rec.client_id.name if hasattr(rec,'client_id') else rec.partner_id.name if hasattr(rec,'partner_id') else '—'"/></td>
-                                            <td style="padding:8px 10px; font-weight:600;"><t t-esc="rec.property_id.title if rec.property_id else '—'"/></td>
-                                            <td style="padding:8px 10px; color:#7F8C8D;"><t t-esc="str(rec.date_start or '—')"/></td>
-                                            <td style="padding:8px 10px; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.2f}'.format(rec.amount or 0)"/></td>
-                                            <t t-set="grand_total" t-value="grand_total + (rec.amount or 0)"/>
-                                        </t>
-                                        <t t-if="rtype == 'agent_commissions'">
-                                            <td style="padding:8px 10px; font-weight:600;"><t t-esc="rec.user_id.name or '—'"/></td>
-                                            <td style="padding:8px 10px;"><t t-esc="rec.title or rec.name"/></td>
-                                            <td style="padding:8px 10px; color:#7F8C8D;"><t t-esc="str(rec.date_sold or '—')"/></td>
-                                            <td style="padding:8px 10px; text-align:right;">$<t t-esc="'{:,.2f}'.format(rec.price or 0)"/></td>
-                                            <td style="padding:8px 10px; text-align:center;"><t t-esc="'%.1f' % (rec.commission_percentage or 0)"/>%</td>
-                                            <td style="padding:8px 10px; text-align:right; font-weight:700; color:#27AE60;">$<t t-esc="'{:,.2f}'.format(rec.commission_amount or 0)"/></td>
-                                            <t t-set="grand_total" t-value="grand_total + (rec.commission_amount or 0)"/>
-                                        </t>
-                                        <t t-if="rtype == 'active_clients'">
-                                            <td style="padding:8px 10px; font-weight:600;"><t t-esc="rec.partner_id.name if hasattr(rec,'partner_id') else rec.name"/></td>
-                                            <td style="padding:8px 10px; color:#7F8C8D;"><t t-esc="rec.email_from or '—'"/></td>
-                                            <td style="padding:8px 10px;"><t t-esc="rec.phone or '—'"/></td>
-                                            <td style="padding:8px 10px;"><t t-esc="rec.user_id.name if rec.user_id else '—'"/></td>
-                                        </t>
-                                        <t t-if="rtype == 'geographic_avm'">
-                                            <td style="padding:8px 10px; font-family:monospace; font-size:10px;"><t t-esc="rec.name"/></td>
-                                            <td style="padding:8px 10px; font-weight:600;"><t t-esc="rec.city or '—'"/></td>
-                                            <td style="padding:8px 10px; text-align:center;"><t t-esc="rec.days_on_market or 0"/> días</td>
-                                            <td style="padding:8px 10px; text-align:right;"><t t-esc="rec.area or 0"/> m²</td>
-                                            <td style="padding:8px 10px; text-align:right; font-weight:700;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
-                                        </t>
-                                    </tr>
-                                </t>
-                            </tbody>
-                            <t t-if="grand_total > 0">
-                                <tfoot>
-                                    <tr style="background:#1C2B4A; color:white; font-weight:700;">
-                                        <td colspan="4" style="padding:10px 10px; font-size:11px; letter-spacing:0.5px;">TOTAL</td>
-                                        <td style="padding:10px 10px; text-align:right; font-size:13px; color:#F5A623;">$<t t-esc="'{:,.2f}'.format(grand_total)"/></td>
-                                        <t t-if="rtype == 'agent_commissions'"><td/></t>
-                                    </tr>
-                                </tfoot>
-                            </t>
-                        </table>
-                    </t>
-
-                </div>
-
-                <div style="position:fixed; bottom:0; left:0; right:0; padding:8px 32px; border-top:1px solid #E8EAED; display:flex; justify-content:space-between; font-size:9px; color:#95A5A6; background:white;">
-                    <div style="display:flex; gap:14px;">
-                        <t t-if="company.city"><span>📍 <t t-esc="company.city"/></span></t>
-                        <t t-if="company.phone"><span>📞 <t t-esc="company.phone"/></span></t>
-                        <t t-if="company.email"><span>✉ <t t-esc="company.email"/></span></t>
-                    </div>
-                    <span>Generado · <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></span>
-                </div>
-                <div style="position:fixed; bottom:0; right:0; width:80px; height:80px; overflow:hidden;">
-                    <div style="position:absolute; bottom:-18px; right:-18px; width:70px; height:70px; background:#1C2B4A; transform:rotate(45deg); opacity:0.9;"/>
-                    <div style="position:absolute; bottom:-28px; right:18px; width:55px; height:55px; background:#C0392B; transform:rotate(45deg); opacity:0.8;"/>
                 </div>
             </div>
-        </t>
+
+            <!-- ══ PROPIEDADES DISPONIBLES ════════════════════════════════ -->
+            <t t-if="rtype == 'available_properties'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Propiedades Disponibles
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; text-align:left; font-weight:700;">Referencia</th>
+                            <th style="padding:7px 10px; text-align:left; font-weight:700;">T&#237;tulo</th>
+                            <th style="padding:7px 10px; text-align:left; font-weight:700;">Tipo</th>
+                            <th style="padding:7px 10px; text-align:left; font-weight:700;">Ciudad</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Precio (USD)</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">&#193;rea m&#178;</th>
+                            <th style="padding:7px 10px; text-align:center; font-weight:700;">Hab.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="total_price" t-value="0"/>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-family:monospace; font-size:9px; color:#1C2B4A;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.title or rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.property_type_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.city or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;"><t t-esc="rec.area or 0"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;"><t t-esc="rec.bedrooms or 0"/></td>
+                                <t t-set="total_price" t-value="total_price + (rec.price or 0)"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="4" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> propiedades</td>
+                            <td style="padding:8px 10px; text-align:right; color:#FCD34D;">$<t t-esc="'{:,.0f}'.format(total_price)"/></td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ VENTAS POR PERÍODO ════════════════════════════════════ -->
+            <t t-if="rtype == 'sales_period'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Ventas por Per&#237;odo
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Referencia</th>
+                            <th style="padding:7px 10px; font-weight:700;">T&#237;tulo</th>
+                            <th style="padding:7px 10px; font-weight:700;">Ciudad</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Precio Venta</th>
+                            <th style="padding:7px 10px; font-weight:700;">Fecha Venta</th>
+                            <th style="padding:7px 10px; font-weight:700;">Asesor</th>
+                            <th style="padding:7px 10px; text-align:center; font-weight:700;">D&#237;as Mercado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="grand_total" t-value="0"/>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-family:monospace; font-size:9px;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.title or rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.city or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.date_sold or '&#8212;')"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.user_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;"><t t-esc="rec.days_on_market or '&#8212;'"/></td>
+                                <t t-set="grand_total" t-value="grand_total + (rec.price or 0)"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="3" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> ventas</td>
+                            <td style="padding:8px 10px; text-align:right; color:#FCD34D;">$<t t-esc="'{:,.0f}'.format(grand_total)"/></td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ TIEMPO DE VENTA ═══════════════════════════════════════ -->
+            <t t-if="rtype == 'time_to_sell'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Tiempo de Venta de Propiedades
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Referencia</th>
+                            <th style="padding:7px 10px; font-weight:700;">T&#237;tulo</th>
+                            <th style="padding:7px 10px; font-weight:700;">Ciudad</th>
+                            <th style="padding:7px 10px; font-weight:700;">Tipo</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Precio</th>
+                            <th style="padding:7px 10px; font-weight:700;">Fecha Publicaci&#243;n</th>
+                            <th style="padding:7px 10px; font-weight:700;">Fecha Venta</th>
+                            <th style="padding:7px 10px; text-align:center; font-weight:700;">D&#237;as Mercado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="total_days" t-value="0"/>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-family:monospace; font-size:9px;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.title or rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.city or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.property_type_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.date_listed or '&#8212;')"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.date_sold or '&#8212;')"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center; font-weight:700;"><t t-esc="rec.days_on_market or 0"/> d</td>
+                                <t t-set="total_days" t-value="total_days + (rec.days_on_market or 0)"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="7" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> propiedades</td>
+                            <td style="padding:8px 10px; text-align:center; color:#FCD34D;"><t t-esc="round(total_days / len(records), 1) if records else 0"/> d promedio</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ VISITAS / CITAS ════════════════════════════════════════ -->
+            <t t-if="rtype == 'visits_report'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Visitas y Citas Realizadas
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Fecha</th>
+                            <th style="padding:7px 10px; font-weight:700;">Propiedad</th>
+                            <th style="padding:7px 10px; font-weight:700;">Cliente</th>
+                            <th style="padding:7px 10px; font-weight:700;">Asesor</th>
+                            <th style="padding:7px 10px; font-weight:700;">Tipo</th>
+                            <th style="padding:7px 10px; font-weight:700;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.start)[:16] if rec.start else '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.property_id.title or rec.property_id.name if rec.property_id else rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.partner_id.name if rec.partner_id else '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.user_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.appointment_type or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.visit_state or '&#8212;'"/></td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="6" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> citas</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ CONTRATOS POR VENCER ══════════════════════════════════ -->
+            <t t-if="rtype == 'contracts_expiring'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Contratos por Vencer
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Referencia</th>
+                            <th style="padding:7px 10px; font-weight:700;">T&#237;tulo</th>
+                            <th style="padding:7px 10px; font-weight:700;">Propietario</th>
+                            <th style="padding:7px 10px; font-weight:700;">Asesor</th>
+                            <th style="padding:7px 10px; font-weight:700;">Vencimiento</th>
+                            <th style="padding:7px 10px; text-align:center; font-weight:700;">D&#237;as Restantes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-family:monospace; font-size:9px;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.title or rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.owner_id.name if rec.owner_id else '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.user_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.contract_end_date or '&#8212;')"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center; font-weight:700;
+                                    color:#DC2626;" t-if="rec.contract_end_date">
+                                    <t t-esc="(rec.contract_end_date - datetime.date.today()).days"/>
+                                </td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;" t-else="">&#8212;</td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="6" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> contratos</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ COMISIONES POR ASESOR ══════════════════════════════════ -->
+            <t t-if="rtype == 'agent_commissions'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Desempe&#241;o y Comisiones de Asesores
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Asesor</th>
+                            <th style="padding:7px 10px; font-weight:700;">Propiedad Vendida</th>
+                            <th style="padding:7px 10px; font-weight:700;">Fecha</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Precio Venta</th>
+                            <th style="padding:7px 10px; text-align:center; font-weight:700;">%</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Comisi&#243;n</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="grand_total" t-value="0"/>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.user_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.title or rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.date_sold or '&#8212;')"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;">$<t t-esc="'{:,.2f}'.format(rec.price or 0)"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;"><t t-esc="'%.1f' % (rec.commission_percentage or 0)"/>%</td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#15803d;">$<t t-esc="'{:,.2f}'.format(rec.commission_amount or 0)"/></td>
+                                <t t-set="grand_total" t-value="grand_total + (rec.commission_amount or 0)"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="5" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> ventas</td>
+                            <td style="padding:8px 10px; text-align:right; color:#FCD34D;">$<t t-esc="'{:,.2f}'.format(grand_total)"/></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ CLIENTES ACTIVOS ══════════════════════════════════════ -->
+            <t t-if="rtype == 'active_clients'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Clientes Activos (Oportunidades)
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Iniciativa</th>
+                            <th style="padding:7px 10px; font-weight:700;">Contacto</th>
+                            <th style="padding:7px 10px; font-weight:700;">Email</th>
+                            <th style="padding:7px 10px; font-weight:700;">Tel&#233;fono</th>
+                            <th style="padding:7px 10px; font-weight:700;">Etapa</th>
+                            <th style="padding:7px 10px; font-weight:700;">Asesor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.partner_name or rec.contact_name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.email_from or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.phone or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.stage_id.name or 'Nuevo'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.user_id.name or '&#8212;'"/></td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="6" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> oportunidades</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ AN&#193;LISIS GEOGR&#193;FICO Y AVM ══════════════════════════════ -->
+            <t t-if="rtype == 'geographic_avm'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    An&#225;lisis Geogr&#225;fico y Mercado (AVM)
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">C&#243;digo</th>
+                            <th style="padding:7px 10px; font-weight:700;">Ciudad</th>
+                            <th style="padding:7px 10px; font-weight:700;">Tipo</th>
+                            <th style="padding:7px 10px; text-align:center; font-weight:700;">D&#237;as Mercado</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">&#193;rea m&#178;</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Precio (USD)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-family:monospace; font-size:9px;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.city or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.property_type_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;"><t t-esc="rec.days_on_market or 0"/> d&#237;as</td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;"><t t-esc="rec.area or 0"/> m&#178;</td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="6" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> propiedades</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ RETORNO DE MARKETING ══════════════════════════════════ -->
+            <t t-if="rtype == 'marketing_roi'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Retorno de Marketing (Or&#237;genes de Leads)
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Iniciativa</th>
+                            <th style="padding:7px 10px; font-weight:700;">Contacto</th>
+                            <th style="padding:7px 10px; font-weight:700;">Origen (UTM)</th>
+                            <th style="padding:7px 10px; font-weight:700;">Etapa</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Ingreso Esperado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-set="grand_total" t-value="0"/>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.partner_name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.source_id.name if rec.source_id else 'Directo'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.stage_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700;">$<t t-esc="'{:,.0f}'.format(rec.expected_revenue or 0)"/></td>
+                                <t t-set="grand_total" t-value="grand_total + (rec.expected_revenue or 0)"/>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="4" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> leads</td>
+                            <td style="padding:8px 10px; text-align:right; color:#FCD34D;">$<t t-esc="'{:,.0f}'.format(grand_total)"/></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ OCUPACI&#211;N DE ARRIENDOS ══════════════════════════════ -->
+            <t t-if="rtype == 'occupancy_report'">
+                <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">
+                    Contratos Activos de Arriendo
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:10px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                    <thead>
+                        <tr style="background:#263d61; color:white;">
+                            <th style="padding:7px 10px; font-weight:700;">Propiedad</th>
+                            <th style="padding:7px 10px; font-weight:700;">Ciudad</th>
+                            <th style="padding:7px 10px; font-weight:700;">Inquilino</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Renta Mensual</th>
+                            <th style="padding:7px 10px; font-weight:700;">Inicio</th>
+                            <th style="padding:7px 10px; font-weight:700;">Fin</th>
+                            <th style="padding:7px 10px; text-align:center; font-weight:700;">D&#237;as Restantes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="records" t-as="rec">
+                            <t t-set="prop" t-value="rec.property_id"/>
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="prop.title or prop.name if prop else '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="prop.city if prop else '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.partner_id.name if rec.partner_id else '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700;">$<t t-esc="'{:,.2f}'.format(rec.amount or 0)"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.date_start or '&#8212;')"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="str(rec.date_end or '&#8212;')"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;">
+                                    <t t-if="rec.date_end"><t t-esc="(rec.date_end - datetime.date.today()).days"/></t>
+                                    <t t-else="">&#8212;</t>
+                                </td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <td colspan="7" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> contratos activos</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
+            <!-- ══ PIE ═══════════════════════════════════════════════════ -->
+            <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                <tr>
+                    <td style="padding:5px 0; width:50%;">
+                        <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
+                        <t t-if="env.company.city"> &#183; <t t-esc="env.company.city"/></t>
+                        <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                        <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
+                    </td>
+                    <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                        <t t-esc="env.company.name"/>
+                    </td>
+                    <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                        Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
     </t>
 </template>
 

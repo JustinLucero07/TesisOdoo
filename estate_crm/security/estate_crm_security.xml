@@ -1,6 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- ================================================================
+         INTEGRACIÓN CRM — grupos estándar
+         Habilita el pipeline de leads para asesores y gerentes.
+         Se define aquí porque 'crm' es dependencia de estate_crm,
+         no de estate_management.
+         ================================================================ -->
+
+    <!-- Asesor: pipeline de leads habilitado, acceso a CRM propio -->
+    <record id="estate_management.estate_group_agent" model="res.groups">
+        <field name="implied_ids" eval="[
+            (4, ref('crm.group_use_lead')),
+        ]"/>
+    </record>
+
+    <!-- Marketing: ve el pipeline de leads (visibilidad full, sin edición financiera) -->
+    <record id="estate_management.estate_group_marketing" model="res.groups">
+        <field name="implied_ids" eval="[
+            (4, ref('crm.group_use_lead')),
+        ]"/>
+    </record>
+
+    <!-- Gerente: hereda asesor + habilita ingresos recurrentes (útil para arriendos) -->
+    <record id="estate_management.estate_group_manager" model="res.groups">
+        <field name="implied_ids" eval="[
+            (4, ref('crm.group_use_lead')),
+            (4, ref('crm.group_use_recurring_revenues')),
+        ]"/>
+    </record>
+
     <data noupdate="1">
+
+        <!-- LEAD CRM: agente ve solo sus leads asignados -->
+        <record id="rule_crm_lead_agent" model="ir.rule">
+            <field name="name">Lead: agente ve solo los asignados a él</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+        <record id="rule_crm_lead_manager" model="ir.rule">
+            <field name="name">Lead: manager/admin ven todos</field>
+            <field name="model_id" ref="crm.model_crm_lead"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_manager'))]"/>
+        </record>
 
         <!-- INTERACCIÓN: agente ve solo las suyas -->
         <record id="rule_interaction_agent" model="ir.rule">

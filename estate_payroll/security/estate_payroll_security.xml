@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ================================================================
+         NÓMINA INMOBILIARIA — Reglas de acceso a nivel de registro
+         Asesor  : solo ve y descarga su propia línea de nómina
+         Gerente : ve, crea y gestiona la nómina de todos
+         Admin   : acceso total incluido borrado
+         ================================================================ -->
+    <data noupdate="1">
+
+        <record id="rule_payroll_agent" model="ir.rule">
+            <field name="name">Nómina: asesor ve solo la suya</field>
+            <field name="model_id" ref="model_estate_payroll_line"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_agent'))]"/>
+            <field name="perm_read"   eval="True"/>
+            <field name="perm_write"  eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="rule_payroll_manager" model="ir.rule">
+            <field name="name">Nómina: gerente/admin ve todas</field>
+            <field name="model_id" ref="model_estate_payroll_line"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_management.estate_group_manager'))]"/>
+        </record>
+
+    </data>
+</odoo>

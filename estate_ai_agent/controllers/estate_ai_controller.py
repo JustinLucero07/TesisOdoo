@@ -733,7 +733,7 @@ def _parse_gemini_error(err_str):
         # Quota type
         if 'free_tier' in err_str or 'FreeTier' in err_str:
             msg = (
-                f'⚠️ **Cuota gratuita agotada** — el plan gratuito de Gemini solo permite '
+                f'**Cuota gratuita agotada** — el plan gratuito de Gemini solo permite '
                 f'**20 requests/día**.\n\n'
                 f'**Opciones:**\n'
                 f'- Espera ~{secs}s e intenta de nuevo\n'
@@ -744,7 +744,7 @@ def _parse_gemini_error(err_str):
             )
         else:
             msg = (
-                f'⚠️ **Límite de requests alcanzado** (429). '
+                f'**Límite de requests alcanzado** (429). '
                 f'Espera {secs} segundos e intenta de nuevo.'
             )
         return '429', msg, secs
@@ -763,7 +763,7 @@ class EstateAIController(http.Controller):
         ICP = request.env['ir.config_parameter'].sudo()
         ai_active = ICP.get_param('estate_ai.active', 'True')
         if ai_active != 'True':
-            return {'response': '⚠️ El agente IA está desactivado. Contacte al administrador.'}
+            return {'response': 'El agente IA está desactivado. Contacte al administrador.'}
 
         provider = ICP.get_param('estate_ai.provider', 'chatgpt')
         api_key = ICP.get_param('estate_ai.api_key', '')
@@ -774,7 +774,7 @@ class EstateAIController(http.Controller):
         system_prompt = ICP.get_param('estate_ai.system_prompt', '')
 
         if not api_key:
-            return {'response': '⚠️ No se ha configurado la API Key. Vaya a Configuración > Agente IA.'}
+            return {'response': 'No se ha configurado la API Key. Vaya a Configuración > Agente IA.'}
 
         context_data = self._get_system_context()
         user_lang = request.env.user.lang or 'es_EC'
@@ -881,7 +881,7 @@ INSTRUCCIONES DE RESPUESTA:
    Cuando pida "tasaciones", usa appraisals_by_state.
    Cuando pida "Facebook/Instagram", usa social_facebook o social_instagram.
 6. ACCIONES DESTRUCTIVAS (archivar, cancelar, eliminar masivo): ANTES de ejecutar, responde con:
-   "⚠️ CONFIRMACIÓN REQUERIDA: Estás a punto de [acción]. ¿Confirmas? (responde 'sí confirmo')"
+   "CONFIRMACIÓN REQUERIDA: Estás a punto de [acción]. ¿Confirmas? (responde 'sí confirmo')"
    Solo ejecuta cuando el usuario confirme explícitamente.
 7. Si detectas alertas críticas (pagos vencidos, leads sin actividad), menciónalas proactivamente.
 8. Usa save_memory para guardar preferencias o datos importantes del usuario para futuras sesiones.
@@ -902,11 +902,11 @@ INSTRUCCIONES DE RESPUESTA:
                     api_key, model, temperature, max_tokens,
                     full_system_prompt, message, conversation_history)
             else:
-                response = '❌ Proveedor de IA no soportado.'
+                response = 'Proveedor de IA no soportado.'
         except Exception as e:
             err_safe = _redact(str(e), api_key)
             _logger.error("Error en agente IA: %s", err_safe)
-            response = f'❌ Error al procesar la consulta: {err_safe}'
+            response = f'Error al procesar la consulta: {err_safe}'
 
         processing_time = time.time() - start_time
         request.env['estate.ai.chat.history'].sudo().create({
@@ -1049,7 +1049,7 @@ INSTRUCCIONES DE RESPUESTA:
                 lead = env['crm.lead'].sudo().create(vals)
                 # Post a note if city provided
                 if args.get('city'):
-                    lead.message_post(body=f"🤖 Agente IA — Ciudad buscada: {args['city']}")
+                    lead.message_post(body=f"Agente IA — Ciudad buscada: {args['city']}")
                 return json.dumps({
                     'success': True,
                     'lead_id': lead.id,
@@ -1113,7 +1113,7 @@ INSTRUCCIONES DE RESPUESTA:
                 if vals:
                     lead.write(vals)
                 if args.get('notes'):
-                    lead.message_post(body=f"🤖 Agente IA: {args['notes']}")
+                    lead.message_post(body=f"Agente IA: {args['notes']}")
                 return json.dumps({
                     'success': True,
                     'mensaje': f"Lead #{lead_id} '{lead.name}' actualizado correctamente.",
@@ -1209,7 +1209,7 @@ INSTRUCCIONES DE RESPUESTA:
                 if vals:
                     prop.write(vals)
                 if args.get('notes'):
-                    prop.message_post(body=f"🤖 Agente IA: {args['notes']}")
+                    prop.message_post(body=f"Agente IA: {args['notes']}")
                 return json.dumps({
                     'success': True,
                     'property_id': prop.id,
@@ -1222,7 +1222,7 @@ INSTRUCCIONES DE RESPUESTA:
                 if not args.get('confirmed'):
                     return json.dumps({
                         'requiere_confirmacion': True,
-                        'mensaje': '⚠️ CONFIRMACIÓN REQUERIDA: Esta acción eliminará la propiedad PERMANENTEMENTE y no se puede deshacer. Responde "sí confirmo" para continuar.',
+                        'mensaje': 'CONFIRMACIÓN REQUERIDA: Esta acción eliminará la propiedad PERMANENTEMENTE y no se puede deshacer. Responde "sí confirmo" para continuar.',
                     })
                 property_id = int(args.get('property_id', 0))
                 prop = env['estate.property'].sudo().browse(property_id)
@@ -1293,7 +1293,7 @@ INSTRUCCIONES DE RESPUESTA:
                 if args.get('lead_id'):
                     lead = env['crm.lead'].sudo().browse(int(args['lead_id']))
                     if lead.exists():
-                        lead.message_post(body=f"🗓️ Visita agendada para {start_dt.strftime('%d/%m/%Y %H:%M')} — Propiedad: {prop.title}")
+                        lead.message_post(body=f"Visita agendada para {start_dt.strftime('%d/%m/%Y %H:%M')} — Propiedad: {prop.title}")
                 return json.dumps({
                     'success': True,
                     'event_id': event.id,
@@ -1317,7 +1317,7 @@ INSTRUCCIONES DE RESPUESTA:
                 note = args.get('notes', 'Reservada vía Agente IA')
                 if args.get('buyer_name'):
                     note += f" — Comprador: {args['buyer_name']}"
-                prop.message_post(body=f"🤖 {note}")
+                prop.message_post(body=f"{note}")
                 return json.dumps({
                     'success': True,
                     'mensaje': f"Propiedad '{prop.title}' marcada como RESERVADA.",
@@ -1339,7 +1339,7 @@ INSTRUCCIONES DE RESPUESTA:
                 prop.write(vals)
                 estado_str = 'VENDIDA' if vals['state'] == 'sold' else 'ALQUILADA'
                 note = args.get('notes', f"Cerrada como {estado_str} vía Agente IA")
-                prop.message_post(body=f"🤖 {note}")
+                prop.message_post(body=f"{note}")
                 return json.dumps({
                     'success': True,
                     'mensaje': f"Propiedad '{prop.title}' marcada como {estado_str}. Precio final: ${prop.price:,.2f}",
@@ -1388,7 +1388,7 @@ INSTRUCCIONES DE RESPUESTA:
                     return json.dumps({'error': f'Lead {lead_id} no encontrado'})
                 nombre = lead.name
                 reason = args.get('reason', 'Archivado vía Agente IA')
-                lead.message_post(body=f"🤖 Archivado: {reason}")
+                lead.message_post(body=f"Archivado: {reason}")
                 lead.write({'active': False})
                 return json.dumps({
                     'success': True,
@@ -1512,9 +1512,9 @@ INSTRUCCIONES DE RESPUESTA:
                     'alertas': [],
                 }
                 if stagnant:
-                    summary['alertas'].append(f"⚠️ {len(stagnant)} propiedad(es) llevan 45+ días sin vender")
+                    summary['alertas'].append(f"{len(stagnant)} propiedad(es) llevan 45+ días sin vender")
                 if hot_leads:
-                    summary['alertas'].append(f"🔥 {len(hot_leads)} lead(s) calientes/hirviendo esperan atención")
+                    summary['alertas'].append(f"{len(hot_leads)} lead(s) calientes/hirviendo esperan atención")
                 return json.dumps(summary, ensure_ascii=False, default=str)
 
             elif tool_name == 'get_report_data':
@@ -1578,7 +1578,7 @@ INSTRUCCIONES DE RESPUESTA:
                     return json.dumps({
                         'success': True, 'url': url,
                         'filas': row - 5,
-                        'mensaje': f"✅ Excel generado con {row - 5} filas → [**Descargar {fname}**]({url})",
+                        'mensaje': f"Excel generado con {row - 5} filas → [Descargar {fname}]({url})",
                     })
                 except ImportError:
                     return json.dumps({'error': 'openpyxl no instalado. Ejecuta: pip install openpyxl'})
@@ -1645,7 +1645,7 @@ INSTRUCCIONES DE RESPUESTA:
                 if args.get('notes'):
                     contract_vals['notes'] = args['notes']
                 contract = env['estate.contract'].sudo().create(contract_vals)
-                contract.message_post(body='🤖 Contrato creado por el Agente IA.')
+                contract.message_post(body='Contrato creado por el Agente IA.')
                 return json.dumps({'success': True, 'contract_id': contract.id,
                     'ref': contract.name,
                     'mensaje': f"Contrato {contract.name} creado para '{partner.name}' — {prop.title} — ${float(args['amount']):,.2f}"})
@@ -1664,7 +1664,7 @@ INSTRUCCIONES DE RESPUESTA:
                 if args.get('amount'):
                     contract.write({'amount': float(args['amount'])})
                 note = args.get('notes', f'Actualizado vía Agente IA: {action}')
-                contract.message_post(body=f'🤖 {note}')
+                contract.message_post(body=f'{note}')
                 return json.dumps({'success': True,
                     'mensaje': f"Contrato {contract.name} actualizado — acción: {action}"})
 
@@ -1692,7 +1692,7 @@ INSTRUCCIONES DE RESPUESTA:
                     return json.dumps({'error': f"Pago {args['payment_id']} no encontrado"})
                 payment.action_confirm()
                 return json.dumps({'success': True,
-                    'mensaje': f"Pago {payment.name} de ${payment.amount:,.2f} marcado como PAGADO ✅"})
+                    'mensaje': f"Pago {payment.name} de ${payment.amount:,.2f} marcado como pagado"})
 
             elif tool_name == 'create_offer':
                 prop = env['estate.property'].sudo().browse(int(args['property_id']))
@@ -1740,7 +1740,7 @@ INSTRUCCIONES DE RESPUESTA:
                 action = args.get('action', 'approve')
                 new_state = 'approved' if action == 'approve' else 'paid'
                 comm.write({'state': new_state})
-                label = 'APROBADA ✅' if new_state == 'approved' else 'PAGADA 💰'
+                label = 'APROBADA' if new_state == 'approved' else 'PAGADA'
                 return json.dumps({'success': True,
                     'mensaje': f"Comisión {comm.name} de ${comm.amount:,.2f} marcada como {label}"})
 
@@ -1773,7 +1773,7 @@ INSTRUCCIONES DE RESPUESTA:
                 })
                 url = f'/web/content/{attachment.id}?download=true'
                 return json.dumps({'success': True, 'url': url,
-                    'mensaje': f"PDF generado ✅ → [Descargar aquí]({url})"})
+                    'mensaje': f"PDF generado → [Descargar aquí]({url})"})
 
             # ── A4: Archivar ───────────────────────────────────────────────────
             elif tool_name == 'archive_property':
@@ -1782,7 +1782,7 @@ INSTRUCCIONES DE RESPUESTA:
                     return json.dumps({'error': f"Propiedad {args['property_id']} no encontrada"})
                 title = prop.title
                 reason = args.get('reason', 'Archivada vía Agente IA')
-                prop.message_post(body=f'🤖 Archivada: {reason}')
+                prop.message_post(body=f'Archivada: {reason}')
                 prop.write({'active': False})
                 return json.dumps({'success': True,
                     'mensaje': f"Propiedad '{title}' archivada. Motivo: {reason}"})
@@ -1792,7 +1792,7 @@ INSTRUCCIONES DE RESPUESTA:
                 if not payment.exists():
                     return json.dumps({'error': f"Pago {args['payment_id']} no encontrado"})
                 reason = args.get('reason', 'Cancelado vía Agente IA')
-                payment.message_post(body=f'🤖 Cancelado: {reason}')
+                payment.message_post(body=f'Cancelado: {reason}')
                 payment.action_cancel()
                 return json.dumps({'success': True,
                     'mensaje': f"Pago {payment.name} anulado. Motivo: {reason}"})
@@ -1818,7 +1818,7 @@ INSTRUCCIONES DE RESPUESTA:
                         props.write(vals)
                     note = args.get('notes', f'Precio ajustado {args["new_price_pct"]}% vía Agente IA')
                     for p in props:
-                        p.message_post(body=f'🤖 Lote: {note}')
+                        p.message_post(body=f'Lote: {note}')
                     return json.dumps({'success': True,
                         'affected': len(props),
                         'mensaje': f"{len(props)} propiedades actualizadas — precio {args['new_price_pct']}%"})
@@ -1826,7 +1826,7 @@ INSTRUCCIONES DE RESPUESTA:
                     props.write(vals)
                 note = args.get('notes', 'Actualización masiva vía Agente IA')
                 for p in props:
-                    p.message_post(body=f'🤖 Lote: {note}')
+                    p.message_post(body=f'Lote: {note}')
                 return json.dumps({'success': True, 'affected': len(props),
                     'mensaje': f"{len(props)} propiedades actualizadas: {list(vals.keys())}"})
 
@@ -1843,7 +1843,7 @@ INSTRUCCIONES DE RESPUESTA:
                     return json.dumps({'error': 'No se encontraron leads con esos criterios'})
                 reason = args.get('reason', 'Archivado masivo vía Agente IA')
                 for l in leads:
-                    l.message_post(body=f'🤖 Archivado: {reason}')
+                    l.message_post(body=f'Archivado: {reason}')
                 leads.write({'active': False})
                 return json.dumps({'success': True, 'affected': len(leads),
                     'mensaje': f"{len(leads)} leads archivados. Motivo: {reason}"})
@@ -2005,7 +2005,7 @@ INSTRUCCIONES DE RESPUESTA:
                     'memory_type': args.get('memory_type', 'fact'),
                 })
                 return json.dumps({'success': True, 'memory_id': mem.id,
-                    'mensaje': f"Memorizado ✅: {args['content'][:80]}"})
+                    'mensaje': f"Memorizado: {args['content'][:80]}"})
 
             elif tool_name == 'recall_memory':
                 if 'estate.ai.memory' not in env:
@@ -2116,7 +2116,7 @@ INSTRUCCIONES DE RESPUESTA:
                     trends['ventas'] = {
                         cur_label: cur_sales, prev_label: prev_sales,
                         'variacion': f"{'+' if delta >= 0 else ''}{delta}",
-                        'tendencia': '📈' if delta > 0 else ('📉' if delta < 0 else '➡️'),
+                        'tendencia': 'subida' if delta > 0 else ('bajada' if delta < 0 else 'igual'),
                     }
 
                 if metric in ('leads', 'all'):
@@ -2129,7 +2129,7 @@ INSTRUCCIONES DE RESPUESTA:
                     trends['leads_nuevos'] = {
                         cur_label: cur_leads, prev_label: prev_leads,
                         'variacion': f"{'+' if delta >= 0 else ''}{delta}",
-                        'tendencia': '📈' if delta > 0 else ('📉' if delta < 0 else '➡️'),
+                        'tendencia': 'subida' if delta > 0 else ('bajada' if delta < 0 else 'igual'),
                     }
 
                 if metric in ('revenue', 'all'):
@@ -2145,7 +2145,7 @@ INSTRUCCIONES DE RESPUESTA:
                     trends['ingresos'] = {
                         cur_label: round(cur_rev, 2), prev_label: round(prev_rev, 2),
                         'variacion_pct': f"{'+' if delta_pct >= 0 else ''}{delta_pct}%",
-                        'tendencia': '📈' if delta_pct > 0 else ('📉' if delta_pct < 0 else '➡️'),
+                        'tendencia': 'subida' if delta_pct > 0 else ('bajada' if delta_pct < 0 else 'igual'),
                     }
 
                 if metric in ('days_on_market', 'all'):
@@ -2163,7 +2163,7 @@ INSTRUCCIONES DE RESPUESTA:
                     trends['dias_en_mercado_promedio'] = {
                         cur_label: cur_dom, prev_label: prev_dom,
                         'variacion': f"{'+' if delta >= 0 else ''}{delta}",
-                        'tendencia': '📈' if delta < 0 else ('📉' if delta > 0 else '➡️'),
+                        'tendencia': 'subida' if delta < 0 else ('bajada' if delta > 0 else 'igual'),
                     }
 
                 return json.dumps({'periodo': period, 'tendencias': trends}, ensure_ascii=False)
@@ -2744,7 +2744,7 @@ INSTRUCCIONES DE RESPUESTA:
                                    system_prompt, message, history):
         """Query OpenAI ChatGPT with conversation history and tool calling."""
         if not OPENAI_AVAILABLE:
-            return '❌ La librería openai no está instalada. Ejecute: pip install openai'
+            return 'La librería openai no está instalada. Ejecute: pip install openai'
 
         client = openai.OpenAI(api_key=api_key)
 
@@ -2782,7 +2782,7 @@ INSTRUCCIONES DE RESPUESTA:
             else:
                 return choice.message.content
 
-        return choice.message.content or '❌ Sin respuesta tras múltiples iteraciones.'
+        return choice.message.content or 'Sin respuesta tras múltiples iteraciones.'
 
     # -----------------------------------------------------------------------
     # Gemini with Tool Calling (new SDK)
@@ -2791,7 +2791,7 @@ INSTRUCCIONES DE RESPUESTA:
                                   system_prompt, message, history):
         """Query Google Gemini with conversation history and tool calling."""
         if not GEMINI_AVAILABLE:
-            return '❌ Las librerías de Google Gemini no están instaladas.'
+            return 'Las librerías de Google Gemini no están instaladas.'
 
         if NEW_GEMINI_SDK:
             import time as _time
@@ -2901,7 +2901,7 @@ INSTRUCCIONES DE RESPUESTA:
                         else:
                             return ''.join(text_parts) or response.text
 
-                    return response.text or '❌ Sin respuesta tras múltiples iteraciones.'
+                    return response.text or 'Sin respuesta tras múltiples iteraciones.'
 
                 except Exception as e:
                     last_error = e
@@ -2918,15 +2918,15 @@ INSTRUCCIONES DE RESPUESTA:
                         continue
                     # Otro error — no reintentar
                     _logger.error("Error Gemini: %s", err_str)
-                    return f'❌ Error con Gemini: {err_str}'
+                    return f'Error con Gemini: {err_str}'
 
             # Agotados los reintentos 503
             return (
-                '❌ Gemini no disponible tras 3 intentos (alta demanda). '
+                'Gemini no disponible tras 3 intentos (alta demanda). '
                 'Prueba con **gemini-2.5-flash** o baja los tokens máximos en Ajustes → Agente IA.'
             )
 
-        return "❌ Error: SDK google-genai no disponible. Ejecute: pip install google-genai"
+        return "Error: SDK google-genai no disponible. Ejecute: pip install google-genai"
 
     # -----------------------------------------------------------------------
     # System Context
@@ -3146,55 +3146,55 @@ TOP 10 DISPONIBLES:
         def generate():
             # All values come from closure — no ORM calls here
             if ai_active != 'True':
-                yield sse({'error': '⚠️ Agente IA desactivado.'})
+                yield sse({'error': 'Agente IA desactivado.'})
                 yield 'data: [DONE]\n\n'
                 return
 
             if not api_key:
-                yield sse({'error': '⚠️ No hay API Key. Vaya a Configuración > Agente IA.'})
+                yield sse({'error': 'No hay API Key. Vaya a Configuración > Agente IA.'})
                 yield 'data: [DONE]\n\n'
                 return
 
             if not NEW_GEMINI_SDK:
-                yield sse({'error': '❌ Librería google-genai no instalada.'})
+                yield sse({'error': 'Librería google-genai no instalada.'})
                 yield 'data: [DONE]\n\n'
                 return
 
             import time as _time
             tool_labels = {
-                'search_properties': '🏠 Buscando propiedades',
-                'get_property_detail': '🔎 Consultando propiedad',
-                'get_leads': '👥 Consultando leads CRM',
-                'get_market_stats': '📊 Calculando estadísticas',
-                'create_crm_activity': '📝 Creando actividad',
-                'create_lead': '➕ Creando lead',
-                'create_property': '🏗️ Registrando propiedad',
-                'update_lead': '✏️ Actualizando lead',
-                'update_property': '✏️ Actualizando propiedad',
-                'delete_property': '🗑️ Eliminando propiedad',
-                'duplicate_property': '📋 Duplicando propiedad',
-                'schedule_visit': '🗓️ Agendando visita',
-                'reserve_property': '🔒 Reservando propiedad',
-                'sell_property': '🤝 Cerrando venta',
-                'send_whatsapp_lead': '📱 Generando enlace WhatsApp',
-                'archive_lead': '📦 Archivando lead',
-                'archive_property': '📦 Archivando propiedad',
-                'get_payments_contracts': '💳 Consultando pagos',
-                'get_dashboard_summary': '📊 Generando resumen',
-                'create_contract': '📄 Creando contrato',
-                'create_payment': '💰 Registrando pago',
-                'create_offer': '🤝 Creando oferta',
-                'approve_payment': '✅ Aprobando pago',
-                'generate_pdf_report': '📄 Generando PDF',
-                'save_memory': '🧠 Guardando memoria',
-                'recall_memory': '🧠 Consultando memorias',
-                'analyze_lead_probability': '🤖 Analizando lead',
-                'analyze_churn_risk': '⚠️ Analizando riesgo',
-                'recalculate_avm_ai': '💡 Calculando valoración',
-                'generate_and_apply_description': '✍️ Generando descripción',
-                'send_email': '📧 Enviando email',
-                'get_report_data': '📊 Cargando datos',
-                'query_database': '🔍 Consultando base de datos',
+                'search_properties': 'Buscando propiedades',
+                'get_property_detail': 'Consultando propiedad',
+                'get_leads': 'Consultando leads CRM',
+                'get_market_stats': 'Calculando estadísticas',
+                'create_crm_activity': 'Creando actividad',
+                'create_lead': 'Creando lead',
+                'create_property': 'Registrando propiedad',
+                'update_lead': 'Actualizando lead',
+                'update_property': 'Actualizando propiedad',
+                'delete_property': 'Eliminando propiedad',
+                'duplicate_property': 'Duplicando propiedad',
+                'schedule_visit': 'Agendando visita',
+                'reserve_property': 'Reservando propiedad',
+                'sell_property': 'Cerrando venta',
+                'send_whatsapp_lead': 'Generando enlace WhatsApp',
+                'archive_lead': 'Archivando lead',
+                'archive_property': 'Archivando propiedad',
+                'get_payments_contracts': 'Consultando pagos',
+                'get_dashboard_summary': 'Generando resumen',
+                'create_contract': 'Creando contrato',
+                'create_payment': 'Registrando pago',
+                'create_offer': 'Creando oferta',
+                'approve_payment': 'Aprobando pago',
+                'generate_pdf_report': 'Generando PDF',
+                'save_memory': 'Guardando memoria',
+                'recall_memory': 'Consultando memorias',
+                'analyze_lead_probability': 'Analizando lead',
+                'analyze_churn_risk': 'Analizando riesgo',
+                'recalculate_avm_ai': 'Calculando valoración',
+                'generate_and_apply_description': 'Generando descripción',
+                'send_email': 'Enviando email',
+                'get_report_data': 'Cargando datos',
+                'query_database': 'Consultando base de datos',
             }
 
             last_err = None
@@ -3288,7 +3288,7 @@ TOP 10 DISPONIBLES:
                             fn_responses.append(new_genai.types.Part.from_function_response(
                                 name=fc.name, response=result))
                         contents.append(new_genai.types.Content(role='user', parts=fn_responses))
-                        yield sse({'status': '✍️ Redactando respuesta...'})
+                        yield sse({'status': 'Redactando respuesta...'})
 
                     # Stream final text word by word
                     if final_text:
@@ -3301,7 +3301,7 @@ TOP 10 DISPONIBLES:
                         if chunk:
                             yield sse({'text': chunk})
                     else:
-                        yield sse({'text': '❌ No se obtuvo respuesta del modelo.'})
+                        yield sse({'text': 'Sin respuesta del modelo.'})
 
                     # Persist history
                     try:
@@ -3327,12 +3327,12 @@ TOP 10 DISPONIBLES:
                         continue
                     # Otro error no reintentable
                     _logger.error("Error en streaming IA: %s", err_str)
-                    yield sse({'text': f'❌ Error: {err_str}'})
+                    yield sse({'text': f'Error: {err_str}'})
                     break
             else:
                 # 3 intentos 503 fallidos
                 yield sse({'text': (
-                    '❌ Gemini no disponible (alta demanda). '
+                    'Gemini no disponible (alta demanda). '
                     'Ve a **Ajustes → Agente IA** y cambia el modelo a `gemini-2.5-flash` '
                     'o baja los tokens máximos a 500.'
                 )})
@@ -3475,7 +3475,7 @@ TOP 10 DISPONIBLES:
         today = date.today()
         now = _dt.now()
 
-        lines = [f"## 📋 Briefing del {today.strftime('%A %d de %B de %Y')}\n"]
+        lines = [f"## Briefing del {today.strftime('%A %d de %B de %Y')}\n"]
 
         try:
             # 1. Inventario
@@ -3503,7 +3503,7 @@ TOP 10 DISPONIBLES:
             overdue = env['estate.payment'].sudo().search_count([
                 ('state', '=', 'pending'), ('date', '<', today)])
             if overdue:
-                alerts.append(f"⚠️ {overdue} pagos vencidos")
+                alerts.append(f"{overdue} pagos vencidos")
 
             hot_stale = env['crm.lead'].sudo().search_count([
                 ('lead_temperature', 'in', ['hot', 'boiling']),
@@ -3511,7 +3511,7 @@ TOP 10 DISPONIBLES:
                 ('type', '=', 'opportunity'),
             ])
             if hot_stale:
-                alerts.append(f"🔥 {hot_stale} leads calientes sin actividad en 7+ días")
+                alerts.append(f"{hot_stale} leads calientes sin actividad en 7+ días")
 
             expiring = env['estate.contract'].sudo().search_count([
                 ('state', '=', 'active'),
@@ -3519,7 +3519,7 @@ TOP 10 DISPONIBLES:
                 ('date_end', '<=', str(today + timedelta(days=30))),
             ])
             if expiring:
-                alerts.append(f"📄 {expiring} contratos vencen en 30 días")
+                alerts.append(f"{expiring} contratos vencen en 30 días")
 
             if alerts:
                 lines.append("**Alertas:**")
@@ -3527,7 +3527,7 @@ TOP 10 DISPONIBLES:
                     lines.append(f"  - {a}")
                 lines.append('')
             else:
-                lines.append("**Alertas:** ✅ Sin alertas críticas\n")
+                lines.append("**Alertas:** Sin alertas críticas\n")
 
             # 4. Tendencia del mes
             month_start = today.replace(day=1)
@@ -3705,12 +3705,31 @@ TOP 10 DISPONIBLES:
         ]
         data = prop.read(fields_to_read)[0]
 
-        # Leads interesados (estate_crm)
+        # Leads interesados (estate_crm) — directos + presupuesto compatible
         lead_count = 0
         if 'target_property_id' in request.env['crm.lead']._fields:
-            lead_count = request.env['crm.lead'].sudo().search_count([
-                ('target_property_id', '=', property_id)
+            direct = request.env['crm.lead'].sudo().search_count([
+                ('target_property_id', '=', property_id),
+                ('active', 'in', [True, False]),
             ])
+            # Also count leads with matching budget range and same offer_type
+            budget_domain = [
+                ('target_property_id', '=', False),
+                ('active', '=', True),
+            ]
+            price = prop.price
+            if price:
+                budget_domain += [
+                    '|',
+                    ('client_budget', '=', False),
+                    '&',
+                    ('client_budget', '>=', price * 0.75),
+                    ('client_budget', '<=', price * 1.25),
+                ]
+            if hasattr(prop, 'offer_type') and prop.offer_type:
+                budget_domain.append(('type', '=', 'opportunity'))
+            budget_leads = request.env['crm.lead'].sudo().search_count(budget_domain)
+            lead_count = direct + budget_leads
         data['lead_count'] = lead_count
 
         # Documentos (estate_document)

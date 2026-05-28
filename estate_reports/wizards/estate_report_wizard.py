@@ -15,18 +15,18 @@ class EstateReportWizard(models.TransientModel):
     _description = 'Wizard de Reportes Inmobiliarios'
 
     report_type = fields.Selection([
-        ('available_properties', ' Propiedades Disponibles'),
-        ('active_clients', ' Clientes Activos'),
-        ('sales_period', ' Ventas por Período'),
-        ('time_to_sell', '⏱️ Tiempo de Venta'),
-        ('visits_report', ' Visitas / Citas Realizadas'),
-        ('contracts_expiring', ' Contratos por Vencer'),
-        ('agent_commissions', ' Desempeño y Comisiones de Asesores'),
-        ('geographic_avm', '️ Análisis Geográfico y Mercado (AVM)'),
-        ('marketing_roi', ' Retorno de Marketing (Origen Leads)'),
-        ('conversion_funnel', ' Embudo de Conversión'),
-        ('advisor_portfolio', ' Cartera por Asesor'),
-        ('occupancy_report', ' Ocupación de Arriendos'),
+        ('available_properties', 'Propiedades Disponibles'),
+        ('active_clients', 'Clientes Activos'),
+        ('sales_period', 'Ventas por Período'),
+        ('time_to_sell', 'Tiempo de Venta'),
+        ('visits_report', 'Visitas / Citas Realizadas'),
+        ('contracts_expiring', 'Contratos por Vencer'),
+        ('agent_commissions', 'Desempeño y Comisiones de Asesores'),
+        ('geographic_avm', 'Análisis Geográfico y Mercado (AVM)'),
+        ('marketing_roi', 'Retorno de Marketing (Origen Leads)'),
+        ('conversion_funnel', 'Embudo de Conversión'),
+        ('advisor_portfolio', 'Cartera por Asesor'),
+        ('occupancy_report', 'Ocupación de Arriendos'),
     ], string='Tipo de Reporte', required=True, default='available_properties')
 
     date_from = fields.Date(string='Desde')
@@ -41,12 +41,11 @@ class EstateReportWizard(models.TransientModel):
     excel_filename = fields.Char(string='Nombre Archivo')
 
     def action_generate_report(self):
-        """Generate report based on selected type and format."""
         self.ensure_one()
-        if self.export_format == 'pdf':
+        fmt = self.env.context.get('export_format', self.export_format)
+        if fmt == 'pdf':
             return self._generate_pdf()
-        else:
-            return self._generate_excel()
+        return self._generate_excel()
 
     def _get_report_data(self):
         """Get data for the selected report type."""
@@ -161,12 +160,14 @@ class EstateReportWizard(models.TransientModel):
     def _generate_pdf(self):
         """Generate PDF report using QWeb."""
         data = self._get_report_data()
+        records = data['records']
         report_data = {
             'title': data['title'],
-            'date_from': self.date_from,
-            'date_to': self.date_to,
+            'date_from': str(self.date_from) if self.date_from else '',
+            'date_to': str(self.date_to) if self.date_to else '',
             'report_type': self.report_type,
-            'records': data['records'],
+            'record_ids': records.ids if records else [],
+            'record_model': records._name if records else 'estate.property',
         }
         return self.env.ref(
             'estate_reports.action_report_estate_general'
@@ -516,7 +517,7 @@ class EstateReportWizard(models.TransientModel):
                         ws.write(row, 8, ' VENCIDO', red_fmt)
                     elif days_left <= 15:
                         ws.write(row, 7, days_left, red_fmt)
-                        ws.write(row, 8, '⚠️ Urgente', red_fmt)
+                        ws.write(row, 8, 'Urgente', red_fmt)
                     elif days_left <= 30:
                         ws.write(row, 7, days_left, yellow_fmt)
                         ws.write(row, 8, '⏰ Próximo', yellow_fmt)

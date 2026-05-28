@@ -74,7 +74,7 @@ class EstatePropertySocial(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': '📸 Instagram — Caption lista',
+                'title': 'Instagram — Caption lista',
                 'message': caption,
                 'type': 'success',
                 'sticky': True,
@@ -120,8 +120,8 @@ class EstatePropertySocial(models.Model):
         if len(desc_text) > 1500:
             desc_text = desc_text[:1500] + '...'
 
-        link = f"\n🔗 {wp_url}/?p={self.wp_post_id}" if (self.wp_post_id and wp_url) else ''
-        contact = f"\n📞 Contacto: wa.me/{business_number}" if business_number else ''
+        link = f"\n{wp_url}/?p={self.wp_post_id}" if (self.wp_post_id and wp_url) else ''
+        contact = f"\nContacto: wa.me/{business_number}" if business_number else ''
 
         if desc_text:
             # Publicar con la descripción comercial completa
@@ -133,21 +133,21 @@ class EstatePropertySocial(models.Model):
         else:
             # Fallback: formato básico si no hay descripción
             estado_map = {
-                'available': '✅ Disponible',
-                'reserved': '🔒 Reservado',
-                'sold': '🏆 Vendido',
+                'available': 'Disponible',
+                'reserved': 'Reservado',
+                'sold': 'Vendido',
             }
             text = (
-                f"🏠 *{self.title}*\n"
-                f"📍 {self.city or 'Cuenca'}\n"
-                f"💰 ${self.price:,.2f}\n"
-                f"📐 {self.area} m²\n"
-                f"🛏️ {self.bedrooms} hab | 🚿 {self.bathrooms} baños\n"
+                f"*{self.title}*\n"
+                f"{self.city or 'Cuenca'}\n"
+                f"${self.price:,.2f}\n"
+                f"{self.area} m2\n"
+                f"{self.bedrooms} hab | {self.bathrooms} banos\n"
                 f"{estado_map.get(self.state, '')}\n"
-                f"🏷️ {self.property_type_id.name}"
+                f"{self.property_type_id.name}"
                 f"{link}"
                 f"{contact}\n"
-                f"✍️ ¡Contáctanos para más información!"
+                f"Contactanos para mas informacion!"
             )
         return text
 
@@ -157,7 +157,7 @@ class EstatePropertySocial(models.Model):
         city = (self.city or 'Cuenca').lower().replace(' ', '')
         ptype = (self.property_type_id.name or 'propiedad').lower().replace(' ', '')
         business_number = ICP.get_param('estate_social.whatsapp_business_number', '')
-        contact_line = f"💬 WhatsApp: wa.me/{business_number}" if business_number else "💬 Escríbenos para más info"
+        contact_line = f"WhatsApp: wa.me/{business_number}" if business_number else "Escribenos para mas informacion"
 
         # Descripción comercial IA (prioridad) o descripción general
         desc_html = self.description or ''
@@ -181,10 +181,10 @@ class EstatePropertySocial(models.Model):
             )
         else:
             caption = (
-                f"🏠 {self.title}\n\n"
-                f"📍 {self.city or 'Cuenca'}\n"
-                f"💰 ${self.price:,.2f}\n"
-                f"📐 {self.area} m²  |  🛏️ {self.bedrooms} hab  |  🚿 {self.bathrooms} baños\n\n"
+                f"{self.title}\n\n"
+                f"{self.city or 'Cuenca'}\n"
+                f"${self.price:,.2f}\n"
+                f"{self.area} m2  |  {self.bedrooms} hab  |  {self.bathrooms} banos\n\n"
                 f"{contact_line}\n"
                 f"Ref: {self.name}\n\n"
                 f"{hashtags}"

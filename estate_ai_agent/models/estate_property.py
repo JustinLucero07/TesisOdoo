@@ -204,16 +204,16 @@ ATRACTIVA y PROFESIONAL en formato HTML para publicar en portales inmobiliarios 
 REGLAS OBLIGATORIAS:
 1. Empieza con un TITULAR llamativo con el tipo de operación (VENTA/ARRIENDO) y el nombre de la propiedad
 2. Sigue con un PÁRRAFO GANCHO emocional de 2-3 oraciones que enganche al lector
-3. Incluye SECCIONES con ESTOS emojis EXACTOS como encabezados (siempre estos, no otros):
-   - 🏠 Propiedad (tipo y descripción general)
-   - 📍 Ubicación (ciudad, sector, ventajas de la zona)
-   - 💰 Precio e Inversión
-   - 📐 Características (área, dimensiones, metros cuadrados)
-   - 🛏️ Distribución (habitaciones, baños, cocina, áreas sociales, parqueaderos)
-   - ✅ Acabados y Extras
-   - 🏷️ Tipo de Propiedad
-   - 📞 Contacto (teléfonos de asesores)
-4. Usa listas con ✅ o viñetas para las características
+3. Incluye SECCIONES con estos encabezados (siempre estos, no otros):
+   - Propiedad (tipo y descripción general)
+   - Ubicación (ciudad, sector, ventajas de la zona)
+   - Precio e Inversión
+   - Características (área, dimensiones, metros cuadrados)
+   - Distribución (habitaciones, baños, cocina, áreas sociales, parqueaderos)
+   - Acabados y Extras
+   - Tipo de Propiedad
+   - Contacto (teléfonos de asesores)
+4. Usa listas con viñetas para las características
 5. Termina con un CTA (llamada a la acción) para agendar visita
 6. Los teléfonos de los asesores son: {phones_text}
 7. El HTML debe usar <h3>, <p>, <ul><li>, <b>, <br/> — NO uses CSS inline ni estilos
@@ -263,7 +263,7 @@ Responde SOLO con el HTML de la descripción, sin bloques de código ni explicac
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': '✨ Descripción generada',
+                    'title': 'Descripción generada',
                     'message': 'La descripción comercial se ha generado y guardado exitosamente.',
                     'type': 'success',
                     'sticky': False,
@@ -312,20 +312,37 @@ Responde SOLO con el HTML de la descripción, sin bloques de código ni explicac
             )
 
         # ── Leads interesados ──────────────────────────────────────────────
-        leads = self.env['crm.lead'].search(
-            [('target_property_id', '=', prop.id)],
-            order='lead_score asc, create_date desc', limit=20
-        ) if 'target_property_id' in self.env['crm.lead']._fields else []
-
         temp_map = {'cold': 'Frío', 'warm': 'Tibio', 'hot': 'Caliente', 'boiling': 'Hirviendo'}
         lead_lines = []
-        for l in leads:
-            nombre = (l.partner_id.name if l.partner_id else None) or l.partner_name or l.name or 'Sin nombre'
-            budget = f"${l.client_budget:,.0f}" if l.client_budget else 'N/A'
-            temp = temp_map.get(l.lead_temperature, l.lead_temperature or '—')
-            score = l.lead_score or '—'
-            stage = l.stage_id.name if l.stage_id else 'Sin etapa'
-            lead_lines.append(f"  • {nombre} | Presupuesto: {budget} | Temperatura: {temp} | Score: {score} | Etapa: {stage}")
+        if 'target_property_id' in self.env['crm.lead']._fields:
+            # Leads directamente asignados a esta propiedad
+            direct_leads = self.env['crm.lead'].search(
+                [('target_property_id', '=', prop.id)],
+                order='lead_score asc, create_date desc', limit=15
+            )
+            for l in direct_leads:
+                nombre = (l.partner_id.name if l.partner_id else None) or l.partner_name or l.name or 'Sin nombre'
+                budget = f"${l.client_budget:,.0f}" if l.client_budget else 'N/A'
+                temp = temp_map.get(getattr(l, 'lead_temperature', ''), '—')
+                score = getattr(l, 'lead_score', '—') or '—'
+                stage = l.stage_id.name if l.stage_id else 'Sin etapa'
+                lead_lines.append(f"  • [DIRECTO] {nombre} | Presupuesto: {budget} | Temperatura: {temp} | Score: {score} | Etapa: {stage}")
+            # Leads potenciales con presupuesto compatible (±25% del precio)
+            if prop.price and not direct_leads:
+                pmin = prop.price * 0.75
+                pmax = prop.price * 1.25
+                potential = self.env['crm.lead'].search([
+                    ('target_property_id', '=', False),
+                    ('active', '=', True),
+                    ('type', '=', 'opportunity'),
+                    ('client_budget', '>=', pmin),
+                    ('client_budget', '<=', pmax),
+                ], limit=10) if 'client_budget' in self.env['crm.lead']._fields else []
+                for l in potential:
+                    nombre = (l.partner_id.name if l.partner_id else None) or l.partner_name or l.name or 'Sin nombre'
+                    budget = f"${l.client_budget:,.0f}" if l.client_budget else 'N/A'
+                    temp = temp_map.get(getattr(l, 'lead_temperature', ''), '—')
+                    lead_lines.append(f"  • [POTENCIAL] {nombre} | Presupuesto: {budget} | Temperatura: {temp}")
 
         # ── Visitas / Citas ────────────────────────────────────────────────
         visits = self.env['calendar.event'].search(
@@ -378,38 +395,33 @@ ACTIVIDAD RECIENTE:
 {chr(10).join(msg_lines) if msg_lines else '  Sin mensajes recientes.'}
 """
 
-        prompt = f"""Genera un análisis inmobiliario en HTML para el asesor. SIN introducción, SIN "Estimado Asesor", ve DIRECTO a las secciones.
+        prompt = f"""Genera un análisis inmobiliario en HTML para el asesor. SIN introducción, SIN saludos, ve DIRECTO a las secciones.
 
-USA EXACTAMENTE esta estructura (6 secciones, emojis como encabezados):
+USA EXACTAMENTE esta estructura (6 secciones):
 
-<p><strong>🏠 Ficha</strong></p>
-<ul><li>...</li></ul>
+<p><strong>Ficha</strong></p><ul><li>Código, tipo, operación, ubicación, área, habitaciones, baños, parqueaderos</li></ul>
 
-<p><strong>💰 Precio</strong></p>
-<ul><li>...</li></ul>
+<p><strong>Precio</strong></p><ul><li>Análisis del precio, precio/m², comparación AVM si existe</li></ul>
 
-<p><strong>👥 Interesados</strong></p>
-<ul><li>NOMBRE REAL de cada lead, su presupuesto y temperatura</li></ul>
+<p><strong>Interesados</strong></p><ul><li>NOMBRE REAL de cada lead con presupuesto y temperatura. Si hay potenciales, mencionarlos.</li></ul>
 
-<p><strong>📅 Visitas</strong></p>
-<ul><li>NOMBRE REAL de cada visitante, fecha y calificación</li></ul>
+<p><strong>Visitas</strong></p><ul><li>NOMBRE REAL de cada visitante, fecha, calificación</li></ul>
 
-<p><strong>⚠️ Alertas</strong></p>
-<ul><li>...</li></ul>
+<p><strong>Alertas</strong></p><ul><li>Problemas detectados: propietario no asignado, AVM sin calcular, sin imágenes, etc.</li></ul>
 
-<p><strong>🎯 Acción inmediata</strong></p>
-<ul><li>1-2 acciones concretas</li></ul>
+<p><strong>Acción inmediata</strong></p><ul><li>2-3 acciones concretas y específicas para este caso</li></ul>
 
-REGLAS CRÍTICAS:
-- SIEMPRE menciona los NOMBRES REALES de leads y visitantes (están en los datos)
-- Si no hay visitas/leads, escribe "Sin registros — registra citas para dar seguimiento"
-- Máximo 350 palabras, sin CSS inline, sin intro genérica
-- Interpreta los datos: ¿el precio está bien? ¿hay interés real? ¿qué falta?
+REGLAS:
+- Usa SOLO etiquetas HTML: p, ul, li, strong, em. NUNCA uses asteriscos (*) ni markdown.
+- SIEMPRE menciona NOMBRES REALES de leads y visitantes tal como aparecen en los datos.
+- Si no hay leads directos, menciona los potenciales indicando que son clientes sin propiedad asignada.
+- Si no hay visitas/leads de ningún tipo, escribe exactamente: <li>Sin registros aún.</li>
+- Máximo 380 palabras. Sin CSS inline. Sin texto fuera de las etiquetas HTML.
 
 DATOS:
 {context_text}
 
-Responde SOLO el HTML listo para insertar. Sin markdown, sin explicaciones."""
+Responde ÚNICAMENTE el bloque HTML. Nada más."""
 
         try:
             client = genai.Client(
@@ -433,7 +445,7 @@ Responde SOLO el HTML listo para insertar. Sin markdown, sin explicaciones."""
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
-                    'title': '🤖 Análisis actualizado',
+                    'title': 'Análisis actualizado',
                     'message': 'El análisis ejecutivo IA se generó con todos los datos disponibles.',
                     'type': 'success',
                     'sticky': False,

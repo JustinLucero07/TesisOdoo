@@ -4,30 +4,99 @@
         <field name="name">estate.commission.wizard.form</field>
         <field name="model">estate.commission.wizard</field>
         <field name="arch" type="xml">
-            <form string="Reporte de Comisiones PDF">
-                <group>
+            <form string="Liquidación de Comisiones" create="false" delete="false">
+                <sheet>
+
+                    <!-- Stat buttons: KPIs + descargar -->
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-list"
+                                type="object" name="action_print_commission_report"
+                                invisible="commission_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="commission_count" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Comisiones</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-money"
+                                type="object" name="action_print_commission_report"
+                                invisible="commission_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="total_commissions" widget="monetary" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Total</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-check-circle"
+                                type="object" name="action_print_commission_report"
+                                invisible="commission_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="total_paid" widget="monetary" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Pagado</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-clock-o"
+                                type="object" name="action_print_commission_report"
+                                invisible="commission_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="total_pending" widget="monetary" readonly="1"/>
+                                </span>
+                                <span class="o_stat_text">Pendiente</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-file-pdf-o"
+                                type="object" name="action_print_commission_report"
+                                invisible="commission_count == 0">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Descargar PDF</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Título -->
+                    <div class="oe_title">
+                        <h1>Liquidación de Comisiones</h1>
+                    </div>
+
+                    <!-- Filtros -->
                     <group string="Filtros">
-                        <field name="user_id" placeholder="Todos los asesores"/>
-                        <field name="include_all_states"/>
+                        <group>
+                            <field name="user_id" placeholder="Todos los asesores"
+                                   options="{'no_create': True}"/>
+                            <field name="include_all_states"/>
+                        </group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
                     </group>
-                    <group string="Período">
-                        <field name="date_from"/>
-                        <field name="date_to"/>
-                    </group>
-                </group>
-                <footer>
-                    <button name="action_print_commission_report" string="Generar PDF" type="object"
-                            class="oe_highlight" icon="fa-file-pdf-o"/>
-                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
-                </footer>
+
+                    <!-- Sin datos -->
+                    <div class="alert alert-info" role="alert" invisible="commission_count != 0">
+                        <i class="fa fa-info-circle"/>
+                        Sin comisiones para los filtros seleccionados. Ajuste el período o el asesor.
+                    </div>
+
+                    <!-- Tabla inline -->
+                    <div invisible="commission_count == 0">
+                        <div class="o_horizontal_separator">Detalle de Comisiones</div>
+                        <field name="commission_html" nolabel="1" readonly="1"/>
+                    </div>
+
+                </sheet>
             </form>
         </field>
     </record>
 
     <record id="estate_commission_wizard_action" model="ir.actions.act_window">
-        <field name="name">Liquidación de Comisiones PDF</field>
+        <field name="name">Liquidación de Comisiones</field>
         <field name="res_model">estate.commission.wizard</field>
         <field name="view_mode">form</field>
-        <field name="target">new</field>
+        <field name="target">current</field>
     </record>
 </odoo>

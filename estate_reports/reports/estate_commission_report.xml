@@ -11,6 +11,7 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">estate_reports.report_commission_liquidation_template</field>
         <field name="report_file">estate_reports.report_commission_liquidation_template</field>
+        <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
     </record>
 
     <template id="report_commission_liquidation_template">
@@ -21,7 +22,6 @@
                 <t t-set="date_to"   t-value="context.get('date_to')"/>
                 <t t-set="all_states" t-value="context.get('include_all_states', False)"/>
 
-                <!-- Dominio de filtro -->
                 <t t-set="comm_domain" t-value="[('user_id','=',user.id),('date','>=',date_from),('date','&lt;=',date_to)]"/>
                 <t t-if="not all_states">
                     <t t-set="comm_domain" t-value="comm_domain + [('state','in',['approved','paid'])]"/>
@@ -31,72 +31,87 @@
                 <t t-set="total_paid" t-value="sum(c.amount for c in commissions if c.state == 'paid')"/>
                 <t t-set="total_approved" t-value="sum(c.amount for c in commissions if c.state == 'approved')"/>
 
-                <t t-call="web.external_layout">
-                    <div class="page">
+                    <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
-                        <!-- Encabezado -->
-                        <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 14px; margin-bottom: 22px;">
-                            <h2 style="color: #1B4F72; margin: 0;">Liquidación de Comisiones</h2>
-                            <p style="margin: 6px 0 0 0; color: #555; font-size: 13px;">
-                                Asesor: <strong><t t-out="user.name"/></strong>
-                                &#160;·&#160;
-                                Período:
-                                <strong>
-                                    <t t-if="date_from" t-out="date_from"/> <t t-if="not date_from">—</t>
-                                    al
-                                    <t t-if="date_to" t-out="date_to"/> <t t-if="not date_to">—</t>
-                                </strong>
-                                &#160;·&#160;
-                                Generado: <t t-out="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
-                            </p>
-                        </div>
-
-                        <!-- Datos del asesor -->
-                        <table class="table table-sm table-bordered" style="font-size:13px; width:60%; margin-bottom:20px;">
+                        <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
                             <tr>
-                                <td style="width:40%; background:#f8f9fa;"><strong>Nombre</strong></td>
-                                <td><t t-out="user.name"/></td>
-                            </tr>
-                            <tr>
-                                <td style="background:#f8f9fa;"><strong>Email</strong></td>
-                                <td><t t-out="user.email or '—'"/></td>
-                            </tr>
-                            <tr>
-                                <td style="background:#f8f9fa;"><strong>Empresa</strong></td>
-                                <td><t t-out="user.company_id.name or '—'"/></td>
+                                <td style="padding:10px 16px; vertical-align:middle; width:60%;">
+                                    <t t-if="env.company.logo">
+                                        <img t-att-src="image_data_uri(env.company.logo)" style="height:28px; max-width:110px;"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="font-size:15px; font-weight:900; color:white;"><t t-esc="env.company.name"/></span>
+                                    </t>
+                                </td>
+                                <td style="padding:10px 16px; vertical-align:middle; text-align:right; width:40%;">
+                                    <div style="font-size:13px; font-weight:900; color:white; text-transform:uppercase; letter-spacing:2px;">Liquidaci&#243;n de Comisiones</div>
+                                    <div style="font-size:9px; color:#a8bcdb; margin-top:3px;">
+                                        <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                    </div>
+                                </td>
                             </tr>
                         </table>
 
-                        <!-- Detalle de comisiones -->
-                        <h4 style="color:#2E86C1; border-left:4px solid #2E86C1; padding-left:8px; margin-bottom:10px;">
+                        <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
+                        <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
+                            <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Documento Financiero</div>
+                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;"><t t-esc="user.name"/></div>
+                            <div style="font-size:9px; color:#666; margin-top:3px;">
+                                Per&#237;odo:
+                                <t t-if="date_from"><t t-esc="date_from"/></t><t t-else="">&#8212;</t>
+                                al
+                                <t t-if="date_to"><t t-esc="date_to"/></t><t t-else="">&#8212;</t>
+                            </div>
+                        </div>
+
+                        <!-- ══ DATOS DEL ASESOR ═══════════════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            Datos del Asesor
+                        </div>
+                        <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                            <tr>
+                                <td style="width:25%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Nombre</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700;"><t t-esc="user.name"/></td>
+                                <td style="width:20%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; border-left:1px solid #D8DCE5; color:#555; font-weight:600;">Email</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="user.email or '&#8212;'"/></td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">Empresa</td>
+                                <td style="padding:5px 10px;" colspan="3"><t t-esc="user.company_id.name or '&#8212;'"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- ══ DETALLE DE COMISIONES ══════════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             Detalle de Comisiones
-                        </h4>
+                        </div>
 
                         <t t-if="commissions">
-                            <table class="table table-sm table-bordered" style="font-size:12px; width:100%;">
-                                <thead style="background:#1B4F72; color:white;">
-                                    <tr>
-                                        <th>Referencia</th>
-                                        <th>Fecha</th>
-                                        <th>Propiedad</th>
-                                        <th>Tipo</th>
-                                        <th style="text-align:right;">Monto</th>
-                                        <th>Estado</th>
+                            <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                                <thead>
+                                    <tr style="background:#263d61; color:white;">
+                                        <th style="padding:7px 10px; text-align:left; font-weight:700;">Referencia</th>
+                                        <th style="padding:7px 10px; text-align:left; font-weight:700;">Fecha</th>
+                                        <th style="padding:7px 10px; text-align:left; font-weight:700;">Propiedad</th>
+                                        <th style="padding:7px 10px; text-align:center; font-weight:700;">Tipo</th>
+                                        <th style="padding:7px 10px; text-align:right; font-weight:700;">Monto</th>
+                                        <th style="padding:7px 10px; text-align:center; font-weight:700;">Estado</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <t t-foreach="commissions" t-as="comm">
-                                        <tr>
-                                            <td><t t-out="comm.name"/></td>
-                                            <td><t t-out="comm.date.strftime('%d/%m/%Y') if comm.date else '—'"/></td>
-                                            <td><t t-out="comm.property_id.title or '—'"/></td>
-                                            <td><t t-out="dict([('sale','Venta'),('rental','Alquiler'),('bonus','Bono')]).get(comm.type,'—')"/></td>
-                                            <td style="text-align:right;">$<t t-out="'{:,.2f}'.format(comm.amount)"/></td>
-                                            <td>
-                                                <span t-if="comm.state=='paid'"     style="color:green;font-weight:600;">Pagada</span>
-                                                <span t-elif="comm.state=='approved'" style="color:#2E86C1;font-weight:600;">Aprobada</span>
-                                                <span t-elif="comm.state=='draft'"   style="color:orange;">Borrador</span>
-                                                <span t-else=""                      style="color:red;">Cancelada</span>
+                                        <tr t-att-style="'background:#F9FAFB;' if comm_index % 2 == 0 else 'background:white;'">
+                                            <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="comm.name"/></td>
+                                            <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#666;"><t t-esc="comm.date.strftime('%d/%m/%Y') if comm.date else '&#8212;'"/></td>
+                                            <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="comm.property_id.title or '&#8212;'"/></td>
+                                            <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center; color:#666;"><t t-esc="dict([('sale','Venta'),('rental','Alquiler'),('bonus','Bono')]).get(comm.type,'&#8212;')"/></td>
+                                            <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.2f}'.format(comm.amount)"/></td>
+                                            <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;">
+                                                <span t-if="comm.state=='paid'"     style="color:#15803d; font-weight:700;">Pagada</span>
+                                                <span t-elif="comm.state=='approved'" style="color:#1C2B4A; font-weight:700;">Aprobada</span>
+                                                <span t-elif="comm.state=='draft'"   style="color:#b45309;">Borrador</span>
+                                                <span t-else=""                      style="color:#C8102E;">Cancelada</span>
                                             </td>
                                         </tr>
                                     </t>
@@ -104,49 +119,63 @@
                             </table>
                         </t>
                         <t t-else="">
-                            <p style="color:#888; font-style:italic;">No se encontraron comisiones para este asesor en el período seleccionado.</p>
+                            <div style="border:1px solid #D8DCE5; border-top:none; padding:20px; text-align:center; color:#aaa; font-style:italic; margin-bottom:14px;">
+                                No se encontraron comisiones para este asesor en el per&#237;odo seleccionado.
+                            </div>
                         </t>
 
-                        <!-- Resumen financiero -->
-                        <div style="margin-top:24px; display:flex; gap:16px;">
-                            <div style="flex:1; background:#eaf4fb; border:1px solid #2E86C1; border-radius:8px; padding:14px; text-align:center;">
-                                <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Total Período</div>
-                                <div style="font-size:22px; font-weight:700; color:#1B4F72; margin-top:4px;">
-                                    $<t t-out="'{:,.2f}'.format(total)"/>
-                                </div>
-                            </div>
-                            <div style="flex:1; background:#eafaf1; border:1px solid #27ae60; border-radius:8px; padding:14px; text-align:center;">
-                                <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Pagado</div>
-                                <div style="font-size:22px; font-weight:700; color:#1e8449; margin-top:4px;">
-                                    $<t t-out="'{:,.2f}'.format(total_paid)"/>
-                                </div>
-                            </div>
-                            <div style="flex:1; background:#fef9e7; border:1px solid #f39c12; border-radius:8px; padding:14px; text-align:center;">
-                                <div style="font-size:11px; color:#555; text-transform:uppercase; letter-spacing:0.5px;">Por Pagar</div>
-                                <div style="font-size:22px; font-weight:700; color:#b7770d; margin-top:4px;">
-                                    $<t t-out="'{:,.2f}'.format(total_approved)"/>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- ══ RESUMEN FINANCIERO ═════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
+                            <tr>
+                                <td style="width:33%; background:#1C2B4A; padding:16px; text-align:center; vertical-align:middle; border-right:2px solid white;">
+                                    <div style="font-size:8px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Total Per&#237;odo</div>
+                                    <div style="font-size:22px; font-weight:900; color:white; line-height:1;">$<t t-esc="'{:,.2f}'.format(total)"/></div>
+                                </td>
+                                <td style="width:33%; background:#F0FDF4; padding:16px; text-align:center; vertical-align:middle; border:1px solid #16A34A; border-left:none; border-right:none;">
+                                    <div style="font-size:8px; color:#15803d; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Pagado</div>
+                                    <div style="font-size:22px; font-weight:900; color:#15803d; line-height:1;">$<t t-esc="'{:,.2f}'.format(total_paid)"/></div>
+                                </td>
+                                <td style="width:33%; background:#FFFBEB; padding:16px; text-align:center; vertical-align:middle; border:1px solid #D97706; border-left:none;">
+                                    <div style="font-size:8px; color:#b45309; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Por Pagar</div>
+                                    <div style="font-size:22px; font-weight:900; color:#b45309; line-height:1;">$<t t-esc="'{:,.2f}'.format(total_approved)"/></div>
+                                </td>
+                            </tr>
+                        </table>
 
-                        <!-- Firma -->
-                        <div style="margin-top:48px; display:flex; gap:48px;">
-                            <div style="flex:1; text-align:center;">
-                                <div style="border-top:1px solid #333; padding-top:6px; font-size:12px;">
+                        <!-- ══ FIRMAS ════════════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; margin-top:44px;">
+                            <tr>
+                                <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px;">
                                     Firma del Asesor<br/>
-                                    <strong><t t-out="user.name"/></strong>
-                                </div>
-                            </div>
-                            <div style="flex:1; text-align:center;">
-                                <div style="border-top:1px solid #333; padding-top:6px; font-size:12px;">
+                                    <strong><t t-esc="user.name"/></strong>
+                                </td>
+                                <td style="width:10%;"/>
+                                <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px;">
                                     Aprobado por<br/>
                                     <strong>Gerencia Inmobiliaria</strong>
-                                </div>
-                            </div>
-                        </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                            <tr>
+                                <td style="padding:5px 0; width:50%;">
+                                    <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
+                                    <t t-if="env.company.city"> &#183; <t t-esc="env.company.city"/></t>
+                                    <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                    <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
+                                </td>
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                    <t t-esc="env.company.name"/>
+                                </td>
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                    Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                </td>
+                            </tr>
+                        </table>
 
                     </div>
-                </t>
             </t>
         </t>
     </template>

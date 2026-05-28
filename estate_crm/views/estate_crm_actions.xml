@@ -60,7 +60,7 @@
 
     <!-- ACCIÓN: Clientes con Necesidad Pendiente -->
     <record id="action_crm_pending_needs" model="ir.actions.act_window">
-        <field name="name">📌 Clientes con Necesidad Pendiente</field>
+        <field name="name">Clientes con Necesidad Pendiente</field>
         <field name="res_model">crm.lead</field>
         <field name="view_mode">list,kanban,form</field>
         <field name="domain">[('pending_needs_active', '=', True), ('active', '=', True)]</field>

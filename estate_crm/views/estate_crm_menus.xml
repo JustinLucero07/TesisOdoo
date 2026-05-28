@@ -45,7 +45,7 @@
                   sequence="20"/>
 
         <menuitem id="estate_menu_crm_pendientes"
-                  name="📌 Clientes Pendientes"
+                  name="Clientes Pendientes"
                   parent="estate_menu_crm_directorio_root"
                   action="action_crm_pending_needs"
                   sequence="25"/>

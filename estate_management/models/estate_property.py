@@ -65,15 +65,75 @@ class EstateProperty(models.Model):
 
     @api.onchange('city')
     def _onchange_city_zip(self):
-        if self.city and not self.zip_code:
+        if self.city:
             code = self._EC_POSTAL_CODES.get(self.city.lower().strip(), '')
             if code:
                 self.zip_code = code
+            # Auto-set Ecuador/Azuay when city is known
+            if not self.country_id:
+                ec = self.env['res.country'].search([('code', '=', 'EC')], limit=1)
+                if ec:
+                    self.country_id = ec
+            if not self.state_id and self.city.lower().strip() == 'cuenca':
+                azuay = self.env['res.country.state'].search(
+                    [('name', 'ilike', 'Azuay'), ('country_id.code', '=', 'EC')], limit=1)
+                if azuay:
+                    self.state_id = azuay
+            self.latitude = 0.0
+            self.longitude = 0.0
+
+    @api.onchange('state_id')
+    def _onchange_state_set_country(self):
+        """When province is selected, auto-set country to Ecuador."""
+        if self.state_id and self.state_id.country_id:
+            self.country_id = self.state_id.country_id
+
+    @api.model
+    def _fix_country_defaults(self):
+        """Fix existing properties with wrong country/state. Called on module update."""
+        ec = self.env['res.country'].search([('code', '=', 'EC')], limit=1)
+        if not ec:
+            return
+        azuay = self.env['res.country.state'].search(
+            [('name', 'ilike', 'Azuay'), ('country_id', '=', ec.id)], limit=1)
+        # Fix country for all properties (this is an Ecuador-only system)
+        bad_country = self.search([('country_id', '!=', ec.id)])
+        if bad_country:
+            bad_country.with_context(no_wp_sync=True, no_geocode=True).write(
+                {'country_id': ec.id})
+        # Set Azuay for properties in Cuenca with no state
+        if azuay:
+            cuenca_props = self.search([
+                ('state_id', '=', False),
+                ('city', 'ilike', 'Cuenca'),
+            ])
+            if cuenca_props:
+                cuenca_props.with_context(no_wp_sync=True, no_geocode=True).write(
+                    {'state_id': azuay.id})
+
+    @api.model
+    def _fix_ecuador_coordinates(self):
+        """Corrige coordenadas con signo positivo erróneo para propiedades en Ecuador.
+        Ecuador siempre tiene longitud negativa (hemisferio oeste) y Cuenca latitud negativa.
+        Se ejecuta en cada actualización del módulo para reparar datos existentes.
+        """
+        # Propiedades con longitud positiva → definitivamente mal signo (Ecuador es siempre negativo en lon)
+        wrong = self.search([('longitude', '>', 0)])
+        fixed = 0
+        for prop in wrong:
+            new_lat = -abs(prop.latitude) if prop.latitude else 0.0
+            new_lon = -abs(prop.longitude) if prop.longitude else 0.0
+            super(EstateProperty, prop).write({'latitude': new_lat, 'longitude': new_lon})
+            fixed += 1
+        if fixed:
+            _logger.info("_fix_ecuador_coordinates: corregidas %d propiedades con coordenadas incorrectas.", fixed)
 
     @api.onchange('street')
     def _onchange_street_keywords(self):
         if self.street and not self.sector_keywords:
             self.sector_keywords = self.street
+        self.latitude = 0.0
+        self.longitude = 0.0
     latitude = fields.Float(string='Latitud', digits=(10, 7))
     longitude = fields.Float(string='Longitud', digits=(10, 7))
     company_currency = fields.Many2one(
@@ -120,45 +180,106 @@ class EstateProperty(models.Model):
                 'target': 'new',
             }
 
+    def _nominatim_search(self, query, countrycodes='ec'):
+        """Shared Nominatim search. Returns (lat, lon, display_name) or None on any failure."""
+        try:
+            resp = requests.get(
+                'https://nominatim.openstreetmap.org/search',
+                params={'q': query, 'format': 'json', 'limit': 1, 'countrycodes': countrycodes},
+                headers={'User-Agent': 'OdooEstateApp/1.0 (tesis@inmobiliaria.ec)'},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if not data:
+                return None
+            lat = float(data[0]['lat'])
+            lon = float(data[0]['lon'])
+            return lat, lon, data[0].get('display_name', query)
+        except requests.exceptions.ConnectionError:
+            _logger.warning("Geocoding: no se pudo conectar a Nominatim (sin red o DNS). query=%s", query)
+            return None
+        except requests.exceptions.Timeout:
+            _logger.warning("Geocoding: timeout al contactar Nominatim. query=%s", query)
+            return None
+        except Exception as e:
+            _logger.warning("Geocoding: error inesperado. query=%s error=%s", query, e)
+            return None
+
+    def _auto_geocode_silent(self):
+        """Auto-geocode without recursion — writes coords via super() to avoid re-triggering write()."""
+        try:
+            parts = [p for p in [self.street, self.city,
+                                  self.state_id.name if self.state_id else None,
+                                  'Ecuador'] if p]
+            if len(parts) < 2:
+                return
+            result = self._nominatim_search(', '.join(parts))
+            if not result:
+                result = self._nominatim_search(', '.join(parts), countrycodes='')
+            if result:
+                lat, lon, _ = result
+                super(EstateProperty, self).write({'latitude': lat, 'longitude': lon})
+        except Exception as e:
+            _logger.warning("_auto_geocode_silent failed: %s", e)
+
+    def geocode_if_missing(self):
+        """Called from JS on form load. Geocodes silently only when no coords exist yet.
+        Returns True if coords were set, False if already existed or failed."""
+        self.ensure_one()
+        if self.latitude or self.longitude:
+            return False
+        self._auto_geocode_silent()
+        return bool(self.latitude or self.longitude)
+
     def action_geocode_address(self):
         """Geocode the property address using Nominatim (OpenStreetMap) — free, no API key."""
         self.ensure_one()
         parts = [p for p in [self.street, self.city,
                              self.state_id.name if self.state_id else None,
-                             self.country_id.name if self.country_id else None] if p]
+                             'Ecuador'] if p]
         if not parts:
             raise UserError('Ingresa al menos la dirección y la ciudad para ubicar en el mapa.')
         query = ', '.join(parts)
         try:
-            resp = requests.get(
-                'https://nominatim.openstreetmap.org/search',
-                params={'q': query, 'format': 'json', 'limit': 1},
-                headers={'User-Agent': 'OdooEstateApp/1.0'},
-                timeout=10,
-            )
-            data = resp.json()
-            if data:
-                lat = float(data[0]['lat'])
-                lon = float(data[0]['lon'])
+            result = self._nominatim_search(query, countrycodes='ec')
+            if not result:
+                result = self._nominatim_search(query, countrycodes='')
+            if result:
+                lat, lon, display_name = result
                 self.write({'latitude': lat, 'longitude': lon})
-                display_name = data[0].get('display_name', query)
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
                         'title': 'Ubicación encontrada',
-                        'message': f'Coordenadas actualizadas: {lat:.5f}, {lon:.5f}\n{display_name}',
+                        'message': f'Coordenadas: {lat:.5f}, {lon:.5f}',
                         'type': 'success',
                         'sticky': False,
                     }
                 }
             else:
+                # Retry at city level
+                result2 = self._nominatim_search(f"{self.city}, Ecuador", countrycodes='ec')
+                if result2:
+                    lat, lon, _ = result2
+                    self.write({'latitude': lat, 'longitude': lon})
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': 'Ubicación aproximada (ciudad)',
+                            'message': f'No se encontró la calle exacta. Se usaron las coordenadas de {self.city}.',
+                            'type': 'warning',
+                            'sticky': False,
+                        }
+                    }
                 return {
                     'type': 'ir.actions.client',
                     'tag': 'display_notification',
                     'params': {
                         'title': 'Dirección no encontrada',
-                        'message': f'No se pudo geocodificar: "{query}". Intenta con más detalles.',
+                        'message': f'No se pudo geocodificar: "{query}". Intenta con la dirección más específica.',
                         'type': 'warning',
                         'sticky': False,
                     }
@@ -264,6 +385,26 @@ class EstateProperty(models.Model):
         'res.users', string='Asesor Responsable (Captador)', tracking=True,
         help='El asesor que captó la exclusividad de esta propiedad.')
 
+    # --- Terreno / Solar ---
+    is_land_type = fields.Boolean(
+        string='Es Tipo Terreno',
+        compute='_compute_is_land_type',
+        store=False,
+    )
+    has_iprus = fields.Boolean(
+        string='Tiene IPRUS', default=False, tracking=True,
+        help='Informe de Regulación Metropolitana (IPRUS) emitido por el municipio para este terreno.')
+    iprus_number = fields.Char(
+        string='N° IPRUS', tracking=True,
+        help='Número o código del documento IPRUS.')
+
+
+    @api.depends('property_type_id', 'property_type_id.name')
+    def _compute_is_land_type(self):
+        _LAND_KEYWORDS = ('terreno', 'solar', 'lote', 'parcela', 'predio', 'campo')
+        for rec in self:
+            name = (rec.property_type_id.name or '').lower()
+            rec.is_land_type = any(k in name for k in _LAND_KEYWORDS)
 
     @api.depends('avm_comparable_count')
     def _compute_avm_confidence(self):
@@ -313,13 +454,13 @@ class EstateProperty(models.Model):
                         avg_first = sum(c.price for c in first_half) / len(first_half)
                         avg_second = sum(c.price for c in second_half) / len(second_half)
                         if avg_second > avg_first * 1.03:
-                            trend = '📈 Subiendo (+{:.1f}%)'.format(((avg_second/avg_first)-1)*100)
+                            trend = 'Subiendo (+{:.1f}%)'.format(((avg_second/avg_first)-1)*100)
                         elif avg_second < avg_first * 0.97:
-                            trend = '📉 Bajando ({:.1f}%)'.format(((avg_second/avg_first)-1)*100)
+                            trend = 'Bajando ({:.1f}%)'.format(((avg_second/avg_first)-1)*100)
                         else:
-                            trend = '➡️ Estable'
+                            trend = 'Estable'
                     else:
-                        trend = '➡️ Estable'
+                        trend = 'Estable'
                     prop.write({
                         'avm_estimated_price': int(estimated * 100) / 100.0,
                         'avm_comparable_count': len(comparables),
@@ -800,10 +941,10 @@ class EstateProperty(models.Model):
                 'product_uom_qty': 1,
             })]
         order = self.env['sale.order'].create(order_vals)
-        self.message_post(body=f'🛒 Orden de venta <b>{order.name}</b> creada desde esta propiedad.')
+        self.message_post(body=f'Orden de venta <b>{order.name}</b> creada desde esta propiedad.')
         if active_lead:
             active_lead.message_post(
-                body=f'🛒 Orden de venta <b>{order.name}</b> creada para la propiedad '
+                body=f'Orden de venta <b>{order.name}</b> creada para la propiedad '
                      f'<b>{self.title}</b> por ${self.price:,.2f}.')
         return {
             'type': 'ir.actions.act_window',
@@ -897,6 +1038,17 @@ class EstateProperty(models.Model):
             # Auto-publicar en WordPress si se creó con wp_published=True
             if prop.wp_published and hasattr(prop, '_trigger_wp_sync_async'):
                 prop._trigger_wp_sync_async()
+            # Auto-geocodificar si hay dirección pero sin coordenadas
+            if prop.street and prop.city and not prop.latitude:
+                try:
+                    prop._auto_geocode_silent()
+                except Exception:
+                    pass
+            # Auto-completar código postal
+            if not prop.zip_code and prop.city:
+                code = self._EC_POSTAL_CODES.get(prop.city.lower().strip(), '')
+                if code:
+                    super(EstateProperty, prop).write({'zip_code': code})
 
         return properties
 
@@ -965,6 +1117,11 @@ class EstateProperty(models.Model):
     }
 
     def write(self, vals):
+        # Capturar precios ANTES del write para el historial
+        old_prices = {}
+        if 'price' in vals:
+            old_prices = {prop.id: prop.price for prop in self}
+
         res = super().write(vals)
         # Sincronizar actualizaciones hacia product.template
         for prop in self:
@@ -987,14 +1144,14 @@ class EstateProperty(models.Model):
                     wp_id = getattr(prop, 'wp_post_id', 0)
                     if wp_pub and wp_id and hasattr(prop, '_trigger_wp_sync_async'):
                         prop._trigger_wp_sync_async()
-        # Historial de precios
-        if 'price' in vals:
+        # Historial de precios (usando precios capturados antes del write)
+        if old_prices:
+            new_price = vals['price']
             for prop in self:
-                old = prop.price
-                new = vals['price']
-                if old and old != new:
-                    reason = 'reduction' if new < old else 'increase'
-                    prop._record_price_change(old, new, reason)
+                old_price = old_prices.get(prop.id, 0)
+                if old_price and old_price != new_price:
+                    reason = 'reduction' if new_price < old_price else 'increase'
+                    prop._record_price_change(old_price, new_price, reason)
 
         # Auto-etiquetado cuando cambia propietario o comprador
         if 'owner_id' in vals:
@@ -1007,7 +1164,29 @@ class EstateProperty(models.Model):
             for prop in self:
                 if prop.buyer_id:
                     prop.buyer_id._apply_estate_category('estate_management.partner_category_buyer')
+        # Auto-geocodificar cuando cambia la dirección (pero no cuando solo cambian coords)
+        _ADDRESS_FIELDS = frozenset({'street', 'city', 'state_id', 'country_id'})
+        _COORD_FIELDS = frozenset({'latitude', 'longitude'})
+        if (not self.env.context.get('no_geocode')
+                and _ADDRESS_FIELDS.intersection(vals)
+                and not _COORD_FIELDS.intersection(vals)):
+            for prop in self:
+                if prop.street and prop.city:
+                    try:
+                        prop._auto_geocode_silent()
+                    except Exception:
+                        pass
         return res
+
+    def unlink(self):
+        non_draft = self.filtered(lambda p: p.state not in ('draft',))
+        if non_draft:
+            titles = ', '.join(non_draft.mapped('title') or non_draft.mapped('name'))
+            raise UserError(
+                f"No se puede eliminar una propiedad que ya ha sido publicada o vendida: "
+                f"{titles}.\n\nPrimero vuelva al estado Borrador usando 'Volver a Borrador'."
+            )
+        return super().unlink()
 
     def action_publish(self):
         """Borrador → Disponible: primera publicación al mercado."""
@@ -1277,7 +1456,7 @@ class EstateProperty(models.Model):
                     prop.activity_schedule(
                         'mail.mail_activity_data_todo',
                         date_deadline=prop.contract_end_date,
-                        summary=f'⚠️ Contrato por vencer ({days_left} días)',
+                        summary=f'Contrato por vencer ({days_left} días)',
                         note=f'El contrato de la propiedad "{prop.title}" vence el {fecha_str}. Quedan {days_left} días.',
                         user_id=prop.user_id.id or self.env.uid,
                     )
@@ -1301,7 +1480,7 @@ class EstateProperty(models.Model):
                     prop.activity_schedule(
                         'mail.mail_activity_data_todo',
                         date_deadline=today,
-                        summary='❌ ¡Contrato VENCIDO!',
+                        summary='Contrato VENCIDO',
                         note=f'El contrato de la propiedad "{prop.title}" VENCIÓ el {fecha_str}.',
                         user_id=prop.user_id.id or self.env.uid,
                     )
@@ -1335,7 +1514,7 @@ class EstateProperty(models.Model):
                     prop.activity_schedule(
                         'mail.mail_activity_data_todo',
                         date_deadline=today,
-                        summary=f'💡 Considera reducir el precio ({dom} días sobrevaluado)',
+                        summary=f'Considera reducir el precio ({dom} días sobrevaluado)',
                         note=(
                             f'La propiedad "{prop.title}" lleva {dom} días en el mercado '
                             f'y está SOBREVALORADA según el AVM '
@@ -1381,7 +1560,7 @@ class EstateProperty(models.Model):
                     prop.activity_schedule(
                         'mail.mail_activity_data_todo',
                         date_deadline=today,
-                        summary=f'🛑 Propiedad estancada ({dom} días sin visitas)',
+                        summary=f'Propiedad estancada ({dom} días sin visitas)',
                         note=(
                             f'"{prop.title}" lleva {dom} días en el mercado sin visitas confirmadas. '
                             f'Acciones sugeridas: revisar precio, actualizar fotos o hacer campaña en redes.'

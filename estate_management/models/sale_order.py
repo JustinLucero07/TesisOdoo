@@ -28,12 +28,12 @@ class SaleOrder(models.Model):
             if order.property_id:
                 # Notificar en el chatter de la propiedad
                 order.property_id.message_post(
-                    body=f'✅ Orden de venta <b>{order.name}</b> CONFIRMADA para '
+                    body=f'Orden de venta <b>{order.name}</b> CONFIRMADA para '
                          f'<b>{order.partner_id.name}</b> por ${order.amount_total:,.2f}.')
             if order.lead_id:
                 # Notificar en el chatter del lead CRM
                 order.lead_id.message_post(
-                    body=f'✅ Orden de venta <b>{order.name}</b> confirmada para la propiedad '
+                    body=f'Orden de venta <b>{order.name}</b> confirmada para la propiedad '
                          f'<b>{order.property_id.title if order.property_id else "N/A"}</b> '
                          f'por ${order.amount_total:,.2f}.')
             # Enviar email de confirmación al cliente si tiene correo

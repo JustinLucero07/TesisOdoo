@@ -222,13 +222,13 @@ class EstateWordpressLinkWizard(models.TransientModel):
 
         # Registrar en chatter
         mode_label = 'Solo enlazado' if self.sync_data == 'link_only' else 'Enlazado + datos importados'
-        body = (f'<p><strong>🔗 Enlazado manualmente con WordPress</strong></p>'
+        body = (f'<p><strong>Enlazado manualmente con WordPress</strong></p>'
                 f'<p>Post ID: {self.wp_post_id} | Modo: {mode_label}</p>')
         if changes_applied:
             body += '<pre>' + '\n'.join(changes_applied) + '</pre>'
         prop.message_post(body=body, message_type='notification')
 
-        result_msg = f'✅ Propiedad "{prop.title}" enlazada exitosamente al post WordPress ID {self.wp_post_id}.'
+        result_msg = f'Propiedad "{prop.title}" enlazada exitosamente al post WordPress ID {self.wp_post_id}.'
         if changes_applied:
             result_msg += f'\n{len(changes_applied)} campo(s) actualizados desde WordPress.'
 

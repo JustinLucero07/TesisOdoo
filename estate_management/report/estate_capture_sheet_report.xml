@@ -13,6 +13,7 @@
         <field name="print_report_name">'Hoja_Captacion_' + (object.name or 'PROP')</field>
         <field name="binding_model_id" ref="estate_management.model_estate_property"/>
         <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
     </record>
 
     <!-- ============================================================
@@ -21,278 +22,304 @@
     <template id="report_capture_sheet_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="prop">
-                <t t-call="web.external_layout">
-                    <div class="page">
+                    <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
-                        <!-- ── ENCABEZADO ── -->
-                        <div style="border-bottom: 3px solid #1B4F72; padding-bottom: 12px; margin-bottom: 20px;">
-                            <table width="100%">
-                                <tr>
-                                    <td width="70%">
-                                        <h2 style="color: #1B4F72; margin: 0; font-size: 20px; font-weight: bold;">
-                                            HOJA DE CAPTACIÓN DE PROPIEDAD
-                                        </h2>
-                                        <p style="color: #555; margin: 4px 0 0 0; font-size: 13px;">
-                                            Referencia: <strong><t t-esc="prop.name"/></strong>
-                                            &#160;|&#160;
-                                            Fecha: <strong><t t-esc="time.strftime('%d/%m/%Y')"/></strong>
-                                        </p>
-                                    </td>
-                                    <td width="30%" style="text-align: right; vertical-align: top;">
-                                        <span style="background: #1B4F72; color: white; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: bold;">
-                                            <t t-if="prop.offer_type == 'sale'">VENTA</t>
-                                            <t t-elif="prop.offer_type == 'rent'">ALQUILER</t>
-                                        </span>
-                                        &#160;
-                                        <span t-attf-style="background: {{ '#27AE60' if prop.state == 'available' else '#E74C3C' if prop.state == 'sold' else '#F39C12' }}; color: white; padding: 6px 14px; border-radius: 4px; font-size: 12px; font-weight: bold;">
-                                            <t t-if="prop.state == 'available'">DISPONIBLE</t>
-                                            <t t-elif="prop.state == 'reserved'">RESERVADO</t>
-                                            <t t-elif="prop.state == 'sold'">VENDIDO</t>
-                                            <t t-elif="prop.state == 'sold'">VENDIDO</t>
-                                        </span>
-                                    </td>
-                                </tr>
-                            </table>
+                        <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                            <tr>
+                                <td style="padding:10px 16px; vertical-align:middle; width:60%;">
+                                    <t t-if="env.company.logo">
+                                        <img t-att-src="image_data_uri(env.company.logo)" style="height:28px; max-width:110px;"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span style="font-size:15px; font-weight:900; color:white;"><t t-esc="env.company.name"/></span>
+                                    </t>
+                                </td>
+                                <td style="padding:10px 16px; vertical-align:middle; text-align:right; width:40%;">
+                                    <div style="font-size:13px; font-weight:900; color:white; text-transform:uppercase; letter-spacing:2px;">Hoja de Captaci&#243;n</div>
+                                    <div style="font-size:9px; color:#a8bcdb; margin-top:3px;">
+                                        <t t-esc="prop.name"/> &#183; <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
+                        <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
+                            <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Documento Interno &#183; Gesti&#243;n</div>
+                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;">
+                                <t t-esc="prop.title or prop.name"/>
+                            </div>
+                            <div style="font-size:9px; color:#666; margin-top:3px;">
+                                <t t-esc="prop.street or ''"/>
+                                <t t-if="prop.city">, <t t-esc="prop.city"/></t>
+                                <t t-if="prop.state_id">, <t t-esc="prop.state_id.name"/></t>
+                                &#160;&#183;&#160;
+                                <t t-if="prop.offer_type == 'sale'">Venta</t>
+                                <t t-elif="prop.offer_type == 'rent'">Alquiler</t>
+                                &#160;&#183;&#160;
+                                <t t-if="prop.state == 'available'">Disponible</t>
+                                <t t-elif="prop.state == 'reserved'">Reservado</t>
+                                <t t-elif="prop.state == 'sold'">Vendido</t>
+                            </div>
                         </div>
 
-                        <!-- ── SECCIÓN 1: DATOS DE LA PROPIEDAD ── -->
-                        <div style="margin-bottom: 16px;">
-                            <h4 style="color: #1B4F72; border-bottom: 1px solid #AED6F1; padding-bottom: 4px; font-size: 14px;">
-                                1. DATOS DE LA PROPIEDAD
-                            </h4>
-                            <table width="100%" style="font-size: 12px; border-collapse: collapse;">
-                                <tr>
-                                    <td width="25%" style="padding: 4px 6px; font-weight: bold; color: #555;">Título:</td>
-                                    <td width="75%" style="padding: 4px 6px;"><t t-esc="prop.title or '—'"/></td>
-                                </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Tipo:</td>
-                                    <td style="padding: 4px 6px;"><t t-esc="prop.property_type_id.name if prop.property_type_id else '—'"/></td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Dirección:</td>
-                                    <td style="padding: 4px 6px;">
-                                        <t t-esc="prop.street or ''"/>
-                                        <t t-if="prop.city">, <t t-esc="prop.city"/></t>
-                                        <t t-if="prop.state_id">, <t t-esc="prop.state_id.name"/></t>
-                                        <t t-if="prop.zip_code"> - CP: <t t-esc="prop.zip_code"/></t>
-                                    </td>
-                                </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Coordenadas GPS:</td>
-                                    <td style="padding: 4px 6px;">
-                                        <t t-if="prop.latitude and prop.longitude">
-                                            Lat: <t t-esc="prop.latitude"/> | Lng: <t t-esc="prop.longitude"/>
-                                        </t>
-                                        <t t-else="">No registrado</t>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Año Construcción:</td>
-                                    <td style="padding: 4px 6px;"><t t-esc="prop.year_built or '—'"/></td>
-                                </tr>
-                            </table>
+                        <!-- ══ 1. DATOS DEL PROPIETARIO ═══════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            1. Datos del Propietario
                         </div>
-
-                        <!-- ── SECCIÓN 2: CARACTERÍSTICAS FÍSICAS ── -->
-                        <div style="margin-bottom: 16px;">
-                            <h4 style="color: #1B4F72; border-bottom: 1px solid #AED6F1; padding-bottom: 4px; font-size: 14px;">
-                                2. CARACTERÍSTICAS FÍSICAS
-                            </h4>
-                            <table width="100%" style="font-size: 12px; border-collapse: collapse;">
+                        <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                            <tr>
+                                <td style="width:30%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Nombre completo</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700;"><t t-esc="prop.owner_id.name if prop.owner_id else '&#8212;'"/></td>
+                            </tr>
+                            <t t-if="prop.owner_id">
                                 <tr>
-                                    <td width="25%" style="padding: 4px 6px; font-weight: bold; color: #555;">Área Total:</td>
-                                    <td width="25%" style="padding: 4px 6px;"><t t-esc="prop.area or 0"/> m²</td>
-                                    <td width="25%" style="padding: 4px 6px; font-weight: bold; color: #555;">Habitaciones:</td>
-                                    <td width="25%" style="padding: 4px 6px;"><t t-esc="prop.bedrooms or 0"/></td>
+                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Tel&#233;fono</td>
+                                    <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.owner_id.phone or prop.owner_id.mobile or '&#8212;'"/></td>
                                 </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Baños:</td>
-                                    <td style="padding: 4px 6px;"><t t-esc="prop.bathrooms or 0"/></td>
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Parqueaderos:</td>
-                                    <td style="padding: 4px 6px;"><t t-esc="prop.parking_spaces or 0"/></td>
+                                <tr>
+                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Email</td>
+                                    <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.owner_id.email or '&#8212;'"/></td>
                                 </tr>
-                            </table>
+                                <t t-if="prop.owner_id.street">
+                                    <tr>
+                                        <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Domicilio</td>
+                                        <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.owner_id.street"/></td>
+                                    </tr>
+                                </t>
+                            </t>
+                        </table>
+
+                        <!-- ══ 2. DATOS DEL INMUEBLE ═══════════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            2. Datos del Inmueble
                         </div>
-
-                        <!-- ── SECCIÓN 3: CONDICIONES COMERCIALES ── -->
-                        <div style="margin-bottom: 16px;">
-                            <h4 style="color: #1B4F72; border-bottom: 1px solid #AED6F1; padding-bottom: 4px; font-size: 14px;">
-                                3. CONDICIONES COMERCIALES
-                            </h4>
-                            <table width="100%" style="font-size: 12px; border-collapse: collapse;">
+                        <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                            <tr>
+                                <td style="width:30%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Direcci&#243;n</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">
+                                    <t t-esc="prop.street or ''"/>
+                                    <t t-if="prop.city">, <t t-esc="prop.city"/></t>
+                                    <t t-if="prop.state_id">, <t t-esc="prop.state_id.name"/></t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Tipo de inmueble</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.property_type_id.name if prop.property_type_id else '&#8212;'"/></td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Operaci&#243;n solicitada</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">
+                                    <t t-if="prop.offer_type == 'sale'">Venta</t>
+                                    <t t-elif="prop.offer_type == 'rent'">Alquiler</t>
+                                    <t t-else="">&#8212;</t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Superficie total</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.area or 0"/> m&#178;</td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Dormitorios / Ba&#241;os</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.bedrooms or 0"/> / <t t-esc="prop.bathrooms or 0"/></td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Parqueaderos</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.parking_spaces or 0"/></td>
+                            </tr>
+                            <t t-if="prop.year_built">
                                 <tr>
-                                    <td width="25%" style="padding: 4px 6px; font-weight: bold; color: #555;">Precio Solicitado:</td>
-                                    <td width="25%" style="padding: 4px 6px; font-weight: bold; font-size: 14px; color: #1B4F72;">
-                                        $<t t-esc="'{:,.2f}'.format(prop.price or 0)"/>
-                                    </td>
-                                    <td width="25%" style="padding: 4px 6px; font-weight: bold; color: #555;">Precio Mínimo:</td>
-                                    <td width="25%" style="padding: 4px 6px;">
-                                        $<t t-esc="'{:,.2f}'.format(prop.bottom_price or 0)"/>
-                                    </td>
+                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">A&#241;o Construcci&#243;n</td>
+                                    <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="prop.year_built"/></td>
                                 </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Comisión (%):</td>
-                                    <td style="padding: 4px 6px;"><t t-esc="prop.commission_percentage or 5"/>%</td>
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Exclusividad:</td>
-                                    <td style="padding: 4px 6px;">
+                            </t>
+                            <t t-if="prop.latitude and prop.longitude">
+                                <tr>
+                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">Coordenadas GPS</td>
+                                    <td style="padding:5px 10px;">Lat: <t t-esc="prop.latitude"/> &#183; Lng: <t t-esc="prop.longitude"/></td>
+                                </tr>
+                            </t>
+                        </table>
+
+                        <!-- ══ 3. CONDICIONES COMERCIALES ═════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            3. Condiciones Comerciales
+                        </div>
+                        <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                            <thead>
+                                <tr style="background:#263d61; color:white;">
+                                    <th style="padding:7px 10px; text-align:left; font-weight:700;">Concepto</th>
+                                    <th style="padding:7px 10px; text-align:right; font-weight:700;">Valor</th>
+                                    <th style="padding:7px 10px; text-align:left; font-weight:700;">Observaci&#243;n</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Precio de publicaci&#243;n</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.2f}'.format(prop.price or 0)"/></td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#666;">Acordado con propietario</td>
+                                </tr>
+                                <tr style="background:#F9FAFB;">
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Precio m&#237;nimo aceptable</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;">$<t t-esc="'{:,.2f}'.format(prop.bottom_price or 0)"/></td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#666;">Margen de negociaci&#243;n</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Comisi&#243;n por venta</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;"><t t-esc="prop.commission_percentage or 5"/>%</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#666;">Sobre precio final</td>
+                                </tr>
+                                <tr style="background:#F9FAFB;">
+                                    <td style="padding:6px 10px;">Modalidad de captaci&#243;n</td>
+                                    <td style="padding:6px 10px; text-align:right;">
                                         <t t-if="prop.is_exclusive">
-                                            <span style="color: #27AE60; font-weight: bold;">✓ CON EXCLUSIVIDAD</span>
+                                            <span style="color:#15803d; font-weight:700;">Exclusiva</span>
                                         </t>
                                         <t t-else="">
-                                            <span style="color: #E74C3C;">✗ SIN EXCLUSIVIDAD</span>
+                                            <span style="color:#888;">Sin exclusividad</span>
+                                        </t>
+                                    </td>
+                                    <td style="padding:6px 10px; color:#666;">
+                                        <t t-if="prop.is_exclusive and prop.exclusive_user_id">
+                                            Asesor: <t t-esc="prop.exclusive_user_id.name"/>
                                         </t>
                                     </td>
                                 </tr>
-                                <tr t-if="prop.is_exclusive and prop.exclusive_user_id">
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Asesor Exclusivo:</td>
-                                    <td colspan="3" style="padding: 4px 6px;"><t t-esc="prop.exclusive_user_id.name"/></td>
-                                </tr>
-                            </table>
-                        </div>
+                            </tbody>
+                        </table>
 
-                        <!-- ── SECCIÓN 4: PROPIETARIO ── -->
-                        <div style="margin-bottom: 16px;">
-                            <h4 style="color: #1B4F72; border-bottom: 1px solid #AED6F1; padding-bottom: 4px; font-size: 14px;">
-                                4. DATOS DEL PROPIETARIO
-                            </h4>
-                            <table width="100%" style="font-size: 12px; border-collapse: collapse;">
-                                <tr>
-                                    <td width="25%" style="padding: 4px 6px; font-weight: bold; color: #555;">Nombre:</td>
-                                    <td width="75%" style="padding: 4px 6px;"><t t-esc="prop.owner_id.name if prop.owner_id else '—'"/></td>
-                                </tr>
-                                <tr style="background: #F8F9FA;" t-if="prop.owner_id">
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Teléfono:</td>
-                                    <td style="padding: 4px 6px;"><t t-esc="prop.owner_id.phone or prop.owner_id.mobile or '—'"/></td>
-                                </tr>
-                                <tr t-if="prop.owner_id">
-                                    <td style="padding: 4px 6px; font-weight: bold; color: #555;">Email:</td>
-                                    <td style="padding: 4px 6px;"><t t-esc="prop.owner_id.email or '—'"/></td>
-                                </tr>
-                            </table>
+                        <!-- ══ 4. DOCUMENTACIÓN ═══════════════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            4. Checklist de Documentaci&#243;n
                         </div>
-
-                        <!-- ── SECCIÓN 5: CHECKLIST DE DOCUMENTACIÓN ── -->
-                        <div style="margin-bottom: 16px;">
-                            <h4 style="color: #1B4F72; border-bottom: 1px solid #AED6F1; padding-bottom: 4px; font-size: 14px;">
-                                5. CHECKLIST DE DOCUMENTACIÓN Y SEGUIMIENTO
-                            </h4>
-                            <table width="100%" style="font-size: 12px; border-collapse: collapse;">
-                                <tr style="background: #EBF5FB;">
-                                    <th style="padding: 6px; text-align: left; font-weight: bold; color: #1B4F72;">Documento / Gestión</th>
-                                    <th style="padding: 6px; text-align: center; font-weight: bold; color: #1B4F72; width: 80px;">Entregado</th>
-                                    <th style="padding: 6px; text-align: left; font-weight: bold; color: #1B4F72;">Observaciones</th>
+                        <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
+                            <thead>
+                                <tr style="background:#263d61; color:white;">
+                                    <th style="padding:7px 10px; text-align:left;">Documento / Gesti&#243;n</th>
+                                    <th style="padding:7px 10px; text-align:center; width:80px;">Entregado</th>
+                                    <th style="padding:7px 10px; text-align:left;">Observaciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Escritura / T&#237;tulo de propiedad</td>
+                                    <td style="padding:6px 10px; text-align:center; border-bottom:1px solid #E8EAED; color:#888;">[ ]</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"></td>
+                                </tr>
+                                <tr style="background:#F9FAFB;">
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">C&#233;dula de identidad del propietario</td>
+                                    <td style="padding:6px 10px; text-align:center; border-bottom:1px solid #E8EAED; color:#888;">[ ]</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"></td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Escritura / Título de propiedad</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">☐</td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;"></td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Certificado de grav&#225;menes</td>
+                                    <td style="padding:6px 10px; text-align:center; border-bottom:1px solid #E8EAED; color:#888;">[ ]</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"></td>
                                 </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Cédula de identidad del propietario</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">☐</td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;"></td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Certificado de gravámenes</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">☐</td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;"></td>
-                                </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Pago de impuesto predial al día</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">☐</td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;"></td>
+                                <tr style="background:#F9FAFB;">
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Pago de impuesto predial al d&#237;a</td>
+                                    <td style="padding:6px 10px; text-align:center; border-bottom:1px solid #E8EAED; color:#888;">[ ]</td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"></td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Avalúo realizado</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">
-                                        <t t-if="prop.appraisal_ids">☑</t><t t-else="">☐</t>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Aval&#250;o realizado</td>
+                                    <td style="padding:6px 10px; text-align:center; border-bottom:1px solid #E8EAED;">
+                                        <t t-if="prop.appraisal_ids"><span style="color:#15803d; font-weight:700;">[X]</span></t>
+                                        <t t-else=""><span style="color:#888;">[ ]</span></t>
                                     </td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">
-                                        <t t-if="prop.appraisal_ids">
-                                            <t t-esc="len(prop.appraisal_ids)"/> avalúo(s) registrado(s)
-                                        </t>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#666;">
+                                        <t t-if="prop.appraisal_ids"><t t-esc="len(prop.appraisal_ids)"/> aval&#250;o(s)</t>
                                     </td>
                                 </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Fotografías tomadas</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">
-                                        <t t-if="prop.image_main">☑</t><t t-else="">☐</t>
+                                <tr style="background:#F9FAFB;">
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Fotograf&#237;as tomadas</td>
+                                    <td style="padding:6px 10px; text-align:center; border-bottom:1px solid #E8EAED;">
+                                        <t t-if="prop.image_main"><span style="color:#15803d; font-weight:700;">[X]</span></t>
+                                        <t t-else=""><span style="color:#888;">[ ]</span></t>
                                     </td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">
-                                        <t t-if="prop.image_ids">
-                                            <t t-esc="len(prop.image_ids)"/> foto(s) en galería
-                                        </t>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#666;">
+                                        <t t-if="prop.image_ids"><t t-esc="len(prop.image_ids)"/> foto(s)</t>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Contrato de exclusividad firmado</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">
-                                        <t t-if="prop.is_exclusive">☑</t><t t-else="">☐</t>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Contrato de exclusividad firmado</td>
+                                    <td style="padding:6px 10px; text-align:center; border-bottom:1px solid #E8EAED;">
+                                        <t t-if="prop.is_exclusive"><span style="color:#15803d; font-weight:700;">[X]</span></t>
+                                        <t t-else=""><span style="color:#888;">[ ]</span></t>
                                     </td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;"></td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"></td>
                                 </tr>
-                                <tr style="background: #F8F9FA;">
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">Publicado en portales/redes</td>
-                                    <td style="padding: 6px; text-align: center; border-bottom: 1px solid #eee;">
-                                        <t t-if="prop.wp_published or prop.fb_published or prop.ig_published">☑</t><t t-else="">☐</t>
+                                <tr style="background:#F9FAFB;">
+                                    <td style="padding:6px 10px;">Publicado en portales/redes</td>
+                                    <td style="padding:6px 10px; text-align:center;">
+                                        <t t-if="prop.wp_published or prop.fb_published or prop.ig_published"><span style="color:#15803d; font-weight:700;">[X]</span></t>
+                                        <t t-else=""><span style="color:#888;">[ ]</span></t>
                                     </td>
-                                    <td style="padding: 6px; border-bottom: 1px solid #eee;">
+                                    <td style="padding:6px 10px; color:#666;">
                                         <t t-if="prop.wp_published">WP </t>
                                         <t t-if="prop.fb_published">FB </t>
                                         <t t-if="prop.ig_published">IG </t>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td style="padding: 6px;">Minuta / Promesa de compraventa</td>
-                                    <td style="padding: 6px; text-align: center;">☐</td>
-                                    <td style="padding: 6px;"></td>
-                                </tr>
-                            </table>
-                        </div>
+                            </tbody>
+                        </table>
 
-                        <!-- ── SECCIÓN 6: DESCRIPCIÓN ── -->
+                        <!-- ══ 5. DESCRIPCIÓN ═════════════════════════════════════════ -->
                         <t t-if="prop.description">
-                        <div style="margin-bottom: 16px;">
-                            <h4 style="color: #1B4F72; border-bottom: 1px solid #AED6F1; padding-bottom: 4px; font-size: 14px;">
-                                6. DESCRIPCIÓN DE LA PROPIEDAD
-                            </h4>
-                            <div style="font-size: 11px; color: #444; border: 1px solid #ddd; padding: 8px; border-radius: 4px;">
+                            <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                                5. Descripci&#243;n de la Propiedad
+                            </div>
+                            <div style="border:1px solid #D8DCE5; border-top:none; padding:10px 14px; font-size:11px; color:#444; margin-bottom:14px; line-height:1.6;">
                                 <t t-out="prop.description"/>
                             </div>
-                        </div>
                         </t>
 
-                        <!-- ── SECCIÓN 7: FIRMAS ── -->
-                        <div style="margin-top: 30px; border-top: 2px solid #1B4F72; padding-top: 16px;">
-                            <h4 style="color: #1B4F72; font-size: 14px; margin-bottom: 16px;">
-                                7. FIRMAS Y AUTORIZACIÓN
-                            </h4>
-                            <table width="100%" style="font-size: 12px;">
-                                <tr>
-                                    <td width="45%" style="text-align: center; padding: 8px;">
-                                        <div style="border-top: 1px solid #333; margin-top: 40px; padding-top: 6px;">
-                                            <strong>FIRMA DEL ASESOR</strong><br/>
-                                            <t t-esc="prop.user_id.name if prop.user_id else '___________________'"/>
-                                        </div>
-                                    </td>
-                                    <td width="10%"></td>
-                                    <td width="45%" style="text-align: center; padding: 8px;">
-                                        <div style="border-top: 1px solid #333; margin-top: 40px; padding-top: 6px;">
-                                            <strong>FIRMA DEL PROPIETARIO</strong><br/>
-                                            <t t-esc="prop.owner_id.name if prop.owner_id else '___________________'"/>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </table>
-                            <p style="font-size: 10px; color: #888; text-align: center; margin-top: 12px;">
-                                Al firmar este documento, el propietario autoriza a la inmobiliaria a publicar y gestionar la propiedad
-                                <t t-if="prop.is_exclusive">en exclusividad</t><t t-else="">sin exclusividad</t>.
-                            </p>
+                        <!-- ══ 6. ACEPTACIÓN / FIRMAS ═════════════════════════════════ -->
+                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            6. Aceptaci&#243;n
+                        </div>
+                        <div style="border:1px solid #D8DCE5; border-top:none; padding:10px 14px; margin-bottom:24px; font-size:10px; color:#555; line-height:1.6;">
+                            El propietario declara que la informaci&#243;n proporcionada es ver&#237;dica y autoriza a
+                            <t t-esc="env.company.name"/> a publicar y gestionar la propiedad
+                            <t t-if="prop.is_exclusive">en exclusividad</t><t t-else="">sin exclusividad</t>.
+                            La presente hoja de captaci&#243;n tiene car&#225;cter informativo y precontractual;
+                            las condiciones definitivas ser&#225;n formalizadas en el contrato de prestaci&#243;n de servicios inmobiliarios.
                         </div>
 
-                    </div><!-- /page -->
-                </t>
+                        <table style="width:100%; border-collapse:collapse; margin-top:36px;">
+                            <tr>
+                                <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px;">
+                                    <strong>FIRMA DEL ASESOR</strong><br/>
+                                    <t t-esc="prop.user_id.name if prop.user_id else '___________________'"/>
+                                </td>
+                                <td style="width:10%;"/>
+                                <td style="width:45%; text-align:center; vertical-align:top; padding-top:8px; border-top:1px solid #333; font-size:11px;">
+                                    <strong>FIRMA DEL PROPIETARIO</strong><br/>
+                                    <t t-esc="prop.owner_id.name if prop.owner_id else '___________________'"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                            <tr>
+                                <td style="padding:5px 0; width:50%;">
+                                    <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
+                                    <t t-if="env.company.city"> &#183; <t t-esc="env.company.city"/></t>
+                                    <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                    <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
+                                </td>
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                    <t t-esc="env.company.name"/>
+                                </td>
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                    <t t-esc="prop.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
             </t>
         </t>
     </template>

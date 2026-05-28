@@ -28,4 +28,6 @@ class EstatePropertyComparatorWizard(models.TransientModel):
         self.ensure_one()
         return self.env.ref(
             'estate_management.action_report_property_comparison'
-        ).report_action(self)
+        ).report_action(self, data={'form': {
+            'property_ids': self.property_ids.ids,
+        }})
