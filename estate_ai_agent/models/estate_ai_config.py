@@ -34,6 +34,15 @@ class EstateAIConfig(models.TransientModel):
         config_parameter='estate_ai.active',
         default=True)
 
+    # B4: instrucciones de estilo editables para las descripciones de propiedad.
+    # Se inyectan en el prompt sin tocar código.
+    # NOTA: res.config.settings NO admite fields.Text → usamos Char (multi-línea en la vista).
+    ai_desc_instructions = fields.Char(
+        string='Estilo de Descripciones de Propiedad',
+        config_parameter='estate_ai.desc_instructions',
+        default="Tono profesional pero cercano y emocional. Resalta plusvalía y "
+                "potencial de inversión. Evita exageraciones poco creíbles.")
+
     ai_system_prompt = fields.Char(
         string='Prompt del Sistema',
         config_parameter='estate_ai.system_prompt',

@@ -17,32 +17,45 @@
                 <field name="visit_state" widget="statusbar" statusbar_visible="scheduled,done" invisible="property_id == False"/>
             </xpath>
 
+            <!-- Tipo de cita junto a la ubicación -->
             <xpath expr="//field[@name='location']" position="after">
                 <field name="appointment_type" widget="radio" options="{'horizontal': true}"/>
-                <field name="property_id" options="{'no_create': True}"/>
-                <field name="partner_id" options="{'no_create': True}"/>
-                <field name="lead_id" domain="[('type','=','opportunity')]"
-                       options="{'no_create': True}"
-                       placeholder="Lead CRM relacionado (opcional)"/>
+            </xpath>
 
-                <!-- Datos clave: sin necesidad de abrir la propiedad o el contacto -->
+            <!-- Sección inmobiliaria en su PROPIO grupo (después del grupo principal),
+                 con etiquetas claras. Antes los campos se inyectaban dentro del grupo
+                 de fechas y salían sin etiqueta ("Administrator" suelto). -->
+            <xpath expr="//field[@name='location']/ancestor::group[2]" position="after">
+                <group string="Detalles de la Visita">
+                    <field name="property_id" string="Propiedad"
+                           options="{'no_create': True}"
+                           placeholder="Seleccionar propiedad..."/>
+                    <field name="client_id" string="Cliente"
+                           options="{'no_create': True}"
+                           placeholder="Seleccionar cliente..."/>
+                    <field name="lead_id" string="Lead CRM"
+                           domain="[('type','=','opportunity')]"
+                           options="{'no_create': True}"
+                           placeholder="Lead CRM relacionado (opcional)"/>
+                </group>
+
+                <!-- Datos clave: aparecen al elegir una propiedad. Grupo de una
+                     sola columna para que no se parta el texto en paneles angostos. -->
                 <group string="Datos Clave" invisible="property_id == False">
-                    <group string="Propiedad">
-                        <field name="property_price" widget="monetary" readonly="1"
-                               string="Precio de venta"/>
-                        <field name="property_type_name" readonly="1"
-                               string="Tipo"/>
-                        <field name="property_owner_name" readonly="1"
-                               string="Propietario"/>
-                        <field name="property_owner_phone" readonly="1" widget="phone"
-                               string="Tel. Propietario"/>
-                    </group>
-                    <group string="Cliente" invisible="partner_id == False">
-                        <field name="client_phone" readonly="1" widget="phone"
-                               string="Teléfono"/>
-                        <field name="client_mobile" readonly="1" widget="phone"
-                               string="Celular"/>
-                    </group>
+                    <separator string="Propiedad" colspan="2"/>
+                    <field name="property_price" widget="monetary" readonly="1"
+                           string="Precio de venta"/>
+                    <field name="property_type_name" readonly="1"
+                           string="Tipo"/>
+                    <field name="property_owner_name" readonly="1"
+                           string="Propietario"/>
+                    <field name="property_owner_phone" readonly="1" widget="phone"
+                           string="Tel. Propietario"/>
+                    <separator string="Cliente" colspan="2" invisible="client_id == False"/>
+                    <field name="client_phone" readonly="1" widget="phone"
+                           string="Teléfono" invisible="client_id == False"/>
+                    <field name="client_mobile" readonly="1" widget="phone"
+                           string="Celular" invisible="client_id == False"/>
                 </group>
             </xpath>
             <xpath expr="//sheet" position="inside">
@@ -67,8 +80,12 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='allday']" position="after">
                 <field name="appointment_type" widget="radio" options="{'horizontal': true}"/>
-                <field name="property_id" options="{'no_create': True}" placeholder="Seleccionar Propiedad..."/>
-                <field name="partner_id" options="{'no_create': True}" placeholder="Seleccionar Cliente..."/>
+                <group>
+                    <field name="property_id" string="Propiedad"
+                           options="{'no_create': True}" placeholder="Seleccionar propiedad..."/>
+                    <field name="client_id" string="Cliente"
+                           options="{'no_create': True}" placeholder="Seleccionar cliente..."/>
+                </group>
             </xpath>
         </field>
     </record>
@@ -104,7 +121,7 @@
                        decoration-success="appointment_type == 'signing'"
                        optional="show"/>
                 <field name="property_id" optional="show"/>
-                <field name="partner_id" optional="show"/>
+                <field name="client_id" optional="show"/>
                 <field name="visit_state" widget="badge"
                        decoration-success="visit_state == 'done'"
                        decoration-info="visit_state == 'scheduled'"
@@ -128,6 +145,10 @@
         <field name="model">calendar.event</field>
         <field name="inherit_id" ref="calendar.view_calendar_event_search"/>
         <field name="arch" type="xml">
+            <xpath expr="//filter[@name='mymeetings']" position="before">
+                <field name="property_id"/>
+                <field name="client_id"/>
+            </xpath>
             <xpath expr="//filter[@name='mymeetings']" position="after">
                 <separator/>
                 <filter name="filter_visits" string="Visitas Inmobiliarias" domain="[('property_id', '!=', False)]"/>
@@ -142,6 +163,7 @@
                 <filter name="group_by_state" string="Estado de Visita" context="{'group_by': 'visit_state'}"/>
                 <filter name="group_by_type" string="Tipo de Cita" context="{'group_by': 'appointment_type'}"/>
                 <filter name="group_by_property" string="Propiedad" context="{'group_by': 'property_id'}"/>
+                <filter name="group_by_client" string="Cliente" context="{'group_by': 'client_id'}"/>
             </xpath>
         </field>
     </record>
@@ -155,7 +177,7 @@
                 <field name="visit_state" column_invisible="True"/>
                 <field name="name" string="Asunto"/>
                 <field name="property_id"/>
-                <field name="partner_id"/>
+                <field name="client_id"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
                 <field name="start" string="Fecha"/>
                 <field name="appointment_type" widget="badge"/>
@@ -176,7 +198,7 @@
                 <field name="visit_color"/>
                 <field name="appointment_type"/>
                 <field name="property_id"/>
-                <field name="partner_id"/>
+                <field name="client_id"/>
                 <field name="user_id"/>
                 <field name="start"/>
                 <field name="stop"/>
@@ -201,18 +223,18 @@
                             </div>
                             <!-- Property -->
                             <div class="fw-bold text-truncate mb-1" t-if="record.property_id.value">
-                                <i class="fa fa-home me-1 text-primary"/>
+                                <i class="fa fa-home me-1 text-primary" title="Propiedad"/>
                                 <t t-esc="record.property_id.value"/>
                             </div>
                             <!-- Client -->
-                            <div class="text-truncate mb-2" t-if="record.partner_id.value">
-                                <i class="fa fa-user me-1 text-muted"/>
-                                <t t-esc="record.partner_id.value"/>
+                            <div class="text-truncate mb-2" t-if="record.client_id.value">
+                                <i class="fa fa-user me-1 text-muted" title="Cliente"/>
+                                <t t-esc="record.client_id.value"/>
                             </div>
                             <!-- Bottom: advisor + rating -->
                             <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-muted">
-                                    <i class="fa fa-user-tie me-1"/>
+                                    <i class="fa fa-user-tie me-1" title="Asesor"/>
                                     <t t-esc="record.user_id.value or '—'"/>
                                 </small>
                                 <div t-if="record.visit_rating.raw_value">

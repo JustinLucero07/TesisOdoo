@@ -6,11 +6,6 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
-try:
-    from google import genai
-    GOOGLE_GENAI_AVAILABLE = True
-except ImportError:
-    GOOGLE_GENAI_AVAILABLE = False
 
 class EstateProperty(models.Model):
     _inherit = 'estate.property'
@@ -18,6 +13,12 @@ class EstateProperty(models.Model):
     ai_marketing_description = fields.Text(
         string='Descripción Comercial IA',
         help='Generada por IA: 3 versiones (formal, emocional, directa) + titulares para redes.')
+    ai_extra_prompt = fields.Text(
+        string='Aspectos adicionales para la IA',
+        help='Escribe aquí cualquier detalle extra que quieras que la IA incluya: acabados especiales, vista, remodelaciones, cercanía a lugares, etc.')
+    ai_refine_prompt = fields.Text(
+        string='Instrucciones para refinar la descripción',
+        help='Dile a la IA qué cambiar en la descripción ya generada: "hazla más corta", "quita el precio", "agrega más emoción", "enfócate en la vista", etc.')
     ai_property_summary = fields.Html(
         string='Resumen IA',
         help='Resumen ejecutivo generado por IA con los puntos clave de la propiedad.')
@@ -43,33 +44,7 @@ class EstateProperty(models.Model):
         if not self.image_main:
             raise UserError(_("Por favor, suba una imagen principal antes de analizar."))
 
-        if not GOOGLE_GENAI_AVAILABLE:
-            raise UserError(_("La librería 'google-genai' no está instalada. Ejecute: pip install google-genai"))
-
-        # Get API Configuration
-        ICP = self.env['ir.config_parameter'].sudo()
-        api_key = ICP.get_param('estate_ai.api_key', '')
-        if not api_key:
-            raise UserError(_("No se ha configurado la API Key de Gemini. Vaya a Configuracion > Agente IA."))
-
         try:
-            # Configure retries for transient errors (503, 429, etc.)
-            retry_options = genai.types.HttpRetryOptions(
-                attempts=3,
-                initial_delay=2.0,
-                max_delay=30.0,
-                http_status_codes=[429, 500, 502, 503, 504]
-            )
-
-            client = genai.Client(
-                api_key=api_key,
-                http_options=genai.types.HttpOptions(
-                    api_version='v1beta',
-                    retry_options=retry_options
-                ),
-            )
-
-            # Prepare image for Gemini
             image_data = base64.b64decode(self.image_main)
 
             prompt = """
@@ -90,18 +65,12 @@ class EstateProperty(models.Model):
             - room_type: identifica el tipo de ambiente en la imagen.
             """
 
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[
-                    prompt,
-                    genai.types.Part.from_bytes(data=image_data, mime_type='image/jpeg')
-                ]
+            genai_mixin = self.env['estate.genai.mixin']
+            raw_text = genai_mixin._genai_generate(
+                prompt, image_bytes=image_data, image_mime='image/jpeg',
+                temperature=0.4, max_output_tokens=2048,
             )
-
-            # Clean response (Gemini sometimes adds markdown blocks)
-            raw_text = response.text.strip()
-            if raw_text.startswith('```json'):
-                raw_text = raw_text.replace('```json', '').replace('```', '').strip()
+            raw_text = genai_mixin._genai_strip_fences(raw_text)
 
             import json
             result = json.loads(raw_text)
@@ -135,13 +104,19 @@ class EstateProperty(models.Model):
             self.ai_room_type = result.get('room_type', '')
 
             return {
-                'effect': {
-                    'fadeout': 'slow',
-                    'message': 'Imagen analizada con exito!',
-                    'type': 'rainbow_man',
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Imagen analizada',
+                    'message': 'Condición, tags y sugerencias de staging guardados.',
+                    'type': 'success',
+                    'sticky': False,
+                    'next': {'type': 'ir.actions.client', 'tag': 'reload'},
                 }
             }
 
+        except UserError:
+            raise
         except Exception as e:
             _logger.error(f"Error en Vision IA: {str(e)}")
             raise UserError(_("Error al conectar con Gemini Vision: %s") % str(e))
@@ -149,110 +124,159 @@ class EstateProperty(models.Model):
     def action_generate_ai_description(self):
         """Genera descripción comercial profesional con IA y la guarda en el campo descripción."""
         self.ensure_one()
-        if not GOOGLE_GENAI_AVAILABLE:
-            raise UserError(_("La librería 'google-genai' no está instalada."))
-
-        ICP = self.env['ir.config_parameter'].sudo()
-        api_key = ICP.get_param('estate_ai.api_key', '')
-        if not api_key:
-            raise UserError(_("No se ha configurado la API Key. Vaya a Configuración > Agente IA."))
-
         prop = self
 
-        # Gather advisor phone numbers
+        # ── Advisor phone numbers ───────────────────────────────────────────
         advisor_phones = []
-        if prop.user_id and prop.user_id.partner_id.phone:
-            advisor_phones.append(prop.user_id.partner_id.phone)
-        if prop.co_user_id and prop.co_user_id.partner_id.phone:
-            advisor_phones.append(prop.co_user_id.partner_id.phone)
+        for user in [prop.user_id, prop.co_user_id]:
+            if user and user.partner_id:
+                p = user.partner_id.phone or user.partner_id.mobile or ''
+                if p and p not in advisor_phones:
+                    advisor_phones.append(p)
         phones_text = ' – '.join(advisor_phones) if advisor_phones else 'Consultar'
 
-        # Build property info
-        tipo = prop.property_type_id.name if prop.property_type_id else 'Inmueble'
+        # ── Core fields ─────────────────────────────────────────────────────
+        titulo   = (prop.title or '').strip()
+        tipo     = prop.property_type_id.name if prop.property_type_id else 'Inmueble'
         operacion = 'EN VENTA' if prop.offer_type == 'sale' else 'EN ARRIENDO'
-        ciudad = prop.city or ''
-        sector = prop.street or ''
-        area_terreno = prop.area or 0
-        habitaciones = prop.bedrooms or 0
-        banos = prop.bathrooms or 0
-        parking = prop.parking_spaces or 0
-        vehiculos = prop.vehicle_capacity or 0
-        piso = prop.floor or 0
+        ciudad   = (prop.city or 'Cuenca').strip()
+        sector   = (prop.street or '').strip()
+        precio_raw = prop.price or 0
+        precio   = f"${precio_raw:,.0f}".replace(',', '.') if precio_raw else 'Consultar'
+        area     = prop.area or 0
+        habs     = prop.bedrooms or 0
+        banos    = prop.bathrooms or 0
+        parking  = prop.parking_spaces or 0
+        piso     = prop.floor or 0
         year_built = prop.year_built or 0
-        precio = f"${prop.price:,.2f}" if prop.price else 'Consultar'
+        es_terreno = getattr(prop, 'is_land_type', False)
+        exclusivo  = getattr(prop, 'is_exclusive', False)
 
-        # AI vision info if available
-        vision_info = ''
-        if prop.ai_vision_description:
-            vision_info = f"\nAnálisis visual IA de la propiedad: {prop.ai_vision_description}"
+        # Sector keywords (curated by advisor)
+        sector_kw = (getattr(prop, 'sector_keywords', '') or '').strip()
 
-        detalles = (
-            f"Tipo de propiedad: {tipo}\n"
-            f"Operación: {operacion}\n"
-            f"Ciudad: {ciudad} | Sector/Dirección: {sector}\n"
-            f"Área: {area_terreno} m²\n"
-            f"Habitaciones: {habitaciones} | Baños: {banos} | Parqueaderos: {parking} | Capacidad vehículos: {vehiculos}\n"
-            f"Piso/Planta: {piso} | Año de construcción: {year_built}\n"
-            f"Precio: {precio}\n"
-            f"Teléfonos asesores: {phones_text}"
-            f"{vision_info}"
-        )
+        # Tags → amenities list
+        tags_list = [t.name for t in prop.tag_ids] if prop.tag_ids else []
 
-        prompt = f"""Eres un experto copywriter inmobiliario de Ecuador. Genera una descripción comercial
-ATRACTIVA y PROFESIONAL en formato HTML para publicar en portales inmobiliarios y redes sociales.
+        # Mortgage financing info
+        cuota = getattr(prop, 'mortgage_monthly_payment', 0) or 0
 
-REGLAS OBLIGATORIAS:
-1. Empieza con un TITULAR llamativo con el tipo de operación (VENTA/ARRIENDO) y el nombre de la propiedad
-2. Sigue con un PÁRRAFO GANCHO emocional de 2-3 oraciones que enganche al lector
-3. Incluye SECCIONES con estos encabezados (siempre estos, no otros):
-   - Propiedad (tipo y descripción general)
-   - Ubicación (ciudad, sector, ventajas de la zona)
-   - Precio e Inversión
-   - Características (área, dimensiones, metros cuadrados)
-   - Distribución (habitaciones, baños, cocina, áreas sociales, parqueaderos)
-   - Acabados y Extras
-   - Tipo de Propiedad
-   - Contacto (teléfonos de asesores)
-4. Usa listas con viñetas para las características
-5. Termina con un CTA (llamada a la acción) para agendar visita
-6. Los teléfonos de los asesores son: {phones_text}
-7. El HTML debe usar <h3>, <p>, <ul><li>, <b>, <br/> — NO uses CSS inline ni estilos
-8. Sé CREATIVO, VENDEDOR y usa lenguaje emocional pero profesional
-9. NO inventes datos que no estén en la información proporcionada
-10. Si algún dato es 0 o vacío, NO lo menciones
+        # AVM / ROI
+        avm_price = getattr(prop, 'avm_estimated_price', 0) or 0
+        avm_status = getattr(prop, 'avm_status', '') or ''
+        roi_rate = getattr(prop, 'roi_appreciation_rate', 0) or 0
+        roi_5y   = getattr(prop, 'roi_5year_value', 0) or 0
 
-DATOS DE LA PROPIEDAD:
-{detalles}
+        # AI Vision enrichment
+        vision_desc = (prop.ai_vision_description or '').strip()
+        ai_cond     = (getattr(prop, 'ai_condition', '') or '').strip()
+        ai_staging  = (getattr(prop, 'ai_staging_suggestions', '') or '').strip()
 
-Responde SOLO con el HTML de la descripción, sin bloques de código ni explicaciones."""
+        # ── Build structured data block ──────────────────────────────────────
+        lines = [
+            f"EMPRESA: Inmobi (inmobiliaria ecuatoriana)",
+            f"OPERACIÓN: {operacion}",
+            f"TIPO: {tipo}{'  [ES TERRENO]' if es_terreno else ''}{'  [EXCLUSIVIDAD]' if exclusivo else ''}",
+            f"TÍTULO DEL ANUNCIO: {titulo}" if titulo else None,
+            f"CIUDAD: {ciudad}" + (f" | SECTOR: {sector}" if sector else ''),
+            f"PRECIO: {precio}" + (f"  (cuota crédito estimada: ${cuota:,.0f}/mes)".replace(',', '.') if cuota > 0 else ''),
+            f"ÁREA TOTAL: {area} m²" if area else None,
+            f"HABITACIONES: {habs}" if habs else None,
+            f"BAÑOS: {banos}" if banos else None,
+            f"PARQUEADEROS: {parking}" if parking else None,
+            f"PISO/PLANTA: {piso}" if piso else None,
+            f"AÑO CONSTRUCCIÓN: {year_built}" if year_built else None,
+            f"AMENITIES/CARACTERÍSTICAS ESPECIALES: {', '.join(tags_list)}" if tags_list else None,
+            f"PALABRAS CLAVE DEL SECTOR: {sector_kw}" if sector_kw else None,
+            f"ANÁLISIS VISUAL IA: {vision_desc}" if vision_desc else None,
+            f"CONDICIÓN DE LA PROPIEDAD (IA): {ai_cond}" if ai_cond else None,
+            f"TIPO DE AMBIENTE (IA): {getattr(prop, 'ai_room_type', '') or ''}" if getattr(prop, 'ai_room_type', '') else None,
+            f"VALORACIÓN AVM: ${avm_price:,.0f}".replace(',', '.') + f" ({avm_status})" if avm_price else None,
+            f"TASA DE APRECIACIÓN ANUAL: {roi_rate:.1f}% | VALOR PROYECTADO 5 AÑOS: ${roi_5y:,.0f}".replace(',', '.') if roi_rate else None,
+        ]
+        detalles = '\n'.join(l for l in lines if l)
+
+        extra_section = ''
+        if prop.ai_extra_prompt and prop.ai_extra_prompt.strip():
+            extra_section = f"\n\nDESTACAR OBLIGATORIAMENTE (instrucción del asesor):\n{prop.ai_extra_prompt.strip()}"
+
+        # B4: instrucciones de estilo editables desde Configuración (no hardcodeadas)
+        style_instructions = self.env['ir.config_parameter'].sudo().get_param(
+            'estate_ai.desc_instructions', '').strip()
+        if style_instructions:
+            extra_section += f"\n\nESTILO Y TONO (configuración de la inmobiliaria):\n{style_instructions}"
+
+        # ── Prompt ───────────────────────────────────────────────────────────
+        prompt = f"""Eres el copywriter inmobiliario estrella de Inmobi, una inmobiliaria profesional de Ecuador especializada en Cuenca.
+Tu misión: escribir una descripción comercial IMPACTANTE para publicar en portales y redes sociales.
+
+═══════════════════════════════════════════════════════
+DATOS DE LA PROPIEDAD
+═══════════════════════════════════════════════════════
+{detalles}{extra_section}
+
+═══════════════════════════════════════════════════════
+ESTRUCTURA OBLIGATORIA (en este orden exacto)
+═══════════════════════════════════════════════════════
+
+1. TITULAR (una sola línea, en mayúsculas y negrita <b>)
+   Formato: "[TIPO] [OPERACIÓN] – [SECTOR/CIUDAD BREVE] – [GANCHO CORTO]"
+   Ejemplo: "TERRENO EN VENTA – SECTOR NULTI – ALTA PLUSVALÍA Y POTENCIAL DE CONSTRUCCIÓN"
+
+2. PÁRRAFO DE APERTURA (2-3 oraciones)
+   Empieza con: "Inmobi presenta [artículo + tipo] en [operación] en [sector], ..."
+   Debe: enganchar emocionalmente, mencionar lo más valioso de la propiedad.
+
+3. SECCIÓN "CARACTERÍSTICAS PRINCIPALES" (lista <ul><li>)
+   Incluye SOLO los datos disponibles:
+   - Área total
+   - Habitaciones / Baños / Parqueaderos (solo si aplica y son > 0)
+   - Piso / Año de construcción (solo si aplica)
+   - Amenities y características especiales de los tags
+   - Si hay CONDICIÓN DE LA PROPIEDAD (IA), tradúcela de forma comercial:
+     excellent→"acabados en excelente estado", good→"bien conservada", regular→"uso normal, lista para personalizarla"
+   - Si hay TIPO DE AMBIENTE (IA), menciónalo naturalmente en la descripción
+
+4. SECCIÓN "UBICACIÓN Y ENTORNO"
+   Menciona ciudad, sector, ventajas de la zona (usa PALABRAS CLAVE DEL SECTOR si están disponibles).
+   Si no hay datos del sector, describe brevemente la ciudad.
+
+5. SECCIÓN "POTENCIAL E INVERSIÓN" (solo si aplica)
+   - Para terrenos: opciones de uso (vivienda, quinta, proyecto residencial, comercial, etc.)
+   - Para propiedades en venta: ROI, plusvalía, valor proyectado (solo si hay datos)
+   - Para arriendo: beneficios del sector para vivir/trabajar
+   Si no hay datos de inversión, omite esta sección.
+
+6. SECCIÓN "PRECIO"
+   Formato EXACTO: <b>Precio: $[precio con puntos ecuatorianos]</b>
+   Ejemplo: <b>Precio: $150.000</b>
+   Si hay cuota crédito, agrégala: <small>(Cuota estimada crédito: $xxx/mes)</small>
+
+7. LLAMADA A LA ACCIÓN (CTA) — 1-2 oraciones motivadoras para agendar visita
+
+8. TELÉFONOS DE CONTACTO
+   Formato EXACTO (una sola línea): {phones_text}
+
+═══════════════════════════════════════════════════════
+REGLAS ESTRICTAS
+═══════════════════════════════════════════════════════
+- HTML limpio: usa <b>, <p>, <ul><li>, <br/> — PROHIBIDO CSS inline ni style=""
+- PROHIBIDO inventar datos que no estén en el bloque de datos
+- Si un campo es 0 o vacío, OMÍTELO completamente — no digas "0 habitaciones"
+- Para terrenos: NO uses secciones de habitaciones/baños; usa potencial de construcción
+- Usa lenguaje ecuatoriano profesional: "plusvalía", "m²", precios con puntos (150.000 no 150,000)
+- El texto debe fluir naturalmente, NO suene a plantilla genérica
+- Completa TODAS las secciones — no cortes la descripción a la mitad
+
+Responde ÚNICAMENTE con el HTML final. Sin explicaciones, sin bloques ```html, sin comentarios."""
 
         try:
-            retry_options = genai.types.HttpRetryOptions(
-                attempts=3,
-                initial_delay=2.0,
-                max_delay=30.0,
-                http_status_codes=[429, 500, 502, 503, 504]
+            html_desc = self.env['estate.genai.mixin']._genai_generate(
+                prompt, temperature=0.85, max_output_tokens=8192,
             )
 
-            client = genai.Client(
-                api_key=api_key,
-                http_options=genai.types.HttpOptions(
-                    api_version='v1beta',
-                    retry_options=retry_options
-                ),
-            )
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-                config=genai.types.GenerateContentConfig(temperature=0.85, max_output_tokens=2000),
-            )
-
-            html_desc = response.text.strip()
-            # Clean markdown code blocks if Gemini wraps it
-            if html_desc.startswith('```html'):
-                html_desc = html_desc.replace('```html', '').replace('```', '').strip()
-            elif html_desc.startswith('```'):
-                html_desc = html_desc.replace('```', '').strip()
+            # Extracción robusta heredada (el mixin ya lanza si viene vacío)
+            html_desc = self.env['estate.genai.mixin']._genai_strip_fences(html_desc)
 
             # Save to main description field (HTML)
             prop.description = html_desc
@@ -264,27 +288,105 @@ Responde SOLO con el HTML de la descripción, sin bloques de código ni explicac
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Descripción generada',
-                    'message': 'La descripción comercial se ha generado y guardado exitosamente.',
+                    'message': 'La descripción comercial se guardó. Ya puedes verla y refinarla.',
                     'type': 'success',
                     'sticky': False,
+                    'next': {'type': 'ir.actions.client', 'tag': 'reload'},
                 }
             }
+        except UserError:
+            raise
         except Exception as e:
             _logger.error("Error en generador de descripción IA: %s", str(e))
             raise UserError(_("Error al generar descripción: %s") % str(e))
+
+    def action_generate_ai_description_full(self):
+        """Analiza imagen (si existe) + genera descripción comercial en un solo clic."""
+        self.ensure_one()
+        steps = []
+
+        # Step 1: image analysis (optional — enriches ai_vision_description)
+        if self.image_main:
+            try:
+                self.action_analyze_image_ai()
+                steps.append('imagen analizada')
+            except Exception as e:
+                _logger.warning("Análisis de imagen omitido en acción completa: %s", str(e))
+
+        # Step 2: generate commercial description (uses ai_vision_description if available)
+        try:
+            self.action_generate_ai_description()
+            steps.append('descripción generada')
+        except UserError:
+            raise
+        except Exception as e:
+            raise UserError(_("Error al generar descripción: %s") % str(e))
+
+        msg = ' · '.join(s.capitalize() for s in steps) if steps else 'Completado'
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'IA completa',
+                'message': f'{msg}. La descripción ya está visible.',
+                'type': 'success',
+                'sticky': False,
+                'next': {'type': 'ir.actions.client', 'tag': 'reload'},
+            }
+        }
+
+    def action_refine_ai_description(self):
+        """Refina la descripción existente con las instrucciones del usuario."""
+        self.ensure_one()
+        if not self.description:
+            raise UserError(_("Primero genera una descripción base con el botón 'Generar Descripción'."))
+        if not (self.ai_refine_prompt or '').strip():
+            raise UserError(_("Escribe qué quieres cambiar en el campo 'Instrucciones para refinar'."))
+
+        desc_text = self.description or ''
+
+        prompt = f"""Eres un experto copywriter inmobiliario de Ecuador.
+Tienes la siguiente descripción comercial HTML de una propiedad:
+
+--- DESCRIPCIÓN ACTUAL ---
+{desc_text}
+--- FIN ---
+
+El usuario quiere que hagas los siguientes cambios:
+{self.ai_refine_prompt.strip()}
+
+INSTRUCCIONES:
+1. Aplica EXACTAMENTE los cambios pedidos, no más.
+2. Mantén el formato HTML con <h3>, <p>, <ul><li>, <b>, <br/>.
+3. NO inventes datos nuevos que no estaban en la descripción original.
+4. Responde SOLO con el HTML modificado, sin explicaciones.
+"""
+        try:
+            html_desc = self.env['estate.genai.mixin']._genai_generate(
+                prompt, temperature=0.7, max_output_tokens=8192,
+            )
+            html_desc = self.env['estate.genai.mixin']._genai_strip_fences(html_desc)
+
+            self.description = html_desc
+            self.ai_refine_prompt = False
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Descripción refinada',
+                    'message': 'Los cambios se aplicaron correctamente a la descripción.',
+                    'type': 'success',
+                    'sticky': False,
+                    'next': {'type': 'ir.actions.client', 'tag': 'reload'},
+                }
+            }
+        except Exception as e:
+            raise UserError(_("Error al refinar descripción: %s") % str(e))
 
     def action_generate_property_summary(self):
         """Genera análisis ejecutivo IA completo con TODOS los datos de la propiedad."""
         self.ensure_one()
         import re as _re
-        if not GOOGLE_GENAI_AVAILABLE:
-            raise UserError(_("La librería 'google-genai' no está instalada."))
-
-        ICP = self.env['ir.config_parameter'].sudo()
-        api_key = ICP.get_param('estate_ai.api_key', '')
-        if not api_key:
-            raise UserError(_("Configure la API Key de IA en Configuración > Agente IA."))
-
         prop = self
 
         # ── Datos básicos ──────────────────────────────────────────────────
@@ -315,41 +417,34 @@ Responde SOLO con el HTML de la descripción, sin bloques de código ni explicac
         temp_map = {'cold': 'Frío', 'warm': 'Tibio', 'hot': 'Caliente', 'boiling': 'Hirviendo'}
         lead_lines = []
         if 'target_property_id' in self.env['crm.lead']._fields:
-            # Leads directamente asignados a esta propiedad
-            direct_leads = self.env['crm.lead'].search(
-                [('target_property_id', '=', prop.id)],
-                order='lead_score asc, create_date desc', limit=15
-            )
-            for l in direct_leads:
+            # Usamos el MISMO criterio que el botón "Leads Interesados" de la
+            # propiedad (presupuesto compatible), para que el número de la IA
+            # coincida con el del botón. Se etiqueta cada lead como DIRECTO
+            # (eligió esta propiedad) o POTENCIAL (solo coincide el presupuesto).
+            if hasattr(prop, '_get_lead_match_domain') and prop.price:
+                match_leads = self.env['crm.lead'].search(
+                    prop._get_lead_match_domain(),
+                    order='lead_score asc, create_date desc', limit=15)
+            else:
+                match_leads = self.env['crm.lead'].search(
+                    [('target_property_id', '=', prop.id)],
+                    order='lead_score asc, create_date desc', limit=15)
+            for l in match_leads:
                 nombre = (l.partner_id.name if l.partner_id else None) or l.partner_name or l.name or 'Sin nombre'
                 budget = f"${l.client_budget:,.0f}" if l.client_budget else 'N/A'
                 temp = temp_map.get(getattr(l, 'lead_temperature', ''), '—')
                 score = getattr(l, 'lead_score', '—') or '—'
                 stage = l.stage_id.name if l.stage_id else 'Sin etapa'
-                lead_lines.append(f"  • [DIRECTO] {nombre} | Presupuesto: {budget} | Temperatura: {temp} | Score: {score} | Etapa: {stage}")
-            # Leads potenciales con presupuesto compatible (±25% del precio)
-            if prop.price and not direct_leads:
-                pmin = prop.price * 0.75
-                pmax = prop.price * 1.25
-                potential = self.env['crm.lead'].search([
-                    ('target_property_id', '=', False),
-                    ('active', '=', True),
-                    ('type', '=', 'opportunity'),
-                    ('client_budget', '>=', pmin),
-                    ('client_budget', '<=', pmax),
-                ], limit=10) if 'client_budget' in self.env['crm.lead']._fields else []
-                for l in potential:
-                    nombre = (l.partner_id.name if l.partner_id else None) or l.partner_name or l.name or 'Sin nombre'
-                    budget = f"${l.client_budget:,.0f}" if l.client_budget else 'N/A'
-                    temp = temp_map.get(getattr(l, 'lead_temperature', ''), '—')
-                    lead_lines.append(f"  • [POTENCIAL] {nombre} | Presupuesto: {budget} | Temperatura: {temp}")
+                es_directo = getattr(l, 'target_property_id', False) and l.target_property_id.id == prop.id
+                etiqueta = 'DIRECTO' if es_directo else 'POTENCIAL'
+                lead_lines.append(f"  • [{etiqueta}] {nombre} | Presupuesto: {budget} | Temperatura: {temp} | Score: {score} | Etapa: {stage}")
 
         # ── Visitas / Citas ────────────────────────────────────────────────
         visits = self.env['calendar.event'].search(
             [('property_id', '=', prop.id)], order='start desc', limit=10
         ) if 'property_id' in self.env['calendar.event']._fields else []
 
-        rating_map = {'1': '⭐ Muy bajo', '2': '⭐⭐ Bajo', '3': '⭐⭐⭐ Normal', '4': '⭐⭐⭐⭐ Bueno', '5': '⭐⭐⭐⭐⭐ Excelente'}
+        rating_map = {'1': 'Muy bajo', '2': 'Bajo', '3': 'Normal', '4': 'Bueno', '5': 'Excelente'}
         visit_lines = []
         for v in visits:
             attendees = ', '.join(a.partner_id.name for a in v.attendee_ids if a.partner_id) or 'Sin asistentes'
@@ -424,16 +519,9 @@ DATOS:
 Responde ÚNICAMENTE el bloque HTML. Nada más."""
 
         try:
-            client = genai.Client(
-                api_key=api_key,
-                http_options=genai.types.HttpOptions(api_version='v1beta'),
+            html = self.env['estate.genai.mixin']._genai_generate(
+                prompt, temperature=0.35, max_output_tokens=6144,
             )
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-                config=genai.types.GenerateContentConfig(temperature=0.35, max_output_tokens=2500),
-            )
-            html = response.text.strip()
             html = _re.sub(r'^```\w*\n?', '', html)
             html = _re.sub(r'\n?```$', '', html).strip()
 
@@ -449,11 +537,187 @@ Responde ÚNICAMENTE el bloque HTML. Nada más."""
                     'message': 'El análisis ejecutivo IA se generó con todos los datos disponibles.',
                     'type': 'success',
                     'sticky': False,
+                    'next': {'type': 'ir.actions.client', 'tag': 'reload'},
                 }
             }
         except Exception as e:
             _logger.error("Error generando análisis IA: %s", str(e))
             raise UserError(_("Error al generar análisis: %s") % str(e))
+
+    # ── Computed visual fields for "Asistente IA" tab ─────────────────────
+    avm_gauge_html = fields.Html(
+        string='Gauge AVM vs Precio',
+        compute='_compute_avm_gauge_html',
+        store=False,
+    )
+    interesting_leads_html = fields.Html(
+        string='Panel Leads Interesados',
+        compute='_compute_interesting_leads_html',
+        store=False,
+    )
+    similar_properties_html = fields.Html(
+        string='Propiedades Similares',
+        compute='_compute_similar_properties_html',
+        store=False,
+    )
+
+    @api.depends('price', 'write_date')
+    def _compute_avm_gauge_html(self):
+        for prop in self:
+            avm = getattr(prop, 'avm_estimated_price', 0) or 0
+            price = prop.price or 0
+            if not avm or not price:
+                prop.avm_gauge_html = False
+                continue
+            diff_pct = ((price - avm) / avm) * 100
+            status = getattr(prop, 'avm_status', '') or ''
+            color = {'fair': '#00897B', 'high': '#E53935', 'low': '#FF9800'}.get(status, '#888')
+            label = {
+                'fair': '&#10003; En rango de mercado',
+                'high': '&#8593; Precio alto vs. mercado',
+                'low': '&#8595; Precio bajo vs. mercado',
+            }.get(status, 'Sin clasificar')
+            max_val = max(price, avm)
+            price_w = round((price / max_val) * 100, 1)
+            avm_w = round((avm / max_val) * 100, 1)
+            sign = '+' if diff_pct >= 0 else ''
+            prop.avm_gauge_html = (
+                '<div style="font-size:12px;color:#555;padding:4px 0">'
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+                '<b style="color:#333;font-size:12.5px">Precio vs. Valoraci&#243;n de Mercado (AVM)</b>'
+                f'<span style="background:{color}1a;color:{color};border-radius:20px;padding:2px 10px;font-weight:700;font-size:11px">{label}</span>'
+                '</div>'
+                '<div style="margin-bottom:7px">'
+                '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+                f'<span>Precio actual</span><b style="color:#004274">${price:,.0f}</b>'
+                '</div>'
+                '<div style="background:#eef0f3;border-radius:10px;height:14px;overflow:hidden">'
+                f'<div style="background:#004274;width:{price_w}%;height:100%;border-radius:10px;transition:width .6s"></div>'
+                '</div></div>'
+                '<div style="margin-bottom:7px">'
+                '<div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+                f'<span>Estimado IA (AVM)</span><b style="color:{color}">${avm:,.0f}</b>'
+                '</div>'
+                '<div style="background:#eef0f3;border-radius:10px;height:14px;overflow:hidden">'
+                f'<div style="background:{color};width:{avm_w}%;height:100%;border-radius:10px;transition:width .6s"></div>'
+                '</div></div>'
+                f'<div style="text-align:right;font-weight:700;color:{color};font-size:11.5px;margin-top:4px">'
+                f'Diferencia: {sign}{diff_pct:.1f}%</div>'
+                '</div>'
+            )
+
+    @api.depends('price', 'property_type_id', 'write_date')
+    def _compute_similar_properties_html(self):
+        for prop in self:
+            if not prop.id or not prop.property_type_id or not (prop.price or 0):
+                prop.similar_properties_html = '<p style="color:#aaa;font-size:12px;margin:0">Defina tipo y precio para ver similares.</p>'
+                continue
+            pmin = prop.price * 0.65
+            pmax = prop.price * 1.45
+            similar = self.env['estate.property'].sudo().search([
+                ('id', '!=', prop.id),
+                ('state', '=', 'available'),
+                ('property_type_id', '=', prop.property_type_id.id),
+                ('price', '>=', pmin),
+                ('price', '<=', pmax),
+            ], order='price asc', limit=5)
+            if not similar:
+                prop.similar_properties_html = '<p style="color:#aaa;font-size:12px;margin:0">No hay propiedades similares disponibles en este rango de precio.</p>'
+                continue
+            rows = ''
+            for s in similar:
+                diff = ((s.price - prop.price) / prop.price * 100) if prop.price else 0
+                diff_clr = '#E53935' if diff > 5 else ('#00897B' if diff < -5 else '#888')
+                sign = '+' if diff >= 0 else ''
+                href = f'/odoo/estate-management/{s.id}'
+                rows += (
+                    f'<tr style="border-bottom:1px solid #f0f2f5">'
+                    f'<td style="padding:6px 8px;font-size:11.5px"><a href="{href}" style="color:#004274;font-weight:600">{s.name or ""}</a>'
+                    f'{"<br/><span style=\'color:#999;font-size:10.5px\'>" + s.title + "</span>" if s.title else ""}</td>'
+                    f'<td style="padding:6px 8px;font-size:11px;color:#666">{s.city or ""}</td>'
+                    f'<td style="padding:6px 8px;font-size:11.5px;text-align:right"><b style="color:#004274">${s.price:,.0f}</b></td>'
+                    f'<td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:700;color:{diff_clr}">{sign}{diff:.0f}%</td>'
+                    f'<td style="padding:6px 8px;font-size:11px;color:#777">{s.area or 0}m&#178; · {s.bedrooms or 0}h · {s.bathrooms or 0}b</td>'
+                    f'</tr>'
+                )
+            prop.similar_properties_html = (
+                '<table style="width:100%;border-collapse:collapse;font-family:inherit">'
+                '<tr style="background:#f8f9fb">'
+                '<th style="padding:6px 8px;text-align:left;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Propiedad</th>'
+                '<th style="padding:6px 8px;text-align:left;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Ciudad</th>'
+                '<th style="padding:6px 8px;text-align:right;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Precio</th>'
+                '<th style="padding:6px 8px;text-align:right;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Dif.</th>'
+                '<th style="padding:6px 8px;text-align:left;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Detalles</th>'
+                f'</tr>{rows}</table>'
+            )
+
+    @api.depends('price', 'write_date')
+    def _compute_interesting_leads_html(self):
+        for prop in self:
+            if not prop.id:
+                prop.interesting_leads_html = False
+                continue
+            if 'target_property_id' not in self.env['crm.lead']._fields:
+                prop.interesting_leads_html = '<p style="color:#aaa;font-size:12px;margin:0">M&#243;dulo CRM no disponible.</p>'
+                continue
+            temp_map = {
+                'cold': ('Fr&#237;o', '#90A4AE'),
+                'warm': ('Tibio', '#FF9800'),
+                'hot': ('Caliente', '#E53935'),
+                'boiling': ('Hirviendo!', '#B71C1C'),
+            }
+            direct = self.env['crm.lead'].sudo().search([
+                ('target_property_id', '=', prop.id),
+                ('active', '=', True),
+            ], order='create_date desc', limit=8)
+            potential = self.env['crm.lead']
+            if prop.price and len(direct) < 4 and 'client_budget' in self.env['crm.lead']._fields:
+                pmin = prop.price * 0.75
+                pmax = prop.price * 1.30
+                potential = self.env['crm.lead'].sudo().search([
+                    ('target_property_id', '=', False),
+                    ('active', '=', True),
+                    ('type', '=', 'opportunity'),
+                    ('client_budget', '>=', pmin),
+                    ('client_budget', '<=', pmax),
+                ], limit=4)
+            if not direct and not potential:
+                prop.interesting_leads_html = '<p style="color:#aaa;font-size:12px;margin:0">Sin leads asignados o compatibles con el precio.</p>'
+                continue
+            rows = ''
+            for l in list(direct) + list(potential):
+                is_direct = l in direct
+                nombre = (l.partner_id.name if l.partner_id else None) or getattr(l, 'partner_name', None) or l.name or 'Sin nombre'
+                budget_val = getattr(l, 'client_budget', 0) or 0
+                budget_str = f'${budget_val:,.0f}' if budget_val else 'N/A'
+                temp = getattr(l, 'lead_temperature', '') or ''
+                temp_label, temp_clr = temp_map.get(temp, ('&#8212;', '#999'))
+                stage = l.stage_id.name if l.stage_id else 'Sin etapa'
+                badge_bg = '#e3f2fd' if is_direct else '#fff8e1'
+                badge_txt = 'ASIGNADO' if is_direct else 'POTENCIAL'
+                badge_clr = '#1565C0' if is_direct else '#E65100'
+                rows += (
+                    f'<tr style="border-bottom:1px solid #f0f2f5">'
+                    f'<td style="padding:6px 8px;font-size:11.5px;font-weight:600;color:#333">{nombre}</td>'
+                    f'<td style="padding:6px 8px;font-size:11px">'
+                    f'<span style="background:{badge_bg};color:{badge_clr};border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700">{badge_txt}</span></td>'
+                    f'<td style="padding:6px 8px;font-size:11.5px;text-align:right;font-weight:600">{budget_str}</td>'
+                    f'<td style="padding:6px 8px;font-size:11px;font-weight:700;color:{temp_clr}">{temp_label}</td>'
+                    f'<td style="padding:6px 8px;font-size:11px;color:#777">{stage}</td>'
+                    f'</tr>'
+                )
+            prop.interesting_leads_html = (
+                f'<div style="font-size:11px;color:#888;margin-bottom:6px">'
+                f'{len(direct)} asignado(s) directamente &#183; {len(potential)} potencial(es) por presupuesto</div>'
+                '<table style="width:100%;border-collapse:collapse;font-family:inherit">'
+                '<tr style="background:#f8f9fb">'
+                '<th style="padding:6px 8px;text-align:left;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Cliente</th>'
+                '<th style="padding:6px 8px;text-align:left;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Tipo</th>'
+                '<th style="padding:6px 8px;text-align:right;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Presupuesto</th>'
+                '<th style="padding:6px 8px;text-align:left;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Temp.</th>'
+                '<th style="padding:6px 8px;text-align:left;font-size:10.5px;color:#888;font-weight:700;text-transform:uppercase;letter-spacing:.4px">Etapa</th>'
+                f'</tr>{rows}</table>'
+            )
 
     def action_open_ai_chat_for_property(self):
         """Opens the AI chat action with a pre-loaded question about this property."""

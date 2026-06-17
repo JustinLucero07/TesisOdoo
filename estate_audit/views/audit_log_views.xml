@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- LISTA -->
+    <record id="estate_audit_log_view_list" model="ir.ui.view">
+        <field name="name">estate.audit.log.list</field>
+        <field name="model">estate.audit.log</field>
+        <field name="arch" type="xml">
+            <list string="Registro de Auditoría" create="false" edit="false"
+                  decoration-success="method == 'create'"
+                  decoration-info="method == 'write'"
+                  decoration-danger="method == 'unlink'">
+                <field name="log_date" string="Fecha"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="method" widget="badge"
+                       decoration-success="method == 'create'"
+                       decoration-info="method == 'write'"
+                       decoration-danger="method == 'unlink'"/>
+                <field name="model_label" string="Tipo"/>
+                <field name="res_name" string="Registro"/>
+                <field name="changes" string="Cambios" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM -->
+    <record id="estate_audit_log_view_form" model="ir.ui.view">
+        <field name="name">estate.audit.log.form</field>
+        <field name="model">estate.audit.log</field>
+        <field name="arch" type="xml">
+            <form string="Registro de Auditoría" create="false" edit="false">
+                <sheet>
+                    <div class="oe_title">
+                        <h2>
+                            <field name="method" widget="badge" class="me-2"/>
+                            <field name="res_name" readonly="1" class="d-inline"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="log_date"/>
+                        </group>
+                        <group>
+                            <field name="model_label"/>
+                            <field name="model_name"/>
+                            <field name="res_id"/>
+                        </group>
+                    </group>
+                    <group string="Detalle de cambios" invisible="not changes">
+                        <field name="changes" nolabel="1" readonly="1"
+                               style="font-family:monospace;font-size:12px;background:#f8f9fa;padding:10px;border-radius:6px;white-space:pre-wrap;"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- BÚSQUEDA -->
+    <record id="estate_audit_log_view_search" model="ir.ui.view">
+        <field name="name">estate.audit.log.search</field>
+        <field name="model">estate.audit.log</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="res_name"/>
+                <field name="user_id"/>
+                <field name="model_label"/>
+                <field name="changes"/>
+                <filter name="f_create" string="Creaciones" domain="[('method','=','create')]"/>
+                <filter name="f_write" string="Modificaciones" domain="[('method','=','write')]"/>
+                <filter name="f_unlink" string="Eliminaciones" domain="[('method','=','unlink')]"/>
+                <separator/>
+                <filter name="f_today" string="Hoy"
+                        domain="[('log_date','&gt;=', datetime.datetime.combine(context_today(), datetime.time(0,0,0)))]"/>
+                <filter name="f_week" string="Últimos 7 días"
+                        domain="[('log_date','&gt;=', (context_today() - datetime.timedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="g_user" string="Usuario" context="{'group_by':'user_id'}"/>
+                <filter name="g_model" string="Tipo de Registro" context="{'group_by':'model_label'}"/>
+                <filter name="g_method" string="Acción" context="{'group_by':'method'}"/>
+                <filter name="g_date" string="Fecha" context="{'group_by':'log_date:day'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACCIÓN -->
+    <record id="estate_audit_log_action" model="ir.actions.act_window">
+        <field name="name">Registro de Auditoría</field>
+        <field name="res_model">estate.audit.log</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="estate_audit_log_view_search"/>
+        <field name="context">{'search_default_g_date': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Aún no hay actividad registrada.</p>
+            <p>Aquí se registra automáticamente quién crea, modifica o elimina propiedades,
+               contratos, pagos, comisiones, ofertas y leads — con el detalle de cada cambio.</p>
+        </field>
+    </record>
+
+    <!-- MENÚ (en Configuración, solo gerencia) -->
+    <menuitem id="estate_menu_audit_log"
+              name="Registro de Auditoría"
+              parent="estate_management.estate_menu_config_root"
+              action="estate_audit_log_action"
+              sequence="90"
+              groups="estate_management.estate_group_manager"/>
+</odoo>

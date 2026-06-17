@@ -87,6 +87,13 @@
                             confirm="¿Generar una factura de proveedor para pagar esta comisión al asesor?"/>
                     <button name="action_view_invoice" string="Ver Factura" type="object"
                             invisible="not invoice_id"/>
+                    <button name="action_register_payment" string="Registrar Pago al Asesor"
+                            type="object" class="oe_highlight" icon="fa-money"
+                            invisible="state not in ('draft', 'approved')"
+                            confirm="Se marcará la comisión como PAGADA y quedará constancia. ¿Continuar?"/>
+                    <button name="action_reset_to_approved" string="Revertir Pago" type="object"
+                            invisible="state != 'paid'"
+                            confirm="¿Revertir el pago registrado? La comisión volverá a Aprobada."/>
                     <button name="action_cancel" string="Cancelar" type="object"
                             invisible="state in ('paid', 'cancelled')"
                             confirm="¿Está seguro de cancelar esta comisión?"/>
@@ -124,6 +131,19 @@
                                    options="{'currency_field': 'company_currency'}"/>
                             <field name="company_currency"/>
                             <field name="invoice_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Pago al Asesor (Constancia)" name="payment_proof">
+                        <group>
+                            <field name="payment_method"
+                                   readonly="state == 'paid'"
+                                   required="state == 'paid'"/>
+                            <field name="payment_reference" readonly="state == 'paid'"
+                                   placeholder="Nº transferencia, recibo, cheque..."/>
+                        </group>
+                        <group>
+                            <field name="payment_date" readonly="state == 'paid'"/>
+                            <field name="paid_by_id" invisible="state != 'paid'"/>
                         </group>
                     </group>
                 </sheet>
@@ -178,6 +198,18 @@
                 Centro de Inteligencia Financiera.
             </p>
             <p>Aquí verás el rendimiento real de tus asesores y la salud financiera de tus cierres.</p>
+        </field>
+    </record>
+
+    <!-- Estado de pago: devengado (borrador/aprobada) vs pagado, de un vistazo -->
+    <record id="action_estate_commission_payment_status" model="ir.actions.act_window">
+        <field name="name">Estado de Pago de Comisiones</field>
+        <field name="res_model">estate.commission</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="context">{'search_default_group_state': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin comisiones registradas.</p>
+            <p>Agrupadas por estado: ve cuánto está <b>devengado</b> (borrador/aprobada) y cuánto ya <b>pagado</b>. Cada grupo suma el total.</p>
         </field>
     </record>
 

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_advisor_unavailability_list" model="ir.ui.view">
+        <field name="name">estate.advisor.unavailability.list</field>
+        <field name="model">estate.advisor.unavailability</field>
+        <field name="arch" type="xml">
+            <list string="Días no disponibles" editable="bottom"
+                  decoration-warning="date_from &lt;= current_date and date_to &gt;= current_date">
+                <field name="user_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="reason" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_advisor_unavailability_form" model="ir.ui.view">
+        <field name="name">estate.advisor.unavailability.form</field>
+        <field name="model">estate.advisor.unavailability</field>
+        <field name="arch" type="xml">
+            <form string="Día no disponible">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="reason"/>
+                        </group>
+                        <group>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_estate_advisor_unavailability" model="ir.actions.act_window">
+        <field name="name">Días no disponibles</field>
+        <field name="res_model">estate.advisor.unavailability</field>
+        <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin días bloqueados.</p>
+            <p>Marca tus días no disponibles para que no se agenden visitas en esas fechas.</p>
+        </field>
+    </record>
+</odoo>

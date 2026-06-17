@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='probability']" position="after">
-                <field name="match_percentage" widget="percentpie" invisible="type == 'lead'"/>
+                <!-- El Match se muestra una sola vez (barra en "Operación Inmobiliaria"). -->
                 <field name="lead_score" widget="priority" invisible="type == 'lead'"/>
             </xpath>
             <xpath expr="//div[@id='probability']" position="after">
@@ -44,28 +44,47 @@
                     </button>
                 </div>
             </xpath>
+            <!-- Ocultar "Nueva cotización" estándar: redundante con "Nueva Oferta" -->
+            <xpath expr="//button[@name='action_sale_quotations_new']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <!-- Botones contextuales por ETAPA del embudo:
+                 1-2 Captación · 3-4 Negociación · 5+ Cierre -->
             <xpath expr="//header/field[@name='stage_id']" position="before">
-                <button name="action_ai_matchmaker" string=" AI Matchmaker" type="object" class="oe_highlight btn-info" icon="fa-magic"/>
-                <button name="action_send_whatsapp" string=" WhatsApp" type="object" class="btn-success" icon="fa-whatsapp"/>
-                <button name="action_create_offer_from_lead" string="Nueva Oferta" type="object"
-                    class="btn-warning" icon="fa-handshake-o"
-                    invisible="not target_property_id or type == 'lead'"/>
-                <button name="action_reserve_property_from_lead" string="Reservar Propiedad" type="object"
-                    class="btn-secondary" icon="fa-lock"
-                    invisible="not target_property_id or type == 'lead'"/>
-                <button name="action_create_invoice_from_lead" string="Generar Factura" type="object"
-                    class="btn-primary" icon="fa-file-text-o"
-                    invisible="not target_property_id or type == 'lead'"/>
-                <button name="action_create_contract_from_lead" string="Crear Contrato" type="object"
-                    class="oe_highlight" icon="fa-file-text"
-                    invisible="not target_property_id or type == 'lead' or contract_count &gt; 0"
-                    confirm="¿Crear un contrato para este lead con la propiedad seleccionada?"/>
+                <field name="stage_sequence" invisible="1"/>
+
+                <!-- CAPTACIÓN (etapas 1-2): buscar propiedad y registrar necesidad -->
+                <button name="action_ai_matchmaker" string=" AI Matchmaker" type="object"
+                    class="oe_highlight btn-info" icon="fa-magic"
+                    invisible="stage_sequence &gt; 2 or type == 'lead'"/>
                 <button name="action_mark_pending_need" string="Marcar Con Necesidad" type="object"
                     class="btn-warning" icon="fa-bookmark"
-                    invisible="pending_needs_active or type == 'lead'"/>
+                    invisible="stage_sequence &gt; 2 or pending_needs_active or type == 'lead'"/>
                 <button name="action_clear_pending_need" string="Resolver Necesidad" type="object"
                     class="btn-outline-success" icon="fa-check-circle"
                     invisible="not pending_needs_active"/>
+
+                <!-- NEGOCIACIÓN (etapas 3-4: Visita Realizada / Seguimiento): ofertar.
+                     Se muestra por ETAPA aunque falte la propiedad; al hacer clic
+                     la acción guía a asignar la Propiedad de Interés. -->
+                <button name="action_create_offer_from_lead" string="Nueva Oferta" type="object"
+                    class="btn-warning" icon="fa-handshake-o"
+                    invisible="stage_sequence &lt; 3 or stage_sequence &gt; 4 or type == 'lead'"/>
+
+                <!-- Reservar: desde la visita hasta el cierre (etapas 3+) -->
+                <button name="action_reserve_property_from_lead" string="Reservar Propiedad" type="object"
+                    class="btn-secondary" icon="fa-lock"
+                    invisible="stage_sequence &lt; 3 or type == 'lead'"/>
+
+                <!-- CIERRE (etapas 5+: Papeles / Avalúo / Minuta): formalizar contrato -->
+                <button name="action_create_contract_from_lead" string="Crear Contrato" type="object"
+                    class="oe_highlight" icon="fa-file-text"
+                    invisible="stage_sequence &lt; 5 or not target_property_id or type == 'lead' or contract_count &gt; 0"
+                    confirm="¿Crear un contrato para este lead con la propiedad seleccionada?"/>
+
+                <!-- Comunicación: siempre disponible -->
+                <button name="action_send_whatsapp" string=" WhatsApp" type="object"
+                    class="btn-success" icon="fa-whatsapp"/>
             </xpath>
             <!-- Pestañas: Ubicación GPS y Documentos Internos -->
             <xpath expr="//notebook" position="inside">
@@ -91,61 +110,55 @@
                         </list>
                     </field>
                 </page>
-                <page string="Documentos Internos" name="page_docs_private">
-                    <field name="document_ids" nolabel="1">
-                        <list string="Documentos del Lead" editable="bottom">
-                            <field name="name"/>
-                            <field name="type_id"/>
-                            <field name="state" widget="badge"
-                                   decoration-info="state == 'received'"
-                                   decoration-success="state == 'verified'"
-                                   decoration-danger="state == 'rejected'"/>
-                            <field name="date"/>
-                            <field name="file" widget="binary" filename="filename"/>
-                            <field name="filename" invisible="1"/>
-                            <field name="notes"/>
-                        </list>
-                    </field>
-                    <p class="text-muted small" style="margin-top:8px;">
-                        Estos documentos son privados del backend. No son visibles en el portal del cliente.
-                    </p>
+                <!-- "Documentos Internos" se eliminó: era duplicada de "Documentos". -->
+                <page string="Búsqueda del Cliente" name="page_search">
+                    <group>
+                        <group name="preferred_property" string="Propiedad Buscada">
+                            <field name="preferred_property_type_id" placeholder="Ej. Casa, Apartamento..."/>
+                            <field name="preferred_city" placeholder="Ej. Cuenca, Quito..."/>
+                            <field name="preferred_bedrooms"/>
+                            <field name="preferred_min_area" string="Área Mín. (m²)"/>
+                            <field name="preferred_max_area" string="Área Máx. (m²)"/>
+                            <field name="client_needs" placeholder="Ej. Cerca de parques, crédito pre-aprobado..."/>
+                        </group>
+                        <group string="Necesidad Pendiente">
+                            <field name="pending_needs_active" widget="boolean_toggle"/>
+                            <field name="pending_needs_last_check" invisible="not pending_needs_active"/>
+                            <field name="pending_needs_notified_property_ids" widget="many2many_tags" invisible="not pending_needs_active"/>
+                        </group>
+                    </group>
+                </page>
+                <page string="Negociación y Cierre" name="page_closing">
+                    <group>
+                        <group name="closing_details" string="Forma de Cierre">
+                            <field name="closing_payment_type" widget="radio" options="{'horizontal': true}"/>
+                            <field name="mortgage_time_estimated" invisible="closing_payment_type != 'credit'"/>
+                            <field name="promissory_note_time" placeholder="Ej. 90 días..."/>
+                        </group>
+                        <group name="commercial_intel" string="Inteligencia Comercial">
+                            <field name="expected_commission" widget="monetary" decoration-bf="1" decoration-success="expected_commission &gt; 5000"/>
+                            <field name="lead_velocity_days" readonly="1" decoration-danger="lead_velocity_days &gt; 14" decoration-warning="lead_velocity_days &gt; 7"/>
+                            <field name="closing_difficulty" widget="badge" decoration-success="closing_difficulty == 'easy'" decoration-warning="closing_difficulty == 'moderate'" decoration-danger="closing_difficulty == 'hard'"/>
+                            <field name="smart_negotiation_tips" decoration-info="1" invisible="not smart_negotiation_tips"/>
+                            <field name="is_golden_opportunity" invisible="1"/>
+                        </group>
+                    </group>
                 </page>
             </xpath>
+            <!-- En la vista principal queda SOLO lo esencial (la operación);
+                 el resto se movió a las pestañas para no saturar. -->
             <xpath expr="//group" position="after">
-                <group name="elite_crm_intelligence" string="Inmobiliaria Elite ">
+                <group name="elite_crm_intelligence" string="Operación Inmobiliaria">
+                    <field name="target_property_id"
+                        placeholder="Asigna la propiedad de interés (necesaria para ofertar/contratar)..."/>
+                    <field name="client_budget" widget="monetary" options="{'currency_field': 'company_currency'}"/>
+                    <field name="match_percentage" widget="progressbar"/>
                     <field name="lead_source" widget="badge"
                         decoration-info="lead_source in ('website','wordpress','portal','ai_agent')"
                         decoration-success="lead_source in ('referral','walk_in')"
                         decoration-warning="lead_source in ('whatsapp','instagram')"
                         decoration-muted="lead_source == 'other'"/>
                     <field name="referral_partner_id" placeholder="¿Quién lo refirió?" invisible="lead_source != 'referral'"/>
-                    <field name="target_property_id" placeholder="Cruce automático vía Matchmaker..."/>
-                    <field name="client_budget" widget="monetary" options="{'currency_field': 'company_currency'}"/>
-                    <field name="match_percentage" widget="progressbar"/>
-                    <field name="expected_commission" widget="monetary" decoration-bf="1" decoration-success="expected_commission &gt; 5000"/>
-                    <field name="lead_velocity_days" readonly="1" decoration-danger="lead_velocity_days &gt; 14" decoration-warning="lead_velocity_days &gt; 7"/>
-                    <field name="closing_difficulty" widget="badge" decoration-success="closing_difficulty == 'easy'" decoration-warning="closing_difficulty == 'moderate'" decoration-danger="closing_difficulty == 'hard'"/>
-                    <field name="smart_negotiation_tips" decoration-info="1" invisible="not smart_negotiation_tips"/>
-                    <field name="is_golden_opportunity" invisible="1"/>
-                </group>
-                <group name="preferred_property" string="Propiedad Buscada">
-                    <field name="preferred_property_type_id" placeholder="Ej. Casa, Apartamento..."/>
-                    <field name="preferred_city" placeholder="Ej. Cuenca, Quito..."/>
-                    <field name="preferred_bedrooms"/>
-                    <field name="preferred_min_area" string="Área Mín. (m²)"/>
-                    <field name="preferred_max_area" string="Área Máx. (m²)"/>
-                    <field name="client_needs" placeholder="Ej. Cerca de parques, crédito pre-aprobado..."/>
-                    <separator string="Necesidad Pendiente"/>
-                    <field name="pending_needs_active" widget="boolean_toggle"/>
-                    <field name="pending_needs_last_check" invisible="not pending_needs_active"/>
-                    <field name="pending_needs_notified_property_ids" widget="many2many_tags" invisible="not pending_needs_active"/>
-                </group>
-            </xpath>
-            <xpath expr="//group" position="after">
-                <group name="closing_details" string="Detalles de Cierre (Negociación)">
-                    <field name="closing_payment_type" widget="radio" options="{'horizontal': true}"/>
-                    <field name="mortgage_time_estimated" invisible="closing_payment_type != 'credit'"/>
-                    <field name="promissory_note_time" placeholder="Ej. 90 días..."/>
                 </group>
             </xpath>
         </field>

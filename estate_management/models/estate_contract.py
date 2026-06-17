@@ -1,4 +1,7 @@
+import base64
+import io
 import logging
+import re
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError
@@ -33,6 +36,7 @@ class EstateContract(models.Model):
 
     contract_type = fields.Selection([
         ('sale', 'Compraventa'),
+        ('rent', 'Arriendo'),
         ('exclusive', 'Exclusividad'),
     ], string='Tipo de Contrato', required=True, default='sale', tracking=True)
 
@@ -72,6 +76,14 @@ class EstateContract(models.Model):
     signed_contract = fields.Binary(string='Contrato Firmado', attachment=True,
                                     help='Documento escaneado o PDF del contrato final firmado por ambas partes.')
     signed_contract_filename = fields.Char(string='Nombre del Contrato Firmado')
+    earnest_is_pdf = fields.Boolean(compute='_compute_contract_is_pdf')
+    signed_is_pdf = fields.Boolean(compute='_compute_contract_is_pdf')
+
+    @api.depends('earnest_money_filename', 'signed_contract_filename')
+    def _compute_contract_is_pdf(self):
+        for rec in self:
+            rec.earnest_is_pdf = bool(rec.earnest_money_filename and rec.earnest_money_filename.lower().endswith('.pdf'))
+            rec.signed_is_pdf = bool(rec.signed_contract_filename and rec.signed_contract_filename.lower().endswith('.pdf'))
 
     payment_count = fields.Integer(
         string='# Pagos', compute='_compute_payment_count')
@@ -219,6 +231,20 @@ class EstateContract(models.Model):
         self._check_state_transition('active')
         for rec in self:
             rec.state = 'active'
+            # Coherencia del flujo: al activar el contrato, la propiedad refleja
+            # el cierre (Compraventa -> Vendida; Arriendo -> Arrendada).
+            if rec.property_id:
+                if rec.contract_type == 'sale' and rec.property_id.state != 'sold':
+                    vals = {'state': 'sold'}
+                    if rec.partner_id and not rec.property_id.buyer_id:
+                        vals['buyer_id'] = rec.partner_id.id
+                    rec.property_id.write(vals)
+                    rec.property_id.message_post(
+                        body=f"Propiedad marcada como VENDIDA al activar el contrato {rec.name}.")
+                elif rec.contract_type == 'rent' and rec.property_id.state != 'rented':
+                    rec.property_id.write({'state': 'rented', 'offer_type': 'rent'})
+                    rec.property_id.message_post(
+                        body=f"Propiedad marcada como ARRENDADA al activar el contrato {rec.name}.")
             if rec.partner_id.email:
                 template = self.env.ref(
                     'estate_management.mail_template_contract_activated', raise_if_not_found=False)
@@ -237,6 +263,98 @@ class EstateContract(models.Model):
     def action_reset_draft(self):
         self._check_state_transition('draft')
         self.write({'state': 'draft'})
+
+    # ── Cláusulas asistidas por IA ───────────────────────────────────────────
+    def action_ai_draft_clauses(self):
+        """Usa la IA (Gemini/OpenAI) para REDACTAR o MEJORAR las cláusulas del
+        contrato a partir de sus datos. No reemplaza al abogado: deja una
+        propuesta editable en el campo 'Notas / Cláusulas'."""
+        self.ensure_one()
+        Mixin = self.env['estate.genai.mixin']
+        if not Mixin._genai_is_active():
+            raise UserError(
+                'Configura primero el Asistente IA (Gemini u OpenAI) en Ajustes '
+                'para poder redactar cláusulas con IA.')
+        prop = self.property_id
+        tipo = dict(self._fields['contract_type'].selection).get(self.contract_type, 'inmobiliario')
+        vendedor = (prop.owner_id.name if prop and prop.owner_id else self.env.company.name)
+        prompt = (
+            "Actúa como abogado inmobiliario en Ecuador. Redacta o mejora las "
+            f"CLÁUSULAS de un contrato de {tipo}. Usa lenguaje jurídico claro.\n\n"
+            "Datos del contrato:\n"
+            f"- Propiedad: {(prop.title or prop.name) if prop else '-'} "
+            f"({prop.city if prop else '-'})\n"
+            f"- Vendedor/Arrendador: {vendedor}\n"
+            f"- Comprador/Arrendatario: {self.partner_id.name or '-'}\n"
+            f"- Monto: ${self.amount:,.2f}\n"
+            f"- Vigencia: {self.date_start or '-'} a {self.date_end or 'indefinida'}\n\n"
+            "Cláusulas actuales (mejóralas si existen; si no, créalas):\n"
+            f"{self.notes or '(ninguna)'}\n\n"
+            "Devuelve SOLO las cláusulas numeradas (PRIMERA, SEGUNDA, ...) en HTML "
+            "simple con etiquetas <p>, profesionales y específicas a estos datos. "
+            "No incluyas encabezados, firmas ni explicaciones.")
+        raw = Mixin._genai_generate(prompt, temperature=0.4)
+        if not raw:
+            raise UserError('La IA no devolvió contenido. Intenta de nuevo.')
+        clean = Mixin._genai_strip_fences(raw) if hasattr(Mixin, '_genai_strip_fences') else raw
+        self.notes = clean
+        self.message_post(body='Cláusulas redactadas/mejoradas con IA (revisar y ajustar).')
+        return True
+
+    # ── Generación desde plantilla Word (.docx con marcadores) ───────────────
+    def _docx_context(self):
+        """Diccionario de marcadores disponibles en la plantilla Word."""
+        self.ensure_one()
+        prop = self.property_id
+        tipo = dict(self._fields['contract_type'].selection).get(self.contract_type, '')
+        clausulas = re.sub(r'<[^>]+>', '', self.notes or '').strip()  # quita HTML
+        return {
+            'empresa': self.env.company.name or '',
+            'contrato': self.name or '',
+            'tipo_contrato': tipo,
+            'cliente': self.partner_id.name or '',
+            'cedula_cliente': self.partner_id.vat or '',
+            'propiedad': (prop.title or prop.name) if prop else '',
+            'direccion': ', '.join(filter(None, [prop.street, prop.city])) if prop else '',
+            'ciudad': (prop.city if prop else '') or '',
+            'precio': f"{self.amount:,.2f}",
+            'fecha_inicio': fields.Date.to_string(self.date_start) or '',
+            'fecha_fin': fields.Date.to_string(self.date_end) or '',
+            'vendedor': (prop.owner_id.name if prop and prop.owner_id else self.env.company.name) or '',
+            'asesor': self.user_id.name or '',
+            'clausulas': clausulas,
+        }
+
+    def action_generate_docx(self):
+        """Rellena la plantilla Word de la empresa con los datos de este
+        contrato y devuelve el documento .docx para descargar."""
+        self.ensure_one()
+        try:
+            from docxtpl import DocxTemplate
+        except ImportError:
+            raise UserError('Falta la librería "docxtpl" en el servidor (pip install docxtpl).')
+        tpl_data = self.env.company.estate_docx_template
+        if not tpl_data:
+            raise UserError(
+                'No hay plantilla Word configurada. Súbela en '
+                'Ajustes → Inmobiliaria → Plantilla de Contrato (Word).')
+        tpl = DocxTemplate(io.BytesIO(base64.b64decode(tpl_data)))
+        tpl.render(self._docx_context())
+        out = io.BytesIO()
+        tpl.save(out)
+        fname = ("Contrato_%s.docx" % (self.name or 'SN')).replace('/', '-')
+        attachment = self.env['ir.attachment'].create({
+            'name': fname,
+            'datas': base64.b64encode(out.getvalue()),
+            'res_model': 'estate.contract',
+            'res_id': self.id,
+            'mimetype': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        })
+        return {
+            'type': 'ir.actions.act_url',
+            'url': '/web/content/%s?download=true' % attachment.id,
+            'target': 'new',
+        }
 
     def action_suspend(self):
         """Suspende un contrato activo (impago, juicio, disputa)."""

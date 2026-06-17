@@ -10,7 +10,7 @@
         * Compartir propiedades en Instagram
         * Generación de URLs para compartir
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['estate_management', 'calendar'],
     'data': [

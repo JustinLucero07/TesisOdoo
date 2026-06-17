@@ -10,7 +10,7 @@ class CrmLead(models.Model):
             if lead.partner_id:
                 # 'visit_state' está definido en calendar_event.py de este módulo
                 lead.completed_visits_count = self.env['calendar.event'].sudo().search_count([
-                    ('partner_id', '=', lead.partner_id.id),
+                    ('client_id', '=', lead.partner_id.id),
                     ('visit_state', '=', 'done'),
                 ])
             else:

@@ -76,7 +76,7 @@
                                     <t t-if="o.pct_change_avg">
                                         <div t-att-style="'font-size:8px; margin-top:4px; font-weight:600; ' + ('color:#4ADE80;' if o.pct_change_avg &gt; 0 else 'color:#FCA5A5;')">
                                             <t t-if="o.pct_change_avg &gt; 0">&#8593;</t><t t-else="">&#8595;</t>
-                                            <t t-esc="'%.1f%%' % abs(o.pct_change_avg)"/> vs anterior
+                                            <t t-esc="'%.1f' % (abs(o.pct_change_avg) * 100) + '%'"/> vs anterior
                                         </div>
                                     </t>
                                 </td>
@@ -92,11 +92,11 @@
                                 </td>
                                 <td style="width:25%; background:#F8F9FB; padding:16px; text-align:center; vertical-align:top; border-right:1px solid #D8DCE5;">
                                     <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">% vs precio listado</div>
-                                    <div style="font-size:20px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="'%.1f%%' % o.kpi_pct_vs_listed"/></div>
+                                    <div style="font-size:20px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="'%.1f' % (o.kpi_pct_vs_listed * 100) + '%'"/></div>
                                 </td>
                                 <td style="width:25%; background:#F8F9FB; padding:16px; text-align:center; vertical-align:top;">
                                     <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Tasa de cierre</div>
-                                    <div style="font-size:20px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="'%.1f%%' % o.kpi_close_rate"/></div>
+                                    <div style="font-size:20px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="'%.1f' % (o.kpi_close_rate * 100) + '%'"/></div>
                                 </td>
                             </tr>
                         </table>

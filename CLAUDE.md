@@ -43,7 +43,7 @@ graph TD
 
 **Documentación por módulo:** ver `estate_<modulo>/README.md` (estate_management, estate_crm, estate_social, estate_wordpress, estate_ai_agent).
 
-**Plan de mejoras:** [PLAN_MEJORAS.md](PLAN_MEJORAS.md) — estado de las 5 fases (seguridad, calidad, performance, tests, UX/docs).
+**Documentación:** ver carpeta [docs/](docs/) — manual de usuario, análisis y planes de mejora.
 
 ## Running the Server
 

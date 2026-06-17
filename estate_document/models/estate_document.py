@@ -14,12 +14,6 @@ _OCR_SUPPORTED_MIMES = {
     'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf',
 }
 
-try:
-    from google import genai as _genai
-    _GEMINI_OK = True
-except ImportError:
-    _GEMINI_OK = False
-
 ALLOWED_EXTENSIONS = ('.pdf', '.doc', '.docx', '.xls', '.xlsx',
                       '.jpg', '.jpeg', '.png', '.gif', '.webp')
 MAX_FILE_SIZE_MB = 10
@@ -59,6 +53,14 @@ class EstateDocument(models.Model):
     filename = fields.Char(string='Nombre del Archivo')
     file_size = fields.Float(
         string='Tamaño (MB)', compute='_compute_file_size', store=True)
+    is_pdf = fields.Boolean(
+        string='Es PDF', compute='_compute_is_pdf',
+        help='Verdadero si el archivo es un PDF (habilita la previsualización).')
+
+    @api.depends('filename')
+    def _compute_is_pdf(self):
+        for rec in self:
+            rec.is_pdf = bool(rec.filename and rec.filename.lower().endswith('.pdf'))
 
     # ── Ciclo de vida ────────────────────────────────────────────────────────
     state = fields.Selection([
@@ -109,9 +111,16 @@ class EstateDocument(models.Model):
     @api.depends('file')
     def _compute_file_size(self):
         for rec in self:
-            if rec.file:
-                rec.file_size = round(len(base64.b64decode(rec.file)) / (1024 * 1024), 2)
-            else:
+            # Leer el binario crudo con bin_size=False; de lo contrario Odoo
+            # devuelve un texto de tamaño ("1.2 Kb") al guardar el formulario y
+            # base64.b64decode falla con "Incorrect padding".
+            raw = rec.with_context(bin_size=False).file
+            if not raw:
+                rec.file_size = 0.0
+                continue
+            try:
+                rec.file_size = round(len(base64.b64decode(raw)) / (1024 * 1024), 2)
+            except Exception:
                 rec.file_size = 0.0
 
     # ── Validaciones ─────────────────────────────────────────────────────────
@@ -257,22 +266,11 @@ class EstateDocument(models.Model):
 
         extracted_text = ''
         try:
-            if not _GEMINI_OK:
-                raise UserError(
-                    'La librería google-genai no está instalada. '
-                    'Ejecuta: pip install google-genai'
-                )
-            client = _genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[{
-                    'parts': [
-                        {'inline_data': {'mime_type': mime_type, 'data': file_b64}},
-                        {'text': prompt},
-                    ]
-                }]
+            raw = self.env['estate.genai.mixin']._genai_generate(
+                prompt,
+                inline_data={'mime_type': mime_type, 'data': file_b64},
+                temperature=0.2, max_output_tokens=4096,
             )
-            raw = response.text or ''
             # Intenta parsear JSON para mostrarlo formateado
             match = re.search(r'\{[\s\S]*\}', raw)
             if match:

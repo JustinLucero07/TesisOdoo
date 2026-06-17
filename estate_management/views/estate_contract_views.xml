@@ -38,6 +38,9 @@
                     <button name="action_activate" string="Activar" type="object"
                         class="oe_highlight" icon="fa-check"
                         invisible="state != 'draft'"/>
+                    <button name="action_generate_docx" string="Generar desde Plantilla Word" type="object"
+                        icon="fa-file-word-o"
+                        help="Rellena tu plantilla Word (.docx) con los datos de este contrato."/>
                     <button name="action_suspend" string="Suspender" type="object"
                         class="btn-warning" icon="fa-pause"
                         invisible="state != 'active'"/>
@@ -193,7 +196,13 @@
                         </page>
 
                         <page string="Notas / Cláusulas" name="notes">
-                            <field name="notes" placeholder="Escriba las cláusulas del contrato aquí..."/>
+                            <div class="oe_button_box" style="margin-bottom:8px;">
+                                <button name="action_ai_draft_clauses" type="object"
+                                        class="btn btn-info" icon="fa-magic"
+                                        string="Redactar / Mejorar con IA"
+                                        confirm="La IA propondrá cláusulas basadas en los datos del contrato. Reemplazará el texto actual. ¿Continuar?"/>
+                            </div>
+                            <field name="notes" placeholder="Escriba las cláusulas del contrato aquí, o use el botón 'Redactar / Mejorar con IA'..."/>
                         </page>
 
                         <page string="Anexos heredados" name="legacy_documents"
@@ -203,14 +212,34 @@
                                 <strong>Anexos antiguos.</strong> Estos archivos serán migrados al módulo Documentos
                                 la próxima vez que se ejecute el script de migración. Use la pestaña principal de Documentos para nuevos archivos.
                             </div>
-                            <group string="Contrato de Arras (legado)">
-                                <field name="earnest_money_contract" filename="earnest_money_filename"/>
-                                <field name="earnest_money_filename" invisible="1"/>
-                            </group>
-                            <group string="Contrato Firmado (legado)">
-                                <field name="signed_contract" filename="signed_contract_filename"/>
-                                <field name="signed_contract_filename" invisible="1"/>
-                            </group>
+                            <field name="earnest_is_pdf" invisible="1"/>
+                            <field name="signed_is_pdf" invisible="1"/>
+                            <!-- Contrato de Arras: archivo izquierda, previsualización derecha -->
+                            <div class="row g-3 mb-2">
+                                <div class="col-lg-5">
+                                    <group string="Contrato de Arras (legado)">
+                                        <field name="earnest_money_contract" filename="earnest_money_filename"/>
+                                        <field name="earnest_money_filename" invisible="1"/>
+                                    </group>
+                                </div>
+                                <div class="col-lg-7" invisible="not earnest_money_contract or not earnest_is_pdf">
+                                    <strong style="font-size:.85em"><i class="fa fa-file-pdf-o text-danger" title="PDF"/> Previsualización — Arras</strong>
+                                    <field name="earnest_money_contract" filename="earnest_money_filename" widget="pdf_viewer" nolabel="1"/>
+                                </div>
+                            </div>
+                            <!-- Contrato Firmado: archivo izquierda, previsualización derecha -->
+                            <div class="row g-3">
+                                <div class="col-lg-5">
+                                    <group string="Contrato Firmado (legado)">
+                                        <field name="signed_contract" filename="signed_contract_filename"/>
+                                        <field name="signed_contract_filename" invisible="1"/>
+                                    </group>
+                                </div>
+                                <div class="col-lg-7" invisible="not signed_contract or not signed_is_pdf">
+                                    <strong style="font-size:.85em"><i class="fa fa-file-pdf-o text-danger" title="PDF"/> Previsualización — Contrato Firmado</strong>
+                                    <field name="signed_contract" filename="signed_contract_filename" widget="pdf_viewer" nolabel="1"/>
+                                </div>
+                            </div>
                         </page>
 
                         <page string="Renovaciones" name="renewals"
@@ -249,6 +278,9 @@
                 <field name="property_id" string="Propiedad"/>
                 <field name="partner_id" string="Cliente"/>
                 <field name="user_id" string="Asesor"/>
+                <filter name="filter_mine" string="Mis contratos"
+                        domain="[('user_id', '=', uid)]"/>
+                <separator/>
                 <filter name="filter_active" string="Activos"
                         domain="[('state', '=', 'active')]"/>
                 <filter name="filter_draft" string="Borradores"

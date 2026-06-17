@@ -27,6 +27,7 @@
                     <group>
                         <group string="Precio de Venta">
                             <field name="sale_price" widget="monetary"/>
+                            <field name="deal_earnest_amount" widget="monetary"/>
                         </group>
                         <group string="Comisión">
                             <field name="commission_pct"/>
@@ -34,9 +35,35 @@
                         </group>
                     </group>
 
+                    <group string="Datos del Negocio Cerrado">
+                        <group>
+                            <field name="buyer_proxy_id" options="{'no_create': False}"/>
+                            <field name="deal_deadline"/>
+                            <field name="deal_payment_type"/>
+                        </group>
+                        <group>
+                            <field name="deal_credit_institution"
+                                   invisible="deal_payment_type not in ('mortgage','mixed')"/>
+                            <field name="deal_credit_advisor"
+                                   invisible="deal_payment_type not in ('mortgage','mixed')"/>
+                            <field name="deal_credit_advisor_phone"
+                                   invisible="deal_payment_type not in ('mortgage','mixed')"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="deal_payment_details"
+                               placeholder="Ej: Contado $5.000 directo al vendedor. Saldo de contado esperando Poder y actualización de la construcción para la escritura definitiva."/>
+                        <field name="deal_observations" placeholder="Observaciones adicionales del negocio..."/>
+                    </group>
+
                     <div class="alert alert-success" role="alert" style="font-size:0.9em">
-                        <i class="fa fa-check-circle"/> Al confirmar se cerrará la propiedad como
-                        <strong>Vendida</strong> y se generarán los registros de comisión automáticamente.
+                        <i class="fa fa-check-circle"/> Al confirmar, automáticamente se:
+                        <ol class="mb-0 mt-1">
+                            <li>Crea y <strong>confirma la Orden de Venta</strong> (módulo Ventas)</li>
+                            <li>Genera y <strong>contabiliza la Factura</strong> (módulo Facturación)</li>
+                            <li>Marca la propiedad como <strong>Vendida</strong></li>
+                            <li>Registra la <strong>comisión</strong> del asesor</li>
+                        </ol>
                     </div>
                 </sheet>
                 <footer>

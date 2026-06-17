@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- A4: Reporte PDF ejecutivo del dashboard -->
+    <record id="action_report_dashboard_executive" model="ir.actions.report">
+        <field name="name">Informe Ejecutivo del Dashboard</field>
+        <field name="model">estate.dashboard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_dashboard_executive_template</field>
+        <field name="report_file">estate_reports.report_dashboard_executive_template</field>
+        <field name="print_report_name">'Informe Ejecutivo - %s' % (time.strftime('%Y-%m-%d'))</field>
+    </record>
+
+    <template id="report_dashboard_executive_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2 style="color:#1e40af;margin-bottom:2px;">Informe Ejecutivo</h2>
+                        <p style="color:#6b7280;margin-top:0;">
+                            Generado el <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
+                        </p>
+                        <hr style="border-color:#1e40af;"/>
+
+                        <!-- Inventario -->
+                        <h3 style="color:#1e40af;">Inventario de Propiedades</h3>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Total propiedades</strong></td>
+                                <td t-esc="doc.total_properties"/>
+                                <td><strong>Disponibles</strong></td>
+                                <td t-esc="doc.available_properties"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Vendidas / Rentadas</strong></td>
+                                <td t-esc="doc.sold_properties"/>
+                                <td><strong>Estancadas (+60 días)</strong></td>
+                                <td t-esc="doc.stagnant_properties"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Días promedio en mercado</strong></td>
+                                <td t-esc="'%.1f' % doc.avg_days_on_market"/>
+                                <td><strong>Clientes activos</strong></td>
+                                <td t-esc="doc.active_clients"/>
+                            </tr>
+                        </table>
+
+                        <!-- Indicadores financieros -->
+                        <h3 style="color:#1e40af;margin-top:18px;">Indicadores Financieros del Período</h3>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Ingresos cerrados</strong></td>
+                                <td>$<span t-esc="'{:,.0f}'.format(doc.won_revenue_month)"/></td>
+                                <td><strong>Comisiones</strong></td>
+                                <td>$<span t-esc="'{:,.0f}'.format(doc.monthly_commissions)"/></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Pipeline pendiente</strong></td>
+                                <td>$<span t-esc="'{:,.0f}'.format(doc.pending_revenue)"/></td>
+                                <td><strong>Facturas pendientes</strong></td>
+                                <td>$<span t-esc="'{:,.0f}'.format(doc.pending_invoices_amount)"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- Tendencias -->
+                        <h3 style="color:#1e40af;margin-top:18px;">Tendencia vs Período Anterior</h3>
+                        <table class="table table-sm">
+                            <thead>
+                                <tr style="background:#f3f4f6;">
+                                    <th>Métrica</th><th>Actual</th><th>Anterior</th><th>Variación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Ventas</td>
+                                    <td t-esc="doc.trend_sales_current"/>
+                                    <td t-esc="doc.trend_sales_prev"/>
+                                    <td>
+                                        <span t-att-style="'color:%s;font-weight:bold' % ('#16a34a' if doc.trend_sales_pct >= 0 else '#dc2626')">
+                                            <span t-esc="'%+.0f' % doc.trend_sales_pct + '%'"/>
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Leads</td>
+                                    <td t-esc="doc.trend_leads_current"/>
+                                    <td t-esc="doc.trend_leads_prev"/>
+                                    <td>
+                                        <span t-att-style="'color:%s;font-weight:bold' % ('#16a34a' if doc.trend_leads_pct >= 0 else '#dc2626')">
+                                            <span t-esc="'%+.0f' % doc.trend_leads_pct + '%'"/>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Embudo CRM -->
+                        <h3 style="color:#1e40af;margin-top:18px;">Embudo de Conversión</h3>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Leads nuevos</strong></td>
+                                <td t-esc="doc.funnel_leads_new"/>
+                                <td><strong>Visitas</strong></td>
+                                <td t-esc="doc.funnel_visits_done"/>
+                                <td><strong>Ofertas</strong></td>
+                                <td t-esc="doc.funnel_offers_made"/>
+                            </tr>
+                            <tr>
+                                <td><strong>Ganados</strong></td>
+                                <td t-esc="doc.funnel_won"/>
+                                <td><strong>Perdidos</strong></td>
+                                <td t-esc="doc.funnel_lost"/>
+                                <td><strong>% Conversión</strong></td>
+                                <td t-esc="'%.1f' % doc.funnel_conversion_pct + '%'"/>
+                            </tr>
+                        </table>
+
+                        <!-- Ranking de asesores (HTML ya computado) -->
+                        <h3 style="color:#1e40af;margin-top:18px;">Ranking de Asesores</h3>
+                        <div t-out="doc.advisor_ranking_html"/>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

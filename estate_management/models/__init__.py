@@ -1,4 +1,5 @@
 from . import mixins
+from . import estate_genai_mixin
 from . import estate_property_type
 from . import estate_property_tag
 from . import estate_price_history
@@ -14,3 +15,5 @@ from . import estate_appraisal
 from . import account_move
 from . import sale_order
 from . import res_partner
+from . import estate_advisor_fb_post
+from . import res_config_settings

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="estate_reports.DashboardChart">
+        <div class="o_dashboard_chart" style="position:relative;width:100%;min-height:200px;">
+            <canvas t-ref="canvas"/>
+            <div t-if="!data or !data.values or !data.values.length"
+                 class="text-center text-muted"
+                 style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);font-size:13px;">
+                <i class="fa fa-bar-chart fa-2x mb-2 d-block" title="Sin datos"/>
+                Sin datos para este período
+            </div>
+        </div>
+    </t>
+</templates>

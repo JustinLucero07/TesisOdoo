@@ -1,28 +1,26 @@
 <odoo>
     <!-- ═══════════════════════════════════════════════════════
-         REPORTES — App independiente
-         Aparece en el menú de aplicaciones de Odoo junto a CRM,
-         Calendario, etc. Consolida todos los reportes del sistema.
+         REPORTES — 5 secciones claras, sin duplicados:
+         1. Dashboard Ejecutivo   2. Tablero Gráfico
+         3. Ventas   4. Análisis   5. Informes
     ═══════════════════════════════════════════════════════════ -->
 
-    <!-- ── Dashboard nativo (board con gráficos Odoo) ──── -->
-    <menuitem id="estate_menu_dashboard_direct"
-              name="Dashboard General"
-              parent="estate_management.estate_menu_intel_root"
-              action="estate_board_action"
-              sequence="5"/>
-
-    <!-- ── KPIs y métricas detalladas (dashboard HTML) ── -->
+    <!-- 1. Dashboard Ejecutivo (rico: KPIs vs meta, Chart.js, filtros, IA, PDF) -->
     <menuitem id="estate_menu_dashboard_kpis"
-              name="KPIs y Métricas"
+              name="Dashboard Ejecutivo"
               parent="estate_management.estate_menu_intel_root"
               action="estate_dashboard_action"
-              sequence="6"
+              sequence="5"
               groups="estate_management.estate_group_manager"/>
 
-    <!-- ════════════════════════════════════════════════════
-         1. VENTAS — Gráficos y KPIs de cierres
-    ════════════════════════════════════════════════════ -->
+    <!-- 2. Tablero Gráfico (board nativo, para todos) -->
+    <menuitem id="estate_menu_dashboard_direct"
+              name="Tablero Gráfico"
+              parent="estate_management.estate_menu_intel_root"
+              action="estate_board_action"
+              sequence="6"/>
+
+    <!-- ════ 3. VENTAS — cierres, ranking, metas ════ -->
     <menuitem id="estate_menu_ventas_root"
               name="Ventas"
               parent="estate_management.estate_menu_intel_root"
@@ -43,44 +41,36 @@
                   sequence="20"
                   groups="estate_management.estate_group_manager"/>
 
-        <menuitem id="estate_menu_ventas_by_type"
-                  name="Por Tipo de Propiedad"
+        <menuitem id="estate_menu_ventas_targets"
+                  name="Metas de Ventas"
                   parent="estate_menu_ventas_root"
-                  action="action_sales_by_type"
+                  action="estate_sales_target_action"
                   sequence="30"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_ventas_days"
-                  name="Dias en Mercado"
-                  parent="estate_menu_ventas_root"
-                  action="action_sales_days_market"
-                  sequence="40"
                   groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_ventas_commissions"
                   name="Comisiones de Asesores"
                   parent="estate_menu_ventas_root"
                   action="estate_management.action_estate_commission_dashboard"
+                  sequence="40"
+                  groups="estate_management.estate_group_manager"/>
+
+        <menuitem id="estate_menu_ventas_commission_status"
+                  name="Estado de Pago de Comisiones"
+                  parent="estate_menu_ventas_root"
+                  action="estate_management.action_estate_commission_payment_status"
+                  sequence="45"
+                  groups="estate_management.estate_group_manager"/>
+
+        <!-- Wizard de KPIs de cierre (PDF/Excel). Antes duplicado en Informes. -->
+        <menuitem id="estate_menu_ventas_kpi_wizard"
+                  name="Análisis de Cierres (KPIs)"
+                  parent="estate_menu_ventas_root"
+                  action="action_estate_sales_report_wizard"
                   sequence="50"
                   groups="estate_management.estate_group_manager"/>
 
-        <menuitem id="estate_menu_ventas_avg"
-                  name="Promedio de Ventas"
-                  parent="estate_menu_ventas_root"
-                  action="action_sales_avg_month"
-                  sequence="55"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_ventas_kpi_wizard"
-                  name="KPIs y Descargar Reporte"
-                  parent="estate_menu_ventas_root"
-                  action="action_estate_sales_report_wizard"
-                  sequence="60"
-                  groups="estate_management.estate_group_manager"/>
-
-    <!-- ════════════════════════════════════════════════════
-         2. ANÁLISIS — Pivots y gráficos por modelo
-    ════════════════════════════════════════════════════ -->
+    <!-- ════ 4. ANÁLISIS — pivots/gráficos nativos por modelo ════ -->
     <menuitem id="estate_menu_analytics_root"
               name="Análisis"
               parent="estate_management.estate_menu_intel_root"
@@ -91,6 +81,28 @@
                   parent="estate_menu_analytics_root"
                   action="estate_analytics_property_action"
                   sequence="10"/>
+
+        <!-- Movidos aquí desde Ventas (son análisis granular) -->
+        <menuitem id="estate_menu_ventas_by_type"
+                  name="Por Tipo de Propiedad"
+                  parent="estate_menu_analytics_root"
+                  action="action_sales_by_type"
+                  sequence="15"
+                  groups="estate_management.estate_group_manager"/>
+
+        <menuitem id="estate_menu_ventas_days"
+                  name="Días en Mercado"
+                  parent="estate_menu_analytics_root"
+                  action="action_sales_days_market"
+                  sequence="18"
+                  groups="estate_management.estate_group_manager"/>
+
+        <menuitem id="estate_menu_ventas_avg"
+                  name="Precio Promedio Mensual"
+                  parent="estate_menu_analytics_root"
+                  action="action_sales_avg_month"
+                  sequence="19"
+                  groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_analytics_contract"
                   name="Contratos"
@@ -134,9 +146,7 @@
                   sequence="70"
                   groups="estate_management.estate_group_manager"/>
 
-    <!-- ════════════════════════════════════════════════════
-         3. EXPORTAR — Wizards de descarga PDF / Excel
-    ════════════════════════════════════════════════════ -->
+    <!-- ════ 5. INFORMES — exportaciones y wizards ════ -->
     <menuitem id="estate_menu_reports_root"
               name="Informes"
               parent="estate_management.estate_menu_intel_root"
@@ -162,13 +172,6 @@
                   parent="estate_menu_reports_root"
                   action="estate_visitor_report_action"
                   sequence="30"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_sales_report"
-                  name="Promedio de Ventas"
-                  parent="estate_menu_reports_root"
-                  action="action_estate_sales_report_wizard"
-                  sequence="40"
                   groups="estate_management.estate_group_manager"/>
 
         <menuitem id="estate_menu_comparator_report"

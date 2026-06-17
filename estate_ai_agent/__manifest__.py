@@ -12,7 +12,7 @@
         * Generación de reportes por chat
         * Panel de configuración (ChatGPT / Gemini)
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['estate_management', 'estate_crm'],
     'data': [
@@ -22,6 +22,7 @@
         'views/estate_ai_chat_views.xml',
         'views/estate_ai_memory_views.xml',
         'views/estate_ai_menus.xml',
+        'views/estate_ai_feedback_views.xml',
         'views/estate_ai_contract_views.xml',
         'views/estate_property_views.xml',
         'data/estate_ai_cron.xml',

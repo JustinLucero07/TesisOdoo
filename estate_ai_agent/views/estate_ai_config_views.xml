@@ -30,6 +30,9 @@
                         <setting string="Prompt del Sistema" help="Instrucciones base para el agente IA">
                             <field name="ai_system_prompt"/>
                         </setting>
+                        <setting string="Estilo de Descripciones" help="Tono e instrucciones para las descripciones comerciales generadas por IA. Editable sin tocar código.">
+                            <field name="ai_desc_instructions"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>

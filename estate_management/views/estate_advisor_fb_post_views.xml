@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ══ LIST VIEW ══ -->
+    <record id="estate_advisor_fb_post_view_list" model="ir.ui.view">
+        <field name="name">estate.advisor.fb.post.list</field>
+        <field name="model">estate.advisor.fb.post</field>
+        <field name="arch" type="xml">
+            <list string="Publicaciones Personales de Asesores"
+                  decoration-primary="platform == 'facebook'"
+                  decoration-danger="platform == 'instagram'">
+                <field name="published_date"/>
+                <field name="platform" widget="badge"
+                       decoration-primary="platform == 'facebook'"
+                       decoration-danger="platform == 'instagram'"/>
+                <field name="user_id"/>
+                <field name="property_id"/>
+                <field name="url" widget="url" optional="show"/>
+                <field name="notes" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ══ FORM VIEW ══ -->
+    <record id="estate_advisor_fb_post_view_form" model="ir.ui.view">
+        <field name="name">estate.advisor.fb.post.form</field>
+        <field name="model">estate.advisor.fb.post</field>
+        <field name="arch" type="xml">
+            <form string="Publicación Personal">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="platform" widget="radio"/>
+                            <field name="property_id"/>
+                            <field name="user_id"/>
+                            <field name="published_date"/>
+                        </group>
+                        <group>
+                            <field name="url" widget="url" placeholder="https://..."/>
+                        </group>
+                    </group>
+                    <group string="Observaciones / Métricas">
+                        <field name="notes" nolabel="1"
+                               placeholder="Alcance orgánico, me gustas, comentarios, leads generados..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ══ SEARCH VIEW ══ -->
+    <record id="estate_advisor_fb_post_view_search" model="ir.ui.view">
+        <field name="name">estate.advisor.fb.post.search</field>
+        <field name="model">estate.advisor.fb.post</field>
+        <field name="arch" type="xml">
+            <search string="Buscar Publicaciones">
+                <field name="property_id"/>
+                <field name="user_id"/>
+                <filter name="facebook" string="Facebook" domain="[('platform','=','facebook')]"/>
+                <filter name="instagram" string="Instagram" domain="[('platform','=','instagram')]"/>
+                <separator/>
+                <group>
+                    <filter name="group_by_platform" string="Plataforma"
+                            context="{'group_by': 'platform'}"/>
+                    <filter name="group_by_user" string="Asesor"
+                            context="{'group_by': 'user_id'}"/>
+                    <filter name="group_by_property" string="Propiedad"
+                            context="{'group_by': 'property_id'}"/>
+                    <filter name="group_by_month" string="Mes"
+                            context="{'group_by': 'published_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ══ GRAPH — publicaciones por asesor, apiladas por plataforma ══ -->
+    <record id="estate_advisor_fb_post_view_graph" model="ir.ui.view">
+        <field name="name">estate.advisor.fb.post.graph</field>
+        <field name="model">estate.advisor.fb.post</field>
+        <field name="arch" type="xml">
+            <graph string="Publicaciones por Asesor y Plataforma" type="bar" stacked="True">
+                <field name="user_id" type="row"/>
+                <field name="platform" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- ══ PIVOT ══ -->
+    <record id="estate_advisor_fb_post_view_pivot" model="ir.ui.view">
+        <field name="name">estate.advisor.fb.post.pivot</field>
+        <field name="model">estate.advisor.fb.post</field>
+        <field name="arch" type="xml">
+            <pivot string="Análisis de Publicaciones Personales" display_quantity="True">
+                <field name="user_id" type="row"/>
+                <field name="platform" type="col"/>
+                <field name="published_date" interval="month" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- ══ ACTION ══ -->
+    <record id="action_estate_advisor_fb_post" model="ir.actions.act_window">
+        <field name="name">Publicaciones Personales FB / Instagram</field>
+        <field name="res_model">estate.advisor.fb.post</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Sin publicaciones registradas aún
+            </p>
+            <p>
+                Los asesores registran sus publicaciones desde la ficha de cada
+                propiedad → pestaña <strong>Redes Sociales</strong> usando los
+                botones de registro rápido o la tabla de historial.
+            </p>
+        </field>
+    </record>
+
+    <!-- ══ MENU ══ -->
+    <menuitem id="estate_menu_advisor_fb_posts"
+              name="Publicaciones Personales FB/IG"
+              parent="estate_menu_intel_root"
+              action="action_estate_advisor_fb_post"
+              sequence="90"
+              groups="estate_group_manager,estate_group_admin"/>
+
+</odoo>

@@ -78,6 +78,13 @@
                   sequence="50"
                   groups="estate_management.estate_group_manager"/>
 
+        <menuitem id="estate_menu_finance_commission_payments"
+                  name="Pagos de Comisiones"
+                  parent="estate_menu_finance_root"
+                  action="action_estate_commission_payment_status"
+                  sequence="55"
+                  groups="estate_management.estate_group_manager"/>
+
         <!-- Nómina: activar cuando se instale hr_payroll -->
 
 </odoo>

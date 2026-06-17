@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_gcal" model="ir.ui.view">
+        <field name="name">res.config.settings.gcal</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app string="Calendario (Visitas)" name="estate_gcal" logo="/estate_management/static/description/icon.png">
+                    <block title="Sincronización con Google Calendar"
+                           name="estate_gcal_block">
+                        <setting string="Modo de sincronización"
+                                 help="Elige cómo se sincronizan las visitas con Google Calendar.">
+                            <field name="gcal_mode" widget="radio"/>
+                            <div class="text-muted mt-2" invisible="gcal_mode != 'native'">
+                                <i class="fa fa-info-circle" title="Info"/>
+                                Cada usuario conecta su propia cuenta en
+                                <b>Ajustes → General → Google Calendar</b>. Sus citas sincronizan con su calendario.
+                            </div>
+                            <div class="text-muted mt-2" invisible="gcal_mode != 'shared'">
+                                <i class="fa fa-info-circle" title="Info"/>
+                                Todas las visitas se empujan a un <b>único calendario compartido</b> usando una
+                                cuenta de servicio. Configura el ID del calendario y las credenciales abajo.
+                            </div>
+                        </setting>
+                        <setting string="ID del Calendario compartido"
+                                 invisible="gcal_mode != 'shared'"
+                                 help="ID del calendario de Google que comparte todo el equipo.">
+                            <field name="gcal_calendar_id" placeholder="equipo@inmobi.com"/>
+                        </setting>
+                        <setting string="Credenciales (cuenta de servicio)"
+                                 invisible="gcal_mode != 'shared'"
+                                 help="Pega el JSON de la cuenta de servicio de Google Cloud (con Calendar API habilitada y el calendario compartido con su email).">
+                            <field name="gcal_sa_json" password="True"
+                                   placeholder='{"type":"service_account", ...}'/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

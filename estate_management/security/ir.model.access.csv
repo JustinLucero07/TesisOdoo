@@ -3,10 +3,10 @@ access_estate_property_type_agent,estate.property.type.agent,model_estate_proper
 access_estate_property_type_manager,estate.property.type.manager,model_estate_property_type,estate_group_manager,1,1,1,0
 access_estate_property_type_admin,estate.property.type.admin,model_estate_property_type,estate_group_admin,1,1,1,1
 access_estate_property_type_marketing,estate.property.type.marketing,model_estate_property_type,estate_group_marketing,1,0,0,0
-access_estate_property_agent,estate.property.agent,model_estate_property,estate_group_agent,1,1,1,0
-access_estate_property_manager,estate.property.manager,model_estate_property,estate_group_manager,1,1,1,0
+access_estate_property_agent,estate.property.agent,model_estate_property,estate_group_agent,1,1,1,1
+access_estate_property_manager,estate.property.manager,model_estate_property,estate_group_manager,1,1,1,1
 access_estate_property_admin,estate.property.admin,model_estate_property,estate_group_admin,1,1,1,1
-access_estate_property_marketing,estate.property.marketing,model_estate_property,estate_group_marketing,1,1,0,0
+access_estate_property_marketing,estate.property.marketing,model_estate_property,estate_group_marketing,1,1,1,0
 access_estate_property_tag_agent,estate.property.tag.agent,model_estate_property_tag,estate_group_agent,1,0,0,0
 access_estate_property_tag_manager,estate.property.tag.manager,model_estate_property_tag,estate_group_manager,1,1,1,0
 access_estate_property_tag_admin,estate.property.tag.admin,model_estate_property_tag,estate_group_admin,1,1,1,1
@@ -27,10 +27,10 @@ access_estate_payment_agent,estate.payment.agent,model_estate_payment,estate_gro
 access_estate_payment_manager,estate.payment.manager,model_estate_payment,estate_group_manager,1,1,1,0
 access_estate_payment_admin,estate.payment.admin,model_estate_payment,estate_group_admin,1,1,1,1
 access_estate_payment_marketing,estate.payment.marketing,model_estate_payment,estate_group_marketing,1,0,0,0
-access_estate_price_history_agent,estate.price.history.agent,model_estate_property_price_history,estate_group_agent,1,0,0,0
+access_estate_price_history_agent,estate.price.history.agent,model_estate_property_price_history,estate_group_agent,1,1,1,0
 access_estate_price_history_manager,estate.price.history.manager,model_estate_property_price_history,estate_group_manager,1,1,1,0
 access_estate_price_history_admin,estate.price.history.admin,model_estate_property_price_history,estate_group_admin,1,1,1,1
-access_estate_price_history_marketing,estate.price.history.marketing,model_estate_property_price_history,estate_group_marketing,1,0,0,0
+access_estate_price_history_marketing,estate.price.history.marketing,model_estate_property_price_history,estate_group_marketing,1,1,1,0
 access_estate_expense_agent,estate.expense.agent,model_estate_property_expense,estate_group_agent,1,1,1,0
 access_estate_expense_manager,estate.expense.manager,model_estate_property_expense,estate_group_manager,1,1,1,0
 access_estate_expense_admin,estate.expense.admin,model_estate_property_expense,estate_group_admin,1,1,1,1
@@ -59,3 +59,7 @@ access_estate_sale_wizard_agent,estate.sale.wizard.agent,model_estate_sale_wizar
 access_estate_sale_wizard_manager,estate.sale.wizard.manager,model_estate_sale_wizard,estate_group_manager,1,1,1,0
 access_estate_sale_wizard_admin,estate.sale.wizard.admin,model_estate_sale_wizard,estate_group_admin,1,1,1,1
 access_estate_sale_wizard_marketing,estate.sale.wizard.marketing,model_estate_sale_wizard,estate_group_marketing,0,0,0,0
+access_estate_advisor_fb_post_agent,estate.advisor.fb.post.agent,model_estate_advisor_fb_post,estate_group_agent,1,1,1,0
+access_estate_advisor_fb_post_manager,estate.advisor.fb.post.manager,model_estate_advisor_fb_post,estate_group_manager,1,1,1,1
+access_estate_advisor_fb_post_admin,estate.advisor.fb.post.admin,model_estate_advisor_fb_post,estate_group_admin,1,1,1,1
+access_estate_advisor_fb_post_marketing,estate.advisor.fb.post.marketing,model_estate_advisor_fb_post,estate_group_marketing,1,0,0,0

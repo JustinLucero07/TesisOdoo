@@ -5,8 +5,11 @@
         <field name="model">estate.property</field>
         <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
         <field name="arch" type="xml">
-            <button name="action_create_invoice" position="after">
+            <button name="action_calculate_avm" position="after">
                 <button name="%(action_report_ficha_tecnica)d" string="Descargar Ficha PDF" type="action" class="btn-secondary" icon="fa-download"/>
+                <button name="%(action_report_negocio_cerrado)d" string="Imprimir Negocio Cerrado" type="action"
+                        class="btn-secondary" icon="fa-file-text-o"
+                        invisible="state != 'sold'"/>
             </button>
         </field>
     </record>

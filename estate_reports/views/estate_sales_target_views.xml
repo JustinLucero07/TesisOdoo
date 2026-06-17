@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_sales_target_view_list" model="ir.ui.view">
+        <field name="name">estate.sales.target.list</field>
+        <field name="model">estate.sales.target</field>
+        <field name="arch" type="xml">
+            <list string="Metas de Ventas"
+                  decoration-success="achievement_count >= 1"
+                  decoration-warning="achievement_count >= 0.7 and achievement_count &lt; 1"
+                  decoration-danger="achievement_count &lt; 0.7">
+                <field name="user_id" placeholder="Agencia"/>
+                <field name="year"/>
+                <field name="month"/>
+                <field name="target_count" string="Meta #"/>
+                <field name="actual_count" string="Real #"/>
+                <field name="achievement_count" widget="percentage" string="% Cierres"/>
+                <field name="target_revenue" widget="monetary" string="Meta $"/>
+                <field name="actual_revenue" widget="monetary" string="Real $"/>
+                <field name="achievement_revenue" widget="percentage" string="% Ingresos"/>
+                <field name="achievement_commission" widget="percentage" string="% Comis." optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="estate_sales_target_view_form" model="ir.ui.view">
+        <field name="name">estate.sales.target.form</field>
+        <field name="model">estate.sales.target</field>
+        <field name="arch" type="xml">
+            <form string="Meta de Ventas">
+                <sheet>
+                    <group>
+                        <group string="Período y Asesor">
+                            <field name="user_id" placeholder="Vacío = meta de la agencia"/>
+                            <field name="year"/>
+                            <field name="month"/>
+                        </group>
+                        <group string="Objetivos">
+                            <field name="target_count"/>
+                            <field name="target_revenue" widget="monetary"/>
+                            <field name="target_commission" widget="monetary"/>
+                        </group>
+                    </group>
+                    <group string="Cumplimiento (en vivo)">
+                        <group>
+                            <label for="actual_count" string="Cierres"/>
+                            <div>
+                                <field name="actual_count" class="oe_inline"/> / <field name="target_count" class="oe_inline" readonly="1"/>
+                                (<field name="achievement_count" widget="percentage" class="oe_inline"/>)
+                            </div>
+                            <label for="actual_revenue" string="Ingresos"/>
+                            <div>
+                                <field name="actual_revenue" widget="monetary" class="oe_inline"/>
+                                (<field name="achievement_revenue" widget="percentage" class="oe_inline"/>)
+                            </div>
+                        </group>
+                        <group>
+                            <label for="actual_commission" string="Comisiones"/>
+                            <div>
+                                <field name="actual_commission" widget="monetary" class="oe_inline"/>
+                                (<field name="achievement_commission" widget="percentage" class="oe_inline"/>)
+                            </div>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="estate_sales_target_view_search" model="ir.ui.view">
+        <field name="name">estate.sales.target.search</field>
+        <field name="model">estate.sales.target</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="user_id"/>
+                <field name="year"/>
+                <filter name="g_user" string="Asesor" context="{'group_by':'user_id'}"/>
+                <filter name="g_year" string="Año" context="{'group_by':'year'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="estate_sales_target_action" model="ir.actions.act_window">
+        <field name="name">Metas de Ventas</field>
+        <field name="res_model">estate.sales.target</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="estate_sales_target_view_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiley_face">Define la primera meta de ventas.</p>
+            <p>Establece objetivos de cierres, ingresos y comisiones por asesor y período. El cumplimiento se calcula automáticamente.</p>
+        </field>
+    </record>
+</odoo>

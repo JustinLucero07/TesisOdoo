@@ -73,9 +73,6 @@
                             class="btn-info" invisible="not map_url"/>
                     <button name="action_calculate_avm" string="Calcular AVM" type="object"
                             class="btn-warning" invisible="state in ('draft', 'sold', 'rented')"/>
-                    <button name="action_create_invoice" string="Generar Factura" type="object"
-                            class="btn-primary" icon="fa-file-text-o"
-                            invisible="state in ('draft', 'sold', 'rented')"/>
 
                     <field name="state" widget="statusbar" statusbar_visible="draft,available,reserved,sold,rented"/>
                 </header>
@@ -124,6 +121,9 @@
                                 invisible="commission_count == 0">
                             <field name="commission_count" string="Comisiones" widget="statinfo"/>
                         </button>
+                        <button name="action_view_personal_posts" type="object" class="oe_stat_button" icon="fa-share-alt">
+                            <field name="advisor_fb_post_count" string="Posts Personales" widget="statinfo"/>
+                        </button>
                     </div>
                     <field name="map_url" invisible="1"/>
                     <!-- Barra de progreso del expediente -->
@@ -162,6 +162,8 @@
                             <field name="area" readonly="state == 'sold'" placeholder="m²"/>
                             <field name="owner_id" readonly="state == 'sold'"
                                    placeholder="Buscar propietario..."/>
+                            <field name="proxy_id" readonly="state == 'sold'"
+                                   placeholder="Buscar apoderado..."/>
                             <field name="buyer_id" readonly="state == 'sold'"
                                    placeholder="Se asigna al vender"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
@@ -170,10 +172,15 @@
                             <field name="active" invisible="1"/>
                         </group>
                         <group string="Captación y Exclusividad">
+                            <field name="capture_is_pdf" invisible="1"/>
                             <field name="capture_sheet" filename="capture_sheet_filename"/>
                             <field name="is_exclusive" widget="boolean_toggle"/>
                             <field name="exclusive_user_id" widget="many2one_avatar_user" invisible="not is_exclusive"/>
                         </group>
+                        <div invisible="not capture_sheet or not capture_is_pdf" class="mt-1">
+                            <strong style="font-size:.85em"><i class="fa fa-file-pdf-o text-danger" title="PDF"/> Previsualización — Hoja de Captación</strong>
+                            <field name="capture_sheet" filename="capture_sheet_filename" widget="pdf_viewer" nolabel="1"/>
+                        </div>
                         <field name="is_land_type" invisible="1"/>
                         <group string="Terreno / Solar" invisible="not is_land_type">
                             <field name="has_iprus" widget="boolean_toggle"
@@ -269,29 +276,96 @@
                         <page string="Descripción" name="description">
                             <field name="description"/>
                         </page>
-                        <page string="Imágenes" name="images">
-                            <field name="image_main" widget="image" class="oe_avatar"/>
-                            <field name="image_ids">
+                        <page string="Multimedia" name="images">
+                            <div class="row g-4 mb-3">
+                                <!-- Portada -->
+                                <div class="col-lg-4">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="fa fa-star text-warning" title="Portada"/>
+                                        <span class="fw-bold">Imagen Principal (portada)</span>
+                                    </div>
+                                    <field name="image_main" widget="image" class="w-100"
+                                           options="{'size': [400, 300]}"/>
+                                    <small class="text-muted d-block mt-1">
+                                        Esta es la foto destacada que se publica en portales y redes.
+                                    </small>
+                                </div>
+
+                                <!-- Carga múltiple -->
+                                <div class="col-lg-8">
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <i class="fa fa-cloud-upload text-primary" title="Subir varias"/>
+                                        <span class="fw-bold">Subir varias imágenes a la vez</span>
+                                    </div>
+                                    <div class="p-3 rounded" style="background:#f8f9fa;border:1px dashed #b9c5d6;">
+                                        <field name="gallery_ids" widget="many2many_binary"
+                                               options="{'accepted_file_extensions': 'image/*'}"/>
+                                        <small class="text-muted d-block mt-2">
+                                            <i class="fa fa-info-circle" title="Info"/>
+                                            Selecciona o arrastra <strong>varias imágenes desde tu computadora</strong>
+                                            a la vez. Al <strong>guardar</strong>, se agregarán automáticamente a la
+                                            galería de abajo y quedarán listas para publicar.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Galería existente -->
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="fa fa-picture-o text-primary" title="Galería"/>
+                                <span class="fw-bold">Galería de la propiedad</span>
+                                <small class="text-muted">— arrastra para reordenar</small>
+                            </div>
+                            <field name="image_ids" mode="kanban">
+                                <kanban>
+                                    <field name="id"/>
+                                    <field name="name"/>
+                                    <field name="sequence" widget="handle"/>
+                                    <templates>
+                                        <t t-name="card">
+                                            <div class="oe_kanban_global_click position-relative">
+                                                <div class="o_kanban_image_fill_left"
+                                                     style="height:140px;background-size:cover;background-position:center;border-radius:6px;"
+                                                     t-attf-style="background-image:url('/web/image/estate.property.image/#{record.id.raw_value}/image');height:140px;background-size:cover;background-position:center;border-radius:6px;"/>
+                                                <div class="p-1 text-center text-truncate small text-muted">
+                                                    <field name="name"/>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="image" widget="image" options="{'size': [100, 100]}"/>
-                                    <field name="name" column_invisible="1"/>
+                                    <field name="name"/>
                                 </list>
                             </field>
-                        </page>
-                        <page string="WordPress" name="wordpress">
+                            <div class="text-center text-muted py-4" invisible="image_ids">
+                                <i class="fa fa-picture-o fa-2x mb-2 d-block" title="Sin imágenes"/>
+                                <small>Aún no hay imágenes en la galería. Usa la zona de carga de arriba.</small>
+                            </div>
+
+                            <!-- Tour Virtual 360° -->
+                            <separator string="Tour Virtual 360°"/>
                             <group>
-                                <field name="wp_published"/>
-                                <field name="wp_post_id"/>
+                                <group>
+                                    <field name="tour_360_active"/>
+                                    <field name="tour_360_url" placeholder="https://ejemplo.com/tour.jpg (imagen equirectangular) o URL de Matterport"/>
+                                </group>
                             </group>
-                        </page>
-                        <page string="Código QR" name="qr_code">
+                            <div invisible="not tour_360_url or not tour_360_active" class="mt-2">
+                                <p class="text-muted"><i class="fa fa-info-circle" title="Información"/> El tour 360° se mostrará automáticamente en el portal de propietarios cuando esté activo.</p>
+                            </div>
+
+                            <!-- Código QR -->
+                            <separator string="Código QR"/>
                             <group>
                                 <field name="qr_image" widget="image" class="oe_avatar" readonly="1"/>
                             </group>
                             <p class="text-muted">Escanee este código para ver los datos rápidos de la propiedad.</p>
                         </page>
-                        <page string="Hipoteca / Financiamiento" name="mortgage">
+
+                        <page string="Financiero" name="mortgage">
                             <group string="Simulador de Crédito Hipotecario">
                                 <group string="Parámetros">
                                     <field name="mortgage_down_payment_pct"/>
@@ -310,7 +384,11 @@
                                 Tasas referenciales Ecuador: BIESS 8.69%, bancos privados 9-11%.
                             </p>
                         </page>
-                        <page string="Ofertas" name="offers">
+                        <page string="Comercial" name="sales_metrics">
+                            <!-- Grupo geo_ai conservado (sin anclas externas pero por compatibilidad) -->
+                            <group name="geo_ai" invisible="1"/>
+
+                            <separator string="Ofertas"/>
                             <field name="offer_ids">
                                 <list decoration-success="state == 'accepted'"
                                       decoration-danger="state in ('rejected','expired')"
@@ -325,8 +403,8 @@
                                     <field name="state" widget="badge"/>
                                 </list>
                             </field>
-                        </page>
-                        <page string="Historial de Precios" name="price_history">
+
+                            <separator string="Historial de Precios"/>
                             <field name="price_history_ids">
                                 <list>
                                     <field name="date"/>
@@ -339,15 +417,28 @@
                                     <field name="user_id" readonly="1"/>
                                 </list>
                             </field>
-                        </page>
-                        <page string="Geolocalización e IA" name="geo_ai">
-                            <group name="geo_ai">
-                                <group string="Análisis Vision IA">
-                                    <field name="ai_vision_description"/>
+
+                            <separator string="Negocio Cerrado" invisible="state != 'sold'"/>
+                            <group string="Negocio Cerrado" invisible="state != 'sold'">
+                                <group>
+                                    <field name="deal_deadline"/>
+                                    <field name="deal_earnest_amount" widget="monetary"/>
+                                    <field name="deal_payment_type"/>
+                                    <field name="proxy_id" string="Apoderado del Comprador"/>
+                                </group>
+                                <group>
+                                    <field name="deal_credit_institution"
+                                           invisible="deal_payment_type not in ('mortgage','mixed')"/>
+                                    <field name="deal_credit_advisor"
+                                           invisible="deal_payment_type not in ('mortgage','mixed')"/>
+                                    <field name="deal_credit_advisor_phone"
+                                           invisible="deal_payment_type not in ('mortgage','mixed')"/>
+                                </group>
+                                <group colspan="2">
+                                    <field name="deal_payment_details"/>
+                                    <field name="deal_observations"/>
                                 </group>
                             </group>
-                        </page>
-                        <page string="Ventas y Mercado" name="sales_metrics">
                             <group>
                                 <group string="Arriendo" invisible="offer_type != 'rent'">
                                     <field name="rental_price" widget="monetary"/>
@@ -392,17 +483,13 @@
                                 <i class="fa fa-info-circle" title="Información"/> Los recordatorios automáticos se generan cuando el contrato está próximo a vencer. Revise sus Actividades Planificadas.
                             </p>
                         </page>
-                        <!-- Mejora 14: Tour Virtual 360° -->
-                        <page string="Tour 360°" name="tour_360">
+                        <!-- Publicación (WordPress). estate_wordpress reemplaza esta página
+                             con su versión completa; estate_ai_agent añade "Asistente IA" después. -->
+                        <page string="Publicación" name="wordpress">
                             <group>
-                                <group string="Tour Virtual">
-                                    <field name="tour_360_active"/>
-                                    <field name="tour_360_url" placeholder="https://ejemplo.com/tour.jpg (imagen equirectangular) o URL de Matterport"/>
-                                </group>
+                                <field name="wp_published"/>
+                                <field name="wp_post_id"/>
                             </group>
-                            <div invisible="not tour_360_url or not tour_360_active" class="mt-3">
-                                <p class="text-muted"><i class="fa fa-info-circle" title="Información"/> El tour 360° se mostrará automáticamente en el portal de propietarios cuando esté activo.</p>
-                            </div>
                         </page>
                     </notebook>
                 </sheet>
@@ -425,10 +512,14 @@
                 <field name="name"/>
                 <field name="city"/>
                 <field name="property_type_id"/>
+                <filter name="filter_mine" string="Mis propiedades" domain="[('user_id', '=', uid)]"/>
+                <separator/>
                 <filter name="filter_available" string="Disponibles" domain="[('state', '=', 'available')]"/>
                 <filter name="filter_reserved" string="Reservadas" domain="[('state', '=', 'reserved')]"/>
                 <filter name="filter_sold" string="Vendidas" domain="[('state', '=', 'sold')]"/>
                 <filter name="filter_rented" string="Arrendadas" domain="[('state', '=', 'rented')]"/>
+                <filter name="filter_stagnant" string="Estancadas (+60 días)"
+                        domain="[('state', '=', 'available'), ('date_listed', '&lt;=', (context_today() - datetime.timedelta(days=60)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
                 <filter name="filter_wp_linked" string="Enlazadas con WordPress" domain="[('wp_published', '=', True)]"/>
                 <filter name="filter_wp_unlinked" string="Desvinculadas de WordPress" domain="[('wp_unlinked', '=', True)]"/>

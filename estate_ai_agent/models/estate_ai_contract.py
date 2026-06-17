@@ -1,31 +1,16 @@
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 
-try:
-    from google import genai
-    from google.genai import types as genai_types
-    NEW_GENAI_OK = True
-except ImportError:
-    NEW_GENAI_OK = False
-
 
 class EstateAIContract(models.Model):
     _inherit = 'estate.contract'
 
     def action_generate_contract_ai(self):
-        """Usa Gemini (v1 / gemini-1.5-flash) para redactar un borrador de contrato en HTML."""
+        """Usa Gemini para redactar un borrador de contrato en HTML."""
         self.ensure_one()
 
-        ICP = self.env['ir.config_parameter'].sudo()
-        if ICP.get_param('estate_ai.active', 'True') != 'True':
+        if not self.env['estate.genai.mixin']._genai_is_active():
             raise UserError("El Agente de IA está desactivado en Configuración > Agente IA.")
-
-        api_key = ICP.get_param('estate_ai.api_key', '')
-        if not api_key:
-            raise UserError("No hay API Key configurada. Vaya a Configuración > Agente IA.")
-
-        if not NEW_GENAI_OK:
-            raise UserError("La librería google-genai no está instalada. Ejecute: pip install google-genai")
 
         client_partner = self.partner_id
         prop = self.property_id
@@ -67,28 +52,11 @@ INSTRUCCIONES DE FORMATO:
 """
 
         try:
-            # Use configured model with fallback
-            model_name = ICP.get_param('estate_ai.model', 'gemini-2.5-flash')
-            if not model_name or model_name in ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-pro', 'gemini-flash-latest']:
-                model_name = 'gemini-2.5-flash'
-            
-            if model_name.startswith('models/'):
-                model_name = model_name.replace('models/', '')
-
-            client = genai.Client(
-                api_key=api_key,
-                http_options=genai_types.HttpOptions(api_version='v1beta'),
+            # Los contratos legales SÍ se benefician del razonamiento (thinking=True)
+            generated_html = self.env['estate.genai.mixin']._genai_generate(
+                prompt, temperature=0.3, max_output_tokens=8192, thinking=True,
             )
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt,
-                config=genai_types.GenerateContentConfig(
-                    temperature=0.3,
-                    max_output_tokens=4096,
-                ),
-            )
-            generated_html = (response.text or '').strip()
-            generated_html = generated_html.replace('```html', '').replace('```', '').strip()
+            generated_html = self.env['estate.genai.mixin']._genai_strip_fences(generated_html)
 
             self.write({'notes': generated_html})
             self.message_post(

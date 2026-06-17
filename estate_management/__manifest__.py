@@ -14,7 +14,7 @@
         * Gestión de contratos inmobiliarios
         * Control de pagos por contrato
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'website': '',
     'license': 'LGPL-3',
     'depends': ['base', 'mail', 'sale_management', 'account', 'portal', 'calendar', 'hr_attendance'],
@@ -37,6 +37,7 @@
         'views/estate_account_views.xml',
         'data/estate_paperformat.xml',
         'report/estate_contract_report.xml',
+        'report/estate_contract_pdf.xml',
         'report/estate_capture_sheet_report.xml',
         'views/estate_sale_views.xml',
         'views/res_partner_views.xml',
@@ -46,7 +47,10 @@
         'wizards/estate_sale_wizard_views.xml',
         'data/estate_hr_integrations.xml',
         'views/estate_portal_templates.xml',
+        'views/estate_advisor_fb_post_views.xml',
         'views/estate_menus.xml',
+        'views/estate_access_views.xml',
+        'views/res_config_settings_views.xml',
         'views/estate_finance_menu.xml',
         'data/estate_users_roles.xml',
         'data/estate_defaults_fix.xml',
@@ -59,6 +63,8 @@
             ('prepend', 'estate_management/static/src/scss/primary_variables_override.scss'),
         ],
         'web.assets_backend': [
+            'estate_management/static/src/scss/brand_palette.scss',
+            'estate_management/static/src/scss/document_pdf_layout.scss',
             'estate_management/static/src/components/**/*',
             'estate_management/static/src/js/estate_auto_geocode.js',
         ],

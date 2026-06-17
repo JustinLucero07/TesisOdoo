@@ -11,7 +11,7 @@
         * Seguimiento de oportunidades
         * Estados del cliente
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['crm', 'estate_management', 'estate_document', 'calendar'],
     'data': [

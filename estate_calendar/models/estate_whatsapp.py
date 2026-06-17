@@ -125,7 +125,7 @@ class CalendarEventWhatsApp(models.Model):
 
         for event in events:
             time_str = fields.Datetime.context_timestamp(self, event.start).strftime('%H:%M')
-            client = event.partner_id
+            client = event.client_id
             client_name = client.name if client else 'Sin cliente'
             property_name = event.property_id.title if event.property_id else ''
             agent = event.user_id
@@ -147,7 +147,7 @@ class CalendarEventWhatsApp(models.Model):
     def action_send_whatsapp_followup(self):
         """Botón manual: envía seguimiento post-visita al cliente (texto libre)."""
         self.ensure_one()
-        partner = self.partner_id
+        partner = self.client_id
         phone = (getattr(partner, 'mobile', None) or getattr(partner, 'phone', None) or '') if partner else ''
 
         if not phone:

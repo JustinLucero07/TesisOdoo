@@ -1,0 +1,24 @@
+// ─────────────────────────────────────────────────────────────────────
+// Formulario de Documento: PDF a la derecha ocupando todo el ancho.
+// Cuando el form contiene el marcador .o_estate_doc_split, movemos el
+// chatter DEBAJO del sheet (en columna) para que el PDF tenga el lado
+// derecho completo, no compartido con los mensajes.
+// ─────────────────────────────────────────────────────────────────────
+.o_form_renderer:has(.o_estate_doc_split) {
+    flex-direction: column !important;
+
+    // El sheet ocupa todo el ancho disponible.
+    .o_form_sheet_bg { max-width: 100% !important; }
+
+    // El chatter pasa a ocupar el ancho completo, debajo del contenido.
+    .o-mail-Chatter,
+    .o_FormRenderer_chatterContainer,
+    .o-mail-ChatterContainer,
+    .o-mail-Form-chatter {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 auto !important;
+        border-left: none !important;
+        border-top: 1px solid #e0e4ea;
+    }
+}

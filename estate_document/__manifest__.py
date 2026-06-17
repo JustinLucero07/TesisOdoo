@@ -10,7 +10,7 @@
         * Documentos legales
         * Archivos adjuntos vinculados a propiedades, clientes y contratos
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['estate_management', 'crm', 'mail'],
     'data': [

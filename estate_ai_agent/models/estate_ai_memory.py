@@ -41,8 +41,10 @@ class EstateAIMemory(models.Model):
             else:
                 rec.is_active = True
 
-    def name_get(self):
-        return [(rec.id, f"[{rec.memory_type}] {rec.title}") for rec in self]
+    @api.depends('memory_type', 'title')
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name = f"[{rec.memory_type}] {rec.title}"
 
     @api.model
     def get_active_memories_for_user(self, user_id, limit=20):

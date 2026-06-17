@@ -1,20 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <menuitem id="estate_menu_document_root"
-              name="Documentos"
-              parent="estate_management.estate_menu_root"
-              sequence="60"/>
-
+    <!-- Documentos vive dentro de Operaciones (no como sección suelta) -->
     <menuitem id="estate_menu_document_list"
               name="Documentos"
-              parent="estate_menu_document_root"
+              parent="estate_management.estate_menu_operations_root"
               action="estate_document_action"
-              sequence="10"/>
+              sequence="60"/>
 
+    <!-- Tipos de documento es dato maestro → Configuración -->
     <menuitem id="estate_menu_document_types"
               name="Tipos de Documento"
-              parent="estate_menu_document_root"
+              parent="estate_management.estate_menu_config_root"
               action="action_estate_document_type"
-              sequence="20"
+              sequence="60"
               groups="estate_management.estate_group_manager"/>
 </odoo>

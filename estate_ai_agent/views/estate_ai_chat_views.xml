@@ -46,6 +46,10 @@
         <field name="name">Historial de Chat</field>
         <field name="res_model">estate.ai.chat.history</field>
         <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin historial de chat.</p>
+            <p>Aquí se guarda el historial de conversaciones con el Asistente IA.</p>
+        </field>
     </record>
 
     <!-- Chat Client Action -->

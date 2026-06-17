@@ -6,93 +6,192 @@
         <field name="inherit_id" ref="estate_management.estate_property_view_form"/>
         <field name="arch" type="xml">
 
-            <!-- AI description button in the Description tab -->
+            <!-- ══════════════════════════════════════════════════════════════
+                 Pestaña Descripción: botones IA + análisis imagen + refinado
+                 ══════════════════════════════════════════════════════════════ -->
             <xpath expr="//page[@name='description']/field[@name='description']" position="before">
-                <div class="mb-3">
-                    <button name="action_generate_ai_description" type="object"
-                            string="  Generar Descripción Comercial con IA" class="btn-success btn-sm"
-                            icon="fa-magic" title="Genera una descripción comercial profesional con IA"/>
+                <div class="mb-3 p-3 rounded" style="background:#f8f9fa;border:1px solid #e9ecef;">
+
+                    <!-- Generación unificada: imagen + descripción -->
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                        <button name="action_generate_ai_description_full" type="object"
+                                string="Generar con IA (imagen + descripción)" class="btn-success"
+                                icon="fa-magic"
+                                title="Analiza la imagen principal y genera la descripción comercial en un solo clic"/>
+                        <button name="action_generate_ai_description" type="object"
+                                string="Solo texto" class="btn-outline-secondary btn-sm"
+                                title="Genera solo la descripción de texto (sin analizar imagen)"/>
+                    </div>
+                    <small class="text-muted d-block mb-2">
+                        El botón principal analiza la imagen + genera descripción. "Solo texto" si no hay imagen o ya la analizaste.
+                    </small>
+                    <field name="ai_extra_prompt" widget="text" nolabel="1"
+                           placeholder="Detalles adicionales para la IA: vista al río, pisos de mármol, recién remodelada, cerca del parque, piscina comunal, seguridad 24h..."/>
+
+                    <!-- Análisis de imagen — siempre visible para poder analizar -->
+                    <div class="mt-3 pt-3" style="border-top:1px dashed #dee2e6;">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fa fa-eye text-primary" title="Análisis de imagen IA"/>
+                                <span class="fw-bold" style="font-size:.85em;">Análisis de imagen con IA</span>
+                                <small class="text-muted">— enriquece automáticamente la descripción</small>
+                            </div>
+                            <button name="action_analyze_image_ai" type="object"
+                                    string="Analizar imagen" class="btn-outline-primary btn-sm"
+                                    icon="fa-camera"
+                                    title="Gemini Vision analiza la imagen principal: condición, ambiente, sugerencias"/>
+                        </div>
+
+                        <!-- Resultados del análisis — visibles solo cuando existen -->
+                        <div class="row g-2" invisible="not ai_vision_description">
+                            <div class="col-md-8">
+                                <div class="p-2 rounded" style="background:#fff;border:1px solid #e0e7ef;font-size:.82em;">
+                                    <strong class="text-primary d-block mb-1">
+                                        <i class="fa fa-image" title="Descripción visual"/> Descripción visual detectada
+                                    </strong>
+                                    <field name="ai_vision_description" widget="text" readonly="1" nolabel="1"
+                                           style="font-size:.9em;color:#444;"/>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-2 rounded" style="background:#fff;border:1px solid #e0e7ef;font-size:.82em;">
+                                    <div class="mb-1">
+                                        <strong class="text-muted">Condición:</strong>
+                                        <field name="ai_condition" widget="badge" nolabel="1" class="ms-1"/>
+                                    </div>
+                                    <div class="mb-1" invisible="not ai_room_type">
+                                        <strong class="text-muted">Ambiente:</strong>
+                                        <field name="ai_room_type" readonly="1" nolabel="1" class="ms-1" style="font-size:.9em;"/>
+                                    </div>
+                                    <div class="mt-2" invisible="not ai_staging_suggestions">
+                                        <strong class="text-warning d-block">
+                                            <i class="fa fa-lightbulb-o" title="Sugerencias staging"/> Staging
+                                        </strong>
+                                        <field name="ai_staging_suggestions" widget="text" readonly="1" nolabel="1"
+                                               style="font-size:.85em;color:#666;"/>
+                                    </div>
+                                    <div class="mt-2" invisible="not ai_red_flags">
+                                        <strong class="text-danger d-block">
+                                            <i class="fa fa-exclamation-triangle" title="Alertas detectadas"/> Alertas
+                                        </strong>
+                                        <field name="ai_red_flags" widget="text" readonly="1" nolabel="1"
+                                               style="font-size:.85em;color:#c00;"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <small class="text-muted d-block mt-1" invisible="ai_vision_description">
+                            Sube una imagen principal y haz clic en "Analizar imagen" para que la IA detecte condición, ambiente y extras.
+                        </small>
+                    </div>
+
+                    <!-- Refinamiento iterativo — visible solo cuando ya hay descripción -->
+                    <div class="mt-3 pt-3" style="border-top:1px dashed #dee2e6;" invisible="not description">
+                        <div class="fw-bold text-primary mb-1" style="font-size:.85em;">
+                            <i class="fa fa-pencil" title="Refinar"/> Refinar descripción existente
+                        </div>
+                        <field name="ai_refine_prompt" widget="text" nolabel="1"
+                               placeholder="¿Qué quieres cambiar? Ej: &quot;hazla más corta&quot;, &quot;quita el precio&quot;, &quot;agrega más emoción al párrafo inicial&quot;, &quot;enfócate en la vista al parque&quot;..."/>
+                        <button name="action_refine_ai_description" type="object"
+                                string="Aplicar cambios con IA" class="btn-primary btn-sm mt-1"
+                                icon="fa-refresh"
+                                title="Aplica tus instrucciones a la descripción actual sin perder el contenido base"
+                                invisible="not ai_refine_prompt"/>
+                    </div>
                 </div>
             </xpath>
 
-            <!-- AI Vision analysis button in Geo/IA tab -->
-            <xpath expr="//field[@name='ai_vision_description']" position="before">
-                <button name="action_analyze_image_ai" type="object"
-                        string="Analizar Imagen con IA" class="btn-primary"
-                        icon="fa-eye" title="Usa Gemini Vision para analizar la imagen principal"/>
-            </xpath>
-
-            <!-- AI attributes in Geo/IA tab -->
-            <xpath expr="//group[@name='geo_ai']" position="inside">
-                <group string="Atributos Detectados (IA)">
-                    <field name="ai_condition" widget="badge"/>
-                    <field name="ai_room_type"/>
-                    <field name="ai_red_flags" invisible="not ai_red_flags"/>
-                    <field name="ai_staging_suggestions" invisible="not ai_staging_suggestions"/>
-                </group>
-                <group string="Copia de Descripción Comercial IA">
-                    <field name="ai_marketing_description" nolabel="1" widget="text" readonly="1"
-                           placeholder="La descripción comercial generada aparecerá aquí como respaldo..."/>
-                </group>
-            </xpath>
-
-            <!-- NEW: Asistente IA tab — summary + chat shortcut -->
+            <!-- ══════════════════════════════════════════════════════════════
+                 Pestaña Asistente IA — resumen ejecutivo + leads + similares
+                 ══════════════════════════════════════════════════════════════ -->
             <xpath expr="//page[@name='wordpress']" position="after">
                 <page string="Asistente IA" name="ai_assistant" icon="fa-robot">
-                    <!-- Summary card -->
-                    <div class="row">
+                    <!-- Header bar -->
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2"
+                         style="border-bottom: 2px solid #e9ecef;">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fa fa-robot text-primary" style="font-size:1.4rem;" title="Asistente IA"/>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Resumen Ejecutivo IA</h5>
+                                <small class="text-muted">
+                                    Actualizado:
+                                    <field name="ai_summary_date" readonly="1" widget="datetime" class="d-inline"/>
+                                </small>
+                            </div>
+                        </div>
+                        <button name="action_generate_property_summary"
+                                type="object"
+                                string="Generar / Actualizar Resumen"
+                                class="btn-primary btn-sm"
+                                icon="fa-refresh"/>
+                    </div>
+
+                    <!-- Placeholder cuando no hay resumen -->
+                    <div invisible="ai_property_summary">
+                        <div class="alert alert-light text-center py-5" role="status"
+                             style="border: 2px dashed #dee2e6; border-radius: 12px;">
+                            <i class="fa fa-robot fa-3x text-muted mb-3 d-block" title="Sin resumen"/>
+                            <p class="text-muted mb-3">
+                                No hay resumen generado para esta propiedad.<br/>
+                                Haz clic en <strong>"Generar / Actualizar Resumen"</strong> para que la IA analice
+                                los datos y te dé un análisis ejecutivo.
+                            </p>
+                            <button name="action_generate_property_summary"
+                                    type="object"
+                                    string="  Generar Resumen Ahora"
+                                    class="btn-primary"
+                                    icon="fa-magic"/>
+                        </div>
+                    </div>
+
+                    <!-- Contenido del resumen -->
+                    <div invisible="not ai_property_summary"
+                         style="background:linear-gradient(135deg,#f0f7ff 0%,#fafbfc 100%);
+                                border:1px solid #c8dff5;border-radius:12px;padding:20px 24px;">
+                        <field name="ai_property_summary" widget="html" readonly="1" nolabel="1"/>
+                    </div>
+
+                    <!-- AVM Gauge — solo cuando AVM está calculado -->
+                    <div class="row mb-3 mt-3" invisible="not avm_estimated_price">
                         <div class="col-12">
-                            <!-- Header bar -->
-                            <div class="d-flex align-items-center justify-content-between mb-3 pb-2"
-                                 style="border-bottom: 2px solid #e9ecef;">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="fa fa-robot text-primary" style="font-size:1.4rem;" title="Asistente IA"/>
-                                    <div>
-                                        <h5 class="mb-0 fw-bold">Resumen Ejecutivo IA</h5>
-                                        <small class="text-muted">
-                                            Actualizado:
-                                            <field name="ai_summary_date" readonly="1" widget="datetime" class="d-inline"/>
-                                        </small>
-                                    </div>
-                                </div>
-                                <button name="action_generate_property_summary"
-                                        type="object"
-                                        string="Generar / Actualizar Resumen"
-                                        class="btn-primary btn-sm"
-                                        icon="fa-refresh"/>
-                            </div>
-
-                            <!-- Summary content (or placeholder) -->
-                            <div invisible="ai_property_summary">
-                                <div class="alert alert-light text-center py-5" role="status" style="border: 2px dashed #dee2e6; border-radius: 12px;">
-                                    <i class="fa fa-robot fa-3x text-muted mb-3 d-block" title="Sin resumen"/>
-                                    <p class="text-muted mb-3">
-                                        No hay resumen generado para esta propiedad.<br/>
-                                        Haz clic en <strong>"Generar / Actualizar Resumen"</strong> para que la IA analice
-                                        los datos y te dé un análisis ejecutivo.
-                                    </p>
-                                    <button name="action_generate_property_summary"
-                                            type="object"
-                                            string="  Generar Resumen Ahora"
-                                            class="btn-primary"
-                                            icon="fa-magic"/>
-                                </div>
-                            </div>
-
-                            <div invisible="not ai_property_summary"
-                                 style="background: linear-gradient(135deg, #f0f7ff 0%, #fafbfc 100%);
-                                        border: 1px solid #c8dff5;
-                                        border-radius: 12px;
-                                        padding: 20px 24px;">
-                                <field name="ai_property_summary" widget="html" readonly="1" nolabel="1"/>
+                            <div class="p-3 rounded" style="background:#fff;border:1px solid #e0e7ef;">
+                                <field name="avm_gauge_html" widget="html" readonly="1" nolabel="1"/>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Chat shortcut section -->
+                    <!-- Leads Interesados -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="p-3 rounded" style="background:#f8f9fa;border:1px solid #e9ecef;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="fa fa-users text-primary" style="font-size:1rem;" title="Leads interesados"/>
+                                    <strong style="font-size:.9em">Leads Interesados</strong>
+                                    <small class="text-muted">(asignados directamente o por presupuesto compatible)</small>
+                                </div>
+                                <field name="interesting_leads_html" widget="html" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Propiedades Similares -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="p-3 rounded" style="background:#f8f9fa;border:1px solid #e9ecef;">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <i class="fa fa-building text-primary" style="font-size:1rem;" title="Propiedades similares"/>
+                                    <strong style="font-size:.9em">Propiedades Similares Disponibles</strong>
+                                    <small class="text-muted">(mismo tipo · precio &#177;35%)</small>
+                                </div>
+                                <field name="similar_properties_html" widget="html" readonly="1" nolabel="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat shortcut -->
                     <div class="row mt-4">
                         <div class="col-12">
-                            <div class="p-3 rounded" style="background:#f8f9fa; border: 1px solid #e9ecef;">
+                            <div class="p-3 rounded" style="background:#f8f9fa;border:1px solid #e9ecef;">
                                 <div class="d-flex align-items-center gap-3">
                                     <i class="fa fa-comments fa-2x text-primary" title="Chat IA"/>
                                     <div class="flex-grow-1">
@@ -109,16 +208,6 @@
                                             icon="fa-external-link"/>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- Marketing description backup -->
-                    <div class="row mt-3" invisible="not ai_marketing_description">
-                        <div class="col-12 p-3 bg-white rounded border">
-                            <p class="text-muted small fw-bold mb-2">
-                                <i class="fa fa-file-text-o" title="Descripción comercial"/> Descripción Comercial (respaldo)
-                            </p>
-                            <field name="ai_marketing_description" widget="text" readonly="1" nolabel="1"/>
                         </div>
                     </div>
                 </page>

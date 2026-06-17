@@ -62,8 +62,9 @@ class TestSalesReportWizard(TransactionCase):
     def test_pct_vs_listed(self):
         wiz = self._make_wizard()
         # listed = bottom_price * 1.15 = (price * 0.85) * 1.15 = price * 0.9775
-        # ratio = price / (price * 0.9775) = 1/0.9775 ~ 1.023 → ~102.3%
-        self.assertAlmostEqual(wiz.kpi_pct_vs_listed, 102.30, places=1)
+        # ratio = price / (price * 0.9775) = 1/0.9775 ~ 1.023 (el widget percentage
+        # lo muestra como ~102.3%). El campo almacena el RATIO 0-1, no el %.
+        self.assertAlmostEqual(wiz.kpi_pct_vs_listed, 1.023, places=2)
 
     def test_filter_by_city(self):
         # Crear 1 propiedad en otra ciudad

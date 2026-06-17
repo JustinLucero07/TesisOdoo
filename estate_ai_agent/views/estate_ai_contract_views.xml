@@ -6,7 +6,22 @@
         <field name="inherit_id" ref="estate_management.estate_contract_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//header/button[@name='action_activate']" position="before">
-                <button name="action_generate_contract_ai" string=" Redactar con IA" type="object" class="oe_highlight btn-info" icon="fa-magic" invisible="state != 'draft'"/>
+                <button name="action_generate_contract_ai" string="Redactar Contrato con IA" type="object"
+                        class="btn-info" icon="fa-magic"
+                        invisible="state in ('cancelled', 'expired')"
+                        title="La IA redacta el borrador del contrato en la pestaña Notas / Cláusulas según los datos actuales."/>
+            </xpath>
+            <!-- Botón también dentro de la pestaña Notas/Cláusulas, junto al texto -->
+            <xpath expr="//page[@name='notes']/field[@name='notes']" position="before">
+                <div class="alert alert-info d-flex align-items-center justify-content-between mb-2" role="status">
+                    <span>
+                        <i class="fa fa-magic me-1" title="IA"/>
+                        Genera el borrador del contrato automáticamente con IA según el tipo, la propiedad y el cliente.
+                    </span>
+                    <button name="action_generate_contract_ai" string="Redactar con IA" type="object"
+                            class="btn btn-info btn-sm" icon="fa-magic"
+                            invisible="state in ('cancelled', 'expired')"/>
+                </div>
             </xpath>
         </field>
     </record>

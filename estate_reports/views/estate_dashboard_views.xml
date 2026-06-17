@@ -148,6 +148,9 @@
                                 </group>
                             </group>
 
+                            <div class="o_horizontal_separator">Cumplimiento de Metas (vs Objetivo)</div>
+                            <field name="goals_html" nolabel="1" readonly="1"/>
+
                             <div class="o_horizontal_separator">Tendencia vs Período Anterior</div>
                             <group>
                                 <group string="Ventas">
@@ -167,6 +170,7 @@
                                            string="Variación %"/>
                                 </group>
                             </group>
+                            <field name="trend_html" nolabel="1" readonly="1"/>
 
                             <div class="o_horizontal_separator">Abrir Gráficos</div>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
@@ -179,27 +183,59 @@
                                 <button string="Ver Leads" type="object"
                                         name="action_open_funnel_leads"
                                         class="btn btn-sm btn-primary" icon="fa-filter"/>
+                                <button string="Exportar a PDF" type="object"
+                                        name="action_export_dashboard_pdf"
+                                        class="btn btn-sm btn-secondary" icon="fa-file-pdf-o"/>
+                            </div>
+                        </page>
+
+                        <!-- ═══ GRÁFICOS (Chart.js) ═══ -->
+                        <page string="Gráficos" name="tab_charts">
+                            <div class="row g-3">
+                                <div class="col-lg-7">
+                                    <div class="p-3 rounded h-100" style="border:1px solid #e9ecef;background:#fff;">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <i class="fa fa-bar-chart text-primary" title="Ventas"/>
+                                            <strong>Ventas por Mes (últimos 6 meses)</strong>
+                                        </div>
+                                        <div style="height:280px;">
+                                            <field name="sales_chart_data" widget="dashboard_chart" nolabel="1"/>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-5">
+                                    <div class="p-3 rounded h-100" style="border:1px solid #e9ecef;background:#fff;">
+                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                            <i class="fa fa-filter text-primary" title="Leads"/>
+                                            <strong>Leads por Fuente (3 meses)</strong>
+                                        </div>
+                                        <div style="height:280px;">
+                                            <field name="leads_chart_data" widget="dashboard_chart" nolabel="1"/>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </page>
 
                         <!-- ═══ CRM / EMBUDO ═══ -->
                         <page string="CRM / Embudo" name="tab_crm">
-                            <group>
-                                <group string="Embudo de Conversión">
-                                    <field name="funnel_leads_new" readonly="1"
-                                           string="Leads nuevos"/>
-                                    <field name="funnel_visits_done" readonly="1"
-                                           string="Visitas realizadas"/>
-                                    <field name="funnel_offers_made" readonly="1"
-                                           string="Ofertas recibidas"/>
-                                    <field name="funnel_won" readonly="1"
-                                           string="Cerrados (ganados)"/>
-                                    <field name="funnel_lost" readonly="1"
-                                           string="Perdidos"/>
-                                    <field name="funnel_conversion_pct" readonly="1"
-                                           string="% Conversión"/>
-                                </group>
-                            </group>
+                            <div class="row g-3">
+                                <div class="col-lg-6">
+                                    <div class="p-3 rounded" style="border:1px solid #e9ecef;background:#fff;">
+                                        <field name="funnel_html" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+                                <div class="col-lg-6">
+                                    <group string="Detalle del Embudo">
+                                        <field name="funnel_leads_new" readonly="1" string="Leads nuevos"/>
+                                        <field name="funnel_visits_done" readonly="1" string="Visitas realizadas"/>
+                                        <field name="funnel_offers_made" readonly="1" string="Ofertas recibidas"/>
+                                        <field name="funnel_won" readonly="1" string="Cerrados (ganados)"/>
+                                        <field name="funnel_lost" readonly="1" string="Perdidos"/>
+                                        <field name="funnel_conversion_pct" readonly="1" string="% Conversión"/>
+                                    </group>
+                                </div>
+                            </div>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
                                 <button string="Ver Leads del Período" type="object"
                                         name="action_open_funnel_leads"
@@ -212,7 +248,7 @@
 
                         <!-- ═══ ASESORES ═══ -->
                         <page string="Asesores" name="tab_advisors">
-                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
                                 <button string="Ranking Asesores (Gráfico)" type="object"
                                         name="action_open_advisor_graph"
                                         class="btn btn-sm btn-primary" icon="fa-bar-chart"/>
@@ -220,6 +256,15 @@
                                         name="action_open_commission_wizard"
                                         class="btn btn-sm btn-secondary" icon="fa-dollar"/>
                             </div>
+                            <field name="advisor_ranking_html" nolabel="1" readonly="1"/>
+                        </page>
+
+                        <!-- ═══ MERCADO (AVM + Mapa) ═══ -->
+                        <page string="Mercado" name="tab_market">
+                            <div class="o_horizontal_separator">Comparativa de Precio vs Valoración (AVM)</div>
+                            <field name="avm_comparison_html" nolabel="1" readonly="1"/>
+                            <div class="o_horizontal_separator">Mapa de Propiedades</div>
+                            <field name="map_html" nolabel="1" readonly="1"/>
                         </page>
 
                     </notebook>

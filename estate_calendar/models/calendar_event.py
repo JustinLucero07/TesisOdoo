@@ -2,6 +2,7 @@ import logging
 import urllib.parse
 
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -10,8 +11,9 @@ class CalendarEvent(models.Model):
     _name = 'calendar.event'
     _inherit = ['calendar.event', 'estate.phone.mixin']
 
-    partner_id = fields.Many2one(
-        'res.partner', string='Cliente')
+    client_id = fields.Many2one(
+        'res.partner', string='Cliente',
+        help='Contacto/cliente asociado a esta visita.')
     property_id = fields.Many2one(
         'estate.property', string='Propiedad', ondelete='set null')
 
@@ -78,9 +80,9 @@ class CalendarEvent(models.Model):
     property_owner_phone = fields.Char(
         related='property_id.owner_id.phone', string='Tel. Propietario', readonly=True)
     client_phone = fields.Char(
-        related='partner_id.phone', string='Tel. Cliente', readonly=True)
+        related='client_id.phone', string='Tel. Cliente', readonly=True)
     client_mobile = fields.Char(
-        related='partner_id.mobile', string='Cel. Cliente', readonly=True)
+        related='client_id.mobile', string='Cel. Cliente', readonly=True)
 
     # --- Lead CRM de origen ---
     lead_id = fields.Many2one(
@@ -96,14 +98,38 @@ class CalendarEvent(models.Model):
         string='Encuesta Enviada', default=False,
         help='Marca cuando se envió la encuesta de satisfacción post-visita.')
 
+    @api.constrains('start', 'user_id', 'property_id', 'appointment_type')
+    def _check_advisor_availability(self):
+        """Impide agendar una visita para un asesor en un día que marcó como
+        no disponible (modelo estate.advisor.unavailability)."""
+        Unavail = self.env['estate.advisor.unavailability'].sudo()
+        for ev in self:
+            # Solo aplica a visitas inmobiliarias con asesor y fecha
+            if not ev.start or not ev.user_id:
+                continue
+            if 'property_id' in ev._fields and not ev.property_id \
+                    and ev.appointment_type not in ('visit', 'signing'):
+                continue
+            day = fields.Datetime.context_timestamp(ev, ev.start).date()
+            if Unavail.search_count([
+                ('user_id', '=', ev.user_id.id),
+                ('date_from', '<=', day),
+                ('date_to', '>=', day),
+            ]):
+                raise ValidationError(
+                    f"El asesor {ev.user_id.name} marcó el "
+                    f"{day.strftime('%d/%m/%Y')} como día NO disponible. "
+                    f"Elige otra fecha u otro asesor para esta cita."
+                )
+
     def _get_related_lead(self):
         """Busca el lead CRM relacionado con este evento (por lead_id o por partner+propiedad)."""
         self.ensure_one()
         if self.lead_id:
             return self.lead_id
-        if self.partner_id:
+        if self.client_id:
             lead = self.env['crm.lead'].sudo().search([
-                ('partner_id', '=', self.partner_id.id),
+                ('partner_id', '=', self.client_id.id),
                 ('stage_id.is_won', '=', False),
             ], limit=1)
             return lead
@@ -129,9 +155,9 @@ class CalendarEvent(models.Model):
                 lead._advance_lead_to_stage('estate_crm.stage_lead4_estate')
 
             # 1. Actualizar temperatura CRM si se hizo una oferta
-            if event.visit_result == 'offer_made' and event.partner_id:
+            if event.visit_result == 'offer_made' and event.client_id:
                 leads = self.env['crm.lead'].sudo().search([
-                    ('partner_id', '=', event.partner_id.id),
+                    ('partner_id', '=', event.client_id.id),
                     ('stage_id.is_won', '=', False),
                 ], limit=1)
                 if leads:
@@ -145,7 +171,7 @@ class CalendarEvent(models.Model):
                 event.property_id.activity_schedule(
                     'mail.mail_activity_data_todo',
                     date_deadline=fields.Date.today(),
-                    summary=f'Visita con calificación baja ({event.visit_rating}/5) — {event.partner_id.name or "Cliente"}',
+                    summary=f'Visita con calificación baja ({event.visit_rating}/5) — {event.client_id.name or "Cliente"}',
                     note=(
                         f'La visita a "{event.property_id.title}" recibió calificación {event.visit_rating}/5. '
                         f'Resultado: {result_label}. '
@@ -156,17 +182,17 @@ class CalendarEvent(models.Model):
                 )
 
             # 3. Enviar WhatsApp de seguimiento al cliente
-            if event.partner_id and event.property_id:
+            if event.client_id and event.property_id:
                 self._send_followup_whatsapp(event)
 
             # 4. Recomputar visitas completadas en leads relacionados para scoring preciso
-            if event.partner_id:
+            if event.client_id:
                 related_leads = self.env['crm.lead'].sudo().search([
-                    ('partner_id', '=', event.partner_id.id),
+                    ('partner_id', '=', event.client_id.id),
                 ])
                 for lead in related_leads:
                     count = self.env['calendar.event'].sudo().search_count([
-                        ('partner_id', '=', lead.partner_id.id),
+                        ('client_id', '=', lead.partner_id.id),
                         ('visit_state', '=', 'done'),
                     ])
                     lead.completed_visits_count = count
@@ -174,11 +200,11 @@ class CalendarEvent(models.Model):
     def _send_followup_whatsapp(self, event):
         """Envía WhatsApp de seguimiento post-visita al cliente via Meta Cloud API."""
         try:
-            phone = event.partner_id.mobile or event.partner_id.phone
+            phone = event.client_id.mobile or event.client_id.phone
             if not phone:
                 return
             prop_title = event.property_id.title or event.property_id.name
-            client_name = event.partner_id.name or 'estimado/a cliente'
+            client_name = event.client_id.name or 'estimado/a cliente'
             msg = (
                 f"Hola {client_name},\n"
                 f"Gracias por visitar {prop_title}.\n"
@@ -192,7 +218,7 @@ class CalendarEvent(models.Model):
     def action_send_whatsapp_followup(self):
         """Botón manual: envía WhatsApp de seguimiento post-visita al cliente."""
         self.ensure_one()
-        if not self.partner_id or not (self.partner_id.mobile or self.partner_id.phone):
+        if not self.client_id or not (self.client_id.mobile or self.client_id.phone):
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
@@ -215,7 +241,7 @@ class CalendarEvent(models.Model):
     def action_send_survey_whatsapp(self):
         """Mejora 9: Envía encuesta de satisfacción post-visita por WhatsApp (wa.me link)."""
         self.ensure_one()
-        if not self.partner_id or not (self.partner_id.mobile or self.partner_id.phone):
+        if not self.client_id or not (self.client_id.mobile or self.client_id.phone):
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
@@ -227,7 +253,7 @@ class CalendarEvent(models.Model):
             }
         import urllib.parse
         prop_title = self.property_id.title if self.property_id else 'la propiedad'
-        client_name = self.partner_id.name or 'estimado cliente'
+        client_name = self.client_id.name or 'estimado cliente'
         asesor = self.user_id.name if self.user_id else 'nuestro asesor'
         msg = (
             f"Hola {client_name},\n\n"
@@ -242,7 +268,7 @@ class CalendarEvent(models.Model):
             f"Atendido por: {asesor}\n"
             f"Gracias!"
         )
-        number = (self.partner_id.mobile or self.partner_id.phone or '').replace(' ', '').replace('-', '').replace('+', '')
+        number = (self.client_id.mobile or self.client_id.phone or '').replace(' ', '').replace('-', '').replace('+', '')
         wa_url = f"https://wa.me/{number}?text={urllib.parse.quote(msg)}"
         self.write({'survey_sent': True})
         return {

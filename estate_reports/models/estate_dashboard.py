@@ -1,12 +1,25 @@
 from odoo import models, fields, api
 from datetime import timedelta, date as _date
 import calendar as _cal
+import json
 
 
 class EstateDashboard(models.TransientModel):
     _name = 'estate.dashboard'
     _description = 'Dashboard Inmobiliario'
     _rec_name = 'display_title'
+
+    # Paleta de marca centralizada (espejo de brand_palette.scss --inmobi-*).
+    # Única fuente de verdad para los colores del dashboard; cámbialos aquí.
+    _PALETTE = {
+        'primary': '#1e40af',   # azul de acentos/gráficos (--inmobi-primary-strong)
+        'success': '#16a34a',   # variaciones positivas
+        'danger':  '#dc2626',   # variaciones negativas / alertas
+        'warning': '#f59e0b',
+        'muted':   '#6b7280',
+        'chart':   ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981',
+                    '#ec4899', '#6366f1', '#f97316'],  # categórica
+    }
 
     display_title = fields.Char(
         string='Dashboard', compute='_compute_display_title')
@@ -49,6 +62,14 @@ class EstateDashboard(models.TransientModel):
         string='Ingresos Cerrados (Mes)', compute='_compute_kpis')
     pending_revenue = fields.Float(
         string='Pipeline Pendiente', compute='_compute_kpis')
+
+    # #1 KPIs vs Objetivo (metas)
+    goal_count = fields.Integer(string='Meta de Cierres', compute='_compute_kpis')
+    goal_revenue = fields.Float(string='Meta de Ingresos', compute='_compute_kpis')
+    goal_commission = fields.Float(string='Meta de Comisiones', compute='_compute_kpis')
+    goal_achievement_count = fields.Float(string='% Cumplimiento Cierres', compute='_compute_kpis')
+    goal_achievement_revenue = fields.Float(string='% Cumplimiento Ingresos', compute='_compute_kpis')
+    goals_html = fields.Html(string='Cumplimiento de Metas', compute='_compute_kpis', sanitize=False)
 
     # Mapa de Propiedades
     map_html = fields.Html(
@@ -114,6 +135,11 @@ class EstateDashboard(models.TransientModel):
         string='Ventas del Período', compute='_compute_charts', sanitize=False)
     leads_chart_html = fields.Html(
         string='Leads por Fuente', compute='_compute_charts', sanitize=False)
+    # A2: datos JSON para gráficos Chart.js (renderizados por widget OWL)
+    sales_chart_data = fields.Char(
+        string='Datos Ventas (JSON)', compute='_compute_charts')
+    leads_chart_data = fields.Char(
+        string='Datos Leads (JSON)', compute='_compute_charts')
 
     # ── Tendencia (comparativa mes actual vs anterior) ─────────────
     trend_sales_current = fields.Integer(
@@ -173,6 +199,58 @@ class EstateDashboard(models.TransientModel):
         prev_from = prev_to - timedelta(days=duration - 1)
         return prev_from, prev_to
 
+    def _get_period_targets(self, period_from, period_to):
+        """Suma las metas (estate.sales.target) que caen dentro del período del
+        dashboard, para el asesor filtrado (o la agencia si no hay filtro)."""
+        self.ensure_one()
+        dom = [('user_id', '=', self.filter_user_id.id)] if self.filter_user_id \
+            else [('user_id', '=', False)]
+        targets = self.env['estate.sales.target'].sudo().search(dom)
+        t_count = t_rev = t_com = 0
+        for t in targets:
+            t_from, t_to = t._period_bounds()
+            # Solapa con el período del dashboard
+            if t_from <= period_to and t_to >= period_from:
+                t_count += t.target_count
+                t_rev += t.target_revenue
+                t_com += t.target_commission
+        return t_count, t_rev, t_com
+
+    def _render_goals_html(self, a_count, t_count, a_rev, t_rev, a_com, t_com):
+        """Barras de progreso 'realizado vs meta' con semáforo de color."""
+        P = self._PALETTE
+
+        def bar(label, actual, target, money=False):
+            if not target:
+                return ''
+            pct = min(actual / target, 1.5) if target else 0
+            pct_disp = (actual / target * 100) if target else 0
+            color = P['success'] if pct_disp >= 100 else (P['warning'] if pct_disp >= 70 else P['danger'])
+            width = min(pct_disp, 100)
+            fmt = (lambda v: f"${v:,.0f}") if money else (lambda v: f"{v:.0f}")
+            return (
+                f'<div style="margin-bottom:12px;">'
+                f'<div style="display:flex;justify-content:space-between;font-size:12px;'
+                f'color:{P["muted"]};margin-bottom:3px;">'
+                f'<span><strong>{label}</strong></span>'
+                f'<span>{fmt(actual)} / {fmt(target)} '
+                f'<strong style="color:{color}">({pct_disp:.0f}%)</strong></span>'
+                f'</div>'
+                f'<div style="background:#eef1f5;border-radius:6px;height:14px;overflow:hidden;">'
+                f'<div style="width:{width}%;height:100%;background:{color};border-radius:6px;'
+                f'transition:width .5s;"></div>'
+                f'</div></div>'
+            )
+
+        bars = (bar('Cierres', a_count, t_count) +
+                bar('Ingresos', a_rev, t_rev, money=True) +
+                bar('Comisiones', a_com, t_com, money=True))
+        if not bars:
+            return (f'<div style="text-align:center;color:{P["muted"]};padding:16px;font-size:13px;">'
+                    f'Sin metas definidas para este período. '
+                    f'Configúralas en <strong>Reportes → Ventas → Metas de Ventas</strong>.</div>')
+        return f'<div>{bars}</div>'
+
     def _compute_kpis(self):
         Property = self.env['estate.property']
         Lead = self.env['crm.lead']
@@ -227,7 +305,19 @@ class EstateDashboard(models.TransientModel):
                                ('date_sold', '<=', period_to)])
             rec.monthly_commissions = sum(sold_period.mapped('commission_amount'))
             rec.won_revenue_month = sum(sold_period.mapped('price'))
-            
+
+            # #1 KPIs vs Objetivo: sumar metas que caen en el período
+            t_count, t_rev, t_com = rec._get_period_targets(period_from, period_to)
+            rec.goal_count = t_count
+            rec.goal_revenue = t_rev
+            rec.goal_commission = t_com
+            actual_count = len(sold_period)
+            rec.goal_achievement_count = (actual_count / t_count) if t_count else 0.0
+            rec.goal_achievement_revenue = (rec.won_revenue_month / t_rev) if t_rev else 0.0
+            rec.goals_html = rec._render_goals_html(
+                actual_count, t_count, rec.won_revenue_month, t_rev,
+                rec.monthly_commissions, t_com)
+
             # Pipeline de Oportunidades
             opportunities = Lead.search(lead_domain + [('type', '=', 'opportunity'), ('probability', '>', 0), ('probability', '<', 100)])
             rec.pending_revenue = sum(opportunities.mapped('expected_revenue'))
@@ -295,6 +385,8 @@ class EstateDashboard(models.TransientModel):
                 ('last_month', 'Mes Anterior'), ('custom', 'Período Custom'),
             ]).get(rec.filter_period or 'month', 'Período')
 
+            prim = rec._PALETTE['primary']  # #5: color de marca centralizado
+
             def kpi(icon, label, value, color):
                 return (
                     f'<div style="flex:1;min-width:130px;background:#fff;border-radius:8px;'
@@ -324,15 +416,15 @@ class EstateDashboard(models.TransientModel):
                     </span>
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-                    {kpi("fa-home", "Total Propiedades", total, "#1e40af")}
-                    {kpi("fa-check-circle", "Disponibles", avail, "#1e40af")}
-                    {kpi("fa-handshake-o", "Vendidas", sold, "#1e40af")}
-                    {kpi("fa-users", "Leads Activos", lead_count, "#1e40af")}
+                    {kpi("fa-home", "Total Propiedades", total, prim)}
+                    {kpi("fa-check-circle", "Disponibles", avail, prim)}
+                    {kpi("fa-handshake-o", "Vendidas", sold, prim)}
+                    {kpi("fa-users", "Leads Activos", lead_count, prim)}
                 </div>
                 <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                    {kpi("fa-dollar", f"Ingresos ({period_label})", f"${revenue:,.0f}", "#1e40af")}
-                    {kpi("fa-percent", f"Comisiones ({period_label})", f"${commissions:,.0f}", "#1e40af")}
-                    {kpi("fa-bar-chart", "Precio Prom. Venta", f"${avg_price:,.0f}", "#1e40af")}
+                    {kpi("fa-dollar", f"Ingresos ({period_label})", f"${revenue:,.0f}", prim)}
+                    {kpi("fa-percent", f"Comisiones ({period_label})", f"${commissions:,.0f}", prim)}
+                    {kpi("fa-bar-chart", "Precio Prom. Venta", f"${avg_price:,.0f}", prim)}
                 </div>
             </div>
             '''
@@ -1019,49 +1111,51 @@ class EstateDashboard(models.TransientModel):
             rec.funnel_lost = lost
             rec.funnel_conversion_pct = round(won / total_new * 100, 1) if total_new else 0
 
-            # Funnel visualization
-            steps = [
-                ('Leads Nuevos', total_new, '#3b82f6'),
-                ('Visitas', visits_done, '#8b5cf6'),
-                ('Ofertas', offers_made, '#f59e0b'),
-                ('Ganados', won, '#16a34a'),
-                ('Perdidos', lost, '#dc2626'),
+            # Embudo visual real: etapas centradas que se estrechan, con la
+            # conversión de etapa a etapa entre cada paso.
+            P = rec._PALETTE
+            stages = [
+                ('Leads Nuevos', total_new, P['chart'][0]),
+                ('Visitas', visits_done, P['chart'][1]),
+                ('Ofertas', offers_made, P['warning']),
+                ('Ganados', won, P['success']),
             ]
             max_val = max(total_new, 1)
-            bars = ''
-            for label, val, color in steps:
-                pct_of_max = max(val / max_val * 100, 3) if val else 3
-                pct_of_leads = round(val / total_new * 100, 1) if total_new else 0
-                bars += f'''
-                <div style="margin-bottom:8px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
-                        <span style="font-weight:600;font-size:13px;">{label}</span>
-                        <span style="font-weight:700;color:{color};font-size:14px;">{val}
-                            <span style="font-size:11px;color:#9ca3af;">({pct_of_leads}%)</span>
-                        </span>
-                    </div>
-                    <div style="background:#f1f5f9;border-radius:6px;height:28px;overflow:hidden;">
-                        <div style="width:{pct_of_max}%;height:100%;background:{color};border-radius:6px;
-                                    transition:width 0.5s;display:flex;align-items:center;justify-content:center;
-                                    color:white;font-weight:700;font-size:12px;">
-                            {val if val > 0 else ''}
-                        </div>
-                    </div>
-                </div>'''
-            rec.funnel_html = f'''
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:8px;">
-                <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
-                    <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:12px 20px;border-radius:8px;text-align:center;flex:1;margin-right:8px;">
-                        <div style="font-size:28px;font-weight:700;color:#1e40af;">{rec.funnel_conversion_pct}%</div>
-                        <div style="font-size:12px;color:#6b7280;">Tasa de Conversión</div>
-                    </div>
-                    <div style="background:#f9fafb;border:1px solid #e5e7eb;padding:12px 20px;border-radius:8px;text-align:center;flex:1;margin-left:8px;">
-                        <div style="font-size:28px;font-weight:700;color:#1e40af;">{won}</div>
-                        <div style="font-size:12px;color:#6b7280;">Cerrados</div>
-                    </div>
-                </div>
-                {bars}
-            </div>'''
+            funnel = ''
+            prev_val = None
+            for i, (label, val, color) in enumerate(stages):
+                width = max(val / max_val * 100, 8) if val else 8
+                # Conversión respecto a la etapa anterior
+                step_conv = ''
+                if prev_val is not None:
+                    conv = round(val / prev_val * 100) if prev_val else 0
+                    arrow_color = P['success'] if conv >= 50 else (P['warning'] if conv >= 25 else P['danger'])
+                    step_conv = (
+                        f'<div style="text-align:center;color:{arrow_color};font-size:11px;'
+                        f'font-weight:700;margin:1px 0;">&#8595; {conv}%</div>')
+                funnel += step_conv + (
+                    f'<div style="display:flex;justify-content:center;margin-bottom:2px;">'
+                    f'<div style="width:{width}%;min-width:90px;background:{color};color:#fff;'
+                    f'border-radius:6px;padding:9px 6px;text-align:center;transition:width .5s;'
+                    f'box-shadow:0 1px 3px rgba(0,0,0,.12);">'
+                    f'<div style="font-size:12px;font-weight:600;opacity:.95;">{label}</div>'
+                    f'<div style="font-size:18px;font-weight:800;line-height:1.1;">{val}</div>'
+                    f'</div></div>')
+                prev_val = val
+
+            rec.funnel_html = (
+                f'<div style="font-family:inherit;padding:8px;">'
+                f'<div style="display:flex;gap:10px;margin-bottom:14px;">'
+                f'<div style="flex:1;background:{P["muted"]}14;border-radius:8px;padding:10px;text-align:center;">'
+                f'<div style="font-size:26px;font-weight:800;color:{P["primary"]};">{rec.funnel_conversion_pct}%</div>'
+                f'<div style="font-size:12px;color:{P["muted"]};">Conversión total</div></div>'
+                f'<div style="flex:1;background:{P["success"]}14;border-radius:8px;padding:10px;text-align:center;">'
+                f'<div style="font-size:26px;font-weight:800;color:{P["success"]};">{won}</div>'
+                f'<div style="font-size:12px;color:{P["muted"]};">Ganados</div></div>'
+                f'<div style="flex:1;background:{P["danger"]}14;border-radius:8px;padding:10px;text-align:center;">'
+                f'<div style="font-size:26px;font-weight:800;color:{P["danger"]};">{lost}</div>'
+                f'<div style="font-size:12px;color:{P["muted"]};">Perdidos</div></div>'
+                f'</div>{funnel}</div>')
 
 
     # ──────────────────────────────────────────────────────────────────
@@ -1193,6 +1287,16 @@ class EstateDashboard(models.TransientModel):
                 f'</div>'
             )
 
+            # A2: datos JSON para Chart.js
+            rec.sales_chart_data = json.dumps({
+                'type': 'bar',
+                'label': 'Ventas',
+                'labels': [r['mes'] for r in sales_data],
+                'values': [r['total'] for r in sales_data],
+                'revenues': [float(r['revenue']) for r in sales_data],
+                'color': self._PALETTE['primary'],
+            })
+
             # ── Leads by source — horizontal bars ────────────────────
             self.env.cr.execute("""
                 SELECT COALESCE(lead_source, 'other') as source,
@@ -1211,7 +1315,7 @@ class EstateDashboard(models.TransientModel):
                 'referral': 'Referido', 'phone': 'Telefono', 'walk_in': 'Visita directa',
                 'portal': 'Portal', 'ai_agent': 'Agente IA', 'other': 'Otro',
             }
-            palette = ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981', '#ec4899', '#6366f1', '#f97316']
+            palette = self._PALETTE['chart']
             hbars = ''
             for i, r in enumerate(lead_data):
                 w = max(int(r['total'] / max_leads * 100), 4)
@@ -1238,6 +1342,16 @@ class EstateDashboard(models.TransientModel):
                 self._CHART_ANIM_CSS +
                 f'<div style="width:100%;">{hbars}</div>'
             )
+
+            # A2: datos JSON para Chart.js
+            rec.leads_chart_data = json.dumps({
+                'type': 'bar',
+                'horizontal': True,
+                'label': 'Leads',
+                'labels': [source_labels.get(r['source'], r['source']) for r in lead_data],
+                'values': [r['total'] for r in lead_data],
+                'colors': [palette[i % len(palette)] for i in range(len(lead_data))],
+            })
 
     # ──────────────────────────────────────────────────────────────────
     # NIVEL 3: Tendencias comparativas
@@ -1335,6 +1449,19 @@ class EstateDashboard(models.TransientModel):
             'target': 'new',
         }
 
+    def action_export_dashboard_pdf(self):
+        """A4: exporta el dashboard completo (KPIs, finanzas, tendencias,
+        embudo y ranking) a un PDF ejecutivo."""
+        self.ensure_one()
+        # Aseguramos que los campos computados estén frescos antes de imprimir
+        self._compute_kpis()
+        self._compute_trends()
+        self._compute_funnel()
+        self._compute_advisor_ranking()
+        return self.env.ref(
+            'estate_reports.action_report_dashboard_executive'
+        ).report_action(self)
+
     def action_open_funnel_leads(self):
         period_from, period_to = self._get_period_dates()
         return {
@@ -1406,13 +1533,10 @@ class EstateDashboard(models.TransientModel):
 
         answer = None
         try:
-            from google import genai
-            client = genai.Client(api_key=api_key)
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
+            answer = self.env['estate.genai.mixin']._genai_generate(
+                prompt, temperature=0.4, max_output_tokens=4096,
             )
-            answer = (response.text or '').replace('```html', '').replace('```', '').strip()
+            answer = self.env['estate.genai.mixin']._genai_strip_fences(answer)
         except Exception as e_gemini:
             try:
                 import openai as _openai

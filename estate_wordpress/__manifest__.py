@@ -10,7 +10,7 @@
         * Sincronización de precio, estado e imágenes
         * Actualización automática
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['estate_management'],
     'data': [

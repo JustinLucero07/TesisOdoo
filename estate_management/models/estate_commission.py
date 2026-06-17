@@ -35,6 +35,23 @@ class EstateCommission(models.Model):
             if rec.sale_amount and rec.commission_pct:
                 rec.amount = rec.sale_amount * (rec.commission_pct / 100.0)
 
+    @api.onchange('property_id', 'type')
+    def _onchange_property_autofill(self):
+        """Al elegir la propiedad, trae automáticamente su monto (precio o canon
+        de arriendo) y su porcentaje de comisión. El Monto de Comisión se
+        recalcula solo (sale_amount × commission_pct)."""
+        if not self.property_id:
+            return
+        prop = self.property_id
+        if self.type == 'rent':
+            self.sale_amount = prop.rental_price or prop.price or 0.0
+        else:
+            self.sale_amount = prop.price or 0.0
+        if prop.commission_percentage:
+            self.commission_pct = prop.commission_percentage
+        if not self.user_id and prop.user_id:
+            self.user_id = prop.user_id
+
     state = fields.Selection([
         ('draft', 'Borrador'),
         ('approved', 'Aprobada'),
@@ -48,6 +65,19 @@ class EstateCommission(models.Model):
         domain=[('move_type', '=', 'in_invoice')])
     invoice_state = fields.Selection(
         related='invoice_id.payment_state', string='Estado de Factura', readonly=True)
+
+    # --- Constancia del pago al asesor ---
+    payment_date = fields.Date(string='Fecha de Pago', readonly=True, copy=False,
+        help='Fecha en que se pagó la comisión al asesor.')
+    payment_method = fields.Selection([
+        ('transfer', 'Transferencia'),
+        ('cash', 'Efectivo'),
+        ('check', 'Cheque'),
+        ('other', 'Otro'),
+    ], string='Forma de Pago', copy=False)
+    payment_reference = fields.Char(string='Comprobante / Referencia', copy=False,
+        help='Nº de transferencia, recibo o comprobante del pago.')
+    paid_by_id = fields.Many2one('res.users', string='Pagado por', readonly=True, copy=False)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -67,6 +97,42 @@ class EstateCommission(models.Model):
             if rec.state == 'paid':
                 raise UserError('No se puede cancelar una comisión ya pagada.')
         self.write({'state': 'cancelled'})
+
+    def action_register_payment(self):
+        """Registra el pago de la comisión al asesor y deja constancia.
+        Requiere fecha y forma de pago (capturadas en el formulario)."""
+        for rec in self:
+            if rec.state == 'paid':
+                raise UserError('Esta comisión ya está marcada como Pagada.')
+            if rec.state == 'cancelled':
+                raise UserError('No se puede pagar una comisión cancelada.')
+            if not rec.payment_method:
+                raise UserError(
+                    'Indica la Forma de Pago antes de registrar el pago '
+                    '(pestaña/grupo "Pago al Asesor").')
+            rec.write({
+                'state': 'paid',
+                'payment_date': rec.payment_date or fields.Date.context_today(rec),
+                'paid_by_id': self.env.user.id,
+            })
+            metodo = dict(rec._fields['payment_method'].selection).get(rec.payment_method, '')
+            ref = f" (Ref: {rec.payment_reference})" if rec.payment_reference else ''
+            rec.message_post(
+                body=(f"<b>Comisión PAGADA</b> al asesor <b>{rec.user_id.name}</b> "
+                      f"por <b>${rec.amount:,.2f}</b> el {rec.payment_date} "
+                      f"vía {metodo}{ref}. Registrado por {self.env.user.name}."))
+        return True
+
+    def action_reset_to_approved(self):
+        """Revierte un pago registrado por error (vuelve a Aprobada)."""
+        for rec in self:
+            if rec.state != 'paid':
+                raise UserError('Solo se pueden revertir comisiones Pagadas.')
+            rec.write({'state': 'approved', 'payment_date': False,
+                       'payment_method': False, 'payment_reference': False,
+                       'paid_by_id': False})
+            rec.message_post(body=f"Pago de comisión REVERTIDO por {self.env.user.name}.")
+        return True
 
     def action_generate_invoice(self):
         """Genera una factura de proveedor (vendor bill) para pagar la comisión al asesor."""

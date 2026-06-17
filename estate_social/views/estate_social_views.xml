@@ -65,6 +65,44 @@
                         </div>
                     </group>
 
+                    <!-- Registro de publicaciones personales de asesores -->
+                    <group string="Publicaciones Personales de Asesores (Facebook e Instagram)">
+                        <div class="px-2 pb-2">
+                            <p class="text-muted small mb-2">
+                                Registra cada vez que publiques esta propiedad en tu
+                                <strong>perfil personal</strong> de Facebook o Instagram.
+                                El sistema lleva el conteo por asesor y plataforma.
+                            </p>
+                            <!-- Botones de registro rápido con un solo clic -->
+                            <div class="d-flex gap-2 mb-3">
+                                <button name="action_log_personal_post_fb"
+                                        type="object"
+                                        class="btn btn-sm btn-primary"
+                                        title="Registra que publicaste ahora en tu Facebook personal">
+                                    <i class="fa fa-facebook-square" title="Facebook"/> Publiqué en Facebook
+                                </button>
+                                <button name="action_log_personal_post_ig"
+                                        type="object"
+                                        class="btn btn-sm"
+                                        style="background:#E4405F;color:white;border:none"
+                                        title="Registra que publicaste ahora en tu Instagram personal">
+                                    <i class="fa fa-instagram" title="Instagram"/> Publiqué en Instagram
+                                </button>
+                            </div>
+                            <field name="advisor_fb_post_ids" nolabel="1">
+                                <list editable="bottom" string="Historial de publicaciones">
+                                    <field name="platform" widget="badge"
+                                           decoration-primary="platform == 'facebook'"
+                                           decoration-danger="platform == 'instagram'"/>
+                                    <field name="published_date"/>
+                                    <field name="user_id" readonly="1"/>
+                                    <field name="url" widget="url" placeholder="https://..."/>
+                                    <field name="notes" placeholder="Alcance, me gustas, comentarios..."/>
+                                </list>
+                            </field>
+                        </div>
+                    </group>
+
                 </page>
             </xpath>
         </field>

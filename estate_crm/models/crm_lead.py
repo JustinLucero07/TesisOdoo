@@ -7,6 +7,10 @@ class CrmLead(models.Model):
     target_property_id = fields.Many2one(
         'estate.property', string='Propiedad de Interés', index=True)
     client_budget = fields.Float(string='Presupuesto del Cliente', tracking=True)
+    # Secuencia de la etapa actual: permite mostrar/ocultar botones por etapa
+    # en la vista (1-2 captación, 3-4 visita/seguimiento, 5+ cierre).
+    stage_sequence = fields.Integer(
+        related='stage_id.sequence', string='Secuencia de Etapa', store=False)
     match_percentage = fields.Integer(
         string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True,
         help='Porcentaje de compatibilidad entre el presupuesto/preferencias del cliente y la propiedad de interés. 100% = perfectamente alineado. Factores: precio vs presupuesto (50%), ciudad (20%), tipo de propiedad (15%), habitaciones (10%), área (5%).')
@@ -254,6 +258,8 @@ class CrmLead(models.Model):
                     'name': self.target_property_id.title,
                     'price_unit': self.target_property_id.price,
                     'product_uom_qty': 1,
+                    # Venta de inmueble SIN IVA por defecto (sin el 15%).
+                    'tax_id': [(6, 0, [])],
                 })]
         order = self.env['sale.order'].create(order_vals)
         self.message_post(
@@ -396,7 +402,7 @@ class CrmLead(models.Model):
                 responsible.partner_id,
                 'simple_notification',
                 {
-                    'title': '⭐ Oportunidad de Oro detectada',
+                    'title': 'Oportunidad de Oro detectada',
                     'message': message,
                     'sticky': True,
                     'type': 'warning',
@@ -415,12 +421,14 @@ class CrmLead(models.Model):
             newly_golden._notify_high_score_lead()
         return result
 
-    @api.depends('client_budget', 'probability')
+    @api.depends('client_budget')
     def _compute_financials(self):
         for lead in self:
             comm = (lead.client_budget * 0.05) if lead.client_budget else 0.0
             lead.expected_commission = comm
-            lead.expected_revenue = comm * (lead.probability / 100.0)
+            # "Ingreso esperado" = comisión esperada completa (5% del presupuesto),
+            # no ponderada por probabilidad, para que muestre un valor claro.
+            lead.expected_revenue = comm
 
     @api.depends('create_date', 'date_closed', 'active')
     def _compute_lead_velocity(self):

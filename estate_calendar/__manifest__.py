@@ -11,16 +11,18 @@
         * Seguimiento de Visitas (Resultado y Valoración)
         * Recordatorios WhatsApp automáticos (Meta Cloud API)
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['estate_management', 'estate_crm', 'crm', 'calendar'],
     'data': [
         'security/ir.model.access.csv',
+        'security/estate_calendar_security.xml',
         'data/estate_whatsapp_cron.xml',
         'report/report_weekly_calendar.xml',
         'wizards/calendar_print_wizard_views.xml',
         'views/calendar_event_views.xml',
         'views/estate_whatsapp_config_views.xml',
+        'views/estate_advisor_unavailability_views.xml',
         'views/estate_calendar_menus.xml',
     ],
     'demo': [

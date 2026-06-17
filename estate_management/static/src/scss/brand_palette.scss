@@ -1,0 +1,24 @@
+// ═══════════════════════════════════════════════════════════════
+// Inmobi — Paleta de marca centralizada (C: consistencia visual)
+// Variables CSS reutilizables en todo el suite. Úsalas con var(--inmobi-*)
+// en lugar de hardcodear hex sueltos.
+// ═══════════════════════════════════════════════════════════════
+:root {
+    --inmobi-primary:        #004274;  // azul corporativo
+    --inmobi-primary-strong: #1e40af;  // azul para gráficos/acentos
+    --inmobi-success:        #16a34a;  // variaciones positivas
+    --inmobi-danger:         #dc2626;  // variaciones negativas / alertas
+    --inmobi-warning:        #f59e0b;
+    --inmobi-muted:          #6b7280;
+    --inmobi-border:         #e9ecef;
+    --inmobi-bg-soft:        #f8f9fa;
+
+    // Paleta categórica para gráficos (fuentes de leads, etc.)
+    --inmobi-chart-1: #3b82f6;
+    --inmobi-chart-2: #8b5cf6;
+    --inmobi-chart-3: #f59e0b;
+    --inmobi-chart-4: #10b981;
+    --inmobi-chart-5: #ec4899;
+    --inmobi-chart-6: #6366f1;
+    --inmobi-chart-7: #f97316;
+}

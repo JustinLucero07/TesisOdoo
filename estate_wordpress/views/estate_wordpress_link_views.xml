@@ -105,7 +105,8 @@
                                 class="btn-primary"
                                 invisible="wizard_state != 'preview'"/>
                         <button name="action_back_to_select"
-                                string="← Volver"
+                                string="Volver"
+                                icon="fa-arrow-left"
                                 type="object"
                                 class="btn-secondary"
                                 invisible="wizard_state != 'preview'"/>

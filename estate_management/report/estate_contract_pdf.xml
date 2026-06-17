@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_report_estate_contract_doc" model="ir.actions.report">
+        <field name="name">Contrato (PDF)</field>
+        <field name="model">estate.contract</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_management.report_estate_contract_doc</field>
+        <field name="report_file">estate_management.report_estate_contract_doc</field>
+        <field name="print_report_name">'Contrato_%s' % (object.name or 'SN')</field>
+        <field name="binding_model_id" ref="model_estate_contract"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_estate_contract_doc">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:12px; line-height:1.6;">
+
+                        <h2 style="text-align:center; color:#1C2B4A; margin-bottom:4px;">
+                            CONTRATO DE
+                            <t t-esc="dict([('sale','COMPRAVENTA'),('rent','ARRENDAMIENTO'),('exclusive','EXCLUSIVIDAD')]).get(o.contract_type, 'INMOBILIARIO')"/>
+                        </h2>
+                        <p style="text-align:center; color:#6b7280; margin-top:0;">
+                            N.º <strong><t t-esc="o.name"/></strong> ·
+                            <span t-field="o.date_start"/>
+                        </p>
+
+                        <!-- Partes -->
+                        <table style="width:100%; margin-top:14px; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:50%; vertical-align:top; padding:6px;">
+                                    <strong style="color:#1C2B4A;">VENDEDOR / ARRENDADOR</strong><br/>
+                                    <t t-if="o.property_id and o.property_id.owner_id">
+                                        <span t-field="o.property_id.owner_id.name"/>
+                                    </t>
+                                    <t t-else=""><span t-field="o.company_id.name"/></t>
+                                </td>
+                                <td style="width:50%; vertical-align:top; padding:6px;">
+                                    <strong style="color:#1C2B4A;">COMPRADOR / ARRENDATARIO</strong><br/>
+                                    <span t-field="o.partner_id.name"/>
+                                    <t t-if="o.partner_id.vat"><br/>C.I./RUC: <span t-field="o.partner_id.vat"/></t>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- Datos del inmueble -->
+                        <t t-if="o.property_id">
+                            <table style="width:100%; margin-top:10px; border-collapse:collapse; font-size:11px;">
+                                <tr><td style="padding:5px 10px; background:#F3F4F6; font-weight:700; width:35%;">Inmueble</td>
+                                    <td style="padding:5px 10px;"><t t-esc="o.property_id.title or o.property_id.name"/></td></tr>
+                                <tr><td style="padding:5px 10px; background:#F3F4F6; font-weight:700;">Ubicación</td>
+                                    <td style="padding:5px 10px;"><t t-esc="o.property_id.street or ''"/><t t-if="o.property_id.city">, <t t-esc="o.property_id.city"/></t></td></tr>
+                                <tr><td style="padding:5px 10px; background:#F3F4F6; font-weight:700;">Monto</td>
+                                    <td style="padding:5px 10px;">$ <t t-esc="'{:,.2f}'.format(o.amount or 0)"/></td></tr>
+                                <tr><td style="padding:5px 10px; background:#F3F4F6; font-weight:700;">Vigencia</td>
+                                    <td style="padding:5px 10px;"><span t-field="o.date_start"/> &#8212; <span t-field="o.date_end"/></td></tr>
+                            </table>
+                        </t>
+
+                        <!-- CLÁUSULAS (las que el usuario escribe / la IA redacta) -->
+                        <div style="margin-top:18px;">
+                            <h4 style="color:#1C2B4A; border-bottom:2px solid #1C2B4A; padding-bottom:4px;">CLÁUSULAS</h4>
+                            <t t-if="o.notes">
+                                <div t-field="o.notes"/>
+                            </t>
+                            <t t-else="">
+                                <p style="color:#9ca3af; font-style:italic;">
+                                    (Sin cláusulas. Escríbelas en "Notas / Cláusulas" o usa el botón "Redactar con IA".)
+                                </p>
+                            </t>
+                        </div>
+
+                        <!-- Firmas -->
+                        <table style="width:100%; margin-top:60px; border-collapse:collapse;">
+                            <tr>
+                                <td style="width:45%; text-align:center; border-top:1px solid #333; padding-top:6px; font-size:11px;">
+                                    <strong>VENDEDOR / ARRENDADOR</strong>
+                                </td>
+                                <td style="width:10%;"/>
+                                <td style="width:45%; text-align:center; border-top:1px solid #333; padding-top:6px; font-size:11px;">
+                                    <strong t-field="o.partner_id.name"/><br/>COMPRADOR / ARRENDATARIO
+                                </td>
+                            </tr>
+                        </table>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

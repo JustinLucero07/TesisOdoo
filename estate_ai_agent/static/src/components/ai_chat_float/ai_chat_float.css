@@ -430,20 +430,150 @@
 
 /* ── Charts ───────────────────────────────────────────────────── */
 .ai-chart {
-    background: white;
-    border-radius: 12px;
-    border: 1px solid #eef0f2;
-    padding: 14px 16px;
-    margin: 10px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    background: linear-gradient(180deg,#ffffff 0%,#fbfcfe 100%);
+    border-radius: 16px;
+    border: 1px solid #e9eef4;
+    padding: 16px 18px;
+    margin: 12px 0;
+    box-shadow: 0 6px 20px rgba(15,40,80,.07);
 }
 .ai-chart-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eef1f6;
+}
+.ai-chart-name {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #34455c;
     text-transform: uppercase;
-    letter-spacing: .6px;
-    margin-bottom: 10px;
+    letter-spacing: .7px;
+}
+.ai-chart-act {
+    background: #f1f5fa;
+    border: none;
+    color: #7689a3;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: background .15s, color .15s, transform .1s;
+    flex-shrink: 0;
+}
+.ai-chart-act:hover { background: #004274; color: #fff; transform: translateY(-1px); }
+
+/* Barras horizontales premium */
+.ai-bar-row { margin-bottom: 14px; }
+.ai-bar-row:last-child { margin-bottom: 2px; }
+.ai-bar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+.ai-bar-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #2c3e50;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-bar-val { font-size: 14px; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+.ai-bar-track {
+    background: #eef1f6;
+    border-radius: 8px;
+    height: 13px;
+    overflow: hidden;
+}
+.ai-bar-fill {
+    height: 100%;
+    border-radius: 8px;
+    min-width: 5px;
+    transform-origin: left center;
+    animation: aiBarGrow .7s cubic-bezier(.22,1,.36,1);
+}
+@keyframes aiBarGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ════ REPORT CARD (dashboard-style) ════ */
+.ai-rc { padding: 18px 20px; }
+.ai-rc-head {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; margin-bottom: 16px; padding-bottom: 0; border-bottom: none;
+}
+.ai-rc-titlewrap { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.ai-rc-accent { width: 3px; height: 24px; border-radius: 3px; background: #004274; flex-shrink: 0; }
+.ai-rc-title { font-size: 11.5px; font-weight: 700; color: #1f2d3d; letter-spacing: .3px; text-transform: uppercase; }
+.ai-rc-sub { font-size: 10px; color: #9aa7b8; font-weight: 500; margin-top: 1px; }
+.ai-rc-tools { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.ai-toggle { display: inline-flex; background: #eef2f7; border-radius: 8px; padding: 2px; }
+.ai-tog-btn {
+    border: none; background: transparent; color: #6b7c93; font-size: 10.5px; font-weight: 700;
+    padding: 4px 10px; border-radius: 6px; cursor: pointer; transition: all .15s;
+}
+.ai-tog-btn.ai-tog-on { background: #fff; color: #004274; box-shadow: 0 1px 4px rgba(0,40,90,.12); }
+
+/* KPI cards (compactos) */
+.ai-kpis { display: flex; gap: 9px; margin-bottom: 16px; flex-wrap: wrap; }
+.ai-kpi {
+    flex: 1; min-width: 96px; background: #f6f8fb; border: 1px solid #eef1f6;
+    border-radius: 10px; padding: 9px 12px;
+}
+.ai-kpi-label { font-size: 9px; font-weight: 700; color: #8a98ab; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; }
+.ai-kpi-val { font-size: 14.5px; font-weight: 800; color: #1f2d3d; line-height: 1.15; }
+.ai-kpi:nth-child(2) .ai-kpi-val { color: #00897B; }
+
+/* Barras horizontales (label · track · valor) */
+.ai-rc-bars { padding: 4px 2px; }
+.ai-hbar { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+.ai-hbar:last-child { margin-bottom: 2px; }
+.ai-hbar-label { width: 88px; flex-shrink: 0; font-size: 12.5px; font-weight: 600; color: #44566b; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-hbar-track { flex: 1; background: #eef1f6; border-radius: 9px; height: 16px; overflow: hidden; }
+.ai-hbar-fill { height: 100%; border-radius: 9px; min-width: 6px; transform-origin: left center; animation: aiBarGrow .7s cubic-bezier(.22,1,.36,1); }
+.ai-hbar-val { width: 34px; flex-shrink: 0; text-align: right; font-size: 12.5px; font-weight: 800; }
+
+/* Donut + leyenda 2 columnas */
+.ai-donut-body { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.ai-donut-legend { flex: 1; min-width: 220px; display: grid; grid-template-columns: 1fr 1fr; gap: 9px 18px; }
+.ai-leg-item { display: flex; align-items: center; gap: 8px; }
+.ai-leg-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.ai-leg-label { flex: 1; font-size: 12.5px; color: #44566b; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-leg-count { font-size: 11.5px; color: #9aa7b8; font-weight: 600; }
+.ai-leg-pct { font-size: 12.5px; font-weight: 800; min-width: 42px; text-align: right; }
+
+@media (max-width: 600px) {
+    .ai-donut-legend { grid-template-columns: 1fr; }
+    .ai-hbar-label { width: 64px; }
+}
+
+/* ════ TABLA profesional ════ */
+.ai-table-wrap {
+    background: #fff; border: 1px solid #e9eef4; border-radius: 14px;
+    overflow: hidden; margin: 12px 0; box-shadow: 0 4px 16px rgba(15,40,80,.05);
+}
+.ai-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.ai-table .ai-tr-head th {
+    background: #f4f7fb; color: #34455c; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .4px; font-size: 10.5px; padding: 11px 14px; text-align: left;
+    border-bottom: 1px solid #e9eef4;
+}
+.ai-table .ai-tr-head th:not(:first-child) { text-align: right; }
+.ai-table td { padding: 11px 14px; color: #44566b; border-bottom: 1px solid #f1f4f8; }
+.ai-table td:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.ai-table tr:last-child td { border-bottom: none; }
+.ai-table tbody tr:not(.ai-tr-total):hover td { background: #fafbfd; }
+.ai-table .ai-tr-total td {
+    background: #f4f7fb; font-weight: 800; color: #1f2d3d;
+    border-top: 2px solid #dce4ee; border-bottom: none;
 }
 
 /* ── Chips bar (after responses) ──────────────────────────────── */
@@ -518,20 +648,34 @@
 .ai-send-btn:disabled { opacity: .4; cursor: default; box-shadow: none; }
 .ai-send-btn svg { width: 18px; height: 18px; fill: white; }
 
-/* ── Bot response formatting ──────────────────────────────────── */
-.ai-bubble-bot h4 { font-size: 14px; font-weight: 700; color: #004274; margin: 10px 0 6px; }
-.ai-bubble-bot ul, .ai-bubble-bot ol { padding-left: 18px; margin: 6px 0; }
+/* ── Bot response: TIPOGRAFÍA UNIFORME ────────────────────────────
+   Todo el texto del chat usa el MISMO tamaño (hereda 13.5px del bubble).
+   La jerarquía se logra con peso y color, nunca con tamaños distintos. */
+.ai-bubble-bot,
+.ai-bubble-bot p,
+.ai-bubble-bot li,
+.ai-bubble-bot span,
+.ai-bubble-bot div:not(.ai-chart):not(.ai-rc):not(.ai-kpi-val):not(.ai-rc-title) {
+    font-size: 13.5px;
+    line-height: 1.6;
+}
+.ai-bubble-bot .ai-md-h {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #004274;
+    margin: 11px 0 5px;
+}
+.ai-bubble-bot .ai-md-ul { padding-left: 18px; margin: 6px 0; }
 .ai-bubble-bot li { margin-bottom: 3px; }
-.ai-bubble-bot strong { color: #1a3a5c; }
+.ai-bubble-bot strong { color: #1a3a5c; font-weight: 700; }
 .ai-bubble-bot code {
     background: #f0f4f8;
     padding: 1px 5px;
     border-radius: 4px;
-    font-size: .85em;
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px;
     color: #E53935;
 }
-.ai-bubble-bot .table { font-size: 12px; margin: 8px 0; }
-.ai-bubble-bot .table th { background: #f0f4f8; font-weight: 600; }
 
 /* ── Scrollbar style ──────────────────────────────────────────── */
 .ai-messages::-webkit-scrollbar,
@@ -617,9 +761,92 @@
 }
 .ai-action-btn-copied svg { fill: #00897B !important; }
 
+/* ── Feedback buttons ────────────────────────────────────────── */
+.ai-feedback-btn {
+    background: none;
+    border: none;
+    font-size: 13px;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: opacity .15s, background .15s, transform .1s;
+}
+.ai-bubble-bot:hover .ai-feedback-btn { opacity: 0.6; }
+.ai-feedback-btn:hover { opacity: 1 !important; background: #f0f2f5; transform: scale(1.15); }
+.ai-feedback-btn.ai-feedback-up   { opacity: 1 !important; background: rgba(0,137,123,.12); }
+.ai-feedback-btn.ai-feedback-down { opacity: 1 !important; background: rgba(229,57,53,.1); }
+
 /* ── Textarea auto-resize ────────────────────────────────────── */
 .ai-input {
     min-height: 42px;
     max-height: 120px;
     overflow-y: auto;
 }
+
+/* Marketing Pack Cards */
+.ai-pack-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #eaecef;
+    margin: 10px 0;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.ai-pack-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f8f9fb;
+    border-bottom: 1px solid #eaecef;
+}
+.ai-pack-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+.ai-pack-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    flex: 1;
+    letter-spacing: .2px;
+}
+.ai-pack-copy {
+    background: white;
+    border: 1.5px solid #d4dfe8;
+    color: #004274;
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+    flex-shrink: 0;
+}
+.ai-pack-copy:hover {
+    background: #004274;
+    color: white;
+    border-color: #004274;
+}
+.ai-pack-body {
+    margin: 0;
+    padding: 12px 16px;
+    font-size: 12.5px;
+    line-height: 1.7;
+    color: #2a2a2a;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    max-height: 260px;
+    overflow-y: auto;
+}
+.ai-pack-body::-webkit-scrollbar { width: 4px; }
+.ai-pack-body::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 4px; }
+

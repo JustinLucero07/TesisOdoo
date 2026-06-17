@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Reporte "Negocio Cerrado" — replica la hoja de cierre de negocio -->
+    <record id="action_report_negocio_cerrado" model="ir.actions.report">
+        <field name="name">Negocio Cerrado</field>
+        <field name="model">estate.property</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_reports.report_negocio_cerrado_template</field>
+        <field name="report_file">estate_reports.report_negocio_cerrado_template</field>
+        <field name="print_report_name">'Negocio Cerrado - %s' % (object.title or object.name)</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_property"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_negocio_cerrado_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page" style="font-size:13px;">
+                        <h2 style="color:#004274;letter-spacing:1px;margin-bottom:16px;">NEGOCIO CERRADO</h2>
+
+                        <!-- Datos del negocio -->
+                        <table class="table table-sm" style="margin-bottom:18px;">
+                            <tr>
+                                <td style="width:32%;color:#555;"><strong>Vendedor (Asesor)</strong></td>
+                                <td><span t-field="o.user_id.name"/></td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;"><strong>Fecha del Negocio</strong></td>
+                                <td><span t-field="o.date_sold"/></td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;"><strong>Fecha Máxima de Cumplimiento</strong></td>
+                                <td><span t-field="o.deal_deadline"/></td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;"><strong>Propiedad</strong></td>
+                                <td><span t-field="o.title"/></td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;"><strong>Precio de Venta</strong></td>
+                                <td><strong>$<span t-esc="'{:,.2f}'.format(o.price or 0)"/></strong></td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;"><strong>Seña / Arras</strong></td>
+                                <td>$<span t-esc="'{:,.2f}'.format(o.deal_earnest_amount or 0)"/></td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;"><strong>Forma de Pago</strong></td>
+                                <td>
+                                    <span t-esc="dict(o._fields['deal_payment_type'].selection).get(o.deal_payment_type, '')"/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;vertical-align:top;"><strong>Detalles del Negocio</strong></td>
+                                <td><span t-field="o.deal_payment_details"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- Cliente Comprador -->
+                        <h4 style="color:#004274;border-bottom:1px solid #004274;padding-bottom:3px;">Cliente Comprador</h4>
+                        <table class="table table-sm" style="margin-bottom:14px;">
+                            <tr>
+                                <td style="width:32%;color:#555;"><strong>Nombre</strong></td>
+                                <td><span t-field="o.buyer_id.name"/></td>
+                                <td style="width:18%;color:#555;"><strong>Teléfono</strong></td>
+                                <td><span t-field="o.buyer_id.phone"/><t t-if="not o.buyer_id.phone"><span t-field="o.buyer_id.mobile"/></t></td>
+                            </tr>
+                            <tr>
+                                <td style="color:#555;"><strong>Apoderado</strong></td>
+                                <td colspan="3"><span t-field="o.proxy_id.name"/></td>
+                            </tr>
+                        </table>
+
+                        <!-- Cliente Vendedor (propietario) -->
+                        <h4 style="color:#004274;border-bottom:1px solid #004274;padding-bottom:3px;">Cliente Vendedor</h4>
+                        <table class="table table-sm" style="margin-bottom:14px;">
+                            <tr>
+                                <td style="width:32%;color:#555;"><strong>Nombre</strong></td>
+                                <td><span t-field="o.owner_id.name"/></td>
+                                <td style="width:18%;color:#555;"><strong>Teléfono</strong></td>
+                                <td><span t-field="o.owner_id.phone"/><t t-if="not o.owner_id.phone"><span t-field="o.owner_id.mobile"/></t></td>
+                            </tr>
+                        </table>
+
+                        <!-- Crédito -->
+                        <t t-if="o.deal_payment_type in ('mortgage','mixed') or o.deal_credit_institution">
+                            <h4 style="color:#004274;border-bottom:1px solid #004274;padding-bottom:3px;">Crédito</h4>
+                            <table class="table table-sm" style="margin-bottom:14px;">
+                                <tr>
+                                    <td style="width:32%;color:#555;"><strong>Institución</strong></td>
+                                    <td><span t-field="o.deal_credit_institution"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="color:#555;"><strong>Asesor de Crédito</strong></td>
+                                    <td>
+                                        <span t-field="o.deal_credit_advisor"/>
+                                        <t t-if="o.deal_credit_advisor_phone"> — <span t-field="o.deal_credit_advisor_phone"/></t>
+                                    </td>
+                                </tr>
+                            </table>
+                        </t>
+
+                        <!-- Observaciones -->
+                        <h4 style="color:#004274;border-bottom:1px solid #004274;padding-bottom:3px;">Observaciones</h4>
+                        <div style="min-height:60px;border:1px solid #e0e0e0;border-radius:4px;padding:8px;">
+                            <span t-field="o.deal_observations"/>
+                        </div>
+
+                        <!-- Firmas -->
+                        <table style="width:100%;margin-top:48px;">
+                            <tr>
+                                <td style="width:45%;text-align:center;border-top:1px solid #333;padding-top:4px;">
+                                    Firma Comprador
+                                </td>
+                                <td style="width:10%;"/>
+                                <td style="width:45%;text-align:center;border-top:1px solid #333;padding-top:4px;">
+                                    Firma Vendedor
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

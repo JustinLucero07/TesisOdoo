@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_estate_audit_log_manager,estate.audit.log.manager,model_estate_audit_log,estate_management.estate_group_manager,1,0,0,0
+access_estate_audit_log_admin,estate.audit.log.admin,model_estate_audit_log,estate_management.estate_group_admin,1,1,1,1
+access_estate_audit_log_system,estate.audit.log.system,model_estate_audit_log,base.group_system,1,1,1,1

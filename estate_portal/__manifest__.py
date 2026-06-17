@@ -10,7 +10,7 @@
         * Vista de lista de propiedades activas del dueño.
         * Vista de detalle con métricas (días en el mercado, precio AVM, número de citas agendadas).
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['portal', 'estate_management', 'estate_calendar', 'estate_crm'],
     'data': [

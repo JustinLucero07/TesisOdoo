@@ -49,6 +49,10 @@
         <field name="name">Tipos de Documento</field>
         <field name="res_model">estate.document.type</field>
         <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin tipos de documento.</p>
+            <p>Define las categorías (cédula, escritura, contrato…) para clasificar documentos.</p>
+        </field>
     </record>
 
     <!-- ═══════════════════════════════════════════════════════
@@ -216,6 +220,8 @@
                         <h1><field name="name" placeholder="Ej: Cédula del cliente Juan Pérez"/></h1>
                     </div>
 
+                    <!-- Layout normal: el PDF se previsualiza en la barra lateral
+                         (chatter), igual que el panel "Análisis IA" de propiedades. -->
                     <group>
                         <group string="Tipo y clasificación">
                             <field name="type_id" options="{'no_create_edit': True}"/>
@@ -230,7 +236,6 @@
                             <field name="verified_date" readonly="1" invisible="not verified_date"/>
                         </group>
                     </group>
-
                     <group string="Vinculación">
                         <group>
                             <field name="property_id"/>
@@ -241,17 +246,14 @@
                             <field name="lead_id"/>
                         </group>
                     </group>
-
                     <group string="Archivo">
                         <field name="file" filename="filename" widget="binary"/>
                         <field name="filename" invisible="1"/>
                         <field name="file_size" readonly="1"/>
                     </group>
-
                     <group string="Notas" invisible="not notes and state != 'pending'">
                         <field name="notes" nolabel="1"/>
                     </group>
-
                     <group string="Datos extraídos por IA (OCR)" invisible="not ocr_result">
                         <field name="ocr_result" nolabel="1" readonly="1"
                                widget="text"
@@ -337,8 +339,12 @@
                             <field name="date"/>
                             <field name="file" filename="filename"/>
                             <field name="filename" invisible="1"/>
+                            <field name="notes" optional="show"/>
                         </list>
                     </field>
+                    <p class="text-muted small" style="margin-top:8px;">
+                        Documentos del lead. Su visibilidad depende de la confidencialidad de cada uno.
+                    </p>
                 </page>
             </xpath>
         </field>

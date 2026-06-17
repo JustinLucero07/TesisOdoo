@@ -12,6 +12,10 @@
             'search_default_filter_today': 1,
         }</field>
         <field name="view_id" ref="view_calendar_event_tree_visits"/>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No tienes visitas hoy.</p>
+            <p>Aquí verás las visitas agendadas para el día de hoy.</p>
+        </field>
     </record>
 
     <!-- Visitas integradas en Agenda (Planificación) -->
@@ -38,4 +42,10 @@
               parent="estate_management.estate_menu_planning_root"
               action="action_calendar_print_wizard"
               sequence="30"/>
+
+    <menuitem id="estate_menu_advisor_unavailability"
+              name="Días no disponibles"
+              parent="estate_management.estate_menu_planning_root"
+              action="action_estate_advisor_unavailability"
+              sequence="40"/>
 </odoo>

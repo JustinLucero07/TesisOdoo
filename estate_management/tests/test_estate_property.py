@@ -73,9 +73,11 @@ class TestEstatePropertyConstraints(TransactionCase):
         prop = self._make(commission_split_pct=100)
         self.assertEqual(prop.commission_split_pct, 100)
 
-    def test_default_state_available(self):
+    def test_default_state_draft(self):
+        # Una propiedad nueva inicia en 'draft' (Borrador) y se publica con
+        # action_publish() para pasar a 'available' (Disponible).
         prop = self._make()
-        self.assertEqual(prop.state, 'available')
+        self.assertEqual(prop.state, 'draft')
 
     def test_indexes_exist(self):
         """Verifica que wp_post_id, fb_post_id, ig_post_id tengan índice."""

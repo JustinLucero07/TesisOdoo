@@ -113,9 +113,9 @@
                                             </div>
                                         </t>
                                         <!-- Cliente -->
-                                        <t t-if="ev.partner_id">
+                                        <t t-if="ev.client_id">
                                             <div style="font-size:7px; color:#555; margin-bottom:2px;">
-                                                <t t-esc="ev.partner_id.name"/>
+                                                <t t-esc="ev.client_id.name"/>
                                             </div>
                                         </t>
                                         <!-- Tipo + estado en una línea -->

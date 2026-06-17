@@ -39,9 +39,32 @@
     <record id="estate_group_admin" model="res.groups">
         <field name="name">Administrador</field>
         <field name="privilege_id" ref="res_groups_privilege_estate"/>
-        <field name="implied_ids" eval="[Command.link(ref('estate_group_manager'))]"/>
+        <field name="implied_ids" eval="[Command.link(ref('estate_group_manager')), Command.link(ref('base.group_erp_manager'))]"/>
         <field name="comment">Acceso total: configuración, eliminación, usuarios, integración WP/AI/Social.</field>
         <field name="user_ids" eval="[Command.link(ref('base.user_root')), Command.link(ref('base.user_admin'))]"/>
+    </record>
+
+    <!-- Permiso OPCIONAL e independiente: permite a un asesor VER TODAS las
+         propiedades (no solo las suyas) sin darle el rol completo de Gerente.
+         Se activa por usuario marcando este grupo. -->
+    <record id="estate_group_property_viewer_all" model="res.groups">
+        <field name="name">Asesor: ver todas las propiedades</field>
+        <field name="privilege_id" ref="res_groups_privilege_estate"/>
+        <field name="comment">Permiso adicional de solo visibilidad: el asesor ve todas las propiedades de la inmobiliaria.</field>
+    </record>
+
+    <!-- POR DEFECTO: el rol Asesor incluye "ver todas las propiedades", de modo
+         que TODOS los asesores (presentes y futuros) ven, crean y modifican
+         todas las propiedades sin activación manual. Se actualiza aquí (después
+         de definir el grupo) para evitar referencias hacia adelante. -->
+    <record id="estate_group_agent" model="res.groups">
+        <field name="implied_ids" eval="[Command.link(ref('estate_group_property_viewer_all'))]"/>
+    </record>
+
+    <!-- Marketing es co-administradora: hereda el rol Administrador (finanzas,
+         comisiones, configuración, eliminar, usuarios/roles, dashboard, reportes). -->
+    <record id="estate_group_marketing" model="res.groups">
+        <field name="implied_ids" eval="[Command.link(ref('estate_group_admin'))]"/>
     </record>
 
     <!-- ==============================================================
@@ -54,7 +77,7 @@
 
         <!-- PROPIEDAD: Marketing ve todas (solo lectura en regla) -->
         <record id="rule_property_marketing" model="ir.rule">
-            <field name="name">Propiedad: marketing ve todas (solo lectura)</field>
+            <field name="name">Propiedad: marketing ve todas</field>
             <field name="model_id" ref="model_estate_property"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('estate_group_marketing'))]"/>
@@ -80,6 +103,13 @@
             <field name="model_id" ref="model_estate_property"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+        <!-- Asesor con el permiso opcional "ver todas las propiedades" -->
+        <record id="rule_property_viewer_all" model="ir.rule">
+            <field name="name">Propiedad: asesor con permiso ve todas</field>
+            <field name="model_id" ref="model_estate_property"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_property_viewer_all'))]"/>
         </record>
 
         <!-- CONTRATO: agente ve solo los contratos de sus propiedades -->
@@ -240,6 +270,24 @@
         <record id="rule_appraisal_manager" model="ir.rule">
             <field name="name">Tasación: manager/admin ven todas</field>
             <field name="model_id" ref="model_estate_appraisal"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
+        </record>
+
+        <!-- POST FB ASESOR: agente ve solo los suyos -->
+        <record id="rule_advisor_fb_post_agent" model="ir.rule">
+            <field name="name">Post FB: agente ve solo los suyos</field>
+            <field name="model_id" ref="model_estate_advisor_fb_post"/>
+            <field name="domain_force">[('user_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('estate_group_agent'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+        <record id="rule_advisor_fb_post_manager" model="ir.rule">
+            <field name="name">Post FB: manager/admin ven todos</field>
+            <field name="model_id" ref="model_estate_advisor_fb_post"/>
             <field name="domain_force">[(1, '=', 1)]</field>
             <field name="groups" eval="[(4, ref('estate_group_manager'))]"/>
         </record>

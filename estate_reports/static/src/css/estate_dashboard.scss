@@ -64,5 +64,16 @@
                 flex: 1 1 80px;
             }
         }
+
+        // Los KPIs y bloques HTML del dashboard apilan en lugar de cortarse.
+        // Forzamos wrap aunque los estilos inline digan display:flex.
+        .o_field_html div[style*="display:flex"] {
+            flex-wrap: wrap !important;
+        }
+        // Las tarjetas KPI ocupan al menos media fila en móvil.
+        .o_field_html div[style*="min-width:130px"],
+        .o_field_html div[style*="min-width: 130px"] {
+            min-width: 45% !important;
+        }
     }
 }

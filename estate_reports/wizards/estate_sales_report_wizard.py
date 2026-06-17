@@ -113,15 +113,16 @@ class EstateSalesReportWizard(models.TransientModel):
 
             wiz.kpi_avg_price = sum(prices) / len(prices)
             wiz.kpi_avg_listed = sum(listed_prices) / len(listed_prices) if listed_prices else 0.0
+            # Ratio 0-1 (el widget percentage lo muestra como %); evita el bug 10000%
             wiz.kpi_pct_vs_listed = (
-                (sum(prices) / sum(listed_prices) * 100) if sum(listed_prices) else 0.0
+                (sum(prices) / sum(listed_prices)) if sum(listed_prices) else 0.0
             )
             wiz.kpi_avg_days = sum(days) / len(days) if days else 0.0
             wiz.kpi_median_price = statistics.median(prices)
             wiz.kpi_min_price = min(prices)
             wiz.kpi_max_price = max(prices)
             total_universe = len(sold) + available_in_period
-            wiz.kpi_close_rate = (len(sold) / total_universe * 100) if total_universe else 0.0
+            wiz.kpi_close_rate = (len(sold) / total_universe) if total_universe else 0.0
 
             # Comparativa con período anterior
             prev_sold = wiz._search_sold_properties(prev_from, prev_to)
@@ -130,7 +131,7 @@ class EstateSalesReportWizard(models.TransientModel):
                 prev_days_list = [p.days_on_market for p in prev_sold if p.days_on_market]
                 wiz.prev_avg_price = sum(prev_prices) / len(prev_prices)
                 wiz.pct_change_avg = (
-                    (wiz.kpi_avg_price - wiz.prev_avg_price) / wiz.prev_avg_price * 100
+                    (wiz.kpi_avg_price - wiz.prev_avg_price) / wiz.prev_avg_price
                     if wiz.prev_avg_price else 0.0
                 )
                 wiz.prev_avg_days = sum(prev_days_list) / len(prev_days_list) if prev_days_list else 0.0
@@ -445,7 +446,8 @@ class EstateSalesReportWizard(models.TransientModel):
         f_header = wb.add_format({'bold': True, 'bg_color': '#E4E6EB',
                                   'border': 1, 'align': 'center'})
         f_money = wb.add_format({'num_format': '"$"#,##0.00', 'border': 1})
-        f_pct = wb.add_format({'num_format': '0.00"%"', 'border': 1})
+        # '0.00%' multiplica ×100 y añade %, acorde a los campos ahora en ratio 0-1
+        f_pct = wb.add_format({'num_format': '0.00%', 'border': 1})
         f_int = wb.add_format({'num_format': '#,##0', 'border': 1})
         f_text = wb.add_format({'border': 1})
 

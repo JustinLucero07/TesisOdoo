@@ -22,9 +22,13 @@ class EstateProperty(models.Model):
     title = fields.Char(string='Título', required=True, tracking=True)
     description = fields.Html(string='Descripción')
 
-    def name_get(self):
-        return [(rec.id, f"{rec.title} [{rec.name}]" if rec.name and rec.name != 'Nuevo' else rec.title or 'Nuevo')
-                for rec in self]
+    @api.depends('title', 'name')
+    def _compute_display_name(self):
+        for rec in self:
+            if rec.name and rec.name != 'Nuevo':
+                rec.display_name = f"{rec.title} [{rec.name}]" if rec.title else rec.name
+            else:
+                rec.display_name = rec.title or 'Nuevo'
 
     @api.model
     def _name_search(self, name='', domain=None, operator='ilike', limit=100, order=None):
@@ -379,6 +383,12 @@ class EstateProperty(models.Model):
         string='Hoja de Captación', attachment=True,
         help='Documento escaneado o PDF de la hoja de captación original.')
     capture_sheet_filename = fields.Char(string='Nombre del Archivo de Captación')
+    capture_is_pdf = fields.Boolean(compute='_compute_capture_is_pdf')
+
+    @api.depends('capture_sheet_filename')
+    def _compute_capture_is_pdf(self):
+        for rec in self:
+            rec.capture_is_pdf = bool(rec.capture_sheet_filename and rec.capture_sheet_filename.lower().endswith('.pdf'))
     is_exclusive = fields.Boolean(
         string='En Exclusividad', default=False, tracking=True,
         help='Indica si la propiedad fue captada bajo contrato de exclusividad.')
@@ -717,6 +727,8 @@ class EstateProperty(models.Model):
 
     # --- Relaciones y Ventas ---
     owner_id = fields.Many2one('res.partner', string='Propietario', tracking=True)
+    proxy_id = fields.Many2one('res.partner', string='Apoderado', tracking=True,
+                               help='Persona autorizada para actuar en nombre del propietario.')
     buyer_id = fields.Many2one('res.partner', string='Comprador', tracking=True)
     user_id = fields.Many2one('res.users', string='Asesor Responsable', default=lambda self: self.env.user, tracking=True)
     co_user_id = fields.Many2one('res.users', string='Co-Asesor', tracking=True,
@@ -724,6 +736,28 @@ class EstateProperty(models.Model):
     commission_split_pct = fields.Float(
         string='Split Co-Asesor (%)', default=50.0,
         help='Porcentaje de la comisión que corresponde al Co-Asesor (el resto es del Asesor Responsable).')
+
+    # --- Negocio Cerrado (datos del cierre, capturados al vender) ---
+    deal_deadline = fields.Date(
+        string='Fecha Máxima de Cumplimiento',
+        help='Fecha límite para completar la escritura / cierre definitivo.')
+    deal_earnest_amount = fields.Float(
+        string='Seña / Arras ($)',
+        help='Monto entregado como reserva al cerrar el negocio.')
+    deal_payment_type = fields.Selection([
+        ('cash', 'Contado'),
+        ('mortgage', 'Hipotecario (BIESS/Banco)'),
+        ('owner', 'Financiamiento del Vendedor'),
+        ('mixed', 'Mixto'),
+        ('other', 'Otro'),
+    ], string='Forma de Pago', default='cash')
+    deal_payment_details = fields.Text(
+        string='Detalles del Negocio',
+        help='Condiciones de pago, plazos, observaciones del acuerdo.')
+    deal_credit_institution = fields.Char(string='Institución de Crédito')
+    deal_credit_advisor = fields.Char(string='Asesor de Crédito')
+    deal_credit_advisor_phone = fields.Char(string='Teléfono Asesor de Crédito')
+    deal_observations = fields.Text(string='Observaciones del Negocio')
 
     # --- Calculadora de Hipoteca ---
     mortgage_down_payment_pct = fields.Float(string='Entrada (%)', default=20.0,
@@ -757,6 +791,11 @@ class EstateProperty(models.Model):
     meeting_count = fields.Integer(string='Citas', compute='_compute_meeting_count')
     commission_ids = fields.One2many('estate.commission', 'property_id', string='Historial de Comisiones')
     commission_count = fields.Integer(string='N° Comisiones', compute='_compute_commission_count')
+
+    advisor_fb_post_ids = fields.One2many(
+        'estate.advisor.fb.post', 'property_id', string='Posts Personales de Asesores')
+    advisor_fb_post_count = fields.Integer(
+        string='Posts FB', compute='_compute_advisor_fb_post_count')
 
     @api.depends('price', 'mortgage_down_payment_pct', 'mortgage_rate', 'mortgage_term_years')
     def _compute_mortgage(self):
@@ -880,6 +919,60 @@ class EstateProperty(models.Model):
     def _compute_meeting_count(self):
         for rec in self:
             rec.meeting_count = self.env['calendar.event'].sudo().search_count([('property_id', '=', rec.id)])
+
+    def _compute_advisor_fb_post_count(self):
+        for rec in self:
+            rec.advisor_fb_post_count = self.env['estate.advisor.fb.post'].search_count([('property_id', '=', rec.id)])
+
+    def action_view_personal_posts(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Publicaciones personales — {self.title or self.name}',
+            'res_model': 'estate.advisor.fb.post',
+            'view_mode': 'list,form',
+            'domain': [('property_id', '=', self.id)],
+            'context': {
+                'default_property_id': self.id,
+                'default_user_id': self.env.user.id,
+            },
+        }
+
+    def action_log_personal_post_fb(self):
+        self.ensure_one()
+        self.env['estate.advisor.fb.post'].create({
+            'property_id': self.id,
+            'user_id': self.env.user.id,
+            'platform': 'facebook',
+        })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Publicación registrada',
+                'message': f'Se registró tu publicación en Facebook para {self.title or self.name}.',
+                'type': 'success',
+                'sticky': False,
+            },
+        }
+
+    def action_log_personal_post_ig(self):
+        self.ensure_one()
+        self.env['estate.advisor.fb.post'].create({
+            'property_id': self.id,
+            'user_id': self.env.user.id,
+            'platform': 'instagram',
+        })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Publicación registrada',
+                'message': f'Se registró tu publicación en Instagram para {self.title or self.name}.',
+                'type': 'success',
+                'sticky': False,
+            },
+        }
 
     def action_view_meetings(self):
         self.ensure_one()
@@ -1058,7 +1151,40 @@ class EstateProperty(models.Model):
                 if code:
                     super(EstateProperty, prop).write({'zip_code': code})
 
+        # Convertir imágenes subidas en lote (gallery_ids) a image_ids
+        properties._sync_gallery_to_images()
+
         return properties
+
+    def _sync_gallery_to_images(self):
+        """Convierte los adjuntos subidos de golpe en la zona de carga rápida
+        (gallery_ids, widget many2many_binary) en registros estate.property.image.
+
+        image_ids es la fuente canónica que usan WordPress, la IA y los reportes;
+        gallery_ids es solo una zona de carga múltiple intuitiva. Tras convertir,
+        se limpia la zona y se eliminan los adjuntos temporales."""
+        Image = self.env['estate.property.image']
+        for prop in self:
+            if not prop.gallery_ids:
+                continue
+            base = Image.search_count([('property_id', '=', prop.id)])
+            new_imgs = []
+            for idx, att in enumerate(prop.gallery_ids, 1):
+                if not att.datas:
+                    continue
+                clean_name = (att.name or f'Imagen {base + idx}').rsplit('.', 1)[0]
+                new_imgs.append({
+                    'property_id': prop.id,
+                    'image': att.datas,
+                    'name': clean_name,
+                    'sequence': (base + idx) * 10,
+                })
+            if new_imgs:
+                Image.create(new_imgs)
+            # Limpiar zona de carga + borrar adjuntos temporales (guard anti-recursión)
+            atts = prop.gallery_ids
+            prop.with_context(_syncing_gallery=True).gallery_ids = [(5, 0, 0)]
+            atts.sudo().unlink()
 
     @api.constrains('year_built')
     def _check_year_built(self):
@@ -1131,6 +1257,9 @@ class EstateProperty(models.Model):
             old_prices = {prop.id: prop.price for prop in self}
 
         res = super().write(vals)
+        # Convertir imágenes subidas en lote (gallery_ids) a image_ids
+        if 'gallery_ids' in vals and not self.env.context.get('_syncing_gallery'):
+            self._sync_gallery_to_images()
         # Sincronizar actualizaciones hacia product.template
         for prop in self:
             if prop.product_id:
@@ -1188,11 +1317,15 @@ class EstateProperty(models.Model):
 
     def unlink(self):
         non_draft = self.filtered(lambda p: p.state not in ('draft',))
-        if non_draft:
+        # El asesor solo puede eliminar propiedades en Borrador. Gerencia,
+        # Marketing y Administración pueden eliminar en cualquier estado.
+        puede_todo = self.env.user.has_group('estate_management.estate_group_manager')
+        if non_draft and not puede_todo:
             titles = ', '.join(non_draft.mapped('title') or non_draft.mapped('name'))
             raise UserError(
-                f"No se puede eliminar una propiedad que ya ha sido publicada o vendida: "
-                f"{titles}.\n\nPrimero vuelva al estado Borrador usando 'Volver a Borrador'."
+                f"Un asesor solo puede eliminar propiedades en Borrador. Estas ya están "
+                f"publicadas o vendidas: {titles}.\n\nUsa 'Volver a Borrador' primero, "
+                f"o pide a Gerencia/Administración que la elimine."
             )
         return super().unlink()
 
@@ -1324,6 +1457,62 @@ class EstateProperty(models.Model):
         first_month_commission = self.rental_price * (self.commission_percentage / 100.0)
         self._create_commission_records('rent', first_month_commission, self.rental_price, self.commission_percentage)
 
+    def _process_native_sale(self, buyer, price, commission_amount, commission_pct):
+        """Crea y confirma la orden de venta nativa (sale.order) y genera +
+        contabiliza la factura (account.move) para que la venta quede registrada
+        en los módulos nativos de Ventas y Facturación. Devuelve (order, invoice).
+        """
+        self.ensure_one()
+        order = invoice = False
+
+        # Vincular lead activo del comprador si existe
+        active_lead = self.env['crm.lead'].search([
+            ('partner_id', '=', buyer.id),
+            ('target_property_id', '=', self.id),
+            ('type', '=', 'opportunity'),
+            ('probability', '>', 0), ('probability', '<', 100),
+        ], limit=1) or self.env['crm.lead'].search([
+            ('partner_id', '=', buyer.id),
+            ('type', '=', 'opportunity'),
+            ('probability', '>', 0), ('probability', '<', 100),
+        ], limit=1)
+
+        try:
+            order_vals = {
+                'partner_id': buyer.id,
+                'property_id': self.id,
+                'estate_transaction_type': 'sale',
+                'lead_id': active_lead.id if active_lead else False,
+            }
+            if self.product_id:
+                order_vals['order_line'] = [(0, 0, {
+                    'product_id': self.product_id.product_variant_id.id,
+                    'name': self.title,
+                    'price_unit': price,
+                    'product_uom_qty': 1,
+                })]
+            order = self.env['sale.order'].create(order_vals)
+            order.action_confirm()
+
+            # Forzar entregado = pedido para que sea facturable con cualquier política
+            for line in order.order_line:
+                if not line.display_type:
+                    line.qty_delivered = line.product_uom_qty
+
+            # Generar y contabilizar la factura desde la orden
+            if order.order_line:
+                invoices = order._create_invoices()
+                if invoices:
+                    invoices.action_post()
+                    invoice = invoices[:1]
+        except Exception as e:
+            _logger.error('Flujo nativo de venta falló para propiedad %s: %s', self.id, e)
+            raise UserError(
+                'No se pudo generar la orden/factura de la venta: %s\n\n'
+                'La propiedad NO se marcó como vendida.' % str(e))
+
+        return order, invoice
+
     def _create_commission_records(self, commission_type, total_amount, sale_price, pct):
         """Crea registros de comisión, dividiendo entre asesor y co-asesor si aplica."""
         today = fields.Date.today()
@@ -1381,6 +1570,8 @@ class EstateProperty(models.Model):
             'name': f"Venta de Inmueble: {self.title}",
             'price_unit': self.price,
             'quantity': 1,
+            # El inmueble se factura SIN IVA por defecto (sin el 15%).
+            'tax_ids': [(6, 0, [])],
         })]
         
         # Agregar una línea descriptiva con la Comisión calculada para trazabilidad

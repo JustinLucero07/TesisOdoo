@@ -32,7 +32,12 @@ TOOLS_OPENAI = [
         "type": "function",
         "function": {
             "name": "search_properties",
-            "description": "Busca propiedades inmobiliarias en la base de datos según filtros.",
+            "description": (
+                "Busca propiedades inmobiliarias en la base de datos según filtros. "
+                "Cuando el usuario pida 'todas las propiedades disponibles', 'la más cara', "
+                "'las más baratas', 'todas las casas', etc. → usa limit=100 para traer todas. "
+                "Ordena los resultados por precio descendente por defecto."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -41,7 +46,7 @@ TOOLS_OPENAI = [
                     "max_price": {"type": "number", "description": "Precio máximo"},
                     "min_price": {"type": "number", "description": "Precio mínimo"},
                     "state": {"type": "string", "description": "Estado: available, sold, rented, reserved"},
-                    "limit": {"type": "integer", "description": "Máximo de resultados (default 10)"},
+                    "limit": {"type": "integer", "description": "Máximo de resultados (default 50, usa 100 para 'todas')"},
                 },
             },
         },
@@ -201,6 +206,26 @@ TOOLS_OPENAI = [
     {
         "type": "function",
         "function": {
+            "name": "analyze_property_improvements",
+            "description": (
+                "Analiza UNA propiedad y devuelve recomendaciones CONCRETAS de qué mejorar para "
+                "venderla más rápido: precio vs AVM (sobrevaluada/justa), días en mercado vs promedio, "
+                "nº de fotos, calidad de descripción, GPS, leads interesados (directos + por presupuesto). "
+                "Úsalo SIEMPRE que el usuario pida 'qué puedo mejorar', 'cómo mejorar' o 'recomendaciones' "
+                "sobre una propiedad. Acepta ID o nombre/referencia parcial."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "property_id": {"type": "integer", "description": "ID de la propiedad"},
+                    "property_name": {"type": "string", "description": "Nombre/referencia parcial (si no se sabe el ID). Usa el de la conversación reciente si aplica."},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "delete_property",
             "description": "ELIMINA PERMANENTEMENTE una propiedad del sistema. SOLO usar cuando el usuario haya confirmado explícitamente con 'sí confirmo'. Esta acción es IRREVERSIBLE.",
             "parameters": {
@@ -239,7 +264,7 @@ TOOLS_OPENAI = [
                 "required": ["property_id", "start_datetime", "partner_name"],
                 "properties": {
                     "property_id": {"type": "integer", "description": "ID de la propiedad a visitar"},
-                    "start_datetime": {"type": "string", "description": "Fecha y hora de la visita: YYYY-MM-DD HH:MM"},
+                    "start_datetime": {"type": "string", "description": "Fecha y hora de la visita, ej '2026-07-15 10:00' (acepta con o sin segundos; si solo das la fecha se asume 10:00)"},
                     "partner_name": {"type": "string", "description": "Nombre del cliente que visita"},
                     "notes": {"type": "string", "description": "Notas adicionales sobre la visita"},
                     "lead_id": {"type": "integer", "description": "ID del lead relacionado (opcional)"},
@@ -623,6 +648,76 @@ TOOLS_OPENAI = [
             )},
         }},
     }},
+    # ── PDF DE REPORTE ANALÍTICO ──────────────────────────────────────────
+    {"type": "function", "function": {
+        "name": "generate_analytics_pdf",
+        "description": (
+            "Genera un PDF descargable de cualquier reporte analítico del sistema "
+            "(ventas, leads, comisiones, propiedades, embudo, etc.) con tabla de datos y encabezado. "
+            "Devuelve un enlace de descarga directo. "
+            "Úsalo cuando el usuario pida 'dame el reporte en PDF', 'descargar PDF', "
+            "'exportar como PDF', 'imprimir reporte'."
+        ),
+        "parameters": {"type": "object", "required": ["report_type"], "properties": {
+            "report_type": {"type": "string", "description": "Mismo report_type de get_report_data"},
+            "title": {"type": "string", "description": "Título personalizado del reporte (opcional)"},
+            "limit": {"type": "integer", "description": "Máximo de filas (default 30)"},
+        }},
+    }},
+    # ── PACK DE MARKETING COMPLETO ────────────────────────────────────────
+    {"type": "function", "function": {
+        "name": "generate_marketing_pack",
+        "description": (
+            "Genera el pack COMPLETO de contenido de marketing para una propiedad: "
+            "caption Instagram, post Facebook, mensaje WhatsApp broadcast, email, "
+            "Google Ads, puntos clave y slogan. "
+            "Llama a esta herramienta cuando el usuario pida: 'campaña', 'marketing', "
+            "'contenido para redes', 'copies', 'publicitar', 'posts para redes', "
+            "'pack de marketing', 'textos para publicar', 'quiero promover', 'anuncio'."
+        ),
+        "parameters": {"type": "object", "required": ["property_id"], "properties": {
+            "property_id": {"type": "integer", "description": "ID de la propiedad"},
+            "style": {"type": "string", "description": "Estilo: emocional (default) | formal | directo | lujoso"},
+            "channels": {
+                "type": "array", "items": {"type": "string"},
+                "description": "Canales a incluir (vacío = todos): instagram, facebook, whatsapp, email_asunto, email_cuerpo, google_ads, puntos_clave, slogan",
+            },
+            "save_description": {"type": "boolean", "description": "Si True, guarda la descripción como descripción de la propiedad"},
+        }},
+    }},
+    # ── PLAN DE CAMPAÑA DE MARKETING ─────────────────────────────────────
+    {"type": "function", "function": {
+        "name": "plan_marketing_campaign",
+        "description": (
+            "Analiza una propiedad y genera un plan de campaña de marketing personalizado: "
+            "canal principal recomendado, frecuencia de publicación, buyer persona, "
+            "presupuesto sugerido para Facebook Ads, checklist de lo que falta para publicar "
+            "(fotos, descripción, WordPress, AVM, coordenadas), keywords SEO y calendario de contenidos. "
+            "Llama a esta herramienta cuando el usuario pida: 'plan de campaña', 'estrategia de marketing', "
+            "'cómo promocionar esta propiedad', 'qué me falta para publicar', 'plan de publicidad', "
+            "'estrategia para vender', 'cómo llegar a más clientes', 'plan de difusión', "
+            "'campaña de ventas', 'qué canal usar'."
+        ),
+        "parameters": {"type": "object", "required": ["property_id"], "properties": {
+            "property_id": {"type": "integer", "description": "ID de la propiedad a analizar"},
+        }},
+    }},
+    # ── INFORME EJECUTIVO COMPLETO ─────────────────────────────────────────
+    {"type": "function", "function": {
+        "name": "generate_executive_report",
+        "description": (
+            "Genera un informe ejecutivo completo con KPIs de inventario, ventas/arrendamientos del mes, "
+            "análisis de leads por temperatura, ranking de asesores, propiedades con más días en mercado "
+            "y alertas críticas. "
+            "Llama a este tool cuando el usuario pida: 'informe ejecutivo', 'reporte completo', "
+            "'resumen del mes', 'informe del mes', 'reporte general', 'dashboard ejecutivo', "
+            "'informe ejecutivo completo', 'generar reporte ejecutivo', 'KPIs del mes'."
+        ),
+        "parameters": {"type": "object", "properties": {
+            "month": {"type": "integer", "description": "Mes (1-12). Por defecto: mes actual."},
+            "year": {"type": "integer", "description": "Año. Por defecto: año actual."},
+        }},
+    }},
     # ── HERRAMIENTA UNIVERSAL: Consulta SQL directa (solo lectura) ─────────
     {"type": "function", "function": {
         "name": "query_database",
@@ -641,7 +736,15 @@ TOOLS_OPENAI = [
             "estate_property_tag: id, name, color. "
             "crm_lead: id, name, contact_name, email_from, phone, type(lead/opportunity), "
             "user_id(FK→res_users.id), partner_id(FK→res_partner.id), "
-            "stage_id(FK→crm_stage.id), probability, expected_revenue. "
+            "stage_id(FK→crm_stage.id), probability, expected_revenue, "
+            "target_property_id(FK→estate_property.id = PROPIEDAD DE INTERÉS DEL LEAD; "
+            "así se vincula un prospecto a una propiedad), client_budget(presupuesto del cliente), "
+            "match_percentage(% de match presupuesto↔precio), lead_score(A/B/C), "
+            "lead_temperature(cold/warm/hot/boiling), lead_source. "
+            "IMPORTANTE: para 'propiedad con más prospectos' cuenta crm_lead por target_property_id: "
+            "SELECT ep.title, COUNT(cl.id) AS prospectos FROM estate_property ep "
+            "JOIN crm_lead cl ON cl.target_property_id = ep.id "
+            "WHERE cl.type='opportunity' AND cl.active=TRUE GROUP BY ep.id, ep.title ORDER BY prospectos DESC. "
             "estate_contract: id, name, property_id, partner_id, user_id, contract_type(sale/rent/exclusive), "
             "amount, state(draft/active/expired/cancelled), date_start, date_end. "
             "estate_payment: id, contract_id, amount, state(pending/paid/cancelled), "
@@ -800,6 +903,8 @@ class EstateAIController(http.Controller):
 
 {lang_instruction}
 
+ESTILO: No uses emojis en tus respuestas. Usa texto y formato Markdown limpio (negritas, listas, tablas).
+
 Eres el Asistente Ejecutivo Inteligente de la Inmobiliaria. Tienes acceso COMPLETO al sistema.
 TU MISIÓN: Consultar, crear, actualizar y controlar el sistema inmobiliario desde esta conversación.
 
@@ -807,6 +912,18 @@ REGLA ABSOLUTA: NUNCA digas 'no puedo', 'no tengo la capacidad', 'no tengo acces
 Tienes la herramienta query_database que te permite ejecutar CUALQUIER consulta SQL SELECT
 contra toda la base de datos. Si ninguna otra herramienta sirve, usa query_database con un SQL
 apropiado. Tienes acceso a TODA la información del sistema sin excepción.
+
+REGLAS DE CONTEXTO (MUY IMPORTANTE):
+- RECUERDA la última propiedad/lead/cliente mencionado en la conversación. Si el usuario dice
+  "esa propiedad", "la de Baños", "la casa", "la anterior", etc., REUTILIZA la propiedad de la que
+  ya hablaron — NO vuelvas a pedir el ID ni el nombre.
+- NUNCA pidas el "ID de la propiedad". El usuario no conoce los IDs. Las herramientas aceptan
+  property_name (nombre, referencia PROP-XXXX o título parcial). Pasa el nombre que el usuario usó
+  o el de la propiedad ya mencionada en la conversación.
+- Si el usuario pide "qué puedo mejorar", "cómo mejorar" o "recomendaciones" sobre una propiedad,
+  usa SIEMPRE analyze_property_improvements (acepta nombre). NO pidas el ID.
+- Para "quién está interesado" en una propiedad, usa analyze_property_improvements (reporta
+  prospectos directos + compatibles por presupuesto), no solo los directos.
 
 DATOS ACTUALES DEL SISTEMA:
 {context_data}
@@ -821,7 +938,8 @@ CAPACIDADES COMPLETAS (usa las herramientas):
 - GESTIONAR: reservar/vender propiedades, archivar leads, generar links de WhatsApp, enviar emails
 - IA AVANZADA: analizar probabilidad de cierre, riesgo de churn, recalcular AVM, generar descripciones
 - MEMORIA: guardar preferencias/hechos con save_memory, consultar con recall_memory
-- REPORTES PDF: generate_pdf_report | generate_quote_pdf (cotización para cliente)
+- REPORTES PDF fichas: generate_pdf_report | generate_quote_pdf (cotización para cliente)
+- REPORTES PDF analíticos: generate_analytics_pdf — exporta CUALQUIER reporte analítico a PDF descargable
 - REPORTES EXCEL: generate_excel_report — exporta CUALQUIER reporte a .xlsx con enlace de descarga
 - NAVEGAR: open_report_view — devuelve URL para ir directamente a cualquier vista de Reportes
 - SQL DIRECTO: query_database — ejecuta cualquier SELECT contra la BD para responder lo que sea
@@ -836,6 +954,7 @@ DETECCIÓN DE INTENCIÓN — actúa directamente según lo que el usuario quiera
 - "cotización para [lead]" → usa generate_quote_pdf
 - "briefing/resumen del día" → usa get_dashboard_summary + get_upcoming_visits + get_trend_analysis
 - "reporte de [tema]" → usa get_report_data con el report_type correcto
+- "reporte en PDF / descargar PDF de [tema]" → usa generate_analytics_pdf
 - "descargar/exportar Excel de [tema]" → usa generate_excel_report
 - "ir a / abrir / navegar a [sección]" → usa open_report_view
 
@@ -856,14 +975,22 @@ INSTRUCCIONES DE RESPUESTA:
    "muéstrame", "cuántos hay por", "reporte de", "gráfico de", "estadísticas" → DEBES llamar
    a la herramienta get_report_data. NUNCA respondas con solo texto cuando se pide un gráfico.
    a. Llama SIEMPRE a get_report_data con el report_type correcto.
-   b. Con los datos recibidos genera el formato [GRAFICO:tipo,Label1:Valor1,Label2:Valor2,...]:
-      - chart_hint=barra → [GRAFICO:barra,Label1:Valor1,Label2:Valor2]
-      - chart_hint=circular → [GRAFICO:circular,Label1:Valor1,Label2:Valor2]
-      - chart_hint=linea → [GRAFICO:linea,Label1:Valor1,Label2:Valor2]
-   c. Después del gráfico, incluye tabla Markdown con los mismos datos.
+   b. Con los datos recibidos genera el formato [GRAFICO:tipo|Título,Label1:Valor1,...]:
+      - chart_hint=barra → [GRAFICO:barra|Título descriptivo,Label1:Valor1,Label2:Valor2]
+      - chart_hint=circular → [GRAFICO:circular|Título descriptivo,Label1:Valor1,Label2:Valor2]
+      - chart_hint=linea → [GRAFICO:linea|Título descriptivo,Label1:Valor1,Label2:Valor2]
+      IMPORTANTE: Siempre incluye el |Título descriptivo basado en los datos mostrados.
+   b2. KPIs Y PERÍODO (recomendado para reportes de ventas/ingresos): puedes enriquecer el título con
+      metadatos usando "::" y pares clave=valor separados por ";". 'periodo' se muestra como subtítulo;
+      los demás se muestran como tarjetas de KPI arriba del gráfico (máx 4). Formato:
+      [GRAFICO:linea|Ventas por Mes::periodo=Feb – Jun 2026;Ventas Totales=8;Ingresos=$1.19M;Ticket Prom.=$148.9K,Feb:1,Mar:2,Abr:4,Jun:1]
+      Para series temporales (ventas/ingresos por mes) usa SIEMPRE chart_hint linea con estos KPIs.
+      Si no tienes valores monetarios, omite esos KPIs (el sistema calcula Total/Promedio/Máximo solo).
+   c. Después del gráfico, incluye tabla Markdown con los mismos datos. Si aplica, agrega una fila final
+      "| Total | ... |" con los totales (se resalta automáticamente).
    d. Ejemplo: si get_report_data devuelve {"data":{"Disponibles":12,"Vendidas":9,"Alquiladas":3},"chart_hint":"circular"}
-      tu respuesta DEBE incluir: [GRAFICO:circular,Disponibles:12,Vendidas:9,Alquiladas:3]
-5. report_types disponibles (get_report_data y generate_excel_report):
+      tu respuesta DEBE incluir: [GRAFICO:circular|Propiedades por Estado,Disponibles:12,Vendidas:9,Alquiladas:3]
+5. report_types disponibles (get_report_data, generate_excel_report y generate_analytics_pdf):
    VENTAS: properties_by_state | properties_by_type | sales_by_month | days_on_market_by_type |
            ranking_advisors | kpi_general | income_by_month | sales_avg_summary
    COMISIONES: commissions_by_advisor | commissions_pending
@@ -871,21 +998,61 @@ INSTRUCCIONES DE RESPUESTA:
    OFERTAS/VISITAS: offers_by_state | visits_by_property | visits_done_summary
    CRM/LEADS: leads_by_temperature | leads_by_source | leads_by_stage | deals_closed_by_month
    OPERACIONES: appraisals_by_state | maintenance_by_state
-   SOCIAL: social_facebook | social_instagram
+   SOCIAL/MARKETING: social_facebook | social_instagram | advisor_fb_posts
+   ANÁLISIS AVANZADO: price_vs_avm | properties_no_visits | conversion_funnel | wp_sync_status | contact_ranking | properties_by_prospects
    Cuando el usuario pida "promedio de ventas" o "análisis de ventas", usa sales_avg_summary.
    Cuando el usuario pida "ranking", usa ranking_advisors.
    Cuando pida "KPIs" o "cómo vamos", usa kpi_general.
-   Cuando pida "pipeline" o "embudo", usa leads_by_stage.
+   Cuando pida "pipeline" o "embudo de conversión", usa conversion_funnel.
    Cuando pida "fuentes" o "captación", usa leads_by_source.
+   Cuando pida "propiedades sobrevaluadas/subvaluadas" o "precio vs mercado", usa price_vs_avm.
+   Cuando pida "sin visitas" o "propiedades paradas", usa properties_no_visits.
+   Cuando pida "propiedad con más prospectos / leads interesados / más cerca de vender", usa el
+   report_type properties_by_prospects (cuenta crm_lead.target_property_id por propiedad). La de MÁS
+   prospectos es la más cercana a vender; la de 0/menos prospectos es la más lejana.
+   Cuando pida "la mejor por precio y calidad", combina: property_score (0-100, mayor=mejor expediente),
+   precio vs avm_estimated_price (precio justo o por debajo = buena oportunidad) y días en mercado
+   (menos días = más demanda). Explica el porqué con esos 3 factores.
+   Cuando pida "WordPress" o "publicaciones web", usa wp_sync_status.
+   Cuando pida "mejores clientes" o "ranking de contactos", usa contact_ranking.
+   Cuando pida "posts de asesores", "Facebook personal", "Instagram personal" o "publicaciones personales", usa advisor_fb_posts.
+   Con advisor_fb_posts genera 3 gráficos: uno de barras por asesor, uno circular por plataforma, uno de barras por propiedad más publicada.
    Cuando pida "mantenimiento", usa maintenance_by_state.
    Cuando pida "tasaciones", usa appraisals_by_state.
-   Cuando pida "Facebook/Instagram", usa social_facebook o social_instagram.
+   PDF DE REPORTE: cuando el usuario pida el reporte EN PDF o quiera descargarlo como PDF →
+   llama a generate_analytics_pdf con el mismo report_type. Devuelve enlace de descarga.
 6. ACCIONES DESTRUCTIVAS (archivar, cancelar, eliminar masivo): ANTES de ejecutar, responde con:
    "CONFIRMACIÓN REQUERIDA: Estás a punto de [acción]. ¿Confirmas? (responde 'sí confirmo')"
    Solo ejecuta cuando el usuario confirme explícitamente.
 7. Si detectas alertas críticas (pagos vencidos, leads sin actividad), menciónalas proactivamente.
 8. Usa save_memory para guardar preferencias o datos importantes del usuario para futuras sesiones.
-9. Para el BRIEFING MATUTINO, combina: resumen ejecutivo + visitas del día + tendencias + alertas críticas."""
+9. Para el BRIEFING MATUTINO, combina: resumen ejecutivo + visitas del día + tendencias + alertas críticas.
+10. PACK DE MARKETING:
+    Cuando el usuario pida campaña/marketing/copies/publicitar/posts → llama a generate_marketing_pack.
+    Una vez que la herramienta devuelva los datos de la propiedad, genera cada canal con EXACTAMENTE este formato:
+    [PACK:instagram]caption + hashtags[/PACK]
+    [PACK:facebook]post largo[/PACK]
+    [PACK:whatsapp]mensaje corto[/PACK]
+    [PACK:email_asunto]asunto[/PACK]
+    [PACK:email_cuerpo]cuerpo del email[/PACK]
+    [PACK:google_ads]Titular\n---\nDescripción[/PACK]
+    [PACK:puntos_clave]• bullet1\n• bullet2...[/PACK]
+    [PACK:slogan]slogan[/PACK]
+    ESTAS ETIQUETAS SON OBLIGATORIAS — el frontend las convierte en tarjetas con botón Copiar.
+    Genera SOLO los canales que el usuario solicita (o todos si no especifica).
+    Siempre pon datos reales: precio, área, habitaciones, ciudad de la propiedad.
+11. PLAN DE CAMPAÑA:
+    Cuando el usuario pida plan de campaña, estrategia de marketing, cómo promocionar,
+    qué falta para publicar, o qué canal usar → llama a plan_marketing_campaign(property_id).
+    Con los datos recibidos genera una respuesta estructurada con:
+    - **Canal principal recomendado** (con razón)
+    - **Buyer persona** (perfil + necesidades clave)
+    - **Presupuesto Facebook Ads sugerido** (mensual)
+    - **Urgencia** (basada en días en mercado)
+    - **Checklist de publicación** (indica el status con texto: OK/FALTA/MEJORAR)
+    - **Keywords SEO** (lista con bullets)
+    - **Calendario de contenidos** (tabla Markdown: Día | Contenido)
+    Usa formato Markdown claro con headers. No uses emojis. Sé específico y accionable."""
 
         query_type = self._classify_query(message)
 
@@ -955,16 +1122,17 @@ INSTRUCCIONES DE RESPUESTA:
                     domain.append(('price', '>=', args['min_price']))
                 if args.get('property_type'):
                     domain.append(('property_type_id.name', 'ilike', args['property_type']))
-                limit = int(args.get('limit', 10))
-                props = env['estate.property'].sudo().search(domain, limit=limit)
+                limit = int(args.get('limit', 50))
+                props = env['estate.property'].sudo().search(domain, limit=limit, order='state asc, price desc')
                 result = [
                     {
-                        'id': p.id, 'ref': p.name, 'titulo': p.title,
+                        'id': p.id, 'ref': p.name, 'titulo': p.title or p.name,
                         'ciudad': p.city, 'precio': p.price,
+                        'precio_fmt': f'${p.price:,.0f}' if p.price else 'Consultar',
                         'estado': p.state, 'area': p.area,
-                        'habitaciones': p.bedrooms, 'tipo': p.property_type_id.name,
+                        'habitaciones': p.bedrooms, 'tipo': p.property_type_id.name if p.property_type_id else '',
                         'dias_mercado': p.days_on_market,
-                        'avm_status': p.avm_status,
+                        'avm_status': getattr(p, 'avm_status', ''),
                     }
                     for p in props
                 ]
@@ -1159,6 +1327,90 @@ INSTRUCCIONES DE RESPUESTA:
                     'activa': prop.active,
                 })
 
+            elif tool_name == 'analyze_property_improvements':
+                # Resolver propiedad por id o nombre/referencia
+                prop = None
+                pid = int(args.get('property_id', 0) or 0)
+                if pid:
+                    prop = env['estate.property'].sudo().browse(pid)
+                    if not prop.exists():
+                        prop = None
+                if not prop and args.get('property_name'):
+                    name = args['property_name']
+                    prop = env['estate.property'].sudo().search(
+                        ['|', ('title', 'ilike', name), ('name', 'ilike', name)], limit=1)
+                if not prop:
+                    return json.dumps({'error': 'Propiedad no encontrada. Indica el nombre o referencia.'})
+
+                recs = []
+                # 1. Precio vs AVM
+                avm = getattr(prop, 'avm_estimated_price', 0) or 0
+                avm_status = getattr(prop, 'avm_status', '') or ''
+                if avm and prop.price:
+                    diff_pct = (prop.price - avm) / avm * 100
+                    if avm_status == 'high' or diff_pct > 8:
+                        recs.append(f'PRECIO: está {diff_pct:+.0f}% sobre el AVM (${avm:,.0f}). '
+                                    f'Considera bajar el precio para acelerar la venta.')
+                    elif avm_status == 'low' or diff_pct < -8:
+                        recs.append(f'PRECIO: está {diff_pct:+.0f}% bajo el AVM (${avm:,.0f}). '
+                                    f'Podría haber margen para subirlo.')
+                    else:
+                        recs.append(f'PRECIO: alineado al AVM (${avm:,.0f}). Bien.')
+                else:
+                    recs.append('AVM: sin calcular. Calcula el AVM para validar el precio.')
+
+                # 2. Días en mercado
+                dom = getattr(prop, 'days_on_market', 0) or 0
+                if dom > 60:
+                    recs.append(f'TIEMPO: lleva {dom} días en el mercado (>60). '
+                                f'Renueva fotos/descripción o ajusta el precio.')
+
+                # 3. Fotos
+                img_count = len(prop.image_ids) + (1 if prop.image_main else 0)
+                if img_count < 5:
+                    recs.append(f'FOTOS: solo {img_count} (mínimo recomendado 5). Sube más imágenes de calidad.')
+
+                # 4. Descripción
+                desc_len = len((prop.description or '').strip())
+                if desc_len < 200:
+                    recs.append('DESCRIPCIÓN: muy corta o vacía. Genera una descripción comercial con IA.')
+
+                # 5. GPS
+                if not (getattr(prop, 'latitude', 0) and getattr(prop, 'longitude', 0)):
+                    recs.append('UBICACIÓN: sin coordenadas GPS. Geocodifica para aparecer en mapas.')
+
+                # 6. Leads interesados (directos + por presupuesto)
+                Lead = env['crm.lead'].sudo()
+                direct = 0
+                budget = 0
+                if 'target_property_id' in Lead._fields:
+                    direct = Lead.search_count([
+                        ('target_property_id', '=', prop.id),
+                        ('type', '=', 'opportunity'), ('active', '=', True)])
+                if 'client_budget' in Lead._fields and prop.price:
+                    budget = Lead.search_count([
+                        ('type', '=', 'opportunity'), ('active', '=', True),
+                        ('target_property_id', '=', False),
+                        ('client_budget', '>=', prop.price * 0.9),
+                        ('client_budget', '<=', prop.price * 1.15)])
+                leads_msg = f'{direct} prospecto(s) directo(s)'
+                if budget:
+                    leads_msg += f' y {budget} con presupuesto compatible'
+                recs.append(f'INTERESADOS: {leads_msg}.')
+
+                return json.dumps({
+                    'propiedad': prop.title or prop.name,
+                    'ref': prop.name,
+                    'precio': prop.price,
+                    'estado': prop.state,
+                    'dias_en_mercado': dom,
+                    'fotos': img_count,
+                    'prospectos_directos': direct,
+                    'prospectos_por_presupuesto': budget,
+                    'recomendaciones': recs,
+                    'instruccion': 'Presenta las recomendaciones de forma clara y priorizada, con un breve resumen y acciones concretas.',
+                }, ensure_ascii=False)
+
             elif tool_name == 'update_property':
                 property_id = int(args.get('property_id', 0))
                 if not property_id:
@@ -1264,12 +1516,22 @@ INSTRUCCIONES DE RESPUESTA:
                 prop = env['estate.property'].sudo().browse(property_id)
                 if not prop.exists():
                     return json.dumps({'error': f'Propiedad {property_id} no encontrada'})
-                # Parse datetime
+                # Parse datetime — acepta varios formatos comunes (con/sin segundos,
+                # con 'T' ISO, o solo fecha → asume 10:00).
                 from datetime import datetime, timedelta
-                try:
-                    start_dt = datetime.strptime(args['start_datetime'], '%Y-%m-%d %H:%M')
-                except Exception:
-                    return json.dumps({'error': 'Formato de fecha inválido. Use YYYY-MM-DD HH:MM'})
+                raw_dt = (args.get('start_datetime') or '').strip().replace('T', ' ')
+                start_dt = None
+                for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d %H', '%Y-%m-%d',
+                            '%d/%m/%Y %H:%M', '%d/%m/%Y'):
+                    try:
+                        start_dt = datetime.strptime(raw_dt, fmt)
+                        if fmt in ('%Y-%m-%d', '%d/%m/%Y'):
+                            start_dt = start_dt.replace(hour=10, minute=0)
+                        break
+                    except ValueError:
+                        continue
+                if not start_dt:
+                    return json.dumps({'error': 'Formato de fecha inválido. Usa por ejemplo "2026-07-15 10:00".'})
                 end_dt = start_dt + timedelta(hours=1)
                 # Find or create partner
                 partner = None
@@ -1284,10 +1546,14 @@ INSTRUCCIONES DE RESPUESTA:
                     'user_id': env.uid,
                 }
                 # Add property if the field exists (estate_calendar module)
-                if 'property_id' in env['calendar.event']._fields:
+                CalFields = env['calendar.event']._fields
+                if 'property_id' in CalFields:
                     event_vals['property_id'] = property_id
                 if partner:
                     event_vals['partner_ids'] = [(4, partner.id)]
+                    # Cliente de la visita (campo del módulo estate_calendar)
+                    if 'client_id' in CalFields:
+                        event_vals['client_id'] = partner.id
                 event = env['calendar.event'].sudo().create(event_vals)
                 # Link to lead if provided
                 if args.get('lead_id'):
@@ -1995,6 +2261,177 @@ INSTRUCCIONES DE RESPUESTA:
                         result['nota_wp'] = 'Después de actualizar la descripción, llama a update_property con state=available para publicar en WP.'
                 return json.dumps(result, ensure_ascii=False)
 
+            # ── PDF DE REPORTE ANALÍTICO ───────────────────────────────────────
+            elif tool_name == 'generate_analytics_pdf':
+                import base64, subprocess, tempfile, os
+                rtype = args.get('report_type', '')
+                title = args.get('title', '') or rtype.replace('_', ' ').title()
+                limit = int(args.get('limit', 30))
+
+                # Reuse get_report_data internally
+                raw = self._execute_tool('get_report_data', {'report_type': rtype, 'limit': limit}, env=env)
+                rdata = json.loads(raw)
+                if 'error' in rdata:
+                    return json.dumps({'error': rdata['error']})
+
+                data_dict = rdata.get('data', {})
+                detalle = rdata.get('detalle', [])
+                report_title = rdata.get('report', title)
+                from datetime import datetime as _dt
+                fecha = _dt.now().strftime('%d/%m/%Y %H:%M')
+
+                # Build HTML rows from detalle (list of dicts) or data_dict
+                rows_html = ''
+                if detalle:
+                    headers = list(detalle[0].keys())
+                    thead = ''.join(f'<th>{h.replace("_"," ").title()}</th>' for h in headers)
+                    rows_html = f'<thead><tr>{thead}</tr></thead><tbody>'
+                    for row in detalle:
+                        cells = ''.join(f'<td>{str(row.get(h,"") or "")}</td>' for h in headers)
+                        rows_html += f'<tr>{cells}</tr>'
+                    rows_html += '</tbody>'
+                elif data_dict:
+                    rows_html = '<thead><tr><th>Categoría</th><th>Valor</th></tr></thead><tbody>'
+                    for k, v in data_dict.items():
+                        rows_html += f'<tr><td>{k}</td><td>{v}</td></tr>'
+                    rows_html += '</tbody>'
+
+                html = f"""<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>{report_title}</title>
+<style>
+  body{{font-family:Arial,sans-serif;padding:32px;color:#222;font-size:12px}}
+  h1{{color:#004274;font-size:18px;margin-bottom:4px}}
+  .meta{{color:#888;font-size:10px;margin-bottom:20px}}
+  table{{width:100%;border-collapse:collapse;margin-top:12px}}
+  th{{background:#004274;color:white;padding:8px 10px;text-align:left;font-size:11px}}
+  td{{padding:7px 10px;border-bottom:1px solid #e8ecf0;font-size:11px}}
+  tr:nth-child(even){{background:#f5f7fa}}
+  .footer{{margin-top:24px;font-size:9px;color:#aaa;border-top:1px solid #eee;padding-top:10px}}
+</style></head><body>
+<h1>{report_title}</h1>
+<div class="meta">Generado: {fecha} — Sistema Inmobiliario InmoBot</div>
+<table>{rows_html}</table>
+<div class="footer">Reporte generado automáticamente por el Agente IA — InmoBot</div>
+</body></html>"""
+
+                try:
+                    with tempfile.NamedTemporaryFile(suffix='.html', delete=False, mode='w', encoding='utf-8') as fh:
+                        fh.write(html)
+                        html_path = fh.name
+                    pdf_path = html_path.replace('.html', '.pdf')
+                    subprocess.run(
+                        ['wkhtmltopdf', '--quiet', '--page-size', 'A4',
+                         '--margin-top', '15mm', '--margin-bottom', '15mm',
+                         '--margin-left', '15mm', '--margin-right', '15mm',
+                         html_path, pdf_path],
+                        check=True, timeout=30
+                    )
+                    with open(pdf_path, 'rb') as pf:
+                        pdf_bytes = pf.read()
+                    os.unlink(html_path)
+                    os.unlink(pdf_path)
+
+                    attachment = env['ir.attachment'].sudo().create({
+                        'name': f'{rtype}_{fecha[:10].replace("/","-")}.pdf',
+                        'datas': base64.b64encode(pdf_bytes).decode(),
+                        'res_model': 'estate.property',
+                        'res_id': 0,
+                        'mimetype': 'application/pdf',
+                    })
+                    url = f'/web/content/{attachment.id}?download=true'
+                    filas = len(detalle) or len(data_dict)
+                    return json.dumps({
+                        'success': True, 'url': url,
+                        'mensaje': f'PDF "{report_title}" generado con {filas} registros → [**Descargar PDF aquí**]({url})',
+                    })
+                except subprocess.TimeoutExpired:
+                    return json.dumps({'error': 'Tiempo de generación agotado. Intenta con menos filas.'})
+                except Exception as e:
+                    return json.dumps({'error': f'Error generando PDF: {str(e)}'})
+
+            # ── PACK DE MARKETING ──────────────────────────────────────────────
+            elif tool_name == 'generate_marketing_pack':
+                prop = env['estate.property'].sudo().browse(int(args.get('property_id', 0)))
+                if not prop.exists():
+                    return json.dumps({'error': f"Propiedad {args.get('property_id')} no encontrada"})
+
+                style = args.get('style', 'emocional')
+                channels = args.get('channels') or [
+                    'instagram', 'facebook', 'whatsapp',
+                    'email_asunto', 'email_cuerpo',
+                    'google_ads', 'puntos_clave', 'slogan',
+                ]
+
+                img_count = len(prop.image_ids) if hasattr(prop, 'image_ids') and prop.image_ids else 0
+                visit_count = 0
+                if 'property_id' in env['calendar.event']._fields:
+                    visit_count = env['calendar.event'].sudo().search_count([('property_id', '=', prop.id)])
+
+                avm_price = getattr(prop, 'avm_estimated_price', 0) or 0
+                avm_status = getattr(prop, 'avm_status', '') or ''
+                avm_note = f"Valor de mercado estimado: ${avm_price:,.0f} ({avm_status})" if avm_price else ''
+
+                tags = []
+                if hasattr(prop, 'tag_ids'):
+                    tags = [t.name for t in prop.tag_ids]
+
+                prop_info = {
+                    'id': prop.id,
+                    'ref': prop.name,
+                    'titulo': prop.title or '',
+                    'tipo': prop.property_type_id.name if prop.property_type_id else '',
+                    'ciudad': prop.city or '',
+                    'calle': prop.street or '',
+                    'precio': prop.price,
+                    'precio_fmt': f"${prop.price:,.0f}",
+                    'area': prop.area,
+                    'habitaciones': prop.bedrooms,
+                    'banos': prop.bathrooms,
+                    'parking': getattr(prop, 'parking_spaces', 0) or 0,
+                    'piso': getattr(prop, 'floor', 0) or 0,
+                    'anio_construccion': getattr(prop, 'year_built', 0) or 0,
+                    'tipo_operacion': 'en venta' if prop.offer_type == 'sale' else 'en arriendo',
+                    'descripcion_actual': (prop.description or '')[:800],
+                    'avm_info': avm_note,
+                    'imagenes_disponibles': img_count,
+                    'visitas_realizadas': visit_count,
+                    'asesor': prop.user_id.name if prop.user_id else '',
+                    'asesor_extra_prompt': getattr(prop, 'ai_extra_prompt', '') or '',
+                    'tags': tags,
+                }
+
+                style_map = {
+                    'emocional': 'emotivo y aspiracional, con storytelling que conecta emocionalmente con familias y parejas, usa emojis moderados y lenguaje cercano',
+                    'formal': 'profesional y técnico, enfocado en datos concretos de inversión, ROI y plusvalía, sin emojis, para inversores y empresas',
+                    'directo': 'conciso y directo, bullet points claros, CTA fuerte, genera urgencia con frases como "disponibilidad limitada", usa emojis de checkmark',
+                    'lujoso': 'premium y exclusivo, lenguaje sofisticado, destaca exclusividad y estilo de vida, para compradores de alto poder adquisitivo',
+                }
+                style_desc = style_map.get(style, style_map['emocional'])
+                channels_str = ', '.join(channels)
+
+                return json.dumps({
+                    'success': True,
+                    'property': prop_info,
+                    'estilo': style_desc,
+                    'canales': channels,
+                    'instruccion': (
+                        f'Con los datos de la propiedad, genera el pack de marketing estilo: "{style_desc}". '
+                        f'Canales requeridos: {channels_str}. '
+                        'USA EXACTAMENTE ESTE FORMATO para cada canal (las etiquetas son obligatorias): '
+                        '[PACK:instagram]caption emocionante con emojis + 25 hashtags relevantes[/PACK] '
+                        '[PACK:facebook]post narrativo completo con emojis y CTA al final[/PACK] '
+                        '[PACK:whatsapp]mensaje corto y directo, máx 3 párrafos, incluye precio y datos clave[/PACK] '
+                        '[PACK:email_asunto]Asunto del email, máx 60 caracteres, sin emojis[/PACK] '
+                        '[PACK:email_cuerpo]Cuerpo del email completo, formal, con saludo y firma[/PACK] '
+                        '[PACK:google_ads]Titular (≤30 chars)\n---\nDescripción (≤90 chars)[/PACK] '
+                        '[PACK:puntos_clave]• 6 bullets con los atributos más vendibles de la propiedad[/PACK] '
+                        '[PACK:slogan]Una frase memorable de máx 10 palabras[/PACK] '
+                        'IMPORTANTE: Incluye datos reales (precio, área, habitaciones, ciudad). '
+                        'Si hay prompt extra del asesor, incorpóralo naturalmente en todos los copies.'
+                    ),
+                    'save_description': args.get('save_description', False),
+                }, ensure_ascii=False)
+
             # ── B5: Memoria ────────────────────────────────────────────────────
             elif tool_name == 'save_memory':
                 if 'estate.ai.memory' not in env:
@@ -2263,6 +2700,147 @@ INSTRUCCIONES DE RESPUESTA:
                     'link': pdf_url,
                 }, ensure_ascii=False)
 
+            # ── PLAN DE CAMPAÑA DE MARKETING ──────────────────────────────────
+            elif tool_name == 'plan_marketing_campaign':
+                property_id = int(args.get('property_id', 0))
+                prop = env['estate.property'].sudo().browse(property_id)
+                if not prop.exists():
+                    return json.dumps({'error': f'Propiedad {property_id} no encontrada'})
+
+                # Conteo de imágenes adjuntas
+                img_count = env['ir.attachment'].sudo().search_count([
+                    ('res_model', '=', 'estate.property'),
+                    ('res_id', '=', property_id),
+                    ('mimetype', 'like', 'image%'),
+                ])
+
+                price = prop.price or 0
+                is_rent = prop.offer_type == 'rent'
+                beds = prop.bedrooms or 0
+                prop_type = prop.property_type_id.name if prop.property_type_id else 'propiedad'
+                city = prop.city or 'Ecuador'
+
+                # Canal principal recomendado
+                if price >= 200000:
+                    primary_channel = 'Instagram'
+                    channel_reason = 'Propiedades premium → audiencia visual de alto poder adquisitivo'
+                elif is_rent:
+                    primary_channel = 'Facebook Marketplace + WhatsApp'
+                    channel_reason = 'Arrendamientos → búsqueda local activa e inmediata'
+                elif price >= 80000:
+                    primary_channel = 'Facebook + WhatsApp'
+                    channel_reason = 'Rango medio → alcance masivo local con conversión directa'
+                else:
+                    primary_channel = 'WhatsApp Broadcast + Facebook'
+                    channel_reason = 'Precio accesible → difusión directa y rápida'
+
+                # Buyer persona
+                if is_rent:
+                    if beds <= 1:
+                        persona = 'Profesional joven 25-35 años, soltero/pareja, trabaja en zona urbana'
+                        persona_needs = 'Ubicación, transporte, servicios cercanos, precio'
+                    else:
+                        persona = 'Familia joven 28-42 años, 1-2 hijos, busca estabilidad'
+                        persona_needs = 'Seguridad del sector, colegios cercanos, espacio'
+                else:
+                    if price < 80000:
+                        persona = 'Primer comprador 25-38 años con acceso a crédito bancario'
+                        persona_needs = 'Precio justo, facilidades de pago, plusvalía futura'
+                    elif price < 200000:
+                        persona = 'Familia establecida 35-52 años, mejora de residencia o segunda vivienda'
+                        persona_needs = 'Calidad de construcción, sector, acabados, funcionalidad'
+                    else:
+                        persona = 'Inversionista o ejecutivo 40-58 años, compra al contado o crédito propio'
+                        persona_needs = 'ROI, exclusividad, ubicación premium, acabados de lujo'
+
+                # Presupuesto Facebook Ads mensual sugerido
+                if price > 0:
+                    fb_budget = max(50, min(600, round(price * 0.002 / 30) * 30))
+                else:
+                    fb_budget = 80
+
+                # Urgencia según días en mercado
+                dom = prop.days_on_market or 0
+                if dom > 60:
+                    urgency = f'ALTA — {dom} días sin vender. Considera reducir precio o intensificar campaña urgente.'
+                elif dom > 30:
+                    urgency = f'MEDIA — {dom} días en el mercado. Momento clave para reforzar la difusión.'
+                else:
+                    urgency = f'NORMAL — propiedad reciente ({dom} días). Establece presencia desde el inicio.'
+
+                # Checklist de publicación
+                checklist = []
+                if img_count == 0:
+                    checklist.append({'item': 'Fotos de la propiedad', 'status': 'FALTA', 'priority': 'crítico'})
+                elif img_count < 5:
+                    checklist.append({'item': f'Más fotos ({img_count} de mínimo 5 recomendadas)', 'status': 'MEJORAR', 'priority': 'alto'})
+                else:
+                    checklist.append({'item': f'Fotos ({img_count} disponibles)', 'status': 'OK', 'priority': 'ok'})
+
+                desc_len = len(prop.description or '')
+                if desc_len < 50:
+                    checklist.append({'item': 'Descripción detallada de la propiedad', 'status': 'FALTA', 'priority': 'crítico'})
+                elif desc_len < 200:
+                    checklist.append({'item': 'Ampliar descripción (muy corta)', 'status': 'MEJORAR', 'priority': 'alto'})
+                else:
+                    checklist.append({'item': 'Descripción completa', 'status': 'OK', 'priority': 'ok'})
+
+                wp_published = getattr(prop, 'wp_published', False)
+                if not wp_published:
+                    checklist.append({'item': 'Publicar en sitio web WordPress', 'status': 'PENDIENTE', 'priority': 'alto'})
+                else:
+                    checklist.append({'item': 'Publicado en WordPress', 'status': 'OK', 'priority': 'ok'})
+
+                avm_status = getattr(prop, 'avm_status', '') or ''
+                if avm_status in ('', 'pending'):
+                    checklist.append({'item': 'Calcular valoración AVM (comparar precio vs mercado)', 'status': 'PENDIENTE', 'priority': 'medio'})
+                else:
+                    checklist.append({'item': f'Valoración AVM calculada ({avm_status})', 'status': 'OK', 'priority': 'ok'})
+
+                lat = getattr(prop, 'latitude', None)
+                lng = getattr(prop, 'longitude', None)
+                if not (lat and lng):
+                    checklist.append({'item': 'Registrar coordenadas GPS (mejora visibilidad en mapas)', 'status': 'PENDIENTE', 'priority': 'medio'})
+                else:
+                    checklist.append({'item': 'Coordenadas GPS registradas', 'status': 'OK', 'priority': 'ok'})
+
+                # SEO keywords
+                action_word = 'arriendo' if is_rent else 'venta'
+                seo_keywords = [
+                    f"{prop_type} en {action_word} {city}",
+                    f"{prop_type} {beds} dormitorios {city}" if beds else f"{prop_type} {city}",
+                    f"inmueble en {action_word} {city} Ecuador",
+                    f"alquilar {prop_type} {city}" if is_rent else f"comprar {prop_type} {city}",
+                    f"{prop_type} económico {city}" if price < 100000 else f"{prop_type} {city} precio",
+                ]
+
+                # Calendario de contenidos
+                calendar = [
+                    {'day': 'Lunes', 'content': 'Foto exterior + datos clave en Instagram y Facebook'},
+                    {'day': 'Miércoles', 'content': 'Tour de interiores en Stories + destaca una característica única'},
+                    {'day': 'Viernes', 'content': 'WhatsApp broadcast a lista de interesados activos'},
+                    {'day': 'Sábado', 'content': 'Reel/video corto (mayor alcance orgánico en fin de semana)'},
+                ]
+
+                return json.dumps({
+                    'property_name': prop.title or prop.name or f'Propiedad #{property_id}',
+                    'property_ref': prop.name or '',
+                    'property_type': prop_type,
+                    'price_fmt': f'${price:,.0f}',
+                    'offer_type': 'Arriendo' if is_rent else 'Venta',
+                    'city': city,
+                    'primary_channel': primary_channel,
+                    'channel_reason': channel_reason,
+                    'buyer_persona': persona,
+                    'persona_needs': persona_needs,
+                    'fb_ads_budget_monthly': fb_budget,
+                    'urgency': urgency,
+                    'checklist': checklist,
+                    'seo_keywords': seo_keywords,
+                    'content_calendar': calendar,
+                    'img_count': img_count,
+                }, ensure_ascii=False)
+
             # ── HERRAMIENTA UNIVERSAL: SQL de solo lectura ──────────────────
             elif tool_name == 'query_database':
                 sql = (args.get('sql') or '').strip()
@@ -2294,6 +2872,89 @@ INSTRUCCIONES DE RESPUESTA:
                     }, ensure_ascii=False, default=str)
                 except Exception as sql_err:
                     return json.dumps({'error': f'Error SQL: {str(sql_err)}'})
+
+            # ── INFORME EJECUTIVO COMPLETO ─────────────────────────────────────
+            elif tool_name == 'generate_executive_report':
+                from datetime import date, timedelta
+                today = date.today()
+                month = int(args.get('month', 0) or today.month)
+                year = int(args.get('year', 0) or today.year)
+                month_start = date(year, month, 1)
+                month_end = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+
+                props = env['estate.property'].sudo().search([])
+                available = props.filtered(lambda p: p.state == 'available')
+                sold_all = props.filtered(lambda p: p.state == 'sold')
+                rented_all = props.filtered(lambda p: p.state == 'rented')
+
+                closed_month = env['estate.property'].sudo().search([
+                    ('state', 'in', ['sold', 'rented']),
+                    ('date_sold', '>=', str(month_start)),
+                    ('date_sold', '<', str(month_end)),
+                ])
+                month_revenue = sum(p.price for p in closed_month if p.price)
+                month_commission = sum(p.commission_amount for p in closed_month if p.commission_amount)
+
+                leads = env['crm.lead'].sudo().search([('active', '=', True)])
+                temp_count = {}
+                for l in leads:
+                    t = getattr(l, 'lead_temperature', 'cold') or 'cold'
+                    temp_count[t] = temp_count.get(t, 0) + 1
+
+                stale_threshold = today - timedelta(days=60)
+                stale = [p for p in available if p.date_listed and p.date_listed <= stale_threshold]
+
+                advisor_sales = {}
+                for p in closed_month:
+                    name = (p.user_id.name if p.user_id else None) or 'Sin asesor'
+                    if name not in advisor_sales:
+                        advisor_sales[name] = {'count': 0, 'revenue': 0}
+                    advisor_sales[name]['count'] += 1
+                    advisor_sales[name]['revenue'] += p.price or 0
+                top_advisors = sorted(advisor_sales.items(), key=lambda x: x[1]['count'], reverse=True)[:5]
+
+                try:
+                    overdue_payments = env['estate.payment'].sudo().search_count([
+                        ('state', '=', 'pending'), ('date', '<', today)])
+                except Exception:
+                    overdue_payments = 0
+
+                return json.dumps({
+                    'periodo': f"{month:02d}/{year}",
+                    'inventario': {
+                        'total': len(props),
+                        'disponibles': len(available),
+                        'vendidas_total': len(sold_all),
+                        'arrendadas_total': len(rented_all),
+                    },
+                    'mes': {
+                        'operaciones_cerradas': len(closed_month),
+                        'ingresos': round(month_revenue, 2),
+                        'comisiones': round(month_commission, 2),
+                        'detalle': [
+                            {'nombre': p.name, 'precio': p.price, 'tipo': 'Venta' if p.state == 'sold' else 'Arriendo',
+                             'asesor': p.user_id.name if p.user_id else 'N/A'}
+                            for p in closed_month
+                        ],
+                    },
+                    'leads': {
+                        'total_activos': len(leads),
+                        'por_temperatura': temp_count,
+                    },
+                    'alertas': {
+                        'propiedades_sin_movimiento_60d': len(stale),
+                        'top_5_mas_tiempo': [
+                            {'ref': p.name, 'dias': p.days_on_market or 0, 'precio': p.price, 'ciudad': p.city or ''}
+                            for p in sorted(stale, key=lambda x: x.days_on_market or 0, reverse=True)[:5]
+                        ],
+                        'pagos_vencidos': overdue_payments,
+                    },
+                    'ranking_asesores': [
+                        {'asesor': k, 'operaciones': v['count'], 'ingresos': round(v['revenue'], 2)}
+                        for k, v in top_advisors
+                    ],
+                    'nota': f"Datos al {today.strftime('%d/%m/%Y')}",
+                }, ensure_ascii=False)
 
             return json.dumps({'error': f'Herramienta desconocida: {tool_name}'})
 
@@ -2330,6 +2991,25 @@ INSTRUCCIONES DE RESPUESTA:
                     if cnt:
                         data[t.name] = cnt
                 return json.dumps({'report': 'Propiedades por Tipo', 'data': data,
+                                   'chart_hint': 'barra'}, ensure_ascii=False)
+
+            elif report_type == 'properties_by_prospects':
+                # Propiedades ordenadas por nº de prospectos (leads que la tienen
+                # como target_property_id). Más prospectos = más cerca de vender.
+                env.cr.execute("""
+                    SELECT ep.title AS propiedad, COUNT(cl.id) AS prospectos
+                    FROM estate_property ep
+                    LEFT JOIN crm_lead cl
+                        ON cl.target_property_id = ep.id
+                        AND cl.type = 'opportunity' AND cl.active = TRUE
+                    WHERE ep.state IN ('available', 'reserved')
+                    GROUP BY ep.id, ep.title
+                    ORDER BY prospectos DESC, ep.title
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                data = {r['propiedad'][:28]: int(r['prospectos']) for r in rows}
+                return json.dumps({'report': 'Propiedades por Prospectos', 'data': data,
                                    'chart_hint': 'barra'}, ensure_ascii=False)
 
             elif report_type == 'sales_by_month':
@@ -2731,6 +3411,220 @@ INSTRUCCIONES DE RESPUESTA:
                 except Exception:
                     return json.dumps({'error': 'Módulo de Instagram no disponible o sin datos.'})
 
+            # ── POSTS PERSONALES FB DE ASESORES ───────────────────────────────
+            elif report_type == 'advisor_fb_posts':
+                try:
+                    # Publicaciones por asesor (total FB + IG)
+                    env.cr.execute("""
+                        SELECT rp.name as asesor,
+                               COUNT(fp.id) as total,
+                               SUM(CASE WHEN fp.platform = 'facebook' THEN 1 ELSE 0 END) as facebook,
+                               SUM(CASE WHEN fp.platform = 'instagram' THEN 1 ELSE 0 END) as instagram,
+                               MAX(fp.published_date) as ultima
+                        FROM estate_advisor_fb_post fp
+                        JOIN res_users ru ON fp.user_id = ru.id
+                        JOIN res_partner rp ON ru.partner_id = rp.id
+                        GROUP BY rp.name
+                        ORDER BY total DESC
+                        LIMIT %s
+                    """, (limit,))
+                    rows_asesor = env.cr.dictfetchall()
+
+                    # Propiedades más publicadas
+                    env.cr.execute("""
+                        SELECT COALESCE(ep.title, ep.name) as propiedad,
+                               COUNT(fp.id) as total,
+                               SUM(CASE WHEN fp.platform = 'facebook' THEN 1 ELSE 0 END) as facebook,
+                               SUM(CASE WHEN fp.platform = 'instagram' THEN 1 ELSE 0 END) as instagram
+                        FROM estate_advisor_fb_post fp
+                        JOIN estate_property ep ON fp.property_id = ep.id
+                        GROUP BY ep.id, ep.title, ep.name
+                        ORDER BY total DESC
+                        LIMIT 10
+                    """)
+                    rows_prop = env.cr.dictfetchall()
+
+                    # Totales por plataforma
+                    env.cr.execute("""
+                        SELECT platform,
+                               COUNT(*) as total
+                        FROM estate_advisor_fb_post
+                        GROUP BY platform
+                    """)
+                    rows_platform = env.cr.dictfetchall()
+
+                    if not rows_asesor:
+                        return json.dumps({'report': 'Posts FB/IG de Asesores', 'data': {},
+                                           'mensaje': 'Aún no hay publicaciones personales registradas.'})
+
+                    data_asesores = {r['asesor']: int(r['total']) for r in rows_asesor}
+                    data_propiedades = {r['propiedad']: int(r['total']) for r in rows_prop}
+                    data_plataforma = {r['platform'].capitalize(): int(r['total']) for r in rows_platform}
+
+                    return json.dumps({
+                        'report': 'Publicaciones Personales FB/Instagram por Asesor',
+                        'data': data_asesores,
+                        'chart_hint': 'barra',
+                        'detalle_asesores': rows_asesor,
+                        'detalle_propiedades': rows_prop,
+                        'detalle_plataforma': data_plataforma,
+                        'extra_charts': [
+                            {'titulo': 'Por Plataforma', 'data': data_plataforma, 'tipo': 'circular'},
+                            {'titulo': 'Propiedades más publicadas', 'data': data_propiedades, 'tipo': 'barra'},
+                        ],
+                    }, ensure_ascii=False, default=str)
+                except Exception as e:
+                    return json.dumps({'error': f'Error obteniendo datos: {str(e)}'})
+
+            # ── PRECIO VS AVM (SOBRE/SUBVALORADAS) ────────────────────────────
+            elif report_type == 'price_vs_avm':
+                try:
+                    env.cr.execute("""
+                        SELECT ep.title,
+                               ep.price,
+                               ep.avm_estimated_price,
+                               ep.avm_status,
+                               ROUND(((ep.price - ep.avm_estimated_price) / NULLIF(ep.avm_estimated_price,0)) * 100, 1) as diferencia_pct,
+                               ep.city,
+                               ep.state,
+                               ep.id
+                        FROM estate_property ep
+                        WHERE ep.active = TRUE
+                          AND ep.avm_estimated_price > 0
+                          AND ep.state IN ('available','reserved')
+                        ORDER BY ABS(ep.price - ep.avm_estimated_price) DESC
+                        LIMIT %s
+                    """, (limit,))
+                    rows = env.cr.dictfetchall()
+                    if not rows:
+                        return json.dumps({'report': 'Precio vs AVM', 'data': {},
+                                           'mensaje': 'No hay propiedades con AVM calculado.'})
+                    overvalued = sum(1 for r in rows if float(r.get('diferencia_pct') or 0) > 5)
+                    undervalued = sum(1 for r in rows if float(r.get('diferencia_pct') or 0) < -5)
+                    fair = len(rows) - overvalued - undervalued
+                    data = {'Sobrevaluadas (>5% sobre AVM)': overvalued,
+                            'Precio justo (±5% del AVM)': fair,
+                            'Subvaluadas (>5% bajo AVM)': undervalued}
+                    return json.dumps({'report': 'Precio vs Valor de Mercado (AVM)',
+                                       'data': data, 'chart_hint': 'circular', 'detalle': rows},
+                                      ensure_ascii=False, default=str)
+                except Exception as e:
+                    return json.dumps({'error': f'Error al calcular precio vs AVM: {str(e)}'})
+
+            # ── PROPIEDADES SIN VISITAS ────────────────────────────────────────
+            elif report_type == 'properties_no_visits':
+                try:
+                    from datetime import date as _date, timedelta as _td
+                    cutoff = _date.today() - _td(days=30)
+                    env.cr.execute("""
+                        SELECT ep.id, ep.title, ep.city, ep.price, ep.days_on_market,
+                               ep.state, ept.name as tipo,
+                               rp.name as asesor
+                        FROM estate_property ep
+                        LEFT JOIN estate_property_type ept ON ep.property_type_id = ept.id
+                        LEFT JOIN res_users ru ON ep.user_id = ru.id
+                        LEFT JOIN res_partner rp ON ru.partner_id = rp.id
+                        WHERE ep.active = TRUE
+                          AND ep.state = 'available'
+                          AND ep.id NOT IN (
+                              SELECT DISTINCT property_id FROM calendar_event
+                              WHERE property_id IS NOT NULL
+                                AND start >= %s
+                          )
+                        ORDER BY ep.days_on_market DESC
+                        LIMIT %s
+                    """, (cutoff, limit))
+                    rows = env.cr.dictfetchall()
+                    if not rows:
+                        return json.dumps({'report': 'Propiedades sin visitas', 'data': {},
+                                           'mensaje': 'Todas las propiedades disponibles tienen visitas recientes.'})
+                    data = {r['title'] or f"Prop #{r['id']}": int(r.get('days_on_market') or 0)
+                            for r in rows[:8]}
+                    return json.dumps({'report': 'Propiedades disponibles sin visitas (últimos 30 días)',
+                                       'data': data, 'chart_hint': 'barra', 'detalle': rows,
+                                       'total': len(rows)},
+                                      ensure_ascii=False, default=str)
+                except Exception as e:
+                    return json.dumps({'error': f'Error: {str(e)}'})
+
+            # ── EMBUDO DE CONVERSIÓN ───────────────────────────────────────────
+            elif report_type == 'conversion_funnel':
+                try:
+                    total_leads = env['crm.lead'].sudo().search_count([('type', '=', 'opportunity')])
+                    total_visits = 0
+                    if 'property_id' in env['calendar.event']._fields:
+                        total_visits = env['calendar.event'].sudo().search_count(
+                            [('property_id', '!=', False)])
+                    total_offers = env['estate.property.offer'].sudo().search_count([])
+                    total_contracts = env['estate.contract'].sudo().search_count(
+                        [('state', 'in', ('active', 'expired'))])
+                    total_closed = env['estate.property'].sudo().search_count(
+                        [('state', 'in', ('sold', 'rented'))])
+
+                    data = {
+                        'Leads/Oportunidades': total_leads,
+                        'Visitas realizadas': total_visits,
+                        'Ofertas presentadas': total_offers,
+                        'Contratos firmados': total_contracts,
+                        'Propiedades cerradas': total_closed,
+                    }
+                    conv_rate = round((total_closed / total_leads * 100), 1) if total_leads > 0 else 0
+                    return json.dumps({'report': 'Embudo de Conversión',
+                                       'data': data, 'chart_hint': 'barra',
+                                       'tasa_conversion': conv_rate,
+                                       'mensaje': f'Tasa de conversión global: {conv_rate}%'},
+                                      ensure_ascii=False)
+                except Exception as e:
+                    return json.dumps({'error': f'Error al calcular embudo: {str(e)}'})
+
+            # ── ESTADO SINCRONIZACIÓN WORDPRESS ───────────────────────────────
+            elif report_type == 'wp_sync_status':
+                try:
+                    has_wp = 'wp_published' in env['estate.property']._fields
+                    if not has_wp:
+                        return json.dumps({'error': 'Módulo WordPress no instalado.'})
+                    total = env['estate.property'].sudo().search_count([('active', '=', True), ('state', '=', 'available')])
+                    published = env['estate.property'].sudo().search_count([('active', '=', True), ('wp_published', '=', True)])
+                    unlinked = env['estate.property'].sudo().search_count([('active', '=', True), ('wp_published', '=', False), ('state', '=', 'available')])
+                    data = {
+                        'Publicadas en WordPress': published,
+                        'Sin publicar (disponibles)': unlinked,
+                    }
+                    return json.dumps({'report': 'Estado de Publicación en WordPress',
+                                       'data': data, 'chart_hint': 'circular',
+                                       'total_activas': total},
+                                      ensure_ascii=False)
+                except Exception as e:
+                    return json.dumps({'error': f'Error: {str(e)}'})
+
+            # ── RANKING DE CONTACTOS / CLIENTES ───────────────────────────────
+            elif report_type == 'contact_ranking':
+                try:
+                    env.cr.execute("""
+                        SELECT rp.name as cliente,
+                               COUNT(DISTINCT cl.id) as leads_activos,
+                               MAX(cl.client_budget) as presupuesto_max,
+                               COUNT(DISTINCT ec.id) as contratos
+                        FROM res_partner rp
+                        LEFT JOIN crm_lead cl ON cl.partner_id = rp.id AND cl.active = TRUE
+                        LEFT JOIN estate_contract ec ON ec.partner_id = rp.id AND ec.state = 'active'
+                        WHERE rp.is_company = FALSE
+                          AND (cl.id IS NOT NULL OR ec.id IS NOT NULL)
+                        GROUP BY rp.name
+                        ORDER BY leads_activos DESC, presupuesto_max DESC NULLS LAST
+                        LIMIT %s
+                    """, (limit,))
+                    rows = env.cr.dictfetchall()
+                    if not rows:
+                        return json.dumps({'report': 'Ranking de Clientes', 'data': {},
+                                           'mensaje': 'No hay clientes con leads o contratos activos.'})
+                    data = {r['cliente']: int(r['leads_activos'] or 0) for r in rows[:8]}
+                    return json.dumps({'report': 'Clientes más Activos (por leads)',
+                                       'data': data, 'chart_hint': 'barra', 'detalle': rows},
+                                      ensure_ascii=False, default=str)
+                except Exception as e:
+                    return json.dumps({'error': f'Error: {str(e)}'})
+
             return json.dumps({'error': f'report_type desconocido: {report_type}'})
 
         except Exception as e:
@@ -2992,11 +3886,13 @@ TOP 10 DISPONIBLES:
     # -----------------------------------------------------------------------
     _TOOLS_BY_CATEGORY = {
         'property': [
-            'search_properties', 'get_property_detail', 'create_property', 'update_property',
+            'search_properties', 'get_property_detail', 'analyze_property_improvements',
+            'create_property', 'update_property',
             'archive_property', 'delete_property', 'duplicate_property', 'reserve_property',
             'sell_property', 'schedule_visit', 'get_market_stats', 'batch_update_properties',
             'recalculate_avm_ai', 'generate_and_apply_description', 'compare_properties',
-            'get_trend_analysis', 'get_report_data', 'query_database',
+            'get_trend_analysis', 'get_report_data', 'generate_analytics_pdf',
+            'generate_marketing_pack', 'plan_marketing_campaign', 'query_database',
         ],
         'client': [
             'get_leads', 'create_lead', 'update_lead', 'archive_lead', 'batch_archive_leads',
@@ -3012,17 +3908,24 @@ TOP 10 DISPONIBLES:
         'report': [
             'get_report_data', 'get_dashboard_summary', 'get_market_stats', 'get_payments_contracts',
             'get_leads', 'search_properties', 'generate_pdf_report', 'get_trend_analysis',
-            'get_upcoming_visits', 'query_database',
+            'get_upcoming_visits', 'generate_executive_report', 'generate_analytics_pdf',
+            'generate_excel_report', 'query_database',
         ],
         'memory': [
             'save_memory', 'recall_memory', 'get_leads', 'search_properties', 'query_database',
         ],
         'general': [
-            'search_properties', 'get_property_detail', 'get_leads', 'get_market_stats',
-            'get_dashboard_summary', 'create_lead', 'create_property', 'update_property',
-            'update_lead', 'schedule_visit', 'get_payments_contracts', 'save_memory', 'recall_memory',
-            'search_contacts', 'get_client_summary', 'compare_properties', 'get_trend_analysis',
-            'get_upcoming_visits', 'get_report_data', 'query_database',
+            'search_properties', 'get_property_detail', 'analyze_property_improvements',
+            'create_property', 'update_property',
+            'archive_property', 'reserve_property', 'sell_property',
+            'get_leads', 'create_lead', 'update_lead',
+            'get_market_stats', 'get_dashboard_summary', 'get_trend_analysis',
+            'schedule_visit', 'get_upcoming_visits',
+            'get_payments_contracts', 'save_memory', 'recall_memory',
+            'search_contacts', 'get_client_summary', 'compare_properties',
+            'get_report_data', 'generate_analytics_pdf', 'generate_excel_report',
+            'generate_and_apply_description', 'generate_marketing_pack', 'plan_marketing_campaign',
+            'recalculate_avm_ai', 'generate_executive_report', 'query_database',
         ],
     }
 
@@ -3073,6 +3976,39 @@ TOP 10 DISPONIBLES:
         system_extra = ICP.get_param('estate_ai.system_prompt', '')
 
         context = self._get_system_context()
+
+        # Si el frontend manda property_id, enriquecer el contexto con datos de esa propiedad
+        page_property_id = int(data.get('property_id') or 0)
+        current_model = data.get('current_model') or ''
+        if page_property_id and current_model == 'estate.property':
+            try:
+                p = request.env['estate.property'].sudo().browse(page_property_id)
+                if p.exists():
+                    visits = request.env['calendar.event'].sudo().search_count(
+                        [('property_id', '=', p.id)]) if 'property_id' in request.env['calendar.event']._fields else 0
+                    matching_leads = request.env['crm.lead'].sudo().search_count(
+                        [('target_property_id', '=', p.id)]) if 'target_property_id' in request.env['crm.lead']._fields else 0
+                    avm_info = ''
+                    if getattr(p, 'avm_estimated_price', 0):
+                        avm_info = f" | AVM: ${p.avm_estimated_price:,.0f} ({getattr(p, 'avm_status', '')})"
+                    context += f"""
+== PROPIEDAD ACTIVA EN PANTALLA ==
+ID: {p.id} | Ref: {p.name} | Título: {p.title or ''}
+Tipo: {p.property_type_id.name if p.property_type_id else ''} | Operación: {'Venta' if p.offer_type == 'sale' else 'Arriendo'}
+Estado: {dict(p._fields['state'].selection).get(p.state, p.state)} | Ciudad: {p.city or ''} | Sector: {p.street or ''}
+Precio: ${p.price:,.0f} | Área: {p.area} m² | Habs: {p.bedrooms} | Baños: {p.bathrooms} | Parking: {p.parking_spaces}{avm_info}
+Días en mercado: {p.days_on_market or 0} | Visitas: {visits} | Leads coincidentes: {matching_leads}
+Asesor: {p.user_id.name if p.user_id else 'Sin asignar'} | Propietario: {p.owner_id.name if p.owner_id else ''}
+WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
+"""
+            except Exception:
+                pass
+
+        # Si está en módulo de reportes, enriquecer contexto
+        page_url = data.get('page_url') or ''
+        if 'estate_reports' in page_url or 'estate_intel' in page_url:
+            context += "\n== CONTEXTO: El usuario está viendo el módulo de Reportes/Analytics ==\n"
+
         history = self._get_conversation_history(user_id)
         query_type = self._classify_query(message)
         # Only load tools relevant to this query — reduces token count significantly
@@ -3094,14 +4030,21 @@ TOP 10 DISPONIBLES:
             "'muéstrame por', 'cuántos hay por', 'reporte de', 'gráfico de' → DEBES llamar a get_report_data. "
             "NUNCA respondas con solo texto cuando se pide un gráfico o reporte.\n"
             "Con los datos recibidos SIEMPRE genera TODOS los gráficos posibles que apliquen.\n"
-            "Tipos de gráfico disponibles:\n"
-            "- [GRAFICO:barra,Label1:Valor1,Label2:Valor2,...] → barras horizontales (ideal para comparar cantidades)\n"
-            "- [GRAFICO:circular,Label1:Valor1,Label2:Valor2,...] → diagrama de torta/pie (ideal para proporciones/porcentajes)\n"
-            "- [GRAFICO:linea,Label1:Valor1,Label2:Valor2,...] → línea temporal (ideal para evolución en el tiempo)\n\n"
+            "Tipos de gráfico disponibles (SIEMPRE incluye un título descriptivo con |):\n"
+            "- [GRAFICO:barra|Título descriptivo,Label1:Valor1,Label2:Valor2,...] → barras horizontales\n"
+            "- [GRAFICO:circular|Título descriptivo,Label1:Valor1,Label2:Valor2,...] → diagrama de torta\n"
+            "- [GRAFICO:linea|Título descriptivo,Label1:Valor1,Label2:Valor2,...] → línea temporal\n"
+            "- [GRAFICO:histograma|Título descriptivo,Label1:Valor1,...] → histograma de frecuencias\n"
+            "- [GRAFICO:dispersion|Título descriptivo,Label1:Valor1,...] → dispersión/scatter\n"
+            "- [GRAFICO:gantt|Título descriptivo,Label1:Valor1,...] → barras horizontales tipo Gantt\n"
+            "- [GRAFICO:calor|Título descriptivo,Label1:Valor1,...] → mapa de calor (intensidad por color)\n"
+            "Ejemplo: [GRAFICO:barra|Ventas por Mes,Enero:5,Febrero:8,Marzo:12]\n"
             "REGLA: Elige automáticamente el MEJOR tipo de gráfico según los datos:\n"
             "- Datos temporales (meses, años) → linea\n"
             "- Proporciones/distribuciones (estados, tipos) → circular\n"
             "- Comparaciones de cantidades/rankings → barra\n"
+            "- Distribución de frecuencias → histograma\n"
+            "- Actividad por períodos/intensidad → calor\n"
             "- Si hay duda, usa barra (es el más versátil)\n"
             "- Si los datos permiten más de una visualización útil, incluye MÚLTIPLES gráficos "
             "(ej: uno circular para % y uno de barra para cantidades absolutas).\n"
@@ -3164,6 +4107,7 @@ TOP 10 DISPONIBLES:
             tool_labels = {
                 'search_properties': 'Buscando propiedades',
                 'get_property_detail': 'Consultando propiedad',
+                'analyze_property_improvements': 'Analizando mejoras de la propiedad',
                 'get_leads': 'Consultando leads CRM',
                 'get_market_stats': 'Calculando estadísticas',
                 'create_crm_activity': 'Creando actividad',
@@ -3192,6 +4136,10 @@ TOP 10 DISPONIBLES:
                 'analyze_churn_risk': 'Analizando riesgo',
                 'recalculate_avm_ai': 'Calculando valoración',
                 'generate_and_apply_description': 'Generando descripción',
+                'generate_marketing_pack': 'Creando pack de marketing',
+                'generate_analytics_pdf': 'Generando PDF del reporte',
+                'plan_marketing_campaign': 'Analizando estrategia de campaña',
+                'generate_executive_report': 'Generando informe ejecutivo del mes',
                 'send_email': 'Enviando email',
                 'get_report_data': 'Cargando datos',
                 'query_database': 'Consultando base de datos',
@@ -3462,6 +4410,61 @@ TOP 10 DISPONIBLES:
         ]
 
         return suggestions[:8]
+
+    @http.route('/estate_ai/alert_chips', type='jsonrpc', auth='user', methods=['POST'])
+    def get_alert_chips(self, **kwargs):
+        """Returns contextual alert chips with real counts from the DB."""
+        from datetime import date, timedelta
+        env = request.env
+        chips = []
+        try:
+            today = date.today()
+            stale_count = env['estate.property'].sudo().search_count([
+                ('state', '=', 'available'),
+                ('date_listed', '<=', today - timedelta(days=60)),
+            ])
+            if stale_count:
+                chips.append(f'Propiedades sin vender +60 días ({stale_count})')
+
+            cold_leads = 0
+            if 'lead_temperature' in env['crm.lead']._fields:
+                cold_leads = env['crm.lead'].sudo().search_count([
+                    ('active', '=', True),
+                    ('type', '=', 'opportunity'),
+                    ('lead_temperature', 'in', ['cold', 'warm']),
+                    ('write_date', '<=', fields.Datetime.now() - timedelta(days=30)),
+                ])
+            if cold_leads:
+                chips.append(f'Leads fríos sin actividad ({cold_leads})')
+
+            overdue = env['estate.payment'].sudo().search_count([
+                ('state', '=', 'pending'), ('date', '<', today)])
+            if overdue:
+                chips.append(f'Pagos vencidos ({overdue})')
+        except Exception:
+            pass
+
+        chips += [
+            'Informe ejecutivo completo del mes',
+            'KPIs generales del mes',
+            'Ranking de asesores',
+        ]
+        return chips[:6]
+
+    @http.route('/estate_ai/feedback', type='jsonrpc', auth='user', methods=['POST'])
+    def record_feedback(self, vote=None, **kwargs):
+        """B5: guarda el voto positivo/negativo del usuario sobre una respuesta de la IA."""
+        try:
+            fid = request.env['estate.ai.feedback'].sudo().record_vote(
+                vote,
+                session_id=kwargs.get('session_id'),
+                question=kwargs.get('question'),
+                answer=kwargs.get('answer'),
+                page_context=kwargs.get('page_context'),
+            )
+            return {'ok': bool(fid), 'id': fid}
+        except Exception:
+            return {'ok': False}
 
     @http.route('/estate_ai/briefing', type='jsonrpc', auth='user', methods=['POST'])
     def get_briefing(self, **kwargs):
@@ -3832,11 +4835,11 @@ TOP 10 DISPONIBLES:
             visits = request.env['calendar.event'].search(
                 [('property_id', '=', p.id)], order='start desc', limit=10
             )
-            rating_map = {'1': '⭐', '2': '⭐⭐', '3': '⭐⭐⭐', '4': '⭐⭐⭐⭐', '5': '⭐⭐⭐⭐⭐'}
+            rating_map = {'1': 'Muy malo', '2': 'Malo', '3': 'Regular', '4': 'Bueno', '5': 'Excelente'}
             for v in visits:
                 attendees = ', '.join(a.partner_id.name for a in v.attendee_ids if a.partner_id) or 'Sin asistentes'
-                rating = rating_map.get(str(getattr(v, 'visit_rating', '') or ''), '')
-                visit_lines.append(f"  {v.start.strftime('%d/%m/%Y %H:%M')}: {attendees} {rating}")
+                rating = rating_map.get(str(getattr(v, 'visit_rating', '') or ''), 'Sin calificar')
+                visit_lines.append(f"  {v.start.strftime('%d/%m/%Y %H:%M')}: {attendees} — {rating}")
 
         # Mensajes del chatter
         msgs = request.env['mail.message'].search([

@@ -10,6 +10,12 @@
             <PropertySummary
                 t-if="props.threadModel === 'estate.property' and props.threadId"
                 recordId="props.threadId"/>
+            <DocumentPdfPreview
+                t-if="props.threadModel === 'estate.document' and props.threadId"
+                recordId="props.threadId"/>
+            <ContractPdfPreview
+                t-if="props.threadModel === 'estate.contract' and props.threadId"
+                recordId="props.threadId"/>
         </xpath>
     </t>
 

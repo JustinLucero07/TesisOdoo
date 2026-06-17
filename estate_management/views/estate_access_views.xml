@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Búsqueda con agrupación visible (sin necesidad de modo desarrollador) -->
+    <record id="view_estate_access_search" model="ir.ui.view">
+        <field name="name">estate.ir.model.access.search</field>
+        <field name="model">ir.model.access</field>
+        <field name="arch" type="xml">
+            <search string="Permisos de acceso">
+                <field name="name"/>
+                <field name="model_id"/>
+                <field name="group_id"/>
+                <separator/>
+                <filter string="Lectura" name="f_read" domain="[('perm_read', '=', True)]"/>
+                <filter string="Escritura" name="f_write" domain="[('perm_write', '=', True)]"/>
+                <filter string="Creación" name="f_create" domain="[('perm_create', '=', True)]"/>
+                <filter string="Eliminación" name="f_unlink" domain="[('perm_unlink', '=', True)]"/>
+                <separator/>
+                <filter string="Modelo" name="g_model" context="{'group_by': 'model_id'}"/>
+                <filter string="Rol / Grupo" name="g_group" context="{'group_by': 'group_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Acción: solo permisos de los roles inmobiliarios, agrupados por modelo -->
+    <record id="action_estate_access_by_model" model="ir.actions.act_window">
+        <field name="name">Permisos por Modelo</field>
+        <field name="res_model">ir.model.access</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_estate_access_search"/>
+        <field name="domain" eval="[('group_id', 'in', [
+            ref('estate_management.estate_group_agent'),
+            ref('estate_management.estate_group_marketing'),
+            ref('estate_management.estate_group_manager'),
+            ref('estate_management.estate_group_admin')])]"/>
+        <field name="context">{'search_default_g_model': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aquí se ven los permisos de acceso de los roles inmobiliarios,
+                agrupados por modelo. Cambia la agrupación a "Rol / Grupo" para
+                verlos por rol.
+            </p>
+        </field>
+    </record>
+
+    <!-- El menú suelto "Permisos por Modelo" se quitó: los permisos ya se ven
+         dentro de cada rol (Configuración → Roles Inmobiliarios → abrir un rol
+         → pestaña "Permisos de acceso"). La acción se conserva por si se
+         necesita, pero sin saturar el menú. -->
+
+</odoo>

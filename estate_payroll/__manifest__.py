@@ -12,7 +12,7 @@
         * Flujo: Borrador → Confirmado → Pagado
         * Generación automática de factura de proveedor al pagar
     """,
-    'author': 'Tesis - Sistema Inmobiliario',
+    'author': 'Inmobi Community',
     'license': 'LGPL-3',
     'depends': ['estate_management', 'hr'],
     'data': [

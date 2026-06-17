@@ -42,6 +42,10 @@
         <field name="name">Evolución en el tiempo</field>
         <field name="res_model">estate.facebook.stats.history</field>
         <field name="view_mode">graph,list</field>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin estadísticas aún.</p>
+            <p>La evolución de impresiones y alcance de tus redes aparecerá aquí.</p>
+        </field>
     </record>
 
     <!-- ═══════════════════════════════════════════════════════

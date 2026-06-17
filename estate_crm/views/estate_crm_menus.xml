@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!-- ==============================================
-         MENÚS SUPERIORES DEL CRM INMOBILIARIO
-         Integración ultra-limpia sin botones repetidos
+         CRM INMOBILIARIO — todo dentro de la app "Inmobiliaria"
+         (consolidación de navegación: una sola app operativa)
          ============================================== -->
 
-    <!-- 1. Menús adicionales de Propiedades (Inyectados en Inmobiliaria) -->
+    <!-- 1. Menús adicionales de Propiedades -->
     <menuitem id="estate_menu_property_allied"
               name="Inmuebles de mis aliados"
               parent="estate_management.estate_menu_property_root"
@@ -20,7 +20,7 @@
               sequence="16"
               groups="estate_management.estate_group_agent"/>
 
-    <!-- 2. Clientes (Integrado en CRM nativo) -->
+    <!-- 2. Clientes — sección dentro de la app CRM NATIVA de Odoo -->
     <menuitem id="estate_menu_crm_directorio_root"
               name="Clientes"
               parent="crm.crm_menu_root"
@@ -50,19 +50,21 @@
                   action="action_crm_pending_needs"
                   sequence="25"/>
 
-        <!-- Mantengo Alianzas aquí por si es útil tener acceso rápido desde Clientes -->
         <menuitem id="estate_menu_crm_red_alianzas"
                   name="Red de Aliados"
                   parent="estate_menu_crm_directorio_root"
                   action="action_crm_alliances"
                   sequence="40"/>
 
-    <!-- 3. Ocultar sección "Reportes" nativa del CRM para evitar confusión -->
+    <!-- 3. Reactivar la app CRM nativa de Odoo (la habíamos ocultado) -->
+    <record id="crm.crm_menu_root" model="ir.ui.menu">
+        <field name="active" eval="True"/>
+    </record>
     <record id="crm.crm_menu_report" model="ir.ui.menu">
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
     </record>
 
-    <!-- 4. Reportes CRM — ahora bajo Inmobiliaria > Reportes -->
+    <!-- 4. Reportes CRM — bajo la app Reportes (análisis) -->
     <menuitem id="estate_menu_reportes_crm_root"
               name="CRM y Leads"
               parent="estate_management.estate_menu_intel_root"

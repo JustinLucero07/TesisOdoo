@@ -24,6 +24,10 @@
         <field name="name">Inmuebles de Aliados</field>
         <field name="res_model">estate.property</field>
         <field name="view_mode">kanban,list,form</field>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin inmuebles de aliados.</p>
+            <p>Inmuebles compartidos por tu red de aliados para ofrecer a tus clientes.</p>
+        </field>
     </record>
 
     <record id="action_crm_match_properties_window" model="ir.actions.act_window">
@@ -31,6 +35,10 @@
         <field name="res_model">estate.property</field>
         <field name="view_mode">list,form</field>
         <field name="view_id" ref="estate_crm.estate_property_view_tree_match"/>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin cruces todavía.</p>
+            <p>Aquí aparecen las coincidencias automáticas entre inmuebles y clientes según presupuesto y preferencias.</p>
+        </field>
     </record>
 
     <!-- ACCIONES RED INMOBILIARIA -->
@@ -40,6 +48,10 @@
         <field name="view_mode">kanban,list,form</field>
         <field name="domain">[('is_allied_agency', '=', True)]</field>
         <field name="context">{'default_is_allied_agency': True}</field>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Aún no tienes aliados.</p>
+            <p>Registra inmobiliarias o agentes aliados para compartir inventario y clientes.</p>
+        </field>
     </record>
 
     <record id="action_crm_owners" model="ir.actions.act_window">
@@ -48,6 +60,10 @@
         <field name="view_mode">kanban,list,form</field>
         <field name="domain">[('is_property_owner', '=', True)]</field>
         <field name="context">{'default_is_property_owner': True}</field>
+            <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin propietarios registrados.</p>
+            <p>Aquí se listan los dueños de los inmuebles; se agregan al asignar un propietario a una propiedad.</p>
+        </field>
     </record>
 
     <!-- ACCIONES CLIENTES -->
