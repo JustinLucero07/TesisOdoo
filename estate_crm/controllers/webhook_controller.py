@@ -148,7 +148,7 @@ class EstateLeadWebhookController(http.Controller):
             try:
                 vals['client_budget'] = float(str(budget).replace(',', '').replace('$', ''))
             except (ValueError, TypeError):
-                pass
+                _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
         if ptype:
             vals['preferred_property_type_id'] = ptype.id
         if city:
@@ -157,7 +157,7 @@ class EstateLeadWebhookController(http.Controller):
             try:
                 vals['preferred_bedrooms'] = int(bedrooms)
             except (ValueError, TypeError):
-                pass
+                _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
         if referral_partner:
             vals['referral_partner_id'] = referral_partner.id
             vals['lead_source'] = 'referral'

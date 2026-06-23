@@ -14,41 +14,53 @@ class EstateAIContract(models.Model):
 
         client_partner = self.partner_id
         prop = self.property_id
+        seller = (prop.owner_id.name if prop and prop.owner_id else self.env.company.name)
 
         c_type = {
             'sale': 'de Compraventa',
             'exclusivity': 'de Exclusividad Inmobiliaria',
         }.get(self.contract_type, 'Inmobiliario')
 
+        # Generar-o-mejorar: si ya hay un borrador, lo mejora coherentemente.
+        existing = (self.notes or '').strip()
+        if existing:
+            modo = (
+                "El contrato YA tiene un borrador. MEJÓRALO y complétalo de forma COHERENTE: "
+                "no repitas cláusulas, no te contradigas y mantén la numeración continua.\n\n"
+                f"--- BORRADOR ACTUAL ---\n{existing}\n--- FIN DEL BORRADOR ---\n"
+            )
+        else:
+            modo = "Redacta el contrato completo desde cero."
+
         prompt = f"""
-Actúa como un abogado experto en bienes raíces corporativos en Ecuador.
-Redacta un Borrador de Contrato {c_type} profesional y detallado.
+Actúa como un abogado experto en bienes raíces en Ecuador.
+{modo}
+Redacta un Contrato {c_type} profesional, COHERENTE y SIN cláusulas repetidas.
+
+PARTES:
+- VENDEDOR/ARRENDADOR: {seller}
+- COMPRADOR/ARRENDATARIO: {client_partner.name or 'No especificado'} (Cédula/RUC: {client_partner.vat or 'No especificado'})
+  Dirección: {client_partner.street or ''}, {client_partner.city or 'Ecuador'}
 
 DATOS DEL CONTRATO:
 - Referencia: {self.name}
-- Fecha de Inicio: {self.date_start}
-- Fecha de Vencimiento: {self.date_end or 'No especificada'}
-- Monto del Contrato: ${self.amount:,.2f}
+- Monto: ${self.amount:,.2f}
+- Vigencia: {self.date_start} a {self.date_end or 'No especificada'}
 
-DATOS DEL CLIENTE:
-- Nombre: {client_partner.name}
-- Cédula/RUC: {client_partner.vat or 'No especificado'}
-- Dirección: {client_partner.street or ''}, {client_partner.city or 'Ecuador'}
+PROPIEDAD:
+- {prop.title if prop else '-'} — {prop.street or ''}, {prop.city or ''}
+- Área: {prop.area or 'N/D'} m² · Habitaciones: {prop.bedrooms or 'N/A'} · Piso: {prop.floor or 'N/A'}
+- Referencia interna: {prop.name if prop else '-'}
 
-DATOS DE LA PROPIEDAD:
-- Título: {prop.title}
-- Dirección: {prop.street or ''}, {prop.city or ''}
-- Referencia Interna: {prop.name}
-- Área (m²): {prop.area or 'No especificado'}
-- Habitaciones: {prop.bedrooms or 'No aplica'}
-- Piso: {prop.floor or 'No aplica'}
-
-INSTRUCCIONES DE FORMATO:
-1. Usa lenguaje legal formal propio del Ecuador.
-2. Incluye cláusulas estándar: partes, objeto, obligaciones, pagos, penalidades, terminación.
-3. Formatea ÚNICAMENTE en HTML válido con etiquetas <h2>, <h3>, <p>, <ul>, <li>, <b>, <br/>.
-4. No incluyas bloques ```html — comienza directamente con la primera etiqueta HTML.
-5. Termina con sección de firmas con espacios para firma/fecha.
+INSTRUCCIONES:
+1. Lenguaje legal formal ecuatoriano.
+2. Cláusulas numeradas y ordenadas (PRIMERA: Comparecientes/Partes, SEGUNDA: Objeto,
+   TERCERA: Precio y forma de pago, CUARTA: Obligaciones, QUINTA: Plazo, SEXTA: Penalidades,
+   SÉPTIMA: Terminación...). Cada cláusula trata UN solo tema, sin repetir ni contradecir.
+3. Usa los datos reales de arriba; donde falte un dato deja un marcador entre corchetes
+   (ej: [Forma de pago a convenir]) — NO inventes cifras ni nombres.
+4. Formato HTML válido: <h2>, <h3>, <p>, <ul>, <li>, <b>, <br/>. Sin bloques ```html.
+5. Termina con una sección de FIRMAS (Vendedor / Comprador) con líneas para firma y fecha.
 """
 
         try:

@@ -134,7 +134,7 @@ class EstateGenaiMixin(models.AbstractModel):
             try:
                 reason = str(response.candidates[0].finish_reason)
             except Exception:
-                pass
+                _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
             raise UserError(_(
                 "La IA no devolvió contenido%s. Intenta de nuevo o ajusta los datos."
             ) % (f" (motivo: {reason})" if reason else ""))

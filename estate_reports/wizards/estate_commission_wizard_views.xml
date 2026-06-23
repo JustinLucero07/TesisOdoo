@@ -93,10 +93,5 @@
         </field>
     </record>
 
-    <record id="estate_commission_wizard_action" model="ir.actions.act_window">
-        <field name="name">Liquidación de Comisiones</field>
-        <field name="res_model">estate.commission.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
-    </record>
+    <!-- Acción de formulario VIEJA eliminada: reemplazada por la pantalla OWL (action_estate_commission_report_owl). -->
 </odoo>

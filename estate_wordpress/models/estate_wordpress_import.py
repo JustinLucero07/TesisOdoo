@@ -213,7 +213,7 @@ class EstateWordpressImportWizard(models.TransientModel):
             if resp.status_code == 200:
                 return resp.json().get('source_url', '')
         except Exception:
-            pass
+            _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
         return ''
 
     # =========================================================================
@@ -301,7 +301,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                     _logger.debug("meta post %s: odoo-houzez OK", wp_post_id)
                     return combined
         except Exception:
-            pass
+            _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
         # === Estrategia 2: REST individual con context=edit (built-in WP) ===
         try:
@@ -320,7 +320,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                     _logger.debug("meta post %s: REST edit OK", wp_post_id)
                     return combined
         except Exception:
-            pass
+            _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
         # === Estrategia 3: Plugin odoo-meta-reader ===
         try:
@@ -333,7 +333,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                     _logger.debug("meta post %s: odoo-meta-reader OK", wp_post_id)
                     return combined
         except Exception:
-            pass
+            _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
         # === Estrategia 4: Endpoints nativos Houzez (tema) ===
         for route in [
@@ -350,7 +350,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                     if _has_key_data():
                         break
             except Exception:
-                pass
+                _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
         # === Estrategia 5: XML-RPC — más lento pero más completo (último recurso) ===
         if not _has_key_data():
@@ -400,7 +400,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                 if first_term.get('taxonomy') in (taxonomy_name, alt_name):
                     return [t['id'] for t in group]
         except Exception:
-            pass
+            _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
         return []
 
     def _get_taxonomy_term_names(self, wp_prop, taxonomy_name):
@@ -413,7 +413,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                 if first_term.get('taxonomy') in (taxonomy_name, alt_name):
                     return [t['name'] for t in group if t.get('name')]
         except Exception:
-            pass
+            _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
         return []
 
     # =========================================================================
@@ -573,7 +573,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                 # El código anterior usaba una búsqueda manual en _embedded, la nueva _get_taxonomy_term_names es más limpia.
                 pass
             except Exception:
-                pass
+                _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
         # Fallback 2: detectar tipo por palabras clave en el título
         if not property_type_id:
@@ -730,7 +730,7 @@ class EstateWordpressImportWizard(models.TransientModel):
             if media_list:
                 featured_url = media_list[0].get('source_url', '')
         except Exception:
-            pass
+            _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
         if featured_url:
             img_b64 = self._download_image(featured_url, cfg)
@@ -840,7 +840,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                         meta.update(extra)
                         _logger.info("Preview: post %s meta GET OK, %d campos", wp_id, len(extra))
             except Exception:
-                pass
+                _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
             price = self._safe_float(
                 meta.get('fave_property_price') or acf.get('fave_property_price'))
@@ -1022,7 +1022,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                             w.write({'import_state': 'done', 'error_log': str(e)})
                         cr2.commit()
                 except Exception:
-                    pass
+                    _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
 
         threading.Thread(target=_run_import, daemon=True).start()
 

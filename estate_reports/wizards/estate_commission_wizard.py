@@ -6,6 +6,10 @@ class EstateCommissionWizard(models.TransientModel):
     _name = 'estate.commission.wizard'
     _description = 'Asistente de Reporte de Comisiones'
 
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name = 'Reporte de Comisiones'
+
     user_id = fields.Many2one(
         'res.users', string='Asesor',
         help='Deja vacío para incluir todos los asesores.')
@@ -48,7 +52,7 @@ class EstateCommissionWizard(models.TransientModel):
                 prop_name = c.property_id.title or c.property_id.name if c.property_id else '—'
                 rows += (
                     f'<tr style="background:{bg};">'
-                    f'<td style="padding:8px 12px;font-weight:600;color:#1e40af;">{prop_name}</td>'
+                    f'<td style="padding:8px 12px;font-weight:600;color:#004274;">{prop_name}</td>'
                     f'<td style="padding:8px 12px;color:#6b7280;">{c.user_id.name or "—"}</td>'
                     f'<td style="padding:8px 12px;text-align:right;">${c.sale_amount:,.2f}</td>'
                     f'<td style="padding:8px 12px;text-align:center;">{c.commission_pct or 0:.1f}%</td>'
@@ -63,7 +67,7 @@ class EstateCommissionWizard(models.TransientModel):
             wiz.commission_html = f'''
 <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
   <thead>
-    <tr style="background:#1e40af;color:white;">
+    <tr style="background:#004274;color:white;">
       <th style="padding:10px 12px;text-align:left;">Propiedad</th>
       <th style="padding:10px 12px;text-align:left;">Asesor</th>
       <th style="padding:10px 12px;text-align:right;">Monto Venta</th>
@@ -75,7 +79,7 @@ class EstateCommissionWizard(models.TransientModel):
   </thead>
   <tbody>{rows}</tbody>
   <tfoot>
-    <tr style="background:#1e40af;color:white;font-weight:700;">
+    <tr style="background:#004274;color:white;font-weight:700;">
       <td colspan="4" style="padding:10px 12px;">Total — {len(commissions)} comisiones</td>
       <td style="padding:10px 12px;text-align:right;font-size:14px;">${wiz.total_commissions:,.2f}</td>
       <td colspan="2" style="padding:10px 12px;text-align:right;font-size:11px;font-weight:400;color:rgba(255,255,255,0.7);">
@@ -119,3 +123,51 @@ class EstateCommissionWizard(models.TransientModel):
         if self.user_id:
             domain.append(('user_id', '=', self.user_id.id))
         return domain
+
+    @api.model
+    def get_commission_payload(self, kwargs):
+        user_id = kwargs.get('user_id')
+        date_from = kwargs.get('date_from')
+        date_to = kwargs.get('date_to')
+        include_all = kwargs.get('include_all', False)
+        
+        wiz = self.create({
+            'user_id': user_id,
+            'date_from': date_from or fields.Date.today().replace(day=1),
+            'date_to': date_to or fields.Date.today(),
+            'include_all_states': include_all,
+        })
+        
+        # Asesores activos (con comisiones)
+        advisors = self.env['res.users'].search([
+            ('id', 'in', self.env['estate.commission'].search([]).mapped('user_id').ids)
+        ])
+        advisors_list = [{'id': a.id, 'name': a.name} for a in advisors]
+        
+        return {
+            'kpis': {
+                'commission_count': wiz.commission_count,
+                'total_commissions': wiz.total_commissions,
+                'total_paid': wiz.total_paid,
+                'total_pending': wiz.total_pending,
+                'date_from': str(wiz.date_from),
+                'date_to': str(wiz.date_to),
+            },
+            'table_html': wiz.commission_html,
+            'advisors': advisors_list,
+        }
+
+    @api.model
+    def owl_print_pdf(self, kwargs):
+        user_id = kwargs.get('user_id')
+        date_from = kwargs.get('date_from')
+        date_to = kwargs.get('date_to')
+        include_all = kwargs.get('include_all', False)
+        
+        wiz = self.create({
+            'user_id': user_id,
+            'date_from': date_from or fields.Date.today().replace(day=1),
+            'date_to': date_to or fields.Date.today(),
+            'include_all_states': include_all,
+        })
+        return wiz.action_print_commission_report()

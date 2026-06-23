@@ -21,7 +21,7 @@
                     <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
                         <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                        <table style="width:100%; border-collapse:collapse; background:#004274; margin-bottom:12px;">
                             <tr>
                                 <td style="padding:10px 16px; vertical-align:middle; width:60%;">
                                     <t t-if="company.logo">
@@ -43,7 +43,7 @@
                         <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
                         <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
                             <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Propuesta para el cliente</div>
-                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;">
+                            <div style="font-size:15px; font-weight:900; color:#004274;">
                                 <t t-esc="prop.title if prop else lead.name"/>
                             </div>
                             <div style="font-size:9px; color:#666; margin-top:3px;">
@@ -67,7 +67,7 @@
                                                 Foto no disponible
                                             </div>
                                         </t>
-                                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                                             Detalle de la propiedad
                                         </div>
                                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none;">
@@ -116,7 +116,7 @@
                                 <!-- Columna derecha: precios + perfil -->
                                 <td style="width:48%; vertical-align:top; padding-left:6px;">
                                     <!-- Precio principal (accent) -->
-                                    <div style="background:#1C2B4A; padding:14px; margin-bottom:8px; text-align:center;">
+                                    <div style="background:#004274; padding:14px; margin-bottom:8px; text-align:center;">
                                         <div style="font-size:8px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Precio publicado</div>
                                         <div style="font-size:24px; font-weight:900; color:white; line-height:1;">
                                             <t t-if="prop">$<t t-esc="'{:,.0f}'.format(prop.price or 0)"/></t>
@@ -145,7 +145,7 @@
                                             </td>
                                             <td style="width:50%; background:#F8F9FB; border:1px solid #D8DCE5; padding:10px; text-align:center; vertical-align:middle;">
                                                 <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Compatibilidad</div>
-                                                <div style="font-size:14px; font-weight:700; color:#1C2B4A;">
+                                                <div style="font-size:14px; font-weight:700; color:#004274;">
                                                     <t t-if="prop and lead.match_percentage"><t t-esc="lead.match_percentage"/>%</t>
                                                     <t t-else="">&#8212;</t>
                                                 </div>
@@ -154,7 +154,7 @@
                                     </table>
 
                                     <!-- Perfil del comprador -->
-                                    <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-top:10px;">
+                                    <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-top:10px;">
                                         Perfil del comprador
                                     </div>
                                     <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none;">
@@ -207,13 +207,13 @@
                                     </table>
 
                                     <!-- Asesor -->
-                                    <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-top:10px;">
+                                    <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-top:10px;">
                                         Asesor Inmobiliario
                                     </div>
                                     <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none;">
                                         <tr>
                                             <td style="width:40%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Nombre</td>
-                                            <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700; color:#1C2B4A;"><t t-esc="lead.user_id.name or '&#8212;'"/></td>
+                                            <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700; color:#004274;"><t t-esc="lead.user_id.name or '&#8212;'"/></td>
                                         </tr>
                                         <t t-if="lead.user_id.email">
                                             <tr>
@@ -253,7 +253,7 @@
                         </table>
 
                         <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #004274; margin-top:14px; font-size:8px; color:#888;">
                             <tr>
                                 <td style="padding:5px 0; width:50%;">
                                     <t t-if="company.street"><strong><t t-esc="company.street"/></strong></t>
@@ -261,10 +261,10 @@
                                     <t t-if="company.email"> &#183; <t t-esc="company.email"/></t>
                                     <t t-if="company.phone"> &#183; <t t-esc="company.phone"/></t>
                                 </td>
-                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#004274; font-size:9px;">
                                     <t t-esc="company.name"/>
                                 </td>
-                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#004274; font-weight:600;">
                                     <t t-esc="lead.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                                 </td>
                             </tr>

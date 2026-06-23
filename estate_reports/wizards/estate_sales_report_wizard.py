@@ -31,6 +31,55 @@ class EstateSalesReportWizard(models.TransientModel):
     _name = 'estate.sales.report.wizard'
     _description = 'Wizard de Reporte de Promedio de Ventas'
 
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name = 'Promedio de Ventas'
+
+    # ── API para la pantalla OWL (a medida, sin nube/X) ──────────────────────
+    def _wizard_from_vals(self, vals):
+        create_vals = {
+            'period': vals.get('period') or 'quarter',
+            'operation_type': vals.get('operation_type') or 'sale',
+        }
+        if vals.get('city'):
+            create_vals['city'] = vals['city']
+        if vals.get('user_id'):
+            create_vals['user_ids'] = [(6, 0, [vals['user_id']])]
+        return self.create(create_vals)
+
+    @api.model
+    def get_report_payload(self, vals=None):
+        vals = vals or {}
+        wiz = self._wizard_from_vals(vals)
+        flds = ['has_data', 'kpi_avg_price', 'kpi_avg_listed', 'kpi_pct_vs_listed',
+                'kpi_avg_days', 'kpi_median_price', 'kpi_min_price', 'kpi_max_price',
+                'kpi_close_rate', 'kpi_count', 'prev_avg_price', 'pct_change_avg',
+                'prev_avg_days', 'pct_change_days', 'chart_data']
+        data = wiz.read(flds)[0]
+        data.pop('id', None)
+        try:
+            chart = json.loads(data.pop('chart_data', '') or '{}')
+        except Exception:
+            chart = {}
+        advisors = self.env['res.users'].search(
+            [('share', '=', False), ('active', '=', True)], order='name').read(['id', 'name'])
+        return {
+            'kpis': data,
+            'chart': chart,
+            'advisors': advisors,
+            'periods': [{'value': v, 'label': l} for v, l in self._fields['period'].selection],
+            'operations': [{'value': v, 'label': l} for v, l in self._fields['operation_type'].selection],
+        }
+
+    @api.model
+    def report_download(self, vals=None, kind='pdf'):
+        wiz = self._wizard_from_vals(vals or {})
+        if kind == 'xlsx':
+            return wiz.action_generate_xlsx()
+        if kind == 'graph':
+            return wiz.action_open_graph()
+        return wiz.action_generate_pdf()
+
     # ── Filtros ──────────────────────────────────────────────────────────────
     period = fields.Selection(
         PERIOD_SELECTION, string='Período', default='quarter', required=True)
@@ -290,8 +339,8 @@ class EstateSalesReportWizard(models.TransientModel):
                     'total': round(sum(prices)),
                 })
 
-            price_svg = wiz._svg_line(monthly, 'avg_price', 'Precio Promedio de Venta', '#1e40af')
-            count_svg = wiz._svg_bars(monthly, 'count', 'Ventas por Mes', '#1e40af')
+            price_svg = wiz._svg_line(monthly, 'avg_price', 'Precio Promedio de Venta', '#004274')
+            count_svg = wiz._svg_bars(monthly, 'count', 'Ventas por Mes', '#004274')
 
             wiz.inline_chart_html = f'''
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
@@ -305,7 +354,7 @@ class EstateSalesReportWizard(models.TransientModel):
     </div>
 </div>'''
 
-    def _svg_line(self, monthly, field, title, color='#1e40af', w=520, h=180):
+    def _svg_line(self, monthly, field, title, color='#004274', w=520, h=180):
         PAD_L, PAD_R, PAD_T, PAD_B = 58, 14, 22, 32
         iw = w - PAD_L - PAD_R
         ih = h - PAD_T - PAD_B
@@ -355,7 +404,7 @@ class EstateSalesReportWizard(models.TransientModel):
   {xlbls}
 </svg>'''
 
-    def _svg_bars(self, monthly, field, title, color='#1e40af', w=200, h=180):
+    def _svg_bars(self, monthly, field, title, color='#004274', w=200, h=180):
         PAD_L, PAD_R, PAD_T, PAD_B = 28, 10, 22, 32
         iw = w - PAD_L - PAD_R
         ih = h - PAD_T - PAD_B
@@ -441,7 +490,7 @@ class EstateSalesReportWizard(models.TransientModel):
 
         # Formatos
         f_title = wb.add_format({'bold': True, 'font_size': 14,
-                                 'bg_color': '#1877F2', 'color': 'white',
+                                 'bg_color': '#004274', 'color': 'white',
                                  'align': 'center', 'valign': 'vcenter'})
         f_header = wb.add_format({'bold': True, 'bg_color': '#E4E6EB',
                                   'border': 1, 'align': 'center'})

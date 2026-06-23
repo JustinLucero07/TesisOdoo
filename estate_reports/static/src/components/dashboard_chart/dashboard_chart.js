@@ -59,7 +59,7 @@ class DashboardChart extends Component {
         const horizontal = !!data.horizontal;
         const bg = data.colors
             ? data.colors
-            : (data.color || "#1e40af");
+            : (data.color || "#004274");
 
         // eslint-disable-next-line no-undef
         this._chart = new Chart(canvas.getContext("2d"), {
@@ -70,7 +70,7 @@ class DashboardChart extends Component {
                     label: data.label || "",
                     data: data.values,
                     backgroundColor: bg,
-                    borderRadius: 6,
+                    borderRadius: 0,
                     maxBarThickness: 46,
                 }],
             },

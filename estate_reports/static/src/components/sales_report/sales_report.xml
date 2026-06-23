@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="estate_reports.SalesReportAction">
+        <div class="o_estate_dashboard p-4" style="overflow-y:auto;height:100%;background:#ffffff;">
+
+            <!-- ═══ ENCABEZADO + KPIs ═══ -->
+            <div class="px-4 pt-4 pb-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                    <h2 class="m-0" style="color:#004274;font-weight:700;font-size:1.5rem;">
+                        Promedio de Ventas
+                    </h2>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm" t-on-click="() =&gt; this.download('pdf')"
+                                style="background:#004274;color:#fff;border:none;">
+                            <i class="fa fa-file-pdf-o me-1"/> PDF
+                        </button>
+                        <button class="btn btn-sm" t-on-click="() =&gt; this.download('xlsx')"
+                                style="background:#004274;color:#fff;border:none;">
+                            <i class="fa fa-file-excel-o me-1"/> Excel
+                        </button>
+                        <button class="btn btn-sm" t-on-click="() =&gt; this.download('graph')"
+                                style="background:#004274;color:#fff;border:none;">
+                            <i class="fa fa-bar-chart me-1"/> Gráfico
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI tiles -->
+                <div class="d-flex flex-wrap gap-0" style="border:1px solid #e5e7eb;">
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Operaciones</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.kpi_count or 0"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Precio Promedio</div>
+                        <div class="h4 m-0" style="color:#004274;" t-esc="money(state.k.kpi_avg_price)"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Días Promedio</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="num(state.k.kpi_avg_days)"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill">
+                        <div class="text-muted small text-uppercase">Tasa de Cierre</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="num((state.k.kpi_close_rate || 0) * 100) + '%'"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ CONTENIDO PRINCIPAL ═══ -->
+            <div class="px-4 pb-4">
+
+                <!-- Filtros -->
+                <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Filtros</div>
+                <div class="row g-2 mb-4 align-items-end">
+                    <div class="col-6 col-md-3">
+                        <label class="small text-muted">Período</label>
+                        <select class="form-select form-select-sm" t-on-change="onPeriod">
+                            <t t-foreach="state.periods" t-as="p" t-key="p.value">
+                                <option t-att-value="p.value" t-att-selected="p.value === state.period" t-esc="p.label"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="small text-muted">Operación</label>
+                        <select class="form-select form-select-sm" t-on-change="onOperation">
+                            <t t-foreach="state.operations" t-as="o" t-key="o.value">
+                                <option t-att-value="o.value" t-att-selected="o.value === state.operation" t-esc="o.label"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="small text-muted">Ciudad</label>
+                        <input type="text" class="form-control form-control-sm" placeholder="Todas las ciudades"
+                               t-model="state.city" t-on-change="applyFilters"/>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="small text-muted">Asesor</label>
+                        <select class="form-select form-select-sm" t-on-change="onUser">
+                            <option value="">Todos los asesores</option>
+                            <t t-foreach="state.advisors" t-as="a" t-key="a.id">
+                                <option t-att-value="a.id" t-att-selected="a.id === state.userId" t-esc="a.name"/>
+                            </t>
+                        </select>
+                    </div>
+                </div>
+
+                <div t-if="state.loading" class="text-center py-5 text-muted">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                </div>
+
+                <div t-else="">
+                    <div t-if="!state.k.has_data" class="text-center text-muted py-4 border mb-4">
+                        Sin operaciones en el período seleccionado.
+                    </div>
+
+                    <!-- Indicadores del período -->
+                    <div class="row">
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Precios</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Precio promedio</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_avg_price)"/></tr>
+                                <tr><td class="text-muted">Mediana</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_median_price)"/></tr>
+                                <tr><td class="text-muted">Mínimo</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_min_price)"/></tr>
+                                <tr><td class="text-muted">Máximo</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_max_price)"/></tr>
+                            </table>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Rendimiento</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Precio listado promedio</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_avg_listed)"/></tr>
+                                <tr><td class="text-muted">% logrado vs listado</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num((state.k.kpi_pct_vs_listed || 0) * 100) + '%'"/></tr>
+                                <tr><td class="text-muted">Días promedio en mercado</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num(state.k.kpi_avg_days)"/></tr>
+                                <tr><td class="text-muted">Tasa de cierre</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num((state.k.kpi_close_rate || 0) * 100) + '%'"/></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Comparativa + Tendencia -->
+                    <div class="row">
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Comparativa con Período Anterior</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Promedio anterior</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.prev_avg_price)"/></tr>
+                                <tr><td class="text-muted">Variación %</td><td class="text-end fw-bold" t-att-class="pctClass(state.k.pct_change_avg)" t-esc="num(state.k.pct_change_avg) + '%'"/></tr>
+                                <tr><td class="text-muted">Días anteriores</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num(state.k.prev_avg_days)"/></tr>
+                                <tr><td class="text-muted">Cambio en días</td><td class="text-end fw-bold" t-att-class="pctClass(-state.k.pct_change_days)" t-esc="num(state.k.pct_change_days) + '%'"/></tr>
+                            </table>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Tendencia</div>
+                            <div style="border:1px solid #e5e7eb;" class="p-3">
+                                <DashChart data="state.chart"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

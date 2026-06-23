@@ -18,7 +18,7 @@ class ResPartner(models.Model):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Documentos',
-            'view_mode': 'kanban,list,form',
+            'view_mode': 'list,kanban,form',
             'res_model': 'estate.document',
             'domain': [('partner_id', '=', self.id)],
             'context': {'default_partner_id': self.id},
@@ -43,7 +43,7 @@ class ResPartner(models.Model):
             'type': 'ir.actions.act_window',
             'name': f'Carpeta de {self.name}',
             'res_model': 'estate.document',
-            'view_mode': 'kanban,list,form',
+            'view_mode': 'list,kanban,form',
             'domain': domain,
             'context': {
                 'default_partner_id': self.id,

@@ -70,14 +70,6 @@
                   sequence="30"
                   groups="estate_management.estate_group_manager"/>
 
-        <!-- Comisiones -->
-        <menuitem id="estate_menu_finance_commissions"
-                  name="Comisiones"
-                  parent="estate_menu_finance_root"
-                  action="action_estate_commission_dashboard"
-                  sequence="50"
-                  groups="estate_management.estate_group_manager"/>
-
         <menuitem id="estate_menu_finance_commission_payments"
                   name="Pagos de Comisiones"
                   parent="estate_menu_finance_root"

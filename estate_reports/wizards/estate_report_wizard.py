@@ -1,7 +1,7 @@
 import io
 import base64
 from datetime import timedelta
-from odoo import models, fields
+from odoo import models, fields, api
 
 try:
     import xlsxwriter
@@ -13,6 +13,10 @@ except ImportError:
 class EstateReportWizard(models.TransientModel):
     _name = 'estate.report.wizard'
     _description = 'Wizard de Reportes Inmobiliarios'
+
+    def _compute_display_name(self):
+        for rec in self:
+            rec.display_name = 'Reportes Inmobiliarios'
 
     report_type = fields.Selection([
         ('available_properties', 'Propiedades Disponibles'),
@@ -39,6 +43,9 @@ class EstateReportWizard(models.TransientModel):
     # For Excel download
     excel_file = fields.Binary(string='Archivo Excel', readonly=True)
     excel_filename = fields.Char(string='Nombre Archivo')
+    # For PDF download (renderizado en servidor con datos explícitos)
+    pdf_file = fields.Binary(string='Archivo PDF', readonly=True)
+    pdf_filename = fields.Char(string='Nombre PDF')
 
     def action_generate_report(self):
         self.ensure_one()
@@ -46,6 +53,26 @@ class EstateReportWizard(models.TransientModel):
         if fmt == 'pdf':
             return self._generate_pdf()
         return self._generate_excel()
+
+    @api.model
+    def report_options(self):
+        """Opciones para la pantalla OWL: lista de tipos de reporte."""
+        return {
+            'report_types': [
+                {'value': k, 'label': v}
+                for k, v in self._fields['report_type'].selection
+            ],
+        }
+
+    @api.model
+    def report_download(self, vals=None, fmt='excel'):
+        """Crea el wizard con los filtros de la pantalla OWL y devuelve la
+        accion de descarga (PDF o Excel)."""
+        vals = dict(vals or {})
+        vals.setdefault('report_type', 'available_properties')
+        vals['export_format'] = 'pdf' if fmt == 'pdf' else 'excel'
+        wiz = self.create(vals)
+        return wiz.action_generate_report()
 
     def _get_report_data(self):
         """Get data for the selected report type."""
@@ -158,7 +185,10 @@ class EstateReportWizard(models.TransientModel):
         return data
 
     def _generate_pdf(self):
-        """Generate PDF report using QWeb."""
+        """Renderiza el PDF en el servidor con los datos explícitos y lo devuelve
+        como descarga directa. En Odoo 19, devolver la acción de reporte hace que
+        el wizard transitorio NO llegue como docids al controlador (PDF vacío); por
+        eso renderizamos aquí y entregamos un archivo, igual que el Excel."""
         data = self._get_report_data()
         records = data['records']
         report_data = {
@@ -169,9 +199,20 @@ class EstateReportWizard(models.TransientModel):
             'record_ids': records.ids if records else [],
             'record_model': records._name if records else 'estate.property',
         }
-        return self.env.ref(
-            'estate_reports.action_report_estate_general'
-        ).report_action(self, data={'form': report_data})
+        pdf_content, _ctype = self.env['ir.actions.report']._render_qweb_pdf(
+            'estate_reports.action_report_estate_general', self.ids,
+            data={'form': report_data})
+        safe_title = (data['title'] or 'Reporte').replace(' ', '_').replace('/', '-')
+        filename = f"{safe_title}_{fields.Date.today()}.pdf"
+        self.write({
+            'pdf_file': base64.b64encode(pdf_content),
+            'pdf_filename': filename,
+        })
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{self._name}/{self.id}/pdf_file/{filename}?download=true',
+            'target': 'self',
+        }
 
     def _generate_excel(self):
         """Generate Excel report with professional formatting."""
@@ -189,7 +230,7 @@ class EstateReportWizard(models.TransientModel):
         })
         subtitle_fmt = workbook.add_format({
             'bold': True, 'font_size': 11, 'align': 'center',
-            'bg_color': '#2E86C1', 'font_color': 'white',
+            'bg_color': '#004274', 'font_color': 'white',
         })
         header_fmt = workbook.add_format({
             'bold': True, 'bg_color': '#D4E6F1', 'border': 1,
@@ -337,7 +378,7 @@ class EstateReportWizard(models.TransientModel):
                         'name': 'Ventas ($)',
                         'categories': ['Gráfico Ventas', 1, 0, chart_row - 1, 0],
                         'values': ['Gráfico Ventas', 1, 1, chart_row - 1, 1],
-                        'fill': {'color': '#2E86C1'},
+                        'fill': {'color': '#004274'},
                     })
                     chart.set_title({'name': 'Ventas por Mes'})
                     chart.set_x_axis({'name': 'Mes'})
@@ -634,7 +675,7 @@ class EstateReportWizard(models.TransientModel):
                     chart.add_series({
                         'categories': ['Gráfico Mercado por Ciudad', 1, 0, chart_row - 1, 0],
                         'values': ['Gráfico Mercado por Ciudad', 1, 1, chart_row - 1, 1],
-                        'fill': {'color': '#2E86C1'},
+                        'fill': {'color': '#004274'},
                     })
                     chart.set_title({'name': 'Precio Promedio M² por Ciudad'})
                     chart.set_size({'width': 700, 'height': 400})
@@ -724,7 +765,7 @@ class EstateReportWizard(models.TransientModel):
             chart.add_series({
                 'categories': ['Gráfico Embudo', 0, 0, 3, 0],
                 'values': ['Gráfico Embudo', 0, 1, 3, 1],
-                'fill': {'color': '#3b82f6'},
+                'fill': {'color': '#004274'},
             })
             chart.set_title({'name': 'Embudo de Conversión'})
             chart.set_size({'width': 600, 'height': 400})

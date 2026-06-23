@@ -260,7 +260,7 @@ export class EstateAIChat extends Component {
     // ── SVG Chart Helpers ──────────────────────────────────────────────
 
     _chartBar(entries, cid) {
-        const COLORS = ['#1877F2','#004274','#00897B','#E53935','#FF9800','#7c3aed','#00ACC1','#43A047'];
+        const COLORS = ['#004274','#004274','#00897B','#E53935','#FF9800','#7c3aed','#00ACC1','#43A047'];
         const maxVal = Math.max(...entries.map(e => e.val), 1);
         const W = 380, H = 165, padL = 12, padR = 12, padTop = 22, padBot = 48;
         const plotW = W - padL - padR;
@@ -292,7 +292,7 @@ export class EstateAIChat extends Component {
                 ${bars}${vals}${labels}
             </svg>
             <div style="text-align:right;margin-top:2px">
-                <button onclick="${dl}" style="font-size:11px;color:#1877F2;border:1px solid #1877F2;background:white;border-radius:5px;padding:2px 10px;cursor:pointer;font-family:sans-serif">
+                <button onclick="${dl}" style="font-size:11px;color:#004274;border:1px solid #004274;background:white;border-radius:5px;padding:2px 10px;cursor:pointer;font-family:sans-serif">
                     <i class='fa fa-download'></i> Descargar SVG
                 </button>
             </div>
@@ -300,7 +300,7 @@ export class EstateAIChat extends Component {
     }
 
     _chartPie(entries, cid) {
-        const COLORS = ['#1877F2','#00897B','#E53935','#FF9800','#7c3aed','#004274','#00ACC1','#43A047'];
+        const COLORS = ['#004274','#00897B','#E53935','#FF9800','#7c3aed','#004274','#00ACC1','#43A047'];
         const total = entries.reduce((s,e) => s + Math.max(e.val, 0), 0) || 1;
         const cx = 90, cy = 80, r = 68;
         let slices = '', legend = '';
@@ -331,7 +331,7 @@ export class EstateAIChat extends Component {
                 ${slices}${legend}
             </svg>
             <div style="text-align:right;margin-top:2px">
-                <button onclick="${dl}" style="font-size:11px;color:#1877F2;border:1px solid #1877F2;background:white;border-radius:5px;padding:2px 10px;cursor:pointer;font-family:sans-serif">
+                <button onclick="${dl}" style="font-size:11px;color:#004274;border:1px solid #004274;background:white;border-radius:5px;padding:2px 10px;cursor:pointer;font-family:sans-serif">
                     <i class='fa fa-download'></i> Descargar SVG
                 </button>
             </div>
@@ -358,7 +358,7 @@ export class EstateAIChat extends Component {
 
         let dots = '', labels = '';
         pts.forEach((p, i) => {
-            dots += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#1877F2" stroke="white" stroke-width="1.5"/>`;
+            dots += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4" fill="#004274" stroke="white" stroke-width="1.5"/>`;
             const dv = p.val >= 1000 ? `$${(p.val/1000).toFixed(0)}K` : p.val % 1 === 0 ? p.val : p.val.toFixed(1);
             dots += `<text x="${p.x.toFixed(1)}" y="${(p.y-8).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#004274" font-family="sans-serif" font-weight="600">${dv}</text>`;
             const lbl = p.label.length > 10 ? p.label.slice(0,9)+'…' : p.label;
@@ -380,12 +380,12 @@ export class EstateAIChat extends Component {
             <svg id="${cid}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:100%;display:block">
                 <rect width="${W}" height="${H}" fill="#f8faff" rx="8"/>
                 ${grid}
-                <path d="${area}" fill="#1877F2" opacity=".08"/>
-                <polyline points="${polyline}" fill="none" stroke="#1877F2" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+                <path d="${area}" fill="#004274" opacity=".08"/>
+                <polyline points="${polyline}" fill="none" stroke="#004274" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
                 ${dots}${labels}
             </svg>
             <div style="text-align:right;margin-top:2px">
-                <button onclick="${dl}" style="font-size:11px;color:#1877F2;border:1px solid #1877F2;background:white;border-radius:5px;padding:2px 10px;cursor:pointer;font-family:sans-serif">
+                <button onclick="${dl}" style="font-size:11px;color:#004274;border:1px solid #004274;background:white;border-radius:5px;padding:2px 10px;cursor:pointer;font-family:sans-serif">
                     <i class='fa fa-download'></i> Descargar SVG
                 </button>
             </div>
@@ -423,7 +423,7 @@ export class EstateAIChat extends Component {
 
         // 3. Generic markdown links [text](url)
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g,
-            '<a href="$2" target="_blank" style="color:#1877F2;text-decoration:underline;font-weight:500">$1</a>');
+            '<a href="$2" target="_blank" style="color:#004274;text-decoration:underline;font-weight:500">$1</a>');
 
         // 4. Tables
         html = html.replace(/(?:\|.+\|\n?)+/g, match => {

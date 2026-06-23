@@ -110,8 +110,13 @@ class AuditLogMixin(models.AbstractModel):
         audit = self._audit_enabled() and not self.env.context.get('audit_internal')
         before = {}
         if audit:
+            # Se auditan los campos almacenados que el usuario puede modificar:
+            # planos, o computados-editables (compute + readonly=False, patron
+            # habitual en Odoo moderno como crm.lead.name). Se excluyen solo los
+            # computados de solo-lectura para evitar ruido de recalculos.
             tracked = [f for f in vals if f not in _SKIP_FIELDS and f in self._fields
-                       and self._fields[f].store and not self._fields[f].compute]
+                       and self._fields[f].store
+                       and (not self._fields[f].compute or not self._fields[f].readonly)]
             before = {rec.id: {f: rec[f] for f in tracked} for rec in self}
         res = super().write(vals)
         if audit and before:

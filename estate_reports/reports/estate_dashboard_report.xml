@@ -15,14 +15,14 @@
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
                     <div class="page">
-                        <h2 style="color:#1e40af;margin-bottom:2px;">Informe Ejecutivo</h2>
+                        <h2 style="color:#004274;margin-bottom:2px;">Informe Ejecutivo</h2>
                         <p style="color:#6b7280;margin-top:0;">
                             Generado el <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                         </p>
-                        <hr style="border-color:#1e40af;"/>
+                        <hr style="border-color:#004274;"/>
 
                         <!-- Inventario -->
-                        <h3 style="color:#1e40af;">Inventario de Propiedades</h3>
+                        <h3 style="color:#004274;">Inventario de Propiedades</h3>
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Total propiedades</strong></td>
@@ -45,7 +45,7 @@
                         </table>
 
                         <!-- Indicadores financieros -->
-                        <h3 style="color:#1e40af;margin-top:18px;">Indicadores Financieros del Período</h3>
+                        <h3 style="color:#004274;margin-top:18px;">Indicadores Financieros del Período</h3>
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Ingresos cerrados</strong></td>
@@ -62,7 +62,7 @@
                         </table>
 
                         <!-- Tendencias -->
-                        <h3 style="color:#1e40af;margin-top:18px;">Tendencia vs Período Anterior</h3>
+                        <h3 style="color:#004274;margin-top:18px;">Tendencia vs Período Anterior</h3>
                         <table class="table table-sm">
                             <thead>
                                 <tr style="background:#f3f4f6;">
@@ -94,7 +94,7 @@
                         </table>
 
                         <!-- Embudo CRM -->
-                        <h3 style="color:#1e40af;margin-top:18px;">Embudo de Conversión</h3>
+                        <h3 style="color:#004274;margin-top:18px;">Embudo de Conversión</h3>
                         <table class="table table-sm">
                             <tr>
                                 <td><strong>Leads nuevos</strong></td>
@@ -115,7 +115,7 @@
                         </table>
 
                         <!-- Ranking de asesores (HTML ya computado) -->
-                        <h3 style="color:#1e40af;margin-top:18px;">Ranking de Asesores</h3>
+                        <h3 style="color:#004274;margin-top:18px;">Ranking de Asesores</h3>
                         <div t-out="doc.advisor_ranking_html"/>
                     </div>
                 </t>

@@ -1,7 +1,39 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pkill -9 -f \"odoo19[/]odoo-bin\")"
+      "Bash(pkill -9 -f \"odoo19[/]odoo-bin\")",
+      "Bash(git --no-pager diff --stat estate_reports/static/src/components/)",
+      "Bash(git check-ignore *)",
+      "Bash(xargs grep -lE \"except[^:]*:\\\\s*$\")",
+      "Bash(grep -B1 -E \"^\\\\S+\\\\.py-[0-9]+-\\\\s*pass\\\\s*$\")",
+      "Bash(awk -F: '$1 < 859')",
+      "Bash(break)",
+      "Bash(ps -eo pid,etimes,cmd)",
+      "Bash(cp /tmp/prop.bak /home/justin/Documentos/Tesis/estate_management/models/estate_property.py && echo \"restaurado base OK\" *)",
+      "Bash(kill -9 53664)",
+      "Bash(fuser -k 8070/tcp)",
+      "Read(//home/justin/**)",
+      "Bash(kill -9 41458)",
+      "Bash(cd /home/justin/Documentos/Tesis *)",
+      "Bash(grep -nA15 \"export function useFileUploader\" addons/web/static/src/core/utils/files.js)",
+      "Bash(grep -nA20 \"assets\" estate_management/__manifest__.py)",
+      "Bash(grep -nA14 \"def report_download\" estate_reports/wizards/estate_sales_report_wizard.py)",
+      "Bash(grep -nA16 \"async download\" estate_reports/static/src/components/sales_report/sales_report.js)",
+      "Bash(ps -eo pid,cmd)",
+      "Bash(set +e)",
+      "Bash(grep -nA30 \"get_report_data\" estate_ai_agent/controllers/ai_definitions.py)",
+      "Bash(set +e *)",
+      "Bash(python3 -)",
+      "Bash(node --check estate_ai_agent/static/src/components/ai_chat_float/ai_chat_float.js)",
+      "Bash(pkill -9 -f \"odoo19/odoo-bin\")",
+      "Bash(grep -rnA1 \"Operaciones|menu_operations|estate_menu_operations\" estate_management/views/estate_menus.xml)",
+      "Bash(awk '{print $5, $NF}')",
+      "Bash(xargs -n1 basename)"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/home/justin/Documentos/Tesis/estate_management/models",
+      "/home/justin/Documentos/Tesis/estate_ai_agent/controllers"
     ]
   }
 }

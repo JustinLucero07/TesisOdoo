@@ -21,7 +21,7 @@
                     <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
                         <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                        <table style="width:100%; border-collapse:collapse; background:#004274; margin-bottom:12px;">
                             <tr>
                                 <td style="padding:10px 16px; vertical-align:middle; width:60%;">
                                     <t t-if="env.company.logo">
@@ -43,7 +43,7 @@
                         <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
                         <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
                             <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Informe Mensual para el Propietario</div>
-                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;"><t t-esc="prop.title or prop.name"/></div>
+                            <div style="font-size:15px; font-weight:900; color:#004274;"><t t-esc="prop.title or prop.name"/></div>
                             <div style="font-size:9px; color:#666; margin-top:3px;">
                                 Preparado para: <strong><t t-esc="prop.owner_id.name or 'Propietario'"/></strong>
                                 &#160;&#183;&#160;
@@ -55,14 +55,14 @@
                         <!-- ══ RESUMEN DEL PERÍODO (4 stat boxes) ═════════════════════ -->
                         <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
                             <tr>
-                                <td style="width:25%; background:#1C2B4A; padding:14px; text-align:center; vertical-align:middle; border-right:2px solid white;">
+                                <td style="width:25%; background:#004274; padding:14px; text-align:center; vertical-align:middle; border-right:2px solid white;">
                                     <div style="font-size:8px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Visitas Totales</div>
                                     <div style="font-size:24px; font-weight:900; color:white; line-height:1;"><t t-esc="prop.meeting_count"/></div>
                                     <div style="font-size:8px; color:rgba(255,255,255,0.4); margin-top:3px;">registradas</div>
                                 </td>
                                 <td style="width:25%; background:#F8F9FB; padding:14px; text-align:center; vertical-align:middle; border:1px solid #D8DCE5; border-right:none;">
                                     <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Ofertas Recibidas</div>
-                                    <div style="font-size:24px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="prop.offer_count"/></div>
+                                    <div style="font-size:24px; font-weight:700; color:#004274; line-height:1;"><t t-esc="prop.offer_count"/></div>
                                     <div style="font-size:8px; color:#aaa; margin-top:3px;">activas</div>
                                 </td>
                                 <td style="width:25%; background:#F8F9FB; padding:14px; text-align:center; vertical-align:middle; border:1px solid #D8DCE5; border-right:none;">
@@ -75,14 +75,14 @@
                                 </td>
                                 <td style="width:25%; background:#F8F9FB; padding:14px; text-align:center; vertical-align:middle; border:1px solid #D8DCE5;">
                                     <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">D&#237;as en Mercado</div>
-                                    <div style="font-size:24px; font-weight:700; color:#1C2B4A; line-height:1;"><t t-esc="prop.days_on_market"/></div>
+                                    <div style="font-size:24px; font-weight:700; color:#004274; line-height:1;"><t t-esc="prop.days_on_market"/></div>
                                     <div style="font-size:8px; color:#aaa; margin-top:3px;">d&#237;as</div>
                                 </td>
                             </tr>
                         </table>
 
                         <!-- ══ DATOS DE LA PROPIEDAD ══════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             Datos de la Propiedad
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -96,7 +96,7 @@
                             </tr>
                             <tr>
                                 <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Precio Actual</td>
-                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700; font-size:13px; color:#1C2B4A;">$<t t-esc="'{:,.0f}'.format(prop.price)"/></td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700; font-size:13px; color:#004274;">$<t t-esc="'{:,.0f}'.format(prop.price)"/></td>
                             </tr>
                             <tr>
                                 <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Valor AVM Estimado</td>
@@ -129,7 +129,7 @@
 
                         <!-- ══ HISTORIAL DE PRECIOS ═══════════════════════════════════ -->
                         <t t-if="prop.price_history_ids">
-                            <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                                 Historial de Precios
                             </div>
                             <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -168,7 +168,7 @@
                         </div>
 
                         <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #004274; margin-top:14px; font-size:8px; color:#888;">
                             <tr>
                                 <td style="padding:5px 0; width:50%;">
                                     <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
@@ -176,10 +176,10 @@
                                     <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
                                     <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
                                 </td>
-                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#004274; font-size:9px;">
                                     <t t-esc="env.company.name"/>
                                 </td>
-                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#004274; font-weight:600;">
                                     <t t-esc="prop.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                                 </td>
                             </tr>
@@ -210,7 +210,7 @@
                     <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
                         <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                        <table style="width:100%; border-collapse:collapse; background:#004274; margin-bottom:12px;">
                             <tr>
                                 <td style="padding:10px 16px; vertical-align:middle; width:60%;">
                                     <t t-if="env.company.logo">
@@ -232,7 +232,7 @@
                         <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
                         <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
                             <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Estado de Cuenta del Contrato</div>
-                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;"><t t-esc="contract.property_id.title or '&#8212;'"/></div>
+                            <div style="font-size:15px; font-weight:900; color:#004274;"><t t-esc="contract.property_id.title or '&#8212;'"/></div>
                             <div style="font-size:9px; color:#666; margin-top:3px;">
                                 Cliente: <strong><t t-esc="contract.partner_id.name"/></strong>
                                 &#160;&#183;&#160; Contrato: <t t-esc="contract.name"/>
@@ -242,7 +242,7 @@
                         <!-- ══ RESUMEN FINANCIERO (3 stat boxes) ══════════════════════ -->
                         <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
                             <tr>
-                                <td style="width:33%; background:#1C2B4A; padding:14px; text-align:center; vertical-align:middle; border-right:2px solid white;">
+                                <td style="width:33%; background:#004274; padding:14px; text-align:center; vertical-align:middle; border-right:2px solid white;">
                                     <div style="font-size:8px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Monto Total</div>
                                     <div style="font-size:20px; font-weight:900; color:white; line-height:1;">$<t t-esc="'{:,.2f}'.format(contract.amount)"/></div>
                                 </td>
@@ -258,7 +258,7 @@
                         </table>
 
                         <!-- ══ DATOS DEL CONTRATO ═════════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             Datos del Contrato
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -283,7 +283,7 @@
                         </table>
 
                         <!-- ══ DETALLE DE PAGOS ════════════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             Detalle de Pagos
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -321,7 +321,7 @@
                         </table>
 
                         <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #004274; margin-top:14px; font-size:8px; color:#888;">
                             <tr>
                                 <td style="padding:5px 0; width:50%;">
                                     <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
@@ -329,10 +329,10 @@
                                     <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
                                     <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
                                 </td>
-                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#004274; font-size:9px;">
                                     <t t-esc="env.company.name"/>
                                 </td>
-                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#004274; font-weight:600;">
                                     <t t-esc="contract.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                                 </td>
                             </tr>
@@ -362,7 +362,7 @@
                 <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
                     <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
-                    <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                    <table style="width:100%; border-collapse:collapse; background:#004274; margin-bottom:12px;">
                         <tr>
                             <td style="padding:10px 16px; vertical-align:middle; width:60%;">
                                 <t t-if="env.company.logo">
@@ -384,14 +384,14 @@
                     <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
                     <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
                         <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Documento Financiero</div>
-                        <div style="font-size:15px; font-weight:900; color:#1C2B4A;">Reporte de Comisiones</div>
+                        <div style="font-size:15px; font-weight:900; color:#004274;">Reporte de Comisiones</div>
                         <div style="font-size:9px; color:#666; margin-top:3px;">
                             Generado: <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                         </div>
                     </div>
 
                     <!-- ══ TABLA DE COMISIONES ════════════════════════════════════ -->
-                    <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                    <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                         Detalle de Comisiones
                     </div>
                     <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -414,10 +414,10 @@
                                     <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="comm.user_id.name or '&#8212;'"/></td>
                                     <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center; color:#666;"><t t-esc="dict([('sale','Venta'),('rental','Alquiler'),('bonus','Bono')]).get(comm.type,'&#8212;')"/></td>
                                     <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center; color:#666;"><t t-esc="comm.date.strftime('%d/%m/%Y') if comm.date else '&#8212;'"/></td>
-                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.2f}'.format(comm.amount)"/></td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#004274;">$<t t-esc="'{:,.2f}'.format(comm.amount)"/></td>
                                     <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;">
                                         <span t-if="comm.state=='paid'" style="color:#15803d; font-weight:700;">Pagada</span>
-                                        <span t-elif="comm.state=='approved'" style="color:#1C2B4A; font-weight:700;">Aprobada</span>
+                                        <span t-elif="comm.state=='approved'" style="color:#004274; font-weight:700;">Aprobada</span>
                                         <span t-elif="comm.state=='draft'" style="color:#b45309;">Borrador</span>
                                         <span t-else="" style="color:#C8102E;">Cancelada</span>
                                     </td>
@@ -425,7 +425,7 @@
                             </t>
                         </tbody>
                         <tfoot>
-                            <tr style="background:#1C2B4A; color:white; font-weight:700;">
+                            <tr style="background:#004274; color:white; font-weight:700;">
                                 <td colspan="5" style="padding:8px 10px; font-size:11px;">TOTAL</td>
                                 <td style="padding:8px 10px; text-align:right; font-size:13px;">
                                     $<t t-esc="'{:,.2f}'.format(sum(d.amount for d in docs))"/>
@@ -436,7 +436,7 @@
                     </table>
 
                     <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #004274; margin-top:14px; font-size:8px; color:#888;">
                             <tr>
                                 <td style="padding:5px 0; width:50%;">
                                     <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
@@ -444,10 +444,10 @@
                                     <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
                                     <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
                                 </td>
-                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#004274; font-size:9px;">
                                     <t t-esc="env.company.name"/>
                                 </td>
-                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#004274; font-weight:600;">
                                     Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                                 </td>
                             </tr>

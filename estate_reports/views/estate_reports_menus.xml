@@ -1,184 +1,120 @@
 <odoo>
     <!-- ═══════════════════════════════════════════════════════
-         REPORTES — 5 secciones claras, sin duplicados:
-         1. Dashboard Ejecutivo   2. Tablero Gráfico
-         3. Ventas   4. Análisis   5. Informes
+         REPORTES — consolidado (menos ruido):
+         1. Dashboard (uno solo)
+         2. Ventas y Comisiones (todo lo comercial junto)
+         3. Análisis (agrupado: Propiedades · Operaciones · Financiero)
+         4. Informes / Exportar
+         (Redes Sociales y CRM y Leads se definen en sus módulos)
     ═══════════════════════════════════════════════════════════ -->
 
-    <!-- 1. Dashboard Ejecutivo (rico: KPIs vs meta, Chart.js, filtros, IA, PDF) -->
+    <!-- Se desactiva el "Tablero Gráfico" (se unió al Dashboard, que ya tiene
+         su pestaña de Gráficos). -->
+    <record id="estate_menu_dashboard_direct" model="ir.ui.menu">
+        <field name="active" eval="False"/>
+    </record>
+
+    <!-- 1. DASHBOARD (único: pantalla OWL a medida, sin nube/X) -->
     <menuitem id="estate_menu_dashboard_kpis"
-              name="Dashboard Ejecutivo"
+              name="Dashboard"
               parent="estate_management.estate_menu_intel_root"
-              action="estate_dashboard_action"
+              action="estate_dashboard_owl_action"
               sequence="5"
               groups="estate_management.estate_group_manager"/>
 
-    <!-- 2. Tablero Gráfico (board nativo, para todos) -->
-    <menuitem id="estate_menu_dashboard_direct"
-              name="Tablero Gráfico"
-              parent="estate_management.estate_menu_intel_root"
-              action="estate_board_action"
-              sequence="6"/>
-
-    <!-- ════ 3. VENTAS — cierres, ranking, metas ════ -->
+    <!-- ════ 2. VENTAS Y COMISIONES ════ -->
     <menuitem id="estate_menu_ventas_root"
-              name="Ventas"
+              name="Ventas y Comisiones"
               parent="estate_management.estate_menu_intel_root"
               sequence="10"
               groups="estate_management.estate_group_manager"/>
 
-        <menuitem id="estate_menu_ventas_by_month"
-                  name="Ventas por Mes"
-                  parent="estate_menu_ventas_root"
-                  action="action_sales_by_month"
-                  sequence="10"
-                  groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_ventas_by_month" name="Ventas por Mes"
+                  parent="estate_menu_ventas_root" action="action_sales_by_month"
+                  sequence="10" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_ventas_by_user" name="Ranking de Asesores"
+                  parent="estate_menu_ventas_root" action="action_sales_by_user"
+                  sequence="20" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_ventas_targets" name="Metas de Ventas"
+                  parent="estate_menu_ventas_root" action="estate_sales_target_action"
+                  sequence="30" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_ventas_kpi_wizard" name="Análisis de Cierres (KPIs)"
+                  parent="estate_menu_ventas_root" action="action_estate_sales_report_owl"
+                  sequence="40" groups="estate_management.estate_group_manager"/>
+        <!-- Comisiones: las 3 vistas unificadas en esta sección -->
+        <menuitem id="estate_menu_ventas_commissions" name="Comisiones de Asesores"
+                  parent="estate_menu_ventas_root" action="estate_management.action_estate_commission_dashboard"
+                  sequence="50" groups="estate_management.estate_group_manager"/>
+        <record id="action_estate_commission_report_owl" model="ir.actions.client">
+            <field name="name">Liquidación de Comisiones</field>
+            <field name="tag">estate_commission_report_owl</field>
+        </record>
 
-        <menuitem id="estate_menu_ventas_by_user"
-                  name="Ranking de Asesores"
-                  parent="estate_menu_ventas_root"
-                  action="action_sales_by_user"
-                  sequence="20"
-                  groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_ventas_commission_status" name="Estado de Pago de Comisiones"
+                  parent="estate_menu_ventas_root" action="estate_management.action_estate_commission_payment_status"
+                  sequence="55" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_commission_wizard" name="Liquidación de Comisiones"
+                  parent="estate_menu_ventas_root" action="action_estate_commission_report_owl"
+                  sequence="60" groups="estate_management.estate_group_manager"/>
 
-        <menuitem id="estate_menu_ventas_targets"
-                  name="Metas de Ventas"
-                  parent="estate_menu_ventas_root"
-                  action="estate_sales_target_action"
-                  sequence="30"
-                  groups="estate_management.estate_group_manager"/>
+    <!-- ════ 3. ANÁLISIS — agrupado en 3 ════ -->
+    <menuitem id="estate_menu_analytics_root" name="Análisis"
+              parent="estate_management.estate_menu_intel_root" sequence="25"/>
 
-        <menuitem id="estate_menu_ventas_commissions"
-                  name="Comisiones de Asesores"
-                  parent="estate_menu_ventas_root"
-                  action="estate_management.action_estate_commission_dashboard"
-                  sequence="40"
-                  groups="estate_management.estate_group_manager"/>
+        <!-- 3.A Propiedades -->
+        <menuitem id="estate_menu_analytics_grp_prop" name="Propiedades"
+                  parent="estate_menu_analytics_root" sequence="10"/>
+            <menuitem id="estate_menu_analytics_property" name="Resumen"
+                      parent="estate_menu_analytics_grp_prop" action="estate_analytics_property_action" sequence="10"/>
+            <menuitem id="estate_menu_ventas_by_type" name="Por Tipo de Propiedad"
+                      parent="estate_menu_analytics_grp_prop" action="action_sales_by_type"
+                      sequence="20" groups="estate_management.estate_group_manager"/>
+            <menuitem id="estate_menu_ventas_days" name="Días en Mercado"
+                      parent="estate_menu_analytics_grp_prop" action="action_sales_days_market"
+                      sequence="30" groups="estate_management.estate_group_manager"/>
+            <menuitem id="estate_menu_ventas_avg" name="Precio Promedio Mensual"
+                      parent="estate_menu_analytics_grp_prop" action="action_sales_avg_month"
+                      sequence="40" groups="estate_management.estate_group_manager"/>
 
-        <menuitem id="estate_menu_ventas_commission_status"
-                  name="Estado de Pago de Comisiones"
-                  parent="estate_menu_ventas_root"
-                  action="estate_management.action_estate_commission_payment_status"
-                  sequence="45"
-                  groups="estate_management.estate_group_manager"/>
+        <!-- 3.B Operaciones -->
+        <menuitem id="estate_menu_analytics_grp_ops" name="Operaciones"
+                  parent="estate_menu_analytics_root" sequence="20"/>
+            <menuitem id="estate_menu_analytics_contract" name="Contratos"
+                      parent="estate_menu_analytics_grp_ops" action="estate_analytics_contract_action"
+                      sequence="10" groups="estate_management.estate_group_manager"/>
+            <menuitem id="estate_menu_analytics_offer" name="Ofertas"
+                      parent="estate_menu_analytics_grp_ops" action="estate_analytics_offer_action"
+                      sequence="20" groups="estate_management.estate_group_agent"/>
+            <menuitem id="estate_menu_analytics_appraisal" name="Tasaciones"
+                      parent="estate_menu_analytics_grp_ops" action="estate_analytics_appraisal_action"
+                      sequence="30" groups="estate_management.estate_group_manager"/>
+            <menuitem id="estate_menu_analytics_maintenance" name="Mantenimiento"
+                      parent="estate_menu_analytics_grp_ops" action="estate_analytics_maintenance_action"
+                      sequence="40" groups="estate_management.estate_group_manager"/>
 
-        <!-- Wizard de KPIs de cierre (PDF/Excel). Antes duplicado en Informes. -->
-        <menuitem id="estate_menu_ventas_kpi_wizard"
-                  name="Análisis de Cierres (KPIs)"
-                  parent="estate_menu_ventas_root"
-                  action="action_estate_sales_report_wizard"
-                  sequence="50"
-                  groups="estate_management.estate_group_manager"/>
+        <!-- 3.C Financiero -->
+        <menuitem id="estate_menu_analytics_grp_fin" name="Financiero"
+                  parent="estate_menu_analytics_root" sequence="30"/>
+            <menuitem id="estate_menu_analytics_payment" name="Pagos"
+                      parent="estate_menu_analytics_grp_fin" action="estate_analytics_payment_action"
+                      sequence="10" groups="estate_management.estate_group_manager"/>
+            <menuitem id="estate_menu_analytics_expense" name="Gastos"
+                      parent="estate_menu_analytics_grp_fin" action="estate_analytics_expense_action"
+                      sequence="20" groups="estate_management.estate_group_manager"/>
 
-    <!-- ════ 4. ANÁLISIS — pivots/gráficos nativos por modelo ════ -->
-    <menuitem id="estate_menu_analytics_root"
-              name="Análisis"
-              parent="estate_management.estate_menu_intel_root"
-              sequence="25"/>
-
-        <menuitem id="estate_menu_analytics_property"
-                  name="Propiedades"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_property_action"
-                  sequence="10"/>
-
-        <!-- Movidos aquí desde Ventas (son análisis granular) -->
-        <menuitem id="estate_menu_ventas_by_type"
-                  name="Por Tipo de Propiedad"
-                  parent="estate_menu_analytics_root"
-                  action="action_sales_by_type"
-                  sequence="15"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_ventas_days"
-                  name="Días en Mercado"
-                  parent="estate_menu_analytics_root"
-                  action="action_sales_days_market"
-                  sequence="18"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_ventas_avg"
-                  name="Precio Promedio Mensual"
-                  parent="estate_menu_analytics_root"
-                  action="action_sales_avg_month"
-                  sequence="19"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_analytics_contract"
-                  name="Contratos"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_contract_action"
-                  sequence="20"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_analytics_payment"
-                  name="Pagos"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_payment_action"
-                  sequence="30"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_analytics_offer"
-                  name="Ofertas"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_offer_action"
-                  sequence="40"
-                  groups="estate_management.estate_group_agent"/>
-
-        <menuitem id="estate_menu_analytics_expense"
-                  name="Gastos"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_expense_action"
-                  sequence="50"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_analytics_appraisal"
-                  name="Tasaciones"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_appraisal_action"
-                  sequence="60"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_analytics_maintenance"
-                  name="Mantenimiento"
-                  parent="estate_menu_analytics_root"
-                  action="estate_analytics_maintenance_action"
-                  sequence="70"
-                  groups="estate_management.estate_group_manager"/>
-
-    <!-- ════ 5. INFORMES — exportaciones y wizards ════ -->
-    <menuitem id="estate_menu_reports_root"
-              name="Informes"
-              parent="estate_management.estate_menu_intel_root"
-              sequence="60"
+    <!-- ════ 4. INFORMES / EXPORTAR ════ -->
+    <menuitem id="estate_menu_reports_root" name="Informes"
+              parent="estate_management.estate_menu_intel_root" sequence="60"
               groups="estate_management.estate_group_manager"/>
 
-        <menuitem id="estate_menu_report_report_wizard"
-                  name="Exportar Datos"
-                  parent="estate_menu_reports_root"
-                  action="estate_report_wizard_action"
-                  sequence="10"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_commission_wizard"
-                  name="Liquidación de Comisiones"
-                  parent="estate_menu_reports_root"
-                  action="estate_commission_wizard_action"
-                  sequence="20"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_visitor_report"
-                  name="Reporte de Visitas"
-                  parent="estate_menu_reports_root"
-                  action="estate_visitor_report_action"
-                  sequence="30"
-                  groups="estate_management.estate_group_manager"/>
-
-        <menuitem id="estate_menu_comparator_report"
-                  name="Comparar Propiedades"
-                  parent="estate_menu_reports_root"
-                  action="estate_management.estate_property_comparator_wizard_action"
-                  sequence="50"
-                  groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_report_report_wizard" name="Exportar Datos"
+                  parent="estate_menu_reports_root" action="estate_report_export_owl_action"
+                  sequence="10" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_visitor_report" name="Reporte de Visitas"
+                  parent="estate_menu_reports_root" action="estate_visitor_report_action"
+                  sequence="30" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_comparator_report" name="Comparar Propiedades"
+                  parent="estate_menu_reports_root" action="estate_management.estate_property_comparator_wizard_action"
+                  sequence="50" groups="estate_management.estate_group_manager"/>
 
 </odoo>

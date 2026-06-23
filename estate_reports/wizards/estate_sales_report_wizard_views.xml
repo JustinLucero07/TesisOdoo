@@ -156,11 +156,12 @@
         </field>
     </record>
 
-    <record id="action_estate_sales_report_wizard" model="ir.actions.act_window">
+    <!-- Acción de formulario VIEJA eliminada: reemplazada por la pantalla OWL (action_estate_sales_report_owl). -->
+
+    <!-- Pantalla OWL a medida (lineal, sin nube/X) -->
+    <record id="action_estate_sales_report_owl" model="ir.actions.client">
         <field name="name">Promedio de Ventas</field>
-        <field name="res_model">estate.sales.report.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
+        <field name="tag">estate_sales_report_owl</field>
     </record>
 
 </odoo>

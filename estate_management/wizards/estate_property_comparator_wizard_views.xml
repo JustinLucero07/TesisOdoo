@@ -48,7 +48,7 @@
                     <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
                         <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                        <table style="width:100%; border-collapse:collapse; background:#004274; margin-bottom:12px;">
                             <tr>
                                 <td style="padding:10px 16px; vertical-align:middle; width:60%;">
                                     <t t-if="env.company.logo">
@@ -70,14 +70,14 @@
                         <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
                         <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
                             <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">An&#225;lisis Comparativo</div>
-                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;">Tabla Comparativa de Propiedades</div>
+                            <div style="font-size:15px; font-weight:900; color:#004274;">Tabla Comparativa de Propiedades</div>
                             <div style="font-size:9px; color:#666; margin-top:3px;">
                                 Generado por <t t-esc="env.user.name"/> &#183; <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/>
                             </div>
                         </div>
 
                         <!-- ══ TABLA COMPARATIVA ═══════════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             Comparaci&#243;n detallada
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -94,9 +94,9 @@
                             <tbody>
                                 <!-- Precio -->
                                 <tr style="background:#EEF2F8;">
-                                    <td style="padding:8px 12px; border:1px solid #D8DCE5; font-weight:700; color:#1C2B4A;">Precio</td>
+                                    <td style="padding:8px 12px; border:1px solid #D8DCE5; font-weight:700; color:#004274;">Precio</td>
                                     <t t-foreach="props" t-as="prop">
-                                        <td style="padding:8px 12px; border:1px solid #D8DCE5; text-align:center; font-weight:900; font-size:13px; color:#1C2B4A;">
+                                        <td style="padding:8px 12px; border:1px solid #D8DCE5; text-align:center; font-weight:900; font-size:13px; color:#004274;">
                                             $<t t-esc="'{:,.0f}'.format(prop.price)"/>
                                         </td>
                                     </t>
@@ -205,7 +205,7 @@
                                 <tr>
                                     <td style="padding:8px 12px; border:1px solid #D8DCE5; font-weight:600; color:#555;">Score Propiedad</td>
                                     <t t-foreach="props" t-as="prop">
-                                        <td style="padding:8px 12px; border:1px solid #D8DCE5; text-align:center; font-weight:700; color:#1C2B4A;">
+                                        <td style="padding:8px 12px; border:1px solid #D8DCE5; text-align:center; font-weight:700; color:#004274;">
                                             <t t-esc="prop.property_score or 0"/>/100
                                         </td>
                                     </t>
@@ -218,7 +218,7 @@
                                             <span t-if="prop.state == 'available'" style="color:#15803d; font-weight:700;">Disponible</span>
                                             <span t-elif="prop.state == 'reserved'" style="color:#b45309; font-weight:700;">Reservada</span>
                                             <span t-elif="prop.state == 'sold'" style="color:#666;">Vendida</span>
-                                            <span t-else="" style="color:#1C2B4A;">Arrendada</span>
+                                            <span t-else="" style="color:#004274;">Arrendada</span>
                                         </td>
                                     </t>
                                 </tr>
@@ -238,7 +238,7 @@
                                     <t t-if="env.company.street"> &#183; <t t-esc="env.company.street"/></t>
                                     <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
                                 </td>
-                                <td style="text-align:right; padding:6px 0; width:40%; color:#1C2B4A; font-weight:600;">
+                                <td style="text-align:right; padding:6px 0; width:40%; color:#004274; font-weight:600;">
                                     Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                                 </td>
                             </tr>

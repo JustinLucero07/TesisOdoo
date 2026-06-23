@@ -18,7 +18,7 @@
                     <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px; line-height:1.6;">
 
                         <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                        <table style="width:100%; border-collapse:collapse; background:#004274; margin-bottom:12px;">
                             <tr>
                                 <td style="padding:10px 16px; vertical-align:middle; width:60%;">
                                     <t t-if="env.company.logo">
@@ -48,7 +48,7 @@
                                 <t t-elif="o.estate_transaction_type == 'rent'">Arrendamiento &#183; Documento Privado</t>
                                 <t t-else="">Acuerdo Inmobiliario</t>
                             </div>
-                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;">
+                            <div style="font-size:15px; font-weight:900; color:#004274;">
                                 <t t-if="o.estate_transaction_type == 'sale'">Contrato de Compraventa de Bien Inmueble</t>
                                 <t t-elif="o.estate_transaction_type == 'rent'">Contrato de Arrendamiento Inmobiliario</t>
                                 <t t-else="">Acuerdo Inmobiliario</t>
@@ -62,7 +62,7 @@
                         </div>
 
                         <!-- ══ IDENTIFICACIÓN DE LAS PARTES ═══════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             Identificaci&#243;n de las partes
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -106,7 +106,7 @@
 
                         <!-- ══ IDENTIFICACIÓN DEL INMUEBLE ════════════════════════════ -->
                         <t t-if="o.property_id">
-                            <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                                 Identificaci&#243;n del inmueble
                             </div>
                             <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -135,7 +135,7 @@
                         </t>
 
                         <!-- ══ CLÁUSULAS ════════════════════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             Cl&#225;usulas del Contrato
                         </div>
                         <div style="border:1px solid #D8DCE5; border-top:none; padding:14px; margin-bottom:14px; font-size:11px; line-height:1.7; color:#333;">
@@ -183,7 +183,7 @@
                         </table>
 
                         <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #004274; margin-top:14px; font-size:8px; color:#888;">
                             <tr>
                                 <td style="padding:5px 0; width:50%;">
                                     <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
@@ -191,10 +191,10 @@
                                     <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
                                     <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
                                 </td>
-                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#004274; font-size:9px;">
                                     <t t-esc="env.company.name"/>
                                 </td>
-                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#004274; font-weight:600;">
                                     <t t-esc="o.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                                 </td>
                             </tr>

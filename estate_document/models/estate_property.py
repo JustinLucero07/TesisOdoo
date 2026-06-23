@@ -17,8 +17,25 @@ class EstateProperty(models.Model):
         return {
             'type': 'ir.actions.act_window',
             'name': 'Documentos',
-            'view_mode': 'kanban,list,form',
+            'view_mode': 'list,kanban,form',
             'res_model': 'estate.document',
             'domain': [('property_id', '=', self.id)],
             'context': {'default_property_id': self.id},
+        }
+
+    def action_new_document(self):
+        """Acceso directo: abre en una ventana el formulario de un documento
+        nuevo, ya vinculado a esta propiedad (y a su propietario)."""
+        self.ensure_one()
+        ctx = {'default_property_id': self.id}
+        if self.owner_id:
+            ctx['default_partner_id'] = self.owner_id.id
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuevo Documento',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'res_model': 'estate.document',
+            'target': 'new',
+            'context': ctx,
         }

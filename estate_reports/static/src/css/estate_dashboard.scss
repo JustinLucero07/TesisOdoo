@@ -1,8 +1,6 @@
 // =============================================================================
-// Dashboard Inmobiliario — full-width + responsive overrides
-// The marker class .o_estate_db is added to the first div inside <sheet>
-// so the :has() selector can walk up to .o_form_sheet_bg and remove its
-// built-in max-width: 1400px constraint.
+// Dashboard Inmobiliario — Estilos unificados (azulizo #004274)
+// Aplica tanto al Dashboard General como al Promedio de Ventas.
 // =============================================================================
 
 // ── Full-width form sheet ────────────────────────────────────────────────────
@@ -74,6 +72,63 @@
         .o_field_html div[style*="min-width:130px"],
         .o_field_html div[style*="min-width: 130px"] {
             min-width: 45% !important;
+        }
+    }
+}
+
+// ── Dashboard OWL (client action) ────────────────────────────────────────────
+.o_estate_dashboard {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+
+    // Las tablas dentro de cards
+    .table {
+        margin-bottom: 0;
+
+        td {
+            padding: 6px 8px;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+    }
+
+    // Hover sutil en filas de tabla
+    .table-sm tbody tr:hover {
+        background-color: rgba(0, 66, 116, 0.03);
+    }
+
+    // Cards: hover lift effect
+    .rounded-3[style*="background:#fff"] {
+        transition: box-shadow 0.2s ease, transform 0.15s ease;
+
+        &:hover {
+            box-shadow: 0 4px 12px rgba(0, 66, 116, 0.08) !important;
+            transform: translateY(-1px);
+        }
+    }
+
+    // KPI stat buttons en header
+    .d-flex.flex-wrap > div.rounded[style*="rgba(255,255,255"] {
+        transition: background 0.2s ease, transform 0.15s ease;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.22) !important;
+            transform: translateY(-2px);
+        }
+    }
+
+    // Responsive
+    @media (max-width: 768px) {
+        .d-flex.flex-wrap > div.rounded {
+            flex: 1 1 calc(50% - 8px);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .d-flex.flex-wrap > div.rounded {
+            flex: 1 1 100%;
         }
     }
 }

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Gráfico Chart.js -->
+    <t t-name="estate_reports.DashChart">
+        <div style="position:relative;height:220px;">
+            <canvas t-if="hasData" t-ref="canvas"/>
+            <div t-else="" class="text-center text-muted py-5">Sin datos en el período</div>
+        </div>
+    </t>
+
+    <!-- Dashboard -->
+    <t t-name="estate_reports.DashboardAction">
+        <div class="o_estate_dashboard p-4" style="overflow-y:auto;height:100%;background:#ffffff;">
+
+            <!-- ═══ ENCABEZADO ═══ -->
+            <div class="px-4 pt-4 pb-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                    <h2 class="m-0" style="color:#004274;font-weight:700;font-size:1.5rem;">
+                        Dashboard General
+                    </h2>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <select class="form-select form-select-sm"
+                                style="max-width:200px;border-color:#004274;"
+                                t-on-change="onUser">
+                            <option value="">Todos los asesores</option>
+                            <t t-foreach="state.advisors" t-as="a" t-key="a.id">
+                                <option t-att-value="a.id" t-att-selected="a.id === state.userId" t-esc="a.name"/>
+                            </t>
+                        </select>
+                        <select class="form-select form-select-sm"
+                                style="max-width:170px;border-color:#004274;"
+                                t-on-change="onPeriod">
+                            <t t-foreach="state.periods" t-as="p" t-key="p.value">
+                                <option t-att-value="p.value" t-att-selected="p.value === state.period" t-esc="p.label"/>
+                            </t>
+                        </select>
+                        <button class="btn btn-sm" t-on-click="refresh" title="Actualizar"
+                                style="background:#004274;color:#fff;border:none;">
+                            <i class="fa fa-refresh"/>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI tiles -->
+                <div class="d-flex flex-wrap gap-0" style="border:1px solid #e5e7eb;">
+                    <div class="text-center px-3 py-2 flex-fill"
+                         style="border-right:1px solid #e5e7eb;cursor:pointer;"
+                         t-on-click="() =&gt; this.openList('estate.property', 'Disponibles', [['state','=','available']])">
+                        <div class="text-muted small text-uppercase">Disponibles</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.available_properties"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Ofertas activas</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.active_offers_count"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Contratos activos</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.active_contracts_count"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Visitas</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.appointments_done"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Estancadas</div>
+                        <div class="h3 m-0 text-warning" t-esc="state.k.stagnant_properties"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill">
+                        <div class="text-muted small text-uppercase">Por vencer</div>
+                        <div class="h3 m-0 text-danger" t-esc="state.k.contracts_expiring"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ CONTENIDO PRINCIPAL ═══ -->
+            <div class="px-4 pb-4">
+
+                <!-- Cargando -->
+                <div t-if="state.loading" class="text-center py-5 text-muted">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                    <div class="mt-2">Cargando indicadores...</div>
+                </div>
+
+                <div t-else="">
+
+                    <!-- Consultar IA -->
+                    <div class="p-3 mb-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
+                        <div class="small fw-bold mb-1" style="color:#004274;">Consultar Asistente IA</div>
+                        <div class="d-flex gap-2">
+                            <input type="text" class="form-control form-control-sm"
+                                   placeholder="Ej.: ¿Cuál fue el mejor asesor este mes?"
+                                   t-model="state.aiQuery"/>
+                            <button class="btn btn-sm text-nowrap text-white" t-on-click="askAi"
+                                    t-att-disabled="state.aiLoading"
+                                    style="background:#004274;">
+                                <i t-att-class="state.aiLoading ? 'fa fa-spinner fa-spin' : 'fa fa-paper-plane'"/> Preguntar
+                            </button>
+                        </div>
+                        <div t-if="state.aiResponse" class="mt-2 small border p-2"
+                             style="background:#fff;" t-out="raw(state.aiResponse)"/>
+                    </div>
+
+                    <!-- Secciones de datos -->
+                    <div class="row">
+                        <!-- Propiedades -->
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Propiedades</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Total</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.total_properties"/></tr>
+                                <tr><td class="text-muted">Disponibles</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.available_properties"/></tr>
+                                <tr><td class="text-muted">Vendidas / Rentadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.sold_properties"/></tr>
+                                <tr><td class="text-muted">Estancadas (+60 días)</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.stagnant_properties"/></tr>
+                                <tr><td class="text-muted">Días promedio en mercado</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num(state.k.avg_days_on_market)"/></tr>
+                            </table>
+                        </div>
+                        <!-- Clientes y Actividad -->
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Clientes y Actividad</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Total clientes</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.total_clients"/></tr>
+                                <tr><td class="text-muted">Clientes activos</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.active_clients"/></tr>
+                                <tr><td class="text-muted">Visitas realizadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.appointments_done"/></tr>
+                                <tr><td class="text-muted">Ofertas activas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.active_offers_count"/></tr>
+                                <tr><td class="text-muted">Contratos por vencer</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.contracts_expiring"/></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Indicadores Financieros -->
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Indicadores Financieros</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Comisiones del período</td><td class="text-end fw-semibold text-success" t-esc="money(state.k.monthly_commissions)"/></tr>
+                                <tr><td class="text-muted">Ingresos cerrados</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.won_revenue_month)"/></tr>
+                                <tr><td class="text-muted">Pipeline pendiente</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.pending_revenue)"/></tr>
+                                <tr><td class="text-muted">Facturas pendientes</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.pending_invoices_amount)"/></tr>
+                            </table>
+                        </div>
+                        <!-- Embudo CRM -->
+                        <div class="col-12 col-lg-6">
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Embudo CRM</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Leads nuevos</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.funnel_leads_new"/></tr>
+                                <tr><td class="text-muted">Visitas realizadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.funnel_visits_done"/></tr>
+                                <tr><td class="text-muted">Ofertas realizadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.funnel_offers_made"/></tr>
+                                <tr><td class="text-muted">Ganados</td><td class="text-end fw-semibold text-success" t-esc="state.k.funnel_won"/></tr>
+                                <tr><td class="text-muted">Perdidos</td><td class="text-end fw-semibold text-danger" t-esc="state.k.funnel_lost"/></tr>
+                                <tr><td class="text-muted">Tasa de conversión</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num(state.k.funnel_conversion_pct) + '%'"/></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tendencia vs período anterior -->
+                    <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2 mt-2" style="color:#004274;">Tendencia vs Período Anterior</div>
+                    <div style="border:1px solid #e5e7eb;" class="mb-4">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr style="background:#004274;color:#fff;">
+                                    <th class="ps-3">Métrica</th>
+                                    <th class="text-center">Período Actual</th>
+                                    <th class="text-center">Período Anterior</th>
+                                    <th class="text-center pe-3">Variación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="ps-3 fw-semibold">Ventas</td>
+                                    <td class="text-center h6 m-0" t-esc="state.k.trend_sales_current"/>
+                                    <td class="text-center text-muted" t-esc="state.k.trend_sales_prev"/>
+                                    <td class="text-center pe-3 fw-bold" t-att-class="pctClass(state.k.trend_sales_pct)">
+                                        <t t-esc="pctArrow(state.k.trend_sales_pct)"/> <t t-esc="num(state.k.trend_sales_pct)"/>%
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="ps-3 fw-semibold">Leads Nuevos</td>
+                                    <td class="text-center h6 m-0" t-esc="state.k.trend_leads_current"/>
+                                    <td class="text-center text-muted" t-esc="state.k.trend_leads_prev"/>
+                                    <td class="text-center pe-3 fw-bold" t-att-class="pctClass(state.k.trend_leads_pct)">
+                                        <t t-esc="pctArrow(state.k.trend_leads_pct)"/> <t t-esc="num(state.k.trend_leads_pct)"/>%
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Gráficos Chart.js -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-lg-6">
+                            <div style="border:1px solid #e5e7eb;" class="p-3 h-100">
+                                <div class="text-uppercase small fw-bold mb-2" style="color:#004274;">Ventas (últimos 6 meses)</div>
+                                <DashChart data="state.salesChart"/>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <div style="border:1px solid #e5e7eb;" class="p-3 h-100">
+                                <div class="text-uppercase small fw-bold mb-2" style="color:#004274;">Leads (últimos 6 meses)</div>
+                                <DashChart data="state.leadsChart"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ranking de asesores -->
+                    <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Ranking de Asesores</div>
+                    <div style="border:1px solid #e5e7eb;" class="mb-4">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr style="background:#004274;color:#fff;">
+                                    <th class="ps-3">#</th>
+                                    <th>Asesor</th>
+                                    <th class="text-center">Ventas</th>
+                                    <th class="text-end">Ingresos</th>
+                                    <th class="text-end pe-3">Comisión</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="state.ranking" t-as="r" t-key="r_index">
+                                    <td class="ps-3 text-muted" t-esc="r_index + 1"/>
+                                    <td class="fw-semibold" t-esc="r.name"/>
+                                    <td class="text-center" t-esc="r.sales"/>
+                                    <td class="text-end" t-esc="money(r.revenue)"/>
+                                    <td class="text-end pe-3 text-success" t-esc="money(r.commission)"/>
+                                </tr>
+                                <tr t-if="!state.ranking.length">
+                                    <td colspan="5" class="text-center text-muted py-3">Sin ventas registradas en el período</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

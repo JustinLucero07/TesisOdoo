@@ -18,7 +18,7 @@ class EstateContract(models.Model):
             'type': 'ir.actions.act_window',
             'name': f'Documentos — {self.name}',
             'res_model': 'estate.document',
-            'view_mode': 'kanban,list,form',
+            'view_mode': 'list,kanban,form',
             'domain': [('contract_id', '=', self.id)],
             'context': {
                 'default_contract_id': self.id,

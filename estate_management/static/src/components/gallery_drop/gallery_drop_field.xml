@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="estate_management.GalleryDropField">
+        <div t-attf-class="oe_fileupload o_gallery_drop {{ props.className ? props.className : '' }} {{ dropState.dragging ? 'o_gallery_drop_active' : '' }}"
+             t-on-dragover="onDragOver" t-on-dragenter="onDragOver"
+             t-on-dragleave="onDragLeave" t-on-drop="onDrop" aria-atomic="true">
+            <div t-if="dropState.dragging" class="o_gallery_drop_hint text-center p-3">
+                <i class="fa fa-cloud-upload fa-2x d-block mb-2"/>
+                <span class="fw-bold">Suelta las imagenes aqui</span>
+            </div>
+            <div class="o_attachments">
+                <t t-foreach="files" t-as="file" t-key="file_index">
+                    <t t-call="web.Many2ManyBinaryField.attachment_preview"/>
+                </t>
+            </div>
+            <div t-if="!props.readonly &amp;&amp; (!props.numberOfFiles or files.length &lt; props.numberOfFiles)"
+                 class="oe_add">
+                <FileInput
+                    acceptedFileExtensions="props.acceptedFileExtensions"
+                    multiUpload="true"
+                    onUpload.bind="onFileUploaded"
+                    resModel="props.record.resModel"
+                    resId="props.record.resId or 0">
+                    <button class="btn btn-secondary o_attach" data-tooltip="Adjuntar">
+                        <span class="fa fa-paperclip" aria-label="Adjuntar"/> <t t-esc="uploadText"/>
+                    </button>
+                </FileInput>
+            </div>
+        </div>
+    </t>
+
+</templates>

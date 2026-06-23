@@ -25,7 +25,7 @@
                     <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:11px;">
 
                         <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; background:#1C2B4A; margin-bottom:12px;">
+                        <table style="width:100%; border-collapse:collapse; background:#004274; margin-bottom:12px;">
                             <tr>
                                 <td style="padding:10px 16px; vertical-align:middle; width:60%;">
                                     <t t-if="env.company.logo">
@@ -47,7 +47,7 @@
                         <!-- ══ TÍTULO ═══════════════════════════════════════════════════ -->
                         <div style="border-left:4px solid #C8102E; padding:8px 14px; background:#F8F9FB; border-top:1px solid #E0E4EC; border-right:1px solid #E0E4EC; border-bottom:1px solid #E0E4EC; margin-bottom:14px;">
                             <div style="font-size:7px; color:#C8102E; text-transform:uppercase; letter-spacing:2px; font-weight:700; margin-bottom:4px;">Documento Interno &#183; Gesti&#243;n</div>
-                            <div style="font-size:15px; font-weight:900; color:#1C2B4A;">
+                            <div style="font-size:15px; font-weight:900; color:#004274;">
                                 <t t-esc="prop.title or prop.name"/>
                             </div>
                             <div style="font-size:9px; color:#666; margin-top:3px;">
@@ -65,7 +65,7 @@
                         </div>
 
                         <!-- ══ 1. DATOS DEL PROPIETARIO ═══════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             1. Datos del Propietario
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -92,7 +92,7 @@
                         </table>
 
                         <!-- ══ 2. DATOS DEL INMUEBLE ═══════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             2. Datos del Inmueble
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -143,7 +143,7 @@
                         </table>
 
                         <!-- ══ 3. CONDICIONES COMERCIALES ═════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             3. Condiciones Comerciales
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -157,7 +157,7 @@
                             <tbody>
                                 <tr>
                                     <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;">Precio de publicaci&#243;n</td>
-                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#1C2B4A;">$<t t-esc="'{:,.2f}'.format(prop.price or 0)"/></td>
+                                    <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#004274;">$<t t-esc="'{:,.2f}'.format(prop.price or 0)"/></td>
                                     <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#666;">Acordado con propietario</td>
                                 </tr>
                                 <tr style="background:#F9FAFB;">
@@ -190,7 +190,7 @@
                         </table>
 
                         <!-- ══ 4. DOCUMENTACIÓN ═══════════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             4. Checklist de Documentaci&#243;n
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
@@ -267,7 +267,7 @@
 
                         <!-- ══ 5. DESCRIPCIÓN ═════════════════════════════════════════ -->
                         <t t-if="prop.description">
-                            <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                            <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                                 5. Descripci&#243;n de la Propiedad
                             </div>
                             <div style="border:1px solid #D8DCE5; border-top:none; padding:10px 14px; font-size:11px; color:#444; margin-bottom:14px; line-height:1.6;">
@@ -276,7 +276,7 @@
                         </t>
 
                         <!-- ══ 6. ACEPTACIÓN / FIRMAS ═════════════════════════════════ -->
-                        <div style="background:#1C2B4A; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                        <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
                             6. Aceptaci&#243;n
                         </div>
                         <div style="border:1px solid #D8DCE5; border-top:none; padding:10px 14px; margin-bottom:24px; font-size:10px; color:#555; line-height:1.6;">
@@ -302,7 +302,7 @@
                         </table>
 
                         <!-- ══ PIE ═══════════════════════════════════════════════════════ -->
-                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #1C2B4A; margin-top:14px; font-size:8px; color:#888;">
+                        <table style="width:100%; border-collapse:collapse; border-top:3px solid #004274; margin-top:14px; font-size:8px; color:#888;">
                             <tr>
                                 <td style="padding:5px 0; width:50%;">
                                     <t t-if="env.company.street"><strong><t t-esc="env.company.street"/></strong></t>
@@ -310,10 +310,10 @@
                                     <t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
                                     <t t-if="env.company.phone"> &#183; <t t-esc="env.company.phone"/></t>
                                 </td>
-                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#1C2B4A; font-size:9px;">
+                                <td style="padding:5px 0; width:20%; text-align:center; font-weight:700; color:#004274; font-size:9px;">
                                     <t t-esc="env.company.name"/>
                                 </td>
-                                <td style="padding:5px 0; width:30%; text-align:right; color:#1C2B4A; font-weight:600;">
+                                <td style="padding:5px 0; width:30%; text-align:right; color:#004274; font-weight:600;">
                                     <t t-esc="prop.name"/> &#183; Emitido <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
                                 </td>
                             </tr>

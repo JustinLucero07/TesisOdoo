@@ -18,7 +18,7 @@
                 <t t-call="web.external_layout">
                     <div class="page" style="font-family:Arial,Helvetica,sans-serif; color:#222; font-size:12px; line-height:1.6;">
 
-                        <h2 style="text-align:center; color:#1C2B4A; margin-bottom:4px;">
+                        <h2 style="text-align:center; color:#004274; margin-bottom:4px;">
                             CONTRATO DE
                             <t t-esc="dict([('sale','COMPRAVENTA'),('rent','ARRENDAMIENTO'),('exclusive','EXCLUSIVIDAD')]).get(o.contract_type, 'INMOBILIARIO')"/>
                         </h2>
@@ -31,14 +31,14 @@
                         <table style="width:100%; margin-top:14px; border-collapse:collapse;">
                             <tr>
                                 <td style="width:50%; vertical-align:top; padding:6px;">
-                                    <strong style="color:#1C2B4A;">VENDEDOR / ARRENDADOR</strong><br/>
+                                    <strong style="color:#004274;">VENDEDOR / ARRENDADOR</strong><br/>
                                     <t t-if="o.property_id and o.property_id.owner_id">
                                         <span t-field="o.property_id.owner_id.name"/>
                                     </t>
                                     <t t-else=""><span t-field="o.company_id.name"/></t>
                                 </td>
                                 <td style="width:50%; vertical-align:top; padding:6px;">
-                                    <strong style="color:#1C2B4A;">COMPRADOR / ARRENDATARIO</strong><br/>
+                                    <strong style="color:#004274;">COMPRADOR / ARRENDATARIO</strong><br/>
                                     <span t-field="o.partner_id.name"/>
                                     <t t-if="o.partner_id.vat"><br/>C.I./RUC: <span t-field="o.partner_id.vat"/></t>
                                 </td>
@@ -61,7 +61,7 @@
 
                         <!-- CLÁUSULAS (las que el usuario escribe / la IA redacta) -->
                         <div style="margin-top:18px;">
-                            <h4 style="color:#1C2B4A; border-bottom:2px solid #1C2B4A; padding-bottom:4px;">CLÁUSULAS</h4>
+                            <h4 style="color:#004274; border-bottom:2px solid #004274; padding-bottom:4px;">CLÁUSULAS</h4>
                             <t t-if="o.notes">
                                 <div t-field="o.notes"/>
                             </t>

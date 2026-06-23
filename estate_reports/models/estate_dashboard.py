@@ -12,13 +12,13 @@ class EstateDashboard(models.TransientModel):
     # Paleta de marca centralizada (espejo de brand_palette.scss --inmobi-*).
     # Única fuente de verdad para los colores del dashboard; cámbialos aquí.
     _PALETTE = {
-        'primary': '#1e40af',   # azul de acentos/gráficos (--inmobi-primary-strong)
+        'primary': '#004274',   # azul de acentos/gráficos (--inmobi-primary-strong)
         'success': '#16a34a',   # variaciones positivas
         'danger':  '#dc2626',   # variaciones negativas / alertas
         'warning': '#f59e0b',
         'muted':   '#6b7280',
-        'chart':   ['#3b82f6', '#8b5cf6', '#f59e0b', '#10b981',
-                    '#ec4899', '#6366f1', '#f97316'],  # categórica
+        'chart':   ['#004274', '#004274', '#004274', '#004274',
+                    '#004274', '#004274', '#004274'],  # categórica
     }
 
     display_title = fields.Char(
@@ -30,8 +30,6 @@ class EstateDashboard(models.TransientModel):
             rec.display_title = 'Dashboard General'
 
     # ── Banner HTML (KPI cards + header) ─────────────────────────────
-    kpi_header_html = fields.Html(
-        string='Resumen Ejecutivo', compute='_compute_kpi_header', sanitize=False)
 
     # KPIs Propiedades
     total_properties = fields.Integer(
@@ -72,12 +70,8 @@ class EstateDashboard(models.TransientModel):
     goals_html = fields.Html(string='Cumplimiento de Metas', compute='_compute_kpis', sanitize=False)
 
     # Mapa de Propiedades
-    map_html = fields.Html(
-        string='Mapa Geográfico', compute='_compute_map_html', sanitize=False)
 
     # Sidebar derecho persistente
-    sidebar_html = fields.Html(
-        string='Panel Lateral', compute='_compute_sidebar', sanitize=False)
 
     # Ranking de Asesores
     advisor_ranking_html = fields.Html(
@@ -127,8 +121,6 @@ class EstateDashboard(models.TransientModel):
         string='Embudo de Conversión', compute='_compute_funnel', sanitize=False)
 
     # ── Pestaña Ventas — Comparativa AVM ───────────────────────────
-    avm_comparison_html = fields.Html(
-        string='Comparativa AVM', compute='_compute_avm_comparison', sanitize=False)
 
     # ── Gráficos inline (sparklines) ───────────────────────────────
     sales_chart_html = fields.Html(
@@ -165,11 +157,8 @@ class EstateDashboard(models.TransientModel):
     def _onchange_filters(self):
         """Trigger all recomputations when filters change."""
         self._compute_kpis()
-        self._compute_kpi_header()
-        self._compute_sidebar()
         self._compute_advisor_ranking()
         self._compute_funnel()
-        self._compute_avm_comparison()
         self._compute_charts()
         self._compute_trends()
 
@@ -354,259 +343,6 @@ class EstateDashboard(models.TransientModel):
                 ])
             )
 
-    @api.depends('filter_user_id', 'filter_period', 'filter_date_from', 'filter_date_to')
-    def _compute_kpi_header(self):
-        for rec in self:
-            today = fields.Date.today()
-            period_from, period_to = rec._get_period_dates()
-            user_domain = [('user_id', '=', rec.filter_user_id.id)] if rec.filter_user_id else []
-
-            Property = self.env['estate.property']
-            total = Property.search_count(user_domain)
-            avail = Property.search_count(user_domain + [('state', '=', 'available')])
-            sold  = Property.search_count(user_domain + [('state', '=', 'sold')])
-
-            sold_period = Property.search(user_domain + [
-                ('state', '=', 'sold'),
-                ('date_sold', '>=', period_from),
-                ('date_sold', '<=', period_to),
-            ])
-            revenue = sum(sold_period.mapped('price'))
-            commissions = sum(sold_period.mapped('commission_amount'))
-            avg_price = (revenue / len(sold_period)) if sold_period else 0.0
-
-            lead_count = self.env['crm.lead'].search_count([
-                ('type', '=', 'opportunity'),
-                ('probability', '>', 0), ('probability', '<', 100),
-            ])
-
-            period_label = dict([
-                ('month', 'Mes Actual'), ('quarter', 'Trimestre'), ('year', 'Año'),
-                ('last_month', 'Mes Anterior'), ('custom', 'Período Custom'),
-            ]).get(rec.filter_period or 'month', 'Período')
-
-            prim = rec._PALETTE['primary']  # #5: color de marca centralizado
-
-            def kpi(icon, label, value, color):
-                return (
-                    f'<div style="flex:1;min-width:130px;background:#fff;border-radius:8px;'
-                    f'padding:11px 13px;border:1px solid #e5e7eb;border-left:3px solid {color};">'
-                    f'<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">'
-                    f'<i class="fa {icon}" style="font-size:13px;color:{color}"/>'
-                    f'<span style="font-size:10px;color:#6b7280;font-weight:500;'
-                    f'text-transform:uppercase;letter-spacing:.05em;">{label}</span>'
-                    f'</div>'
-                    f'<div style="font-size:20px;font-weight:700;color:#111827;">{value}</div>'
-                    f'</div>'
-                )
-
-            rec.kpi_header_html = f'''
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:0 0 12px;">
-                <div style="display:flex;align-items:baseline;justify-content:space-between;
-                            padding-bottom:8px;border-bottom:1px solid #e5e7eb;margin-bottom:12px;">
-                    <div>
-                        <span style="font-size:15px;font-weight:700;color:#111827;">Dashboard Inmobiliario</span>
-                        <span style="font-size:12px;color:#6b7280;margin-left:8px;">
-                            {period_label} · {today.strftime("%d/%m/%Y")}
-                            {"&nbsp;·&nbsp;" + rec.filter_user_id.name if rec.filter_user_id else ""}
-                        </span>
-                    </div>
-                    <span style="font-size:12px;color:#6b7280;white-space:nowrap;">
-                        <strong style="color:#111827;">{len(sold_period)}</strong> ventas en período
-                    </span>
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-                    {kpi("fa-home", "Total Propiedades", total, prim)}
-                    {kpi("fa-check-circle", "Disponibles", avail, prim)}
-                    {kpi("fa-handshake-o", "Vendidas", sold, prim)}
-                    {kpi("fa-users", "Leads Activos", lead_count, prim)}
-                </div>
-                <div style="display:flex;flex-wrap:wrap;gap:8px;">
-                    {kpi("fa-dollar", f"Ingresos ({period_label})", f"${revenue:,.0f}", prim)}
-                    {kpi("fa-percent", f"Comisiones ({period_label})", f"${commissions:,.0f}", prim)}
-                    {kpi("fa-bar-chart", "Precio Prom. Venta", f"${avg_price:,.0f}", prim)}
-                </div>
-            </div>
-            '''
-
-    @api.depends('filter_user_id', 'filter_period', 'filter_date_from', 'filter_date_to')
-    def _compute_sidebar(self):
-        for rec in self:
-            today = fields.Date.today()
-            period_from, period_to = rec._get_period_dates()
-            user_domain = [('user_id', '=', rec.filter_user_id.id)] if rec.filter_user_id else []
-            Property = self.env['estate.property']
-
-            # ── Mini resumen de período ─────────────────────────────
-            sold_period = Property.search(user_domain + [
-                ('state', '=', 'sold'),
-                ('date_sold', '>=', period_from),
-                ('date_sold', '<=', period_to),
-            ])
-            revenue = sum(sold_period.mapped('price'))
-            commissions = sum(sold_period.mapped('commission_amount'))
-            avail = Property.search_count(user_domain + [('state', '=', 'available')])
-            lead_count = self.env['crm.lead'].search_count([
-                ('type', '=', 'opportunity'), ('probability', '>', 0), ('probability', '<', 100),
-            ])
-            visits_month = self.env['calendar.event'].search_count([
-                ('property_id', '!=', False), ('visit_state', '=', 'done'),
-                ('start', '>=', str(today.replace(day=1))),
-            ])
-
-            period_label = dict([
-                ('month', 'Mes Actual'), ('quarter', 'Trimestre'), ('year', 'Año'),
-                ('last_month', 'Mes Anterior'), ('custom', 'Personalizado'),
-            ]).get(rec.filter_period or 'month', 'Período')
-
-            def stat_row(icon, label, value, color='#374151'):
-                return (
-                    f'<div style="display:flex;align-items:center;justify-content:space-between;'
-                    f'padding:7px 0;border-bottom:1px solid #f3f4f6;">'
-                    f'<span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#6b7280;">'
-                    f'<i class="fa {icon}" style="color:{color};width:14px;text-align:center;"/>{label}</span>'
-                    f'<span style="font-weight:700;font-size:13px;color:{color};">{value}</span>'
-                    f'</div>'
-                )
-
-            # ── Alertas ─────────────────────────────────────────────
-            overdue_count = self.env['estate.payment'].search_count([
-                ('state', '=', 'pending'), ('date', '<', today),
-            ])
-            expiring_15 = Property.search_count([
-                ('contract_end_date', '!=', False),
-                ('contract_end_date', '<=', today + timedelta(days=15)),
-                ('state', 'in', ('available', 'reserved')),
-            ])
-            hot_stale = self.env['crm.lead'].search_count([
-                ('lead_temperature', 'in', ['hot', 'boiling']),
-                ('write_date', '<=', str(fields.Datetime.now() - timedelta(days=7))),
-                ('type', '=', 'opportunity'),
-            ])
-
-            alerts_html = ''
-            if overdue_count:
-                alerts_html += (
-                    f'<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
-                    f'background:#fef2f2;border-radius:6px;margin-bottom:4px;">'
-                    f'<i class="fa fa-exclamation-circle" style="color:#dc2626;"/>'
-                    f'<span style="font-size:12px;color:#dc2626;font-weight:600;">'
-                    f'{overdue_count} pago{"s" if overdue_count > 1 else ""} vencido{"s" if overdue_count > 1 else ""}</span></div>'
-                )
-            if expiring_15:
-                alerts_html += (
-                    f'<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
-                    f'background:#fffbeb;border-radius:6px;margin-bottom:4px;">'
-                    f'<i class="fa fa-calendar-times-o" style="color:#d97706;"/>'
-                    f'<span style="font-size:12px;color:#d97706;font-weight:600;">'
-                    f'{expiring_15} contrato{"s" if expiring_15 > 1 else ""} por vencer</span></div>'
-                )
-            if hot_stale:
-                alerts_html += (
-                    f'<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
-                    f'background:#fffbeb;border-radius:6px;margin-bottom:4px;">'
-                    f'<i class="fa fa-fire" style="color:#d97706;"/>'
-                    f'<span style="font-size:12px;color:#d97706;font-weight:600;">'
-                    f'{hot_stale} lead{"s" if hot_stale > 1 else ""} caliente{"s" if hot_stale > 1 else ""} inactivo{"s" if hot_stale > 1 else ""}</span></div>'
-                )
-            if not alerts_html:
-                alerts_html = (
-                    '<div style="display:flex;align-items:center;gap:6px;padding:4px 8px;'
-                    'background:#f0fdf4;border-radius:6px;">'
-                    '<i class="fa fa-check-circle" style="color:#16a34a;"/>'
-                    '<span style="font-size:12px;color:#16a34a;font-weight:600;">Sin alertas críticas</span></div>'
-                )
-
-            # ── Visitas de hoy ───────────────────────────────────────
-            today_visits = self.env['calendar.event'].search([
-                ('property_id', '!=', False),
-                ('start', '>=', str(today) + ' 00:00:00'),
-                ('start', '<=', str(today) + ' 23:59:59'),
-                ('visit_state', '!=', 'cancelled'),
-            ], order='start asc', limit=5)
-
-            visits_rows = ''
-            for v in today_visits:
-                time_str = v.start.strftime('%H:%M') if v.start else '—'
-                prop_name = (v.property_id.title or v.property_id.name or v.name or '—')[:24]
-                partner_name = (v.partner_id.name or '—')[:18]
-                state_map = {'scheduled': ('fa-clock-o', '#d97706'), 'done': ('fa-check-circle', '#16a34a')}
-                ic, ic_c = state_map.get(v.visit_state, ('fa-circle-o', '#9ca3af'))
-                visits_rows += (
-                    f'<div style="display:flex;gap:6px;padding:6px 0;border-bottom:1px solid #f3f4f6;">'
-                    f'<i class="fa {ic}" style="color:{ic_c};font-size:11px;margin-top:2px;flex-shrink:0;"/>'
-                    f'<div style="flex:1;min-width:0;">'
-                    f'<div style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;'
-                    f'overflow:hidden;text-overflow:ellipsis;">{time_str} · {prop_name}</div>'
-                    f'<div style="font-size:10px;color:#9ca3af;">{partner_name}</div>'
-                    f'</div></div>'
-                )
-            if not visits_rows:
-                visits_rows = (
-                    '<div style="padding:8px 0;color:#9ca3af;font-size:11px;font-style:italic;text-align:center;">'
-                    'Sin visitas programadas hoy</div>'
-                )
-
-            # ── Resumen de propiedades disponibles ──────────────────
-            top_available = Property.search(
-                user_domain + [('state', '=', 'available')],
-                order='price desc', limit=3
-            )
-            props_rows = ''
-            for p in top_available:
-                props_rows += (
-                    f'<div style="padding:5px 0;border-bottom:1px solid #f3f4f6;">'
-                    f'<div style="font-size:11px;font-weight:600;color:#111827;white-space:nowrap;'
-                    f'overflow:hidden;text-overflow:ellipsis;">{(p.title or p.name or "—")[:24]}</div>'
-                    f'<div style="display:flex;justify-content:space-between;margin-top:1px;">'
-                    f'<span style="font-size:10px;color:#6b7280;">{p.city or "—"}</span>'
-                    f'<span style="font-size:11px;font-weight:700;color:#2563eb;">${p.price:,.0f}</span>'
-                    f'</div></div>'
-                )
-            if not props_rows:
-                props_rows = '<div style="padding:6px 0;color:#9ca3af;font-size:11px;font-style:italic;text-align:center;">Sin propiedades disponibles</div>'
-
-            def section(title, icon, color, content):
-                return (
-                    f'<div style="margin-bottom:14px;">'
-                    f'<div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;'
-                    f'letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:4px;">'
-                    f'<i class="fa {icon}" style="color:{color};"/>{title}</div>'
-                    f'{content}</div>'
-                )
-
-            def card(title, icon, color, content):
-                return (
-                    f'<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;'
-                    f'padding:14px;margin-bottom:12px;">'
-                    f'<div style="font-size:10px;font-weight:700;color:{color};text-transform:uppercase;'
-                    f'letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:5px;">'
-                    f'<i class="fa {icon}"/>{title}</div>'
-                    f'{content}'
-                    f'</div>'
-                )
-
-            metrics_html = (
-                stat_row("fa-handshake-o", "Ventas", len(sold_period), "#1e40af") +
-                stat_row("fa-dollar", "Ingresos", f"${revenue:,.0f}", "#1e40af") +
-                stat_row("fa-percent", "Comisiones", f"${commissions:,.0f}", "#1e40af") +
-                stat_row("fa-home", "Disponibles", avail, "#1e40af") +
-                stat_row("fa-users", "Leads Activos", lead_count, "#1e40af") +
-                stat_row("fa-calendar-check-o", "Visitas (mes)", visits_month, "#1e40af")
-            )
-
-            rec.sidebar_html = (
-                f'<div style="font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;">'
-                + card(period_label, "fa-bar-chart", "#1e40af", metrics_html)
-                + card("Alertas", "fa-bell", "#1e40af", alerts_html)
-                + card("Visitas de Hoy", "fa-calendar-check-o", "#1e40af",
-                       visits_rows + '<div style="margin-top:10px;font-size:10px;font-weight:700;'
-                       f'color:#1e40af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;'
-                       f'display:flex;align-items:center;gap:5px;"><i class="fa fa-star"/>Propiedades Destacadas</div>'
-                       + props_rows)
-                + '</div>'
-            )
-
     def _compute_advisor_ranking(self):
         """Mejora 7: Ranking mensual de asesores por ventas y comisiones."""
         for rec in self:
@@ -653,7 +389,7 @@ class EstateDashboard(models.TransientModel):
             <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
                 <table style="width:100%;border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
                     <thead>
-                        <tr style="background:#1e40af;color:white;">
+                        <tr style="background:#004274;color:white;">
                             <th style="padding:12px 10px;text-align:left">#</th>
                             <th style="padding:12px 10px;text-align:left">Asesor</th>
                             <th style="padding:12px 10px;text-align:center">Ventas</th>
@@ -666,173 +402,6 @@ class EstateDashboard(models.TransientModel):
             </div>
             '''
             rec.advisor_ranking_html = html
-
-    def _compute_map_html(self):
-        """Renders the property map via an iframe pointing to the dedicated map endpoint."""
-        for rec in self:
-            rec.map_html = (
-                '<iframe src="/estate_reports/map/embed" '
-                'style="width:100%;height:500px;border:none;border-radius:10px;" '
-                'allow="fullscreen"></iframe>'
-            )
-
-    # ── Botones de navegación desde los stat buttons ──────────────────
-
-    def _action_open_property_list(self, domain, name):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': name,
-            'res_model': 'estate.property',
-            'view_mode': 'list,form',
-            'domain': domain,
-            'target': 'current',
-        }
-
-    def action_open_all_properties(self):
-        return self._action_open_property_list([], 'Todas las Propiedades')
-
-    def action_open_available(self):
-        return self._action_open_property_list([('state', '=', 'available')], 'Propiedades Disponibles')
-
-    def action_open_sold(self):
-        return self._action_open_property_list([('state', '=', 'sold')], 'Propiedades Vendidas')
-
-    def action_open_stagnant(self):
-        cutoff_45 = fields.Date.today() - timedelta(days=45)
-        stagnant_ids = []
-        available_old = self.env['estate.property'].search([
-            ('state', '=', 'available'), ('date_listed', '<=', cutoff_45)
-        ])
-        CalEvent = self.env['calendar.event'].sudo()
-        for prop in available_old:
-            if not CalEvent.search_count([
-                ('property_id', '=', prop.id),
-                ('visit_state', '=', 'done'),
-                ('start', '>=', fields.Datetime.to_datetime(cutoff_45)),
-            ]):
-                stagnant_ids.append(prop.id)
-        return self._action_open_property_list([('id', 'in', stagnant_ids)], 'Propiedades Estancadas (+45 días)')
-
-    def action_open_offers(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Ofertas Activas',
-            'res_model': 'estate.property.offer',
-            'view_mode': 'list,form',
-            'domain': [('state', 'in', ('submitted', 'countered', 'accepted'))],
-            'target': 'current',
-        }
-
-    def action_open_contracts(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Contratos Activos',
-            'res_model': 'estate.contract',
-            'view_mode': 'list,form',
-            'domain': [('state', '=', 'active')],
-            'target': 'current',
-        }
-
-    def action_open_sale_orders(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Órdenes de Venta',
-            'res_model': 'sale.order',
-            'view_mode': 'list,form',
-            'domain': [('property_id', '!=', False), ('state', 'in', ('sale', 'done'))],
-            'target': 'current',
-        }
-
-    def action_open_opportunities(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Oportunidades Activas',
-            'res_model': 'crm.lead',
-            'view_mode': 'list,form',
-            'domain': [('type', '=', 'opportunity'), ('probability', '>', 0), ('probability', '<', 100)],
-            'target': 'current',
-        }
-
-    def action_open_appointments(self):
-        today = fields.Date.today()
-        first_day = today.replace(day=1)
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Visitas Realizadas (Mes)',
-            'res_model': 'calendar.event',
-            'view_mode': 'list,form',
-            'domain': [('property_id', '!=', False), ('visit_state', '=', 'done'), ('start', '>=', first_day)],
-            'target': 'current',
-        }
-
-    def action_open_expiring_contracts(self):
-        limit = fields.Date.today() + timedelta(days=30)
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Contratos por Vencer (30 días)',
-            'res_model': 'estate.property',
-            'view_mode': 'list,form',
-            'domain': [
-                ('contract_end_date', '!=', False),
-                ('contract_end_date', '<=', limit),
-                ('state', 'in', ('available', 'reserved')),
-            ],
-            'target': 'current',
-        }
-
-    @api.model
-    def get_dashboard_data(self):
-        """Return dashboard data for client_side rendering."""
-        dashboard = self.create({})
-        Property = self.env['estate.property']
-
-        # Propiedades por tipo
-        self.env.cr.execute("""
-            SELECT pt.name as type_name, COUNT(*) as count
-            FROM estate_property p
-            JOIN estate_property_type pt ON p.property_type_id = pt.id
-            WHERE p.active = True
-            GROUP BY pt.name
-            ORDER BY count DESC
-        """)
-        properties_by_type = self.env.cr.dictfetchall()
-
-        # Propiedades por ciudad
-        self.env.cr.execute("""
-            SELECT COALESCE(city, 'Sin ciudad') as city_name, COUNT(*) as count
-            FROM estate_property
-            WHERE active = True
-            GROUP BY city
-            ORDER BY count DESC
-        """)
-        properties_by_city = self.env.cr.dictfetchall()
-
-        # Ventas por mes (últimos 6 meses)
-        self.env.cr.execute("""
-            SELECT TO_CHAR(date_sold, 'YYYY-MM') as month,
-                   COUNT(*) as count,
-                   SUM(price) as total
-            FROM estate_property
-            WHERE state = 'sold' AND date_sold IS NOT NULL
-            GROUP BY TO_CHAR(date_sold, 'YYYY-MM')
-            ORDER BY month DESC
-            LIMIT 6
-        """)
-        sales_by_month = self.env.cr.dictfetchall()
-
-        return {
-            'total_properties': dashboard.total_properties,
-            'available_properties': dashboard.available_properties,
-            'sold_properties': dashboard.sold_properties,
-            'total_clients': dashboard.total_clients,
-            'active_clients': dashboard.active_clients,
-            'avg_days_on_market': dashboard.avg_days_on_market,
-            'appointments_done': dashboard.appointments_done,
-            'contracts_expiring': dashboard.contracts_expiring,
-            'properties_by_type': properties_by_type,
-            'properties_by_city': properties_by_city,
-            'sales_by_month': sales_by_month,
-        }
 
     @api.model
     def _cron_send_monthly_report(self):
@@ -1161,78 +730,6 @@ class EstateDashboard(models.TransientModel):
     # ──────────────────────────────────────────────────────────────────
     # NIVEL 2: Comparativa AVM masiva
     # ──────────────────────────────────────────────────────────────────
-    def _compute_avm_comparison(self):
-        for rec in self:
-            props = self.env['estate.property'].sudo().search([
-                ('state', '=', 'available'),
-                ('avm_estimated_price', '>', 0),
-            ], order='city, title', limit=25)
-
-            rows = ''
-            for p in props:
-                diff = p.price - p.avm_estimated_price
-                diff_pct = round(diff / p.avm_estimated_price * 100, 1) if p.avm_estimated_price else 0
-                if diff_pct > 10:
-                    badge_color = '#dc2626'
-                    badge_text = 'Sobrevaluada'
-                elif diff_pct < -10:
-                    badge_color = '#16a34a'
-                    badge_text = 'Oportunidad'
-                else:
-                    badge_color = '#2563eb'
-                    badge_text = 'Justo'
-                rows += f'''<tr>
-                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;">{p.name}</td>
-                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;">{p.title}</td>
-                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;">{p.city or '-'}</td>
-                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:right;">${p.price:,.0f}</td>
-                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:right;">${p.avm_estimated_price:,.0f}</td>
-                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:right;color:{badge_color};font-weight:600;">
-                        {'+' if diff_pct > 0 else ''}{diff_pct}%
-                    </td>
-                    <td style="padding:8px;border-bottom:1px solid #f1f5f9;text-align:center;">
-                        <span style="background:{badge_color};color:white;padding:2px 10px;border-radius:12px;font-size:11px;">{badge_text}</span>
-                    </td>
-                </tr>'''
-
-            if not rows:
-                rows = '<tr><td colspan="7" style="padding:20px;text-align:center;color:#9ca3af;">Sin datos AVM. Ejecuta el AVM desde las propiedades.</td></tr>'
-
-            # Count summary
-            over = sum(1 for p in props if p.price > p.avm_estimated_price * 1.1)
-            under = sum(1 for p in props if p.price < p.avm_estimated_price * 0.9)
-            fair = len(props) - over - under
-
-            rec.avm_comparison_html = f'''
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-                <div style="display:flex;gap:12px;margin-bottom:16px;">
-                    <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:8px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#dc2626;">{over}</div>
-                        <div style="font-size:11px;color:#6b7280;">Sobrevaluadas (&gt;10%)</div>
-                    </div>
-                    <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:8px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#1e40af;">{fair}</div>
-                        <div style="font-size:11px;color:#6b7280;">Precio Justo</div>
-                    </div>
-                    <div style="flex:1;background:#f9fafb;border:1px solid #e5e7eb;padding:14px;border-radius:8px;text-align:center;">
-                        <div style="font-size:26px;font-weight:700;color:#15803d;">{under}</div>
-                        <div style="font-size:11px;color:#6b7280;">Oportunidades (&lt;-10%)</div>
-                    </div>
-                </div>
-                <table style="width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-                    <thead><tr style="background:#1e40af;color:white;">
-                        <th style="padding:10px;text-align:left;">Ref</th>
-                        <th style="padding:10px;text-align:left;">Propiedad</th>
-                        <th style="padding:10px;">Ciudad</th>
-                        <th style="padding:10px;text-align:right;">Precio Lista</th>
-                        <th style="padding:10px;text-align:right;">AVM Estimado</th>
-                        <th style="padding:10px;text-align:right;">Diferencia</th>
-                        <th style="padding:10px;text-align:center;">Estado</th>
-                    </tr></thead>
-                    <tbody>{rows}</tbody>
-                </table>
-            </div>'''
-
     # ──────────────────────────────────────────────────────────────────
     # NIVEL 3: Gráficos inline (ventas por mes, leads por fuente)
     # ──────────────────────────────────────────────────────────────────
@@ -1271,7 +768,7 @@ class EstateDashboard(models.TransientModel):
                 bars += (
                     f'<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;padding:0 3px;">'
                     f'<div style="font-size:11px;font-weight:600;color:#374151;margin-bottom:4px;">{r["total"]}</div>'
-                    f'<div style="width:min(100%,44px);height:{h}px;background:#1e40af;border-radius:3px 3px 0 0;'
+                    f'<div style="width:min(100%,44px);height:{h}px;background:#004274;border-radius:3px 3px 0 0;'
                     f'transform-origin:bottom;animation:barUp .55s ease-out {delay}s both;"></div>'
                     f'<div style="font-size:10px;color:#9ca3af;margin-top:4px;text-align:center;">{r["mes"]}</div>'
                     f'</div>'
@@ -1407,7 +904,7 @@ class EstateDashboard(models.TransientModel):
             rec.trend_html = f'''
             <div style="font-family:-apple-system,sans-serif;">
                 <table style="width:100%;border-collapse:collapse;background:white;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);">
-                    <thead><tr style="background:#1e40af;color:white;">
+                    <thead><tr style="background:#004274;color:white;">
                         <th style="padding:12px;text-align:left;">Métrica</th>
                         <th style="padding:12px;text-align:center;">Período Actual</th>
                         <th style="padding:12px;text-align:center;">Período Anterior</th>
@@ -1436,56 +933,83 @@ class EstateDashboard(models.TransientModel):
                 </table>
             </div>'''
 
+    # ── API para el Dashboard OWL (pantalla a medida, sin formulario) ──
+    @api.model
+    def get_dashboard_data(self, user_id=False, period='month'):
+        """Devuelve los DATOS CRUDOS del dashboard (KPIs, embudo, tendencia,
+        gráficos y ranking) para renderizarlos NATIVO en OWL (limpio y lineal).
+        Reutiliza toda la lógica de cálculo del modelo."""
+        import json as _json
+        rec = self.create({
+            'filter_user_id': user_id or False,
+            'filter_period': period or 'month',
+        })
+        num_fields = [
+            'display_title', 'total_properties', 'available_properties', 'sold_properties',
+            'stagnant_properties', 'total_clients', 'active_clients', 'appointments_done',
+            'active_offers_count', 'active_contracts_count', 'contracts_expiring',
+            'avg_days_on_market', 'monthly_commissions', 'won_revenue_month',
+            'pending_revenue', 'pending_invoices_amount',
+            'funnel_leads_new', 'funnel_visits_done', 'funnel_offers_made',
+            'funnel_won', 'funnel_lost', 'funnel_conversion_pct',
+            'trend_sales_current', 'trend_sales_prev', 'trend_sales_pct',
+            'trend_leads_current', 'trend_leads_prev', 'trend_leads_pct',
+            'sales_chart_data', 'leads_chart_data',
+        ]
+        vals = rec.read(num_fields)[0]
+        vals.pop('id', None)
+
+        def _parse(s):
+            try:
+                return _json.loads(s) if s else {}
+            except Exception:
+                return {}
+        sales_chart = _parse(vals.pop('sales_chart_data', ''))
+        leads_chart = _parse(vals.pop('leads_chart_data', ''))
+
+        # Ranking de asesores en el período (ventas, ingresos, comisión est.)
+        date_from, date_to = rec._get_period_dates()
+        self.env.cr.execute("""
+            SELECT COALESCE(pp.name, u.login) AS name,
+                   COUNT(p.id) AS sales,
+                   COALESCE(SUM(p.price), 0) AS revenue
+            FROM estate_property p
+            JOIN res_users u ON u.id = p.user_id
+            LEFT JOIN res_partner pp ON pp.id = u.partner_id
+            WHERE p.state IN ('sold', 'rented')
+              AND p.date_sold >= %s AND p.date_sold <= %s
+            GROUP BY pp.name, u.login
+            ORDER BY sales DESC, revenue DESC
+            LIMIT 10
+        """, (date_from, date_to))
+        ranking = self.env.cr.dictfetchall()
+        for r in ranking:
+            r['commission'] = round((r['revenue'] or 0) * 0.05, 2)
+
+        advisors = self.env['res.users'].search(
+            [('share', '=', False), ('active', '=', True)], order='name').read(['id', 'name'])
+        periods = [{'value': v, 'label': l} for v, l in rec._fields['filter_period'].selection]
+        return {
+            'kpis': vals,
+            'salesChart': sales_chart,
+            'leadsChart': leads_chart,
+            'ranking': ranking,
+            'advisors': advisors,
+            'periods': periods,
+        }
+
+    @api.model
+    def dashboard_ask_ai(self, query, user_id=False, period='month'):
+        """Consulta a la IA desde el dashboard OWL y devuelve la respuesta HTML."""
+        rec = self.create({
+            'filter_user_id': user_id or False,
+            'filter_period': period or 'month',
+            'ai_query_text': (query or '').strip(),
+        })
+        rec.action_ask_ai_dashboard()
+        return rec.ai_response_html or ''
+
     # ── Botones de acción rápida desde dashboard ──────────────────────
-    def action_open_ai(self):
-        return {'type': 'ir.actions.client', 'tag': 'estate_ai_open_chat'}
-
-    def action_open_report_wizard(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Generar Reporte',
-            'res_model': 'estate.report.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-        }
-
-    def action_export_dashboard_pdf(self):
-        """A4: exporta el dashboard completo (KPIs, finanzas, tendencias,
-        embudo y ranking) a un PDF ejecutivo."""
-        self.ensure_one()
-        # Aseguramos que los campos computados estén frescos antes de imprimir
-        self._compute_kpis()
-        self._compute_trends()
-        self._compute_funnel()
-        self._compute_advisor_ranking()
-        return self.env.ref(
-            'estate_reports.action_report_dashboard_executive'
-        ).report_action(self)
-
-    def action_open_funnel_leads(self):
-        period_from, period_to = self._get_period_dates()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Leads del Período',
-            'res_model': 'crm.lead',
-            'view_mode': 'list,form,kanban',
-            'domain': [
-                ('create_date', '>=', str(period_from)),
-                ('create_date', '<=', str(period_to) + ' 23:59:59'),
-            ],
-            'target': 'current',
-        }
-
-    def action_open_overdue_payments(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Pagos Vencidos',
-            'res_model': 'estate.payment',
-            'view_mode': 'list,form',
-            'domain': [('state', '=', 'pending'), ('date', '<', fields.Date.today())],
-            'target': 'current',
-        }
-
     def action_ask_ai_dashboard(self):
         """Query the AI about the current dashboard data."""
         self.ensure_one()
@@ -1522,9 +1046,53 @@ class EstateDashboard(models.TransientModel):
             f"Promedio días en mercado: {self.avg_days_on_market:.1f}\n"
         )
 
+        # ── Datos granulares (ranking de asesores y desglose) para que la IA
+        #    pueda responder preguntas como "el mejor asesor" o "ventas por tipo". ──
+        from collections import defaultdict
+        Property = self.env['estate.property']
+        ufilter = [('user_id', '=', self.filter_user_id.id)] if self.filter_user_id else []
+
+        def _ranking(d_from, d_to):
+            sold = Property.search(ufilter + [
+                ('state', '=', 'sold'),
+                ('date_sold', '>=', d_from), ('date_sold', '<=', d_to)])
+            agg = defaultdict(lambda: {'n': 0, 'rev': 0.0, 'com': 0.0})
+            for p in sold:
+                k = p.user_id.name or 'Sin asignar'
+                agg[k]['n'] += 1
+                agg[k]['rev'] += p.price or 0.0
+                agg[k]['com'] += p.commission_amount or 0.0
+            return sorted(agg.items(), key=lambda kv: kv[1]['rev'], reverse=True)
+
+        def _fmt_ranking(rk):
+            if not rk:
+                return "  (sin ventas en el rango)\n"
+            return ''.join(
+                f"  {i}. {name}: {d['n']} ventas, ${d['rev']:,.0f} ingresos, "
+                f"${d['com']:,.0f} comisiones\n"
+                for i, (name, d) in enumerate(rk[:10], 1))
+
+        today = fields.Date.today()
+        year_start = today.replace(month=1, day=1)
+        context += "\nRANKING DE ASESORES — PERÍODO SELECCIONADO (ordenado por ingresos):\n"
+        context += _fmt_ranking(_ranking(period_from, period_to))
+        context += "\nRANKING DE ASESORES — AÑO EN CURSO (ordenado por ingresos):\n"
+        context += _fmt_ranking(_ranking(year_start, today))
+
+        type_agg = defaultdict(int)
+        for p in Property.search(ufilter):
+            type_agg[p.property_type_id.name or 'Sin tipo'] += 1
+        if type_agg:
+            context += "\nPROPIEDADES POR TIPO:\n"
+            context += ''.join(
+                f"  {t}: {n}\n"
+                for t, n in sorted(type_agg.items(), key=lambda kv: kv[1], reverse=True))
+
         prompt = (
-            "Eres un analista inmobiliario profesional. Responde la consulta sobre el "
-            "dashboard usando los datos proporcionados. Se conciso, directo y practico.\n\n"
+            "Eres un analista inmobiliario profesional. Responde la consulta usando TODOS los "
+            "datos proporcionados, incluido el RANKING DE ASESORES. Si te preguntan por el mejor "
+            "asesor o por desempeño individual, USA el ranking (no digas que no tienes esos datos). "
+            "Indica el rango temporal cuando sea relevante. Se conciso, directo y practico.\n\n"
             f"DATOS DEL DASHBOARD:\n{context}\n"
             f"CONSULTA: {query}\n\n"
             "Responde en HTML simple (usa <p>, <ul>, <li>, <strong>). "
@@ -1553,26 +1121,3 @@ class EstateDashboard(models.TransientModel):
         self.write({'ai_response_html': answer or '<p>Sin respuesta.</p>'})
         return self._reload_dashboard()
 
-    def _reload_dashboard(self):
-        return {
-            'type': 'ir.actions.act_window',
-            'res_model': 'estate.dashboard',
-            'res_id': self.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
-
-    def action_open_sales_graph(self):
-        return self.env.ref('estate_reports.action_sales_by_month').read()[0]
-
-    def action_open_advisor_graph(self):
-        return self.env.ref('estate_reports.action_sales_by_user').read()[0]
-
-    def action_open_commission_wizard(self):
-        return self.env.ref('estate_reports.estate_commission_wizard_action').read()[0]
-
-    @api.model
-    def _reset_board_customizations(self):
-        board_view = self.env.ref('estate_reports.estate_board_view', raise_if_not_found=False)
-        if board_view:
-            self.env['ir.ui.view.custom'].sudo().search([('ref_id', '=', board_view.id)]).unlink()

@@ -1,5 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- Acceso directo en el menú "Acción": crear un contrato de la propiedad -->
+    <record id="action_property_new_contract" model="ir.actions.server">
+        <field name="name">Nuevo Contrato</field>
+        <field name="model_id" ref="estate_management.model_estate_property"/>
+        <field name="binding_model_id" ref="estate_management.model_estate_property"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_new_contract()</field>
+    </record>
+
     <!-- ==================== TREE VIEW ==================== -->
     <record id="estate_property_view_tree" model="ir.ui.view">
         <field name="name">estate.property.tree</field>
@@ -124,6 +134,10 @@
                         <button name="action_view_personal_posts" type="object" class="oe_stat_button" icon="fa-share-alt">
                             <field name="advisor_fb_post_count" string="Posts Personales" widget="statinfo"/>
                         </button>
+                        <button name="action_open_contracts" type="object" class="oe_stat_button" icon="fa-file-text"
+                                invisible="contract_count == 0">
+                            <field name="contract_count" string="Contratos" widget="statinfo"/>
+                        </button>
                     </div>
                     <field name="map_url" invisible="1"/>
                     <!-- Barra de progreso del expediente -->
@@ -209,7 +223,7 @@
                             <i class="fa fa-bath fa-lg text-primary d-block mb-1" title="Baños"/>
                             <div class="small text-muted" style="font-size:0.72rem;">Baños</div>
                             <div class="fw-bold fs-5 lh-1 mt-1">
-                                <field name="bathrooms" nolabel="1" readonly="state == 'sold'"/>
+                                <field name="bathrooms" nolabel="1" readonly="state == 'sold'" options="{'digits': [16, 0]}"/>
                             </div>
                         </div>
                         <div class="col text-center py-3 border-end">
@@ -298,7 +312,7 @@
                                         <span class="fw-bold">Subir varias imágenes a la vez</span>
                                     </div>
                                     <div class="p-3 rounded" style="background:#f8f9fa;border:1px dashed #b9c5d6;">
-                                        <field name="gallery_ids" widget="many2many_binary"
+                                        <field name="gallery_ids" widget="gallery_drop"
                                                options="{'accepted_file_extensions': 'image/*'}"/>
                                         <small class="text-muted d-block mt-2">
                                             <i class="fa fa-info-circle" title="Info"/>
@@ -317,7 +331,7 @@
                                 <small class="text-muted">— arrastra para reordenar</small>
                             </div>
                             <field name="image_ids" mode="kanban">
-                                <kanban>
+                                <kanban create="false" group_create="false">
                                     <field name="id"/>
                                     <field name="name"/>
                                     <field name="sequence" widget="handle"/>
@@ -334,7 +348,7 @@
                                         </t>
                                     </templates>
                                 </kanban>
-                                <list editable="bottom">
+                                <list create="false">
                                     <field name="sequence" widget="handle"/>
                                     <field name="image" widget="image" options="{'size': [100, 100]}"/>
                                     <field name="name"/>

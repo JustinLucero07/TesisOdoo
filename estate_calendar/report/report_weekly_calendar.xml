@@ -7,7 +7,7 @@
         <!-- ══ ENCABEZADO ══════════════════════════════════════════════ -->
         <table style="width:100%; border-collapse:collapse; margin-bottom:8px;">
             <tr>
-                <td style="background:#1C2B4A; padding:10px 16px; vertical-align:middle; width:65%;">
+                <td style="background:#004274; padding:10px 16px; vertical-align:middle; width:65%;">
                     <div style="font-size:17px; font-weight:900; letter-spacing:2px; text-transform:uppercase; color:white;">
                         Agenda Semanal de Visitas
                     </div>
@@ -57,7 +57,7 @@
             <thead>
                 <tr>
                     <t t-foreach="days" t-as="day">
-                        <th t-att-style="'background:%s; text-align:center; padding:0; border-right:2px solid white; border-bottom:3px solid #2563EB; vertical-align:middle;' % ('#2563EB' if day['event_count'] > 0 else '#1C2B4A')">
+                        <th t-att-style="'background:%s; text-align:center; padding:0; border-right:2px solid white; border-bottom:3px solid #2563EB; vertical-align:middle;' % ('#2563EB' if day['event_count'] > 0 else '#004274')">
                             <div style="padding:6px 4px 4px 4px;">
                                 <div style="font-size:7px; font-weight:700; color:#a8bcdb; text-transform:uppercase; letter-spacing:1.5px;">
                                     <t t-out="day['day_name']"/>
@@ -93,7 +93,7 @@
                                        t-value="'#2563EB' if ev.appointment_type == 'visit' else '#16A34A' if ev.appointment_type == 'signing' else '#D97706' if ev.appointment_type == 'call' else '#7C3AED'"/>
                                     <div t-att-style="'border-left:3px solid %s; padding:5px 6px; border-bottom:1px solid #edf0f5; background:%s;' % (ev_color, '#F3F6FB' if ev_index % 2 == 0 else 'white')">
                                         <!-- Hora -->
-                                        <div style="font-size:8px; font-weight:900; color:#1C2B4A; margin-bottom:2px;">
+                                        <div style="font-size:8px; font-weight:900; color:#004274; margin-bottom:2px;">
                                             <t t-esc="fmt_time(ev)"/>
                                         </div>
                                         <!-- Propiedad -->

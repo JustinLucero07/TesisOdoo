@@ -5,11 +5,11 @@ import { registry } from "@web/core/registry";
 import { standardFieldProps } from "@web/views/fields/standard_field_props";
 import { loadJS } from "@web/core/assets";
 
-const FB_BLUE = "#1877F2";
+const FB_BLUE = "#004274";
 const FB_BLUE_LIGHT = "#42A5F5";
 const FB_BLUE_DARK = "#0B5394";
 const COLORS = {
-    likes: "#1877F2",
+    likes: "#004274",
     loves: "#E4405F",
     hahas: "#F7B928",
     wows: "#F7B928",
@@ -73,7 +73,7 @@ export class FacebookInsightsDashboard extends Component {
                             label: "Visualizaciones",
                             data: ev.map(p => p.impressions),
                             borderColor: FB_BLUE,
-                            backgroundColor: "rgba(24,119,242,0.10)",
+                            backgroundColor: "rgba(0,66,116,0.10)",
                             tension: 0.35,
                             fill: true,
                             pointRadius: 3,

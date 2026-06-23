@@ -126,14 +126,28 @@ class EstateProperty(models.Model):
         self.ensure_one()
         prop = self
 
-        # ── Advisor phone numbers ───────────────────────────────────────────
-        advisor_phones = []
-        for user in [prop.user_id, prop.co_user_id]:
-            if user and user.partner_id:
-                p = user.partner_id.phone or user.partner_id.mobile or ''
-                if p and p not in advisor_phones:
-                    advisor_phones.append(p)
-        phones_text = ' – '.join(advisor_phones) if advisor_phones else 'Consultar'
+        # ── Teléfonos de contacto ───────────────────────────────────────────
+        # 1) Lista fija de la agencia (configurable): Ajustes > Agente IA →
+        #    parámetro 'estate_ai.contact_phones' (ej: "099... – 098... – 097...").
+        # 2) Si no hay lista fija, se arman con los teléfonos de TODOS los asesores
+        #    (grupo Agente) + los asesores asignados a la propiedad.
+        phones_param = self.env['ir.config_parameter'].sudo().get_param(
+            'estate_ai.contact_phones', '').strip()
+        if phones_param:
+            phones_text = phones_param
+        else:
+            advisor_phones = []
+            agent_group = self.env.ref(
+                'estate_management.estate_group_agent', raise_if_not_found=False)
+            candidates = list(agent_group.user_ids) if agent_group else []
+            candidates += [prop.user_id, prop.co_user_id]
+            for user in candidates:
+                if user and user.partner_id:
+                    p = (user.partner_id.mobile or user.partner_id.phone or '').strip()
+                    if p and p not in advisor_phones:
+                        advisor_phones.append(p)
+            phones_text = ' – '.join(advisor_phones) if advisor_phones else (
+                self.env.company.phone or 'Consultar')
 
         # ── Core fields ─────────────────────────────────────────────────────
         titulo   = (prop.title or '').strip()
@@ -216,57 +230,56 @@ DATOS DE LA PROPIEDAD
 {detalles}{extra_section}
 
 ═══════════════════════════════════════════════════════
-ESTRUCTURA OBLIGATORIA (en este orden exacto)
+ESTRUCTURA OBLIGATORIA (en este orden exacto, con EMOJIS)
 ═══════════════════════════════════════════════════════
 
-1. TITULAR (una sola línea, en mayúsculas y negrita <b>)
-   Formato: "[TIPO] [OPERACIÓN] – [SECTOR/CIUDAD BREVE] – [GANCHO CORTO]"
-   Ejemplo: "TERRENO EN VENTA – SECTOR NULTI – ALTA PLUSVALÍA Y POTENCIAL DE CONSTRUCCIÓN"
+1. TITULAR (una sola línea, MAYÚSCULAS, en negrita <b>)
+   Formato: "[TIPO] [OPERACIÓN] – [SECTOR/CIUDAD] – [GANCHO CORTO]"
+   Ejemplo: "CASA EN VENTA – CUENCA, AV. 12 DE OCTUBRE – HOGAR MODERNO CON ALTA PLUSVALÍA"
 
 2. PÁRRAFO DE APERTURA (2-3 oraciones)
-   Empieza con: "Inmobi presenta [artículo + tipo] en [operación] en [sector], ..."
-   Debe: enganchar emocionalmente, mencionar lo más valioso de la propiedad.
+   Empieza con: "Inmobi te presenta [artículo + tipo] en [operación] en [sector], ..."
+   Engancha emocionalmente y menciona lo más valioso de la propiedad.
 
-3. SECCIÓN "CARACTERÍSTICAS PRINCIPALES" (lista <ul><li>)
-   Incluye SOLO los datos disponibles:
-   - Área total
-   - Habitaciones / Baños / Parqueaderos (solo si aplica y son > 0)
-   - Piso / Año de construcción (solo si aplica)
-   - Amenities y características especiales de los tags
-   - Si hay CONDICIÓN DE LA PROPIEDAD (IA), tradúcela de forma comercial:
-     excellent→"acabados en excelente estado", good→"bien conservada", regular→"uso normal, lista para personalizarla"
-   - Si hay TIPO DE AMBIENTE (IA), menciónalo naturalmente en la descripción
+3. <b>✨ Características Principales</b> (lista <ul><li>)
+   Cada viñeta inicia con un emoji adecuado. Incluye SOLO datos disponibles (> 0):
+   📐 Área total · 🛏️ Habitaciones · 🚿 Baños · 🚗 Parqueaderos · 🏢 Piso · 🗓️ Año de construcción
+   ✅ Amenities y características especiales de los tags
+   - Si hay CONDICIÓN DE LA PROPIEDAD (IA), tradúcela comercial:
+     excellent→"acabados en excelente estado", good→"bien conservada", regular→"lista para personalizarla"
+   - Si hay ANÁLISIS VISUAL IA / TIPO DE AMBIENTE (IA), INTÉGRALO en la descripción
+     (fachada, estilo, iluminación, ambiente) de forma natural — no lo ignores.
 
-4. SECCIÓN "UBICACIÓN Y ENTORNO"
-   Menciona ciudad, sector, ventajas de la zona (usa PALABRAS CLAVE DEL SECTOR si están disponibles).
-   Si no hay datos del sector, describe brevemente la ciudad.
+4. <b>📍 Ubicación y Entorno</b>
+   Ciudad, sector y ventajas de la zona (usa PALABRAS CLAVE DEL SECTOR si existen).
+   Cercanía a servicios, comercios y vías. Si no hay datos del sector, describe la ciudad.
 
-5. SECCIÓN "POTENCIAL E INVERSIÓN" (solo si aplica)
-   - Para terrenos: opciones de uso (vivienda, quinta, proyecto residencial, comercial, etc.)
-   - Para propiedades en venta: ROI, plusvalía, valor proyectado (solo si hay datos)
-   - Para arriendo: beneficios del sector para vivir/trabajar
-   Si no hay datos de inversión, omite esta sección.
+5. <b>💰 Potencial e Inversión</b> (solo si aplica)
+   - Terrenos: opciones de uso (vivienda, quinta, proyecto residencial/comercial).
+   - Venta: ROI, plusvalía, valor proyectado (solo si hay datos).
+   - Arriendo: beneficios del sector. Si no hay datos, omite esta sección.
 
-6. SECCIÓN "PRECIO"
-   Formato EXACTO: <b>Precio: $[precio con puntos ecuatorianos]</b>
-   Ejemplo: <b>Precio: $150.000</b>
-   Si hay cuota crédito, agrégala: <small>(Cuota estimada crédito: $xxx/mes)</small>
+6. <b>💵 Precio</b>
+   Formato: <b>💵 Precio: $[precio con puntos ecuatorianos]</b>  (ej: $135.000)
+   Si hay cuota crédito: <small>(Cuota estimada crédito: $xxx/mes)</small>
 
-7. LLAMADA A LA ACCIÓN (CTA) — 1-2 oraciones motivadoras para agendar visita
+7. LLAMADA A LA ACCIÓN (1-2 oraciones cálidas para agendar una visita).
 
-8. TELÉFONOS DE CONTACTO
-   Formato EXACTO (una sola línea): {phones_text}
+8. <b>📞 Información y Contactos</b>
+   Una sola línea: "Celular / WhatsApp: {phones_text}"
 
 ═══════════════════════════════════════════════════════
 REGLAS ESTRICTAS
 ═══════════════════════════════════════════════════════
-- HTML limpio: usa <b>, <p>, <ul><li>, <br/> — PROHIBIDO CSS inline ni style=""
+- USA EMOJIS con elegancia en los encabezados de sección y viñetas clave
+  (✨ 📍 💰 💵 📞 🏡 🛏️ 🚿 🚗 📐 ✅ 🗓️), como en los anuncios profesionales de Ecuador.
+- HTML limpio: <b>, <p>, <ul><li>, <br/>, <small> — PROHIBIDO CSS inline ni style=""
 - PROHIBIDO inventar datos que no estén en el bloque de datos
-- Si un campo es 0 o vacío, OMÍTELO completamente — no digas "0 habitaciones"
-- Para terrenos: NO uses secciones de habitaciones/baños; usa potencial de construcción
-- Usa lenguaje ecuatoriano profesional: "plusvalía", "m²", precios con puntos (150.000 no 150,000)
-- El texto debe fluir naturalmente, NO suene a plantilla genérica
-- Completa TODAS las secciones — no cortes la descripción a la mitad
+- Si un campo es 0 o vacío, OMÍTELO — no digas "0 habitaciones"
+- Para terrenos: NO uses habitaciones/baños; usa potencial de construcción
+- Español ecuatoriano profesional, precios con puntos (135.000 no 135,000)
+- Texto cálido y fluido, NO genérico; completa TODAS las secciones
+- TERMINA SIEMPRE con la línea de teléfonos exactamente: {phones_text}
 
 Responde ÚNICAMENTE con el HTML final. Sin explicaciones, sin bloques ```html, sin comentarios."""
 
@@ -345,21 +358,27 @@ Responde ÚNICAMENTE con el HTML final. Sin explicaciones, sin bloques ```html, 
 
         desc_text = self.description or ''
 
-        prompt = f"""Eres un experto copywriter inmobiliario de Ecuador.
-Tienes la siguiente descripción comercial HTML de una propiedad:
+        prompt = f"""Eres un copywriter inmobiliario experto de Ecuador.
+Esta es la descripción comercial ACTUAL de una propiedad (HTML con emojis):
 
 --- DESCRIPCIÓN ACTUAL ---
 {desc_text}
 --- FIN ---
 
-El usuario quiere que hagas los siguientes cambios:
+El usuario pide ESTOS cambios (y SOLO estos):
 {self.ai_refine_prompt.strip()}
 
 INSTRUCCIONES:
-1. Aplica EXACTAMENTE los cambios pedidos, no más.
-2. Mantén el formato HTML con <h3>, <p>, <ul><li>, <b>, <br/>.
-3. NO inventes datos nuevos que no estaban en la descripción original.
-4. Responde SOLO con el HTML modificado, sin explicaciones.
+1. PARTE de la descripción actual: CONSERVA todo lo que el usuario NO pidió cambiar
+   (sus secciones, datos, emojis y teléfonos). NO la reescribas desde cero ni la borres.
+2. Aplica ÚNICAMENTE los cambios pedidos (ej: más larga / más corta, otro tono,
+   agregar o quitar un detalle, reordenar). El resto queda igual.
+3. Mantén el estilo: HTML limpio (<b>, <p>, <ul><li>, <br/>, <small>) y los EMOJIS
+   de sección (✨ 📍 💰 💵 📞).
+4. Conserva la línea de teléfonos del final tal cual estaba.
+5. NO inventes datos nuevos que no estuvieran en la descripción original.
+
+Responde SOLO con el HTML modificado, sin explicaciones, sin bloques ```html.
 """
         try:
             html_desc = self.env['estate.genai.mixin']._genai_generate(

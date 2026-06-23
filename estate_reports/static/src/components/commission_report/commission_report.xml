@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="estate_reports.CommissionReportAction">
+        <div class="o_estate_dashboard p-4" style="overflow-y:auto;height:100%;background:#ffffff;">
+
+            <!-- ═══ ENCABEZADO + KPIs ═══ -->
+            <div class="px-4 pt-4 pb-3">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                    <h2 class="m-0" style="color:#004274;font-weight:700;font-size:1.5rem;">
+                        Liquidación de Comisiones
+                    </h2>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm" t-on-click="downloadPdf" t-att-disabled="!state.k.commission_count"
+                                style="background:#004274;color:#fff;border:none;">
+                            <i class="fa fa-file-pdf-o me-1"/> Descargar PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPI tiles -->
+                <div class="d-flex flex-wrap gap-0" style="border:1px solid #e5e7eb;">
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Comisiones</div>
+                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.commission_count or 0"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Total</div>
+                        <div class="h4 m-0" style="color:#004274;" t-esc="money(state.k.total_commissions)"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Pagado</div>
+                        <div class="h3 m-0 text-success" t-esc="money(state.k.total_paid)"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill">
+                        <div class="text-muted small text-uppercase">Pendiente</div>
+                        <div class="h3 m-0 text-warning" t-esc="money(state.k.total_pending)"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ CONTENIDO PRINCIPAL ═══ -->
+            <div class="px-4 pb-4">
+
+                <!-- Filtros -->
+                <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Filtros</div>
+                <div class="row g-2 mb-4 align-items-end">
+                    <div class="col-12 col-md-4">
+                        <label class="small text-muted">Asesor</label>
+                        <select class="form-select form-select-sm" t-on-change="onUser">
+                            <option value="">Todos los asesores</option>
+                            <t t-foreach="state.advisors" t-as="a" t-key="a.id">
+                                <option t-att-value="a.id" t-att-selected="a.id === state.userId" t-esc="a.name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="small text-muted">Desde</label>
+                        <input type="date" class="form-control form-control-sm" t-model="state.dateFrom" t-on-change="onDateFrom"/>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="small text-muted">Hasta</label>
+                        <input type="date" class="form-control form-control-sm" t-model="state.dateTo" t-on-change="onDateTo"/>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <div class="form-check pt-2">
+                            <input class="form-check-input" type="checkbox" id="includeAll"
+                                   t-model="state.includeAll" t-on-change="onIncludeAll"/>
+                            <label class="form-check-label small text-muted" for="includeAll">
+                                Incluir todas
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div t-if="state.loading" class="text-center py-5 text-muted">
+                    <i class="fa fa-spinner fa-spin fa-2x"/>
+                </div>
+
+                <div t-else="">
+                    <div t-if="!state.k.commission_count" class="text-center text-muted py-4 border mb-4">
+                        <i class="fa fa-info-circle me-1"/> Sin comisiones para los filtros seleccionados.
+                    </div>
+
+                    <div t-else="">
+                        <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Detalle de Comisiones</div>
+                        <div style="border:1px solid #e5e7eb;" class="mb-4">
+                            <div t-out="raw(state.tableHtml)"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -68,77 +68,6 @@ class EstateProperty(models.Model):
         'esmeraldas': '080101', 'ibarra': '100101', 'santo domingo': '230101',
     }
 
-    @api.onchange('city')
-    def _onchange_city_zip(self):
-        if self.city:
-            code = self._EC_POSTAL_CODES.get(self.city.lower().strip(), '')
-            if code:
-                self.zip_code = code
-            # Auto-set Ecuador/Azuay when city is known
-            if not self.country_id:
-                ec = self.env['res.country'].search([('code', '=', 'EC')], limit=1)
-                if ec:
-                    self.country_id = ec
-            if not self.state_id and self.city.lower().strip() == 'cuenca':
-                azuay = self.env['res.country.state'].search(
-                    [('name', 'ilike', 'Azuay'), ('country_id.code', '=', 'EC')], limit=1)
-                if azuay:
-                    self.state_id = azuay
-            self.latitude = 0.0
-            self.longitude = 0.0
-
-    @api.onchange('state_id')
-    def _onchange_state_set_country(self):
-        """When province is selected, auto-set country to Ecuador."""
-        if self.state_id and self.state_id.country_id:
-            self.country_id = self.state_id.country_id
-
-    @api.model
-    def _fix_country_defaults(self):
-        """Fix existing properties with wrong country/state. Called on module update."""
-        ec = self.env['res.country'].search([('code', '=', 'EC')], limit=1)
-        if not ec:
-            return
-        azuay = self.env['res.country.state'].search(
-            [('name', 'ilike', 'Azuay'), ('country_id', '=', ec.id)], limit=1)
-        # Fix country for all properties (this is an Ecuador-only system)
-        bad_country = self.search([('country_id', '!=', ec.id)])
-        if bad_country:
-            bad_country.with_context(no_wp_sync=True, no_geocode=True).write(
-                {'country_id': ec.id})
-        # Set Azuay for properties in Cuenca with no state
-        if azuay:
-            cuenca_props = self.search([
-                ('state_id', '=', False),
-                ('city', 'ilike', 'Cuenca'),
-            ])
-            if cuenca_props:
-                cuenca_props.with_context(no_wp_sync=True, no_geocode=True).write(
-                    {'state_id': azuay.id})
-
-    @api.model
-    def _fix_ecuador_coordinates(self):
-        """Corrige coordenadas con signo positivo erróneo para propiedades en Ecuador.
-        Ecuador siempre tiene longitud negativa (hemisferio oeste) y Cuenca latitud negativa.
-        Se ejecuta en cada actualización del módulo para reparar datos existentes.
-        """
-        # Propiedades con longitud positiva → definitivamente mal signo (Ecuador es siempre negativo en lon)
-        wrong = self.search([('longitude', '>', 0)])
-        fixed = 0
-        for prop in wrong:
-            new_lat = -abs(prop.latitude) if prop.latitude else 0.0
-            new_lon = -abs(prop.longitude) if prop.longitude else 0.0
-            super(EstateProperty, prop).write({'latitude': new_lat, 'longitude': new_lon})
-            fixed += 1
-        if fixed:
-            _logger.info("_fix_ecuador_coordinates: corregidas %d propiedades con coordenadas incorrectas.", fixed)
-
-    @api.onchange('street')
-    def _onchange_street_keywords(self):
-        if self.street and not self.sector_keywords:
-            self.sector_keywords = self.street
-        self.latitude = 0.0
-        self.longitude = 0.0
     latitude = fields.Float(string='Latitud', digits=(10, 7))
     longitude = fields.Float(string='Longitud', digits=(10, 7))
     company_currency = fields.Many2one(
@@ -146,161 +75,6 @@ class EstateProperty(models.Model):
         default=lambda self: self.env.company.currency_id)
     map_url = fields.Char(string='URL del Mapa', compute='_compute_map_url')
     map_iframe = fields.Html(string='Vista de Mapa', compute='_compute_map_iframe', sanitize=False)
-
-    @api.depends('latitude', 'longitude')
-    def _compute_map_iframe(self):
-        for rec in self:
-            if rec.latitude and rec.longitude:
-                lat = rec.latitude
-                lng = rec.longitude
-                # Use OpenStreetMap embed format
-                url = f"https://www.openstreetmap.org/export/embed.html?bbox={lng-0.005}%2C{lat-0.005}%2C{lng+0.005}%2C{lat+0.005}&amp;layer=mapnik&amp;marker={lat}%2C{lng}"
-                rec.map_iframe = (
-                    f'<div style="position:relative; width:100%; padding-bottom:35%; border-radius:8px; border:1px solid #ddd; overflow:hidden;">'
-                    f'<iframe src="{url}" style="position:absolute; top:0; left:0; width:100%; height:100%; border:none;"></iframe>'
-                    f'</div>'
-                )
-            else:
-                rec.map_iframe = '<div style="padding-bottom:25%; background:#f8f9fa; border:1px dashed #ccc; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#6c757d; gap:6px"><i class="fa fa-map-marker"></i><small>Haz clic en <b>Ubicar en Mapa</b></small></div>'
-
-    @api.depends('street', 'city', 'state_id', 'country_id', 'latitude', 'longitude')
-    def _compute_map_url(self):
-        for rec in self:
-            if rec.latitude and rec.longitude:
-                rec.map_url = f"https://www.google.com/maps/search/?api=1&query={rec.latitude},{rec.longitude}"
-            else:
-                parts = [p for p in [rec.street, rec.city, rec.state_id.name, rec.country_id.name] if p]
-                address = ', '.join(parts).replace(' ', '+')
-                if address:
-                    rec.map_url = f"https://www.google.com/maps/search/?api=1&query={address}"
-                else:
-                    rec.map_url = False
-
-    def action_open_map(self):
-        self.ensure_one()
-        if self.map_url:
-            return {
-                'type': 'ir.actions.act_url',
-                'url': self.map_url,
-                'target': 'new',
-            }
-
-    def _nominatim_search(self, query, countrycodes='ec'):
-        """Shared Nominatim search. Returns (lat, lon, display_name) or None on any failure."""
-        try:
-            resp = requests.get(
-                'https://nominatim.openstreetmap.org/search',
-                params={'q': query, 'format': 'json', 'limit': 1, 'countrycodes': countrycodes},
-                headers={'User-Agent': 'OdooEstateApp/1.0 (tesis@inmobiliaria.ec)'},
-                timeout=15,
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            if not data:
-                return None
-            lat = float(data[0]['lat'])
-            lon = float(data[0]['lon'])
-            return lat, lon, data[0].get('display_name', query)
-        except requests.exceptions.ConnectionError:
-            _logger.warning("Geocoding: no se pudo conectar a Nominatim (sin red o DNS). query=%s", query)
-            return None
-        except requests.exceptions.Timeout:
-            _logger.warning("Geocoding: timeout al contactar Nominatim. query=%s", query)
-            return None
-        except Exception as e:
-            _logger.warning("Geocoding: error inesperado. query=%s error=%s", query, e)
-            return None
-
-    def _auto_geocode_silent(self):
-        """Auto-geocode without recursion — writes coords via super() to avoid re-triggering write()."""
-        try:
-            parts = [p for p in [self.street, self.city,
-                                  self.state_id.name if self.state_id else None,
-                                  'Ecuador'] if p]
-            if len(parts) < 2:
-                return
-            result = self._nominatim_search(', '.join(parts))
-            if not result:
-                result = self._nominatim_search(', '.join(parts), countrycodes='')
-            if result:
-                lat, lon, _ = result
-                super(EstateProperty, self).write({'latitude': lat, 'longitude': lon})
-        except Exception as e:
-            _logger.warning("_auto_geocode_silent failed: %s", e)
-
-    def geocode_if_missing(self):
-        """Called from JS on form load. Geocodes silently only when no coords exist yet.
-        Returns True if coords were set, False if already existed or failed."""
-        self.ensure_one()
-        if self.latitude or self.longitude:
-            return False
-        self._auto_geocode_silent()
-        return bool(self.latitude or self.longitude)
-
-    def action_geocode_address(self):
-        """Geocode the property address using Nominatim (OpenStreetMap) — free, no API key."""
-        self.ensure_one()
-        parts = [p for p in [self.street, self.city,
-                             self.state_id.name if self.state_id else None,
-                             'Ecuador'] if p]
-        if not parts:
-            raise UserError('Ingresa al menos la dirección y la ciudad para ubicar en el mapa.')
-        query = ', '.join(parts)
-        try:
-            result = self._nominatim_search(query, countrycodes='ec')
-            if not result:
-                result = self._nominatim_search(query, countrycodes='')
-            if result:
-                lat, lon, display_name = result
-                self.write({'latitude': lat, 'longitude': lon})
-                return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': 'Ubicación encontrada',
-                        'message': f'Coordenadas: {lat:.5f}, {lon:.5f}',
-                        'type': 'success',
-                        'sticky': False,
-                    }
-                }
-            else:
-                # Retry at city level
-                result2 = self._nominatim_search(f"{self.city}, Ecuador", countrycodes='ec')
-                if result2:
-                    lat, lon, _ = result2
-                    self.write({'latitude': lat, 'longitude': lon})
-                    return {
-                        'type': 'ir.actions.client',
-                        'tag': 'display_notification',
-                        'params': {
-                            'title': 'Ubicación aproximada (ciudad)',
-                            'message': f'No se encontró la calle exacta. Se usaron las coordenadas de {self.city}.',
-                            'type': 'warning',
-                            'sticky': False,
-                        }
-                    }
-                return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': 'Dirección no encontrada',
-                        'message': f'No se pudo geocodificar: "{query}". Intenta con la dirección más específica.',
-                        'type': 'warning',
-                        'sticky': False,
-                    }
-                }
-        except Exception as e:
-            _logger.error("Geocoding error: %s", e)
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': 'Error de geocodificación',
-                    'message': str(e),
-                    'type': 'danger',
-                    'sticky': False,
-                }
-            }
 
     # --- Características ---
     price = fields.Float(string='Precio', tracking=True)
@@ -416,231 +190,6 @@ class EstateProperty(models.Model):
         for rec in self:
             name = (rec.property_type_id.name or '').lower()
             rec.is_land_type = any(k in name for k in _LAND_KEYWORDS)
-
-    @api.depends('avm_comparable_count')
-    def _compute_avm_confidence(self):
-        for rec in self:
-            n = rec.avm_comparable_count or 0
-            if n >= 10:
-                rec.avm_confidence = 'high'
-            elif n >= 3:
-                rec.avm_confidence = 'medium'
-            elif n >= 1:
-                rec.avm_confidence = 'low'
-            else:
-                rec.avm_confidence = 'none'
-
-    def action_recalculate_avm(self):
-        """Mejora 6: Recalcula AVM con comparables reales y actualiza confianza."""
-        from datetime import timedelta
-        for prop in self:
-            if not prop.property_type_id or not prop.city:
-                continue
-            six_months_ago = fields.Date.today() - timedelta(days=180)
-            min_area = (prop.area or 0) * 0.85
-            max_area = (prop.area or 0) * 1.15
-            domain = [
-                ('state', '=', 'sold'),
-                ('property_type_id', '=', prop.property_type_id.id),
-                ('city', 'ilike', prop.city),
-                ('price', '>', 0),
-                ('date_sold', '>=', six_months_ago),
-            ]
-            if prop.area and prop.area > 0:
-                domain += [('area', '>=', min_area), ('area', '<=', max_area)]
-            comparables = self.search(domain)
-            if prop.id and isinstance(prop.id, int):
-                comparables = comparables.filtered(lambda c: c.id != prop.id)
-            if comparables:
-                prices_per_m2 = [c.price / c.area for c in comparables if c.area and c.area > 0]
-                if prices_per_m2:
-                    avg_price_m2 = sum(prices_per_m2) / len(prices_per_m2)
-                    estimated = avg_price_m2 * (prop.area or 1)
-                    # Trend: compare first vs second half
-                    half = len(comparables) // 2
-                    if half > 0:
-                        sorted_comps = comparables.sorted('date_sold')
-                        first_half = sorted_comps[:half]
-                        second_half = sorted_comps[half:]
-                        avg_first = sum(c.price for c in first_half) / len(first_half)
-                        avg_second = sum(c.price for c in second_half) / len(second_half)
-                        if avg_second > avg_first * 1.03:
-                            trend = 'Subiendo (+{:.1f}%)'.format(((avg_second/avg_first)-1)*100)
-                        elif avg_second < avg_first * 0.97:
-                            trend = 'Bajando ({:.1f}%)'.format(((avg_second/avg_first)-1)*100)
-                        else:
-                            trend = 'Estable'
-                    else:
-                        trend = 'Estable'
-                    prop.write({
-                        'avm_estimated_price': int(estimated * 100) / 100.0,
-                        'avm_comparable_count': len(comparables),
-                        'avm_price_trend': trend,
-                        'avm_last_calculated': fields.Datetime.now(),
-                    })
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'AVM Recalculado',
-                'message': 'El valor de mercado fue actualizado con comparables reales.',
-                'type': 'success', 'sticky': False,
-            }
-        }
-
-    @api.depends('price', 'avm_estimated_price')
-    def _compute_avm_status(self):
-        for rec in self:
-            if not rec.avm_estimated_price or rec.avm_estimated_price == 0:
-                rec.avm_status = 'insufficient'
-                continue
-                
-            variance = (rec.price - rec.avm_estimated_price) / rec.avm_estimated_price
-            if variance > 0.10: # > 10% more
-                rec.avm_status = 'high'
-            elif variance < -0.10: # < -10% less
-                rec.avm_status = 'low'
-            else:
-                rec.avm_status = 'fair'
-
-    @api.depends('property_type_id', 'city', 'state')
-    def _compute_predicted_days(self):
-        for rec in self:
-            if not rec.property_type_id:
-                rec.predicted_days_on_market = 0
-                continue
-            base_domain = [
-                ('state', '=', 'sold'),
-                ('property_type_id', '=', rec.property_type_id.id),
-                ('days_on_market', '>', 0),
-            ]
-            if rec.id and isinstance(rec.id, int):
-                base_domain.append(('id', '!=', rec.id))
-            domain = base_domain + [('city', 'ilike', rec.city)] if rec.city else base_domain
-            comparables = self.env['estate.property'].search(domain, limit=15)
-            if not comparables and rec.city:
-                comparables = self.env['estate.property'].search(domain, limit=15)
-            if comparables:
-                days_list = comparables.mapped('days_on_market')
-                rec.predicted_days_on_market = int(sum(days_list) / len(days_list))
-            else:
-                rec.predicted_days_on_market = 0
-
-    @api.depends('image_main', 'image_ids', 'description', 'wp_published',
-                 'meeting_count', 'days_on_market', 'avm_status')
-    def _compute_property_score(self):
-        import re
-        for rec in self:
-            score = 0
-            if rec.avm_status == 'fair':
-                score += 33
-            elif rec.avm_status == 'low':
-                score += 43
-            elif rec.avm_status == 'high':
-               if rec.document_ids:
-                score += min(len(rec.document_ids) * 5, 15)
-            # Bonuses
-            if rec.tour_360_active:
-                score += 10
-            if rec.capture_sheet:
-                score += 5
-            
-            score = min(score, 100)
-            text = re.sub(r'<[^>]+>', '', rec.description or '')
-            if len(text) > 200:
-                score += 10
-            if rec.wp_published:
-                score += 10
-            score += min(rec.meeting_count * 5, 15)
-            if rec.days_on_market > 30:
-                weeks_over = (rec.days_on_market - 30) // 7
-                score -= min(weeks_over, 20)
-            final = max(0, min(100, score))
-            rec.property_score = final
-            if final >= 80:
-                rec.property_score_label = 'Excelente'
-            elif final >= 60:
-                rec.property_score_label = 'Bueno'
-            elif final >= 40:
-                rec.property_score_label = 'Regular'
-            else:
-                rec.property_score_label = 'Incompleto'
-
-    def action_calculate_avm(self):
-        """Calcula el valor óptimo basado en propiedades similares VENDIDAS"""
-        self.ensure_one()
-        # Buscar propiedades vendidas del mismo tipo. Si tiene ciudad, filtrar por ciudad también.
-        domain = [
-            ('state', '=', 'sold'),
-            ('id', '!=', self.id),
-            ('property_type_id', '=', self.property_type_id.id)
-        ]
-        if self.city:
-            domain.append(('city', 'ilike', self.city))
-            
-        comparables = self.env['estate.property'].search(domain, order='date_sold desc', limit=20)
-        
-        if not comparables:
-            # Fallback: Solo buscar por tipo inmobiliario si no hay en la ciudad
-            domain.pop()
-            comparables = self.env['estate.property'].search(domain, order='date_sold desc', limit=20)
-            if not comparables:
-                return {
-                    'type': 'ir.actions.client',
-                    'tag': 'display_notification',
-                    'params': {
-                        'title': 'AVM: Datos Insuficientes',
-                        'message': 'No hay suficientes propiedades vendidas similares para calcular el AVM.',
-                        'type': 'warning',
-                        'sticky': False,
-                    }
-                }
-            
-        import math
-        from datetime import date as _date
-        today = _date.today()
-        weighted_price = 0.0
-        weighted_area = 0.0
-        total_weight = 0.0
-        direct_weighted_price = 0.0
-
-        for comp in comparables:
-            age_days = (today - comp.date_sold).days if comp.date_sold else 365
-            age_weight = math.exp(-age_days / 365.0)
-            year_diff = abs((self.year_built or 2000) - (comp.year_built or 2000))
-            year_factor = max(1.0 - year_diff * 0.005, 0.70)
-            weight = age_weight * year_factor
-            direct_weighted_price += comp.price * weight
-            if comp.area and comp.area > 0:
-                weighted_price += comp.price * weight
-                weighted_area += comp.area * weight
-            total_weight += weight
-
-        if total_weight == 0:
-            total_weight = len(comparables)
-            direct_weighted_price = sum(c.price for c in comparables)
-
-        if weighted_area > 0 and self.area and self.area > 0:
-            avg_price_per_sqm = weighted_price / weighted_area
-            estimated_price = avg_price_per_sqm * self.area
-        else:
-            estimated_price = direct_weighted_price / total_weight
-            
-        self.write({
-            'avm_estimated_price': estimated_price,
-            'avm_last_calculated': fields.Datetime.now()
-        })
-        
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'AVM Calculado Exitosamente',
-                'message': f"Basado en {len(comparables)} ventas históricas (ponderadas por antigüedad y año de construcción) el valor estimado es ${estimated_price:,.2f}.",
-                'type': 'success',
-                'sticky': False,
-            }
-        }
 
     # --- Comisiones ---
     commission_percentage = fields.Float(string='Porcentaje Comisión (%)', default=5.0)
@@ -796,6 +345,45 @@ class EstateProperty(models.Model):
         'estate.advisor.fb.post', 'property_id', string='Posts Personales de Asesores')
     advisor_fb_post_count = fields.Integer(
         string='Posts FB', compute='_compute_advisor_fb_post_count')
+
+    contract_ids = fields.One2many('estate.contract', 'property_id', string='Contratos')
+    contract_count = fields.Integer(string='N° Contratos', compute='_compute_contract_count')
+
+    @api.depends('contract_ids')
+    def _compute_contract_count(self):
+        for rec in self:
+            rec.contract_count = len(rec.contract_ids)
+
+    def action_open_contracts(self):
+        self.ensure_one()
+        return {
+            'name': 'Contratos',
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.contract',
+            'view_mode': 'list,form',
+            'domain': [('property_id', '=', self.id)],
+            'context': {'default_property_id': self.id},
+        }
+
+    def action_new_contract(self):
+        """Acceso directo: abre el formulario de un contrato nuevo en blanco
+        con la propiedad y sus datos derivados ya precargados."""
+        self.ensure_one()
+        ctx = {
+            'default_property_id': self.id,
+            'default_contract_type': 'rent' if self.offer_type == 'rent' else 'sale',
+        }
+        if self.buyer_id:
+            ctx['default_partner_id'] = self.buyer_id.id
+        return {
+            'name': 'Nuevo Contrato',
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.contract',
+            'view_mode': 'form',
+            'views': [(False, 'form')],
+            'target': 'current',
+            'context': ctx,
+        }
 
     @api.depends('price', 'mortgage_down_payment_pct', 'mortgage_rate', 'mortgage_term_years')
     def _compute_mortgage(self):
@@ -1009,6 +597,9 @@ class EstateProperty(models.Model):
 
     def action_create_sale_order(self):
         self.ensure_one()
+        if self.state == 'sold':
+            raise UserError(
+                'Esta propiedad ya está vendida. No se puede crear otra orden de venta.')
         partner = self.buyer_id or self.owner_id
         if not partner:
             raise UserError('Asigna un Comprador o Propietario a la propiedad antes de crear la orden de venta.')
@@ -1144,7 +735,7 @@ class EstateProperty(models.Model):
                 try:
                     prop._auto_geocode_silent()
                 except Exception:
-                    pass
+                    _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
             # Auto-completar código postal
             if not prop.zip_code and prop.city:
                 code = self._EC_POSTAL_CODES.get(prop.city.lower().strip(), '')
@@ -1312,7 +903,7 @@ class EstateProperty(models.Model):
                     try:
                         prop._auto_geocode_silent()
                     except Exception:
-                        pass
+                        _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
         return res
 
     def unlink(self):
@@ -1560,9 +1151,16 @@ class EstateProperty(models.Model):
 
     def action_create_invoice(self):
         self.ensure_one()
+        # Validación: no facturar dos veces una propiedad ya vendida
+        if self.state == 'sold':
+            raise UserError(
+                'Esta propiedad ya está vendida. No se puede generar otra factura de venta '
+                'para una propiedad vendida.')
+        if self.state == 'rented':
+            raise UserError('Esta propiedad está arrendada; no aplica factura de venta.')
         if not self.buyer_id:
             raise UserError('Para facturar la propiedad, debes asignarle un Comprador.')
-        
+
         product = self.product_id.product_variant_id if self.product_id else False
         
         lines = [(0, 0, {
@@ -1590,9 +1188,16 @@ class EstateProperty(models.Model):
         }
             
         move = self.env['account.move'].create(invoice_vals)
-        
-        self.state = 'sold'
-        
+
+        # Despublicar de WordPress al concretar la venta (igual que action_set_sold)
+        if self.wp_published and self.wp_post_id and hasattr(self, 'action_unpublish_wordpress'):
+            try:
+                self.action_unpublish_wordpress()
+            except Exception as e:
+                _logger.warning('WP unpublish al facturar propiedad %s falló: %s', self.id, e)
+
+        self.with_context(no_wp_sync=True).write({'state': 'sold'})
+
         # Retornar acción para abrir la vista de la Factura recién generada
         return {
             'name': 'Factura Generada',

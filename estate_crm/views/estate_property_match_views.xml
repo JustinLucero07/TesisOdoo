@@ -12,6 +12,12 @@
                     <field name="crm_match_count" string="Leads Interesados" widget="statinfo"/>
                 </button>
             </xpath>
+            <!-- Inventario de aliados: permite marcar el inmueble como de un aliado -->
+            <xpath expr="//field[@name='exclusive_user_id']" position="after">
+                <field name="is_allied_listing" widget="boolean_toggle"/>
+                <field name="allied_agency_id" invisible="not is_allied_listing"
+                       options="{'no_create_edit': True}"/>
+            </xpath>
         </field>
     </record>
 
@@ -38,6 +44,35 @@
                         class="btn-secondary text-uppercase"
                         invisible="crm_match_count &gt; 0"/>
             </list>
+        </field>
+    </record>
+
+    <!-- Badge "Aliado" en la tarjeta kanban de propiedades -->
+    <record id="estate_property_view_kanban_inherit_crm_ally" model="ir.ui.view">
+        <field name="name">estate.property.kanban.inherit.crm.ally</field>
+        <field name="model">estate.property</field>
+        <field name="inherit_id" ref="estate_management.estate_property_view_kanban"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('o_kanban_tags_section')]" position="after">
+                <div t-if="record.is_allied_listing.raw_value" class="mt-1">
+                    <span class="badge text-bg-info">
+                        <i class="fa fa-handshake-o me-1"/>Aliado<t t-if="record.allied_agency_id.value">: <t t-esc="record.allied_agency_id.value"/></t>
+                    </span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Columna "Aliado" en la lista de propiedades -->
+    <record id="estate_property_view_tree_inherit_crm_ally" model="ir.ui.view">
+        <field name="name">estate.property.tree.inherit.crm.ally</field>
+        <field name="model">estate.property</field>
+        <field name="inherit_id" ref="estate_management.estate_property_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='property_type_id']" position="after">
+                <field name="is_allied_listing" widget="badge" optional="show" string="Aliado"
+                       decoration-info="is_allied_listing == True"/>
+            </xpath>
         </field>
     </record>
 </odoo>

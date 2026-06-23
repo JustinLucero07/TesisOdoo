@@ -1,55 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <record id="estate_report_wizard_view_form" model="ir.ui.view">
-        <field name="name">estate.report.wizard.form</field>
-        <field name="model">estate.report.wizard</field>
-        <field name="arch" type="xml">
-            <form string="Exportar Datos" create="false" delete="false">
-                <sheet>
+    <!-- Vista de formulario VIEJA eliminada: reemplazada por la pantalla OWL. -->
 
-                    <!-- Botones de acción -->
-                    <div class="oe_button_box" name="button_box">
-                        <button class="oe_stat_button" icon="fa-file-excel-o"
-                                type="object" name="action_generate_report"
-                                context="{'export_format': 'excel'}">
-                            <div class="o_stat_info">
-                                <span class="o_stat_text">Descargar Excel</span>
-                            </div>
-                        </button>
-                        <button class="oe_stat_button" icon="fa-file-pdf-o"
-                                type="object" name="action_generate_report"
-                                context="{'export_format': 'pdf'}">
-                            <div class="o_stat_info">
-                                <span class="o_stat_text">Descargar PDF</span>
-                            </div>
-                        </button>
-                    </div>
-
-                    <!-- Título -->
-                    <div class="oe_title">
-                        <h1>Exportar Datos</h1>
-                    </div>
-
-                    <!-- Filtros -->
-                    <group string="Configuración">
-                        <group string="Tipo de Reporte">
-                            <field name="report_type" widget="radio"/>
-                        </group>
-                        <group string="Período (opcional)">
-                            <field name="date_from"/>
-                            <field name="date_to"/>
-                        </group>
-                    </group>
-
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="estate_report_wizard_action" model="ir.actions.act_window">
+    <!-- Pantalla OWL a medida (lineal, sin nube/X) -->
+    <record id="estate_report_export_owl_action" model="ir.actions.client">
         <field name="name">Exportar Datos</field>
-        <field name="res_model">estate.report.wizard</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
+        <field name="tag">estate_report_export_owl</field>
     </record>
 </odoo>

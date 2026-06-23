@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="estate_reports.ReportExportAction">
+        <div class="o_estate_dashboard p-4" style="overflow-y:auto;height:100%;background:#ffffff;">
+
+            <!-- Encabezado + botones -->
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                <h2 class="m-0" style="color:#004274;font-weight:700;font-size:1.5rem;">
+                    Exportar Datos
+                </h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm" t-on-click="() => this.download('excel')"
+                            t-att-disabled="state.downloading"
+                            style="background:#1D6F42;color:#fff;border:none;">
+                        <i class="fa fa-file-excel-o me-1"/> Descargar Excel
+                    </button>
+                    <button class="btn btn-sm" t-on-click="() => this.download('pdf')"
+                            t-att-disabled="state.downloading"
+                            style="background:#B23B3B;color:#fff;border:none;">
+                        <i class="fa fa-file-pdf-o me-1"/> Descargar PDF
+                    </button>
+                </div>
+            </div>
+
+            <div t-if="state.loading" class="text-center py-5 text-muted">
+                <i class="fa fa-spinner fa-spin fa-2x"/>
+            </div>
+
+            <div t-else="">
+                <div class="text-uppercase fw-bold small border-bottom pb-1 mb-3" style="color:#004274;">
+                    Configuración
+                </div>
+
+                <div class="row g-4">
+                    <!-- Tipo de reporte (radio) -->
+                    <div class="col-12 col-lg-7">
+                        <div class="text-uppercase fw-bold small mb-2" style="color:#004274;">Tipo de Reporte</div>
+                        <div style="border:1px solid #e5e7eb;border-radius:6px;">
+                            <t t-foreach="state.reportTypes" t-as="rt" t-key="rt.value">
+                                <label class="d-flex align-items-center gap-2 px-3 py-2 m-0"
+                                       style="cursor:pointer;border-bottom:1px solid #f1f3f5;">
+                                    <input type="radio" name="report_type"
+                                           t-att-value="rt.value"
+                                           t-att-checked="rt.value === state.reportType"
+                                           t-on-change="() => this.onType(rt.value)"/>
+                                    <span t-esc="rt.label"/>
+                                </label>
+                            </t>
+                        </div>
+                    </div>
+
+                    <!-- Período -->
+                    <div class="col-12 col-lg-5">
+                        <div class="text-uppercase fw-bold small mb-2" style="color:#004274;">Período (opcional)</div>
+                        <div class="mb-3">
+                            <label class="small text-muted">Desde</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   t-att-value="state.dateFrom" t-on-change="onFrom"/>
+                        </div>
+                        <div>
+                            <label class="small text-muted">Hasta</label>
+                            <input type="date" class="form-control form-control-sm"
+                                   t-att-value="state.dateTo" t-on-change="onTo"/>
+                        </div>
+                        <small class="text-muted d-block mt-3">
+                            <i class="fa fa-info-circle"/>
+                            Algunos reportes (ventas, visitas, contratos) usan el período;
+                            otros exportan el estado actual.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>
