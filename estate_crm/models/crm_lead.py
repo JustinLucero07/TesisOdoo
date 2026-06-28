@@ -11,6 +11,39 @@ class CrmLead(models.Model):
     # en la vista (1-2 captación, 3-4 visita/seguimiento, 5+ cierre).
     stage_sequence = fields.Integer(
         related='stage_id.sequence', string='Secuencia de Etapa', store=False)
+
+    # ── Compuertas de acciones por etapa ─────────────────────────────────────
+    # Estos booleanos deciden qué botones de acción se muestran según la etapa.
+    # Se calculan comparando la etapa actual contra etapas de referencia
+    # identificadas por su XML id (no por números fijos), de modo que agregar o
+    # reordenar etapas no descuadra la lógica de los botones.
+    gate_capture = fields.Boolean(compute='_compute_stage_gates',
+        help='Etapas iniciales (hasta Captación): buscar propiedad / registrar necesidad.')
+    gate_offer = fields.Boolean(compute='_compute_stage_gates',
+        help='Negociación (Visita / Seguimiento): crear ofertas.')
+    gate_reserve = fields.Boolean(compute='_compute_stage_gates',
+        help='Desde la Visita en adelante: reservar la propiedad.')
+    gate_contract = fields.Boolean(compute='_compute_stage_gates',
+        help='Desde Entrega de Papeles en adelante: formalizar contrato.')
+
+    @api.depends('stage_id', 'stage_id.sequence')
+    def _compute_stage_gates(self):
+        ref = self.env.ref
+        def _seq(xmlid):
+            st = ref(xmlid, raise_if_not_found=False)
+            return st.sequence if st else None
+        s_captacion = _seq('estate_crm.stage_lead2_estate_captacion')
+        s_visita = _seq('estate_crm.stage_lead3_estate_visita')
+        s_seguimiento = _seq('estate_crm.stage_lead3b_estate_seguimiento')
+        s_papeles = _seq('estate_crm.stage_lead4_estate_papeles')
+        for lead in self:
+            cur = lead.stage_id.sequence if lead.stage_id else 0
+            lead.gate_capture = bool(s_captacion is not None and cur <= s_captacion)
+            lead.gate_offer = bool(
+                s_visita is not None and s_seguimiento is not None
+                and s_visita <= cur <= s_seguimiento)
+            lead.gate_reserve = bool(s_visita is not None and cur >= s_visita)
+            lead.gate_contract = bool(s_papeles is not None and cur >= s_papeles)
     match_percentage = fields.Integer(
         string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True,
         help='Porcentaje de compatibilidad entre el presupuesto/preferencias del cliente y la propiedad de interés. 100% = perfectamente alineado. Factores: precio vs presupuesto (50%), ciudad (20%), tipo de propiedad (15%), habitaciones (10%), área (5%).')
@@ -29,11 +62,11 @@ class CrmLead(models.Model):
         ('portal',    'Portal del Cliente'),
         ('ai_agent',  'Agente IA'),
         ('other',     'Otro'),
-    ], string='Fuente del Lead', default='website', tracking=True,
+    ], string='Fuente del Lead', default='website', tracking=True, index=True,
        help='Canal por el que llegó este prospecto')
 
     referral_partner_id = fields.Many2one(
-        'res.partner', string='Referido por', tracking=True,
+        'res.partner', string='Referido por', tracking=True, index=True,
         help='Cliente que refirió este prospecto. Se le notificará al cerrar la venta.')
 
     # --- Preferencias del cliente ---
@@ -80,7 +113,7 @@ class CrmLead(models.Model):
         ('low', 'Básico (C)'),
         ('medium', 'Cualificado (B)'),
         ('high', 'Prioritario (A)')
-    ], string='Puntuación del Lead', compute='_compute_lead_scoring', store=True, tracking=True,
+    ], string='Puntuación del Lead', compute='_compute_lead_scoring', store=True, tracking=True, index=True,
         help='Clasificación automática del lead: A (Prioritario) = presupuesto ≥ precio, match ≥ 90%, contacto completo. B (Cualificado) = match ≥ 60%. C (Básico) = resto.')
 
     lead_temperature = fields.Selection([
@@ -88,7 +121,7 @@ class CrmLead(models.Model):
         ('warm', 'Tibio'),
         ('hot', 'Caliente'),
         ('boiling', '¡Hirviendo!')
-    ], string='Temperatura del Lead', compute='_compute_lead_scoring', store=True,
+    ], string='Temperatura del Lead', compute='_compute_lead_scoring', store=True, index=True,
         help='Indica la urgencia de atención: Hirviendo = acción inmediata, Caliente = alta prioridad, Tibio = hacer seguimiento, Frío = lead sin actividad reciente.')
 
     expected_revenue = fields.Float(string='Comisión Planificada', compute='_compute_financials', store=True)

@@ -1,14 +1,20 @@
 import base64
-import json
 import logging
 import threading
 
-import requests
-
-from odoo import models, api
+from odoo import models, fields, api
 from odoo.modules.registry import Registry
+# Reemplazo con reintentos automáticos ante errores transitorios (timeout, 5xx, 429).
+from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
 
 _logger = logging.getLogger(__name__)
+
+# Campos cuyo cambio amerita re-publicar la propiedad en WordPress.
+_WP_TRACKED_FIELDS = {
+    'title', 'name', 'price', 'description', 'state', 'offer_type',
+    'bedrooms', 'bathrooms', 'area', 'city', 'street',
+    'property_type_id', 'latitude', 'longitude',
+}
 
 # =============================================================================
 # MAPEO AUTOMÁTICO: Odoo → Houzez WordPress (inmobi.com.ec)
@@ -85,6 +91,58 @@ HOUZEZ_FEATURE_MAP = {
 
 class EstatePropertyWordPress(models.Model):
     _inherit = 'estate.property'
+
+    wp_needs_sync = fields.Boolean(
+        string='Cambios pendientes para WordPress', default=False, copy=False,
+        help='Se marca cuando una propiedad ya publicada cambia en campos relevantes. '
+             'La tarea de re-sincronización la vuelve a publicar y limpia la marca.')
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Marca para re-sincronizar si cambian campos relevantes de una propiedad
+        # ya publicada. El guard 'no_wp_sync' evita marcar durante la propia sync.
+        if not self.env.context.get('no_wp_sync') and _WP_TRACKED_FIELDS.intersection(vals):
+            published = self.filtered(lambda p: p.wp_published and not p.wp_needs_sync)
+            if published:
+                published.with_context(no_wp_sync=True).write({'wp_needs_sync': True})
+        return res
+
+    def _wp_sync_now(self):
+        """Sincroniza esta propiedad con WordPress de forma síncrona (uso en cron)."""
+        self.ensure_one()
+        cfg = self._get_wp_config()
+        if cfg['active'] != 'True' or not cfg['url']:
+            return False
+        if not (self.latitude and self.longitude):
+            self._auto_geocode_from_address()
+        featured_id, gallery_ids = self._wp_upload_all_images(cfg)
+        wp_id = self._wp_create_or_update_post(cfg, featured_id)
+        if wp_id:
+            meta = self._build_houzez_meta(cfg, featured_id, gallery_ids)
+            self._wp_save_meta(cfg, wp_id, meta)
+            self._wp_set_taxonomies(cfg, wp_id)
+            self.with_context(no_wp_sync=True).write({
+                'wp_post_id': wp_id, 'wp_published': True, 'wp_needs_sync': False})
+            return True
+        return False
+
+    @api.model
+    def _cron_wp_resync(self):
+        """Re-publica en WordPress las propiedades con cambios pendientes."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        if ICP.get_param('estate_wp.auto_resync', 'False') != 'True':
+            return
+        props = self.search(
+            [('wp_published', '=', True), ('wp_needs_sync', '=', True)], limit=20)
+        for prop in props:
+            try:
+                prop._wp_sync_now()
+                self.env.cr.commit()
+            except Exception as e:
+                self.env.cr.rollback()
+                _logger.error("Cron re-sync WP falló para propiedad %s: %s", prop.id, e)
+        if props:
+            _logger.info("Cron re-sync WP: %d propiedad(es) procesadas.", len(props))
 
     def _get_wp_config(self):
         """Get WordPress configuration."""
@@ -498,7 +556,8 @@ class EstatePropertyWordPress(models.Model):
                         meta = prop._build_houzez_meta(cfg, featured_id, gallery_ids)
                         prop._wp_save_meta(cfg, wp_id, meta)
                         prop._wp_set_taxonomies(cfg, wp_id)
-                        prop.write({'wp_post_id': wp_id, 'wp_published': True})
+                        prop.with_context(no_wp_sync=True).write(
+                            {'wp_post_id': wp_id, 'wp_published': True, 'wp_needs_sync': False})
                     cr.commit()
                     _logger.info("WP sync en fondo completado: propiedad=%s post_id=%s", prop_id, wp_id)
             except Exception as e:

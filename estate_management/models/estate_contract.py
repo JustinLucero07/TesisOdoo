@@ -27,9 +27,9 @@ class EstateContract(models.Model):
         'sale.order', string='Orden de Venta', readonly=True,
         help='Orden de venta de Odoo vinculada a este contrato.')
     property_id = fields.Many2one(
-        'estate.property', string='Propiedad', required=True, tracking=True)
+        'estate.property', string='Propiedad', required=True, tracking=True, index=True)
     partner_id = fields.Many2one(
-        'res.partner', string='Cliente', required=True, tracking=True)
+        'res.partner', string='Cliente', required=True, tracking=True, index=True)
     user_id = fields.Many2one(
         'res.users', string='Agente Responsable',
         default=lambda self: self.env.user, tracking=True)

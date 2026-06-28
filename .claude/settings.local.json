@@ -28,12 +28,20 @@
       "Bash(pkill -9 -f \"odoo19/odoo-bin\")",
       "Bash(grep -rnA1 \"Operaciones|menu_operations|estate_menu_operations\" estate_management/views/estate_menus.xml)",
       "Bash(awk '{print $5, $NF}')",
-      "Bash(xargs -n1 basename)"
+      "Bash(xargs -n1 basename)",
+      "Bash(awk 'NR>=60 && NR<=130 {print NR\": \"$0}' addons/calendar/views/calendar_views.xml)",
+      "Bash(git rm *)",
+      "Bash(lsof -i:8070)",
+      "Bash(kill 258024)",
+      "Bash(pip install *)",
+      "Bash(python3 -c \"import yaml; d=yaml.safe_load\\(open\\('deploy/docker-compose.yml'\\)\\); print\\('YAML OK | servicios:', list\\(d['services'].keys\\(\\)\\)\\)\")",
+      "Bash(docker compose *)"
     ],
     "additionalDirectories": [
       "/tmp",
       "/home/justin/Documentos/Tesis/estate_management/models",
-      "/home/justin/Documentos/Tesis/estate_ai_agent/controllers"
+      "/home/justin/Documentos/Tesis/estate_ai_agent/controllers",
+      "/home/justin/Documentos/Tesis/deploy"
     ]
   }
 }

@@ -5,13 +5,13 @@ import re
 import threading
 import time
 
-import requests
-
 from odoo import api as odoo_api
 from odoo.modules.registry import Registry
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+# Reemplazo con reintentos automáticos ante errores transitorios (timeout, 5xx, 429).
+from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
 
 _logger = logging.getLogger(__name__)
 

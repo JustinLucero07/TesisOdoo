@@ -12,14 +12,20 @@
                         <setting string="Activar Agente IA" help="Habilitar o deshabilitar el agente conversacional">
                             <field name="ai_active"/>
                         </setting>
-                        <setting string="Proveedor de IA" help="Seleccione el proveedor de inteligencia artificial">
+                        <setting string="Proveedor de IA" help="Proveedor activo. El otro se usa como respaldo automático si tiene su API Key configurada.">
                             <field name="ai_provider" widget="radio"/>
                         </setting>
-                        <setting string="API Key" help="Clave de acceso a la API del proveedor">
-                            <field name="ai_api_key" password="True"/>
+                        <setting string="API Key OpenAI (ChatGPT)" help="Clave de ChatGPT. Se conserva aunque cambies de proveedor.">
+                            <field name="ai_openai_api_key" password="True"/>
                         </setting>
-                        <setting string="Modelo" help="Modelo de IA a utilizar (ej: gpt-4o, gemini-1.5-flash, gemini-1.5-pro)">
-                            <field name="ai_model"/>
+                        <setting string="Modelo OpenAI" help="Ej.: gpt-4o-mini, gpt-4o">
+                            <field name="ai_openai_model"/>
+                        </setting>
+                        <setting string="API Key Google Gemini" help="Clave de Gemini. Se conserva aunque cambies de proveedor.">
+                            <field name="ai_gemini_api_key" password="True"/>
+                        </setting>
+                        <setting string="Modelo Gemini" help="Ej.: gemini-2.5-flash, gemini-2.5-pro">
+                            <field name="ai_gemini_model"/>
                         </setting>
                         <setting string="Temperatura" help="Controla la creatividad de las respuestas (0-1)">
                             <field name="ai_temperature"/>

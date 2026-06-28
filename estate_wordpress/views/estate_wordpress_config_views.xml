@@ -41,6 +41,9 @@
                             <setting string="Activar Integración" help="Habilitar la publicación en WordPress">
                                 <field name="wp_active"/>
                             </setting>
+                            <setting string="Re-sincronización automática" help="Una tarea programada vuelve a publicar las propiedades con cambios relevantes.">
+                                <field name="wp_auto_resync"/>
+                            </setting>
                             <setting string="URL de WordPress" help="URL base del sitio WordPress">
                                 <field name="wp_url" placeholder="https://miinmobiliaria.com"/>
                             </setting>

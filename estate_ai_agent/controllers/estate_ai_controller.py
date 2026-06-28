@@ -37,6 +37,60 @@ from .ai_definitions import (
 
 class EstateAIController(http.Controller):
 
+    # Modelos por defecto cuando no se ha especificado uno para el proveedor.
+    _DEFAULT_MODELS = {'chatgpt': 'gpt-4o-mini', 'gemini': 'gemini-2.5-flash'}
+
+    def _ai_provider_chain(self, ICP):
+        """Construye la lista de proveedores a intentar (activo + respaldo).
+
+        Devuelve una lista de tuplas (proveedor, api_key, modelo). El proveedor
+        configurado va primero; el otro se añade como respaldo solo si tiene su
+        propia API Key. Se mantiene compatibilidad con la clave/modelo heredados
+        (estate_ai.api_key / estate_ai.model) para el proveedor activo.
+        """
+        active = ICP.get_param('estate_ai.provider', 'chatgpt')
+        # El valor del proveedor 'chatgpt' usa el prefijo de parámetros 'openai'.
+        prefixes = {'chatgpt': 'openai', 'gemini': 'gemini'}
+
+        def creds(p):
+            px = prefixes.get(p, p)
+            key = ICP.get_param('estate_ai.%s_api_key' % px, '') or ''
+            model = ICP.get_param('estate_ai.%s_model' % px, '') or ''
+            if p == active:  # respaldo a la config heredada (instalaciones antiguas)
+                key = key or ICP.get_param('estate_ai.api_key', '') or ''
+                model = model or ICP.get_param('estate_ai.model', '') or ''
+            model = model or self._DEFAULT_MODELS.get(p, '')
+            if p == 'gemini':
+                model = _normalize_gemini_model(model)
+            return key, model
+
+        order = [active] + [p for p in ('chatgpt', 'gemini') if p != active]
+        chain = []
+        for p in order:
+            key, model = creds(p)
+            if key:
+                chain.append((p, key, model))
+        return chain
+
+    def _friendly_ai_error(self, provider, err):
+        """Traduce un fallo del proveedor de IA en un mensaje claro para el usuario."""
+        msg = (str(err) if err else '').lower()
+        if any(k in msg for k in ('quota', 'insufficient_quota', 'rate limit',
+                                  'rate_limit', '429', 'credit', 'billing', 'exceeded')):
+            return ('El asistente de IA no está disponible temporalmente porque se agotó el crédito o '
+                    'la cuota del proveedor. El resto del sistema funciona con normalidad; reintenta '
+                    'más tarde o configura otro proveedor en Configuración > Ajustes > Agente IA.')
+        if any(k in msg for k in ('api key', 'api_key', 'unauthorized', '401', 'invalid', 'permission',
+                                  'authentication', 'forbidden', '403')):
+            return ('El asistente de IA no pudo autenticarse con el proveedor (API Key inválida o sin '
+                    'permisos). Verifica la clave en Configuración > Ajustes > Agente IA.')
+        if any(k in msg for k in ('network', 'timeout', 'connection', 'dns', 'unreachable',
+                                  'temporarily', '503', '502', '504')):
+            return ('El asistente de IA no pudo conectarse con el proveedor (problema de red). '
+                    'Revisa la conexión del servidor e inténtalo de nuevo en unos minutos.')
+        return ('El asistente de IA no está disponible en este momento. El resto del sistema funciona '
+                'con normalidad; inténtalo de nuevo más tarde.')
+
     @http.route('/estate_ai/chat', type='jsonrpc', auth='user', methods=['POST'])
     def chat(self, message, **kwargs):
         """Process a chat message and return AI response with memory and tool calling."""
@@ -47,16 +101,17 @@ class EstateAIController(http.Controller):
         if ai_active != 'True':
             return {'response': 'El agente IA está desactivado. Contacte al administrador.'}
 
-        provider = ICP.get_param('estate_ai.provider', 'chatgpt')
-        api_key = ICP.get_param('estate_ai.api_key', '')
-        model = _normalize_gemini_model(ICP.get_param('estate_ai.model', ''))
-        
+        # Cadena de proveedores a intentar: el activo primero y, como respaldo,
+        # el otro si tiene clave configurada (modo degradado / alta disponibilidad).
+        provider_chain = self._ai_provider_chain(ICP)
+
         temperature = float(ICP.get_param('estate_ai.temperature', '0.7'))
         max_tokens = int(ICP.get_param('estate_ai.max_tokens', '1500'))
         system_prompt = ICP.get_param('estate_ai.system_prompt', '')
 
-        if not api_key:
-            return {'response': 'No se ha configurado la API Key. Vaya a Configuración > Agente IA.'}
+        if not provider_chain:
+            return {'response': 'No se ha configurado la API Key de ningún proveedor de IA. '
+                                'Vaya a Configuración > Ajustes > Agente IA.'}
 
         context_data = self._get_system_context()
         user_lang = request.env.user.lang or 'es_EC'
@@ -238,21 +293,34 @@ INSTRUCCIONES DE RESPUESTA:
         # Load conversation history for memory
         conversation_history = self._get_conversation_history(request.env.user.id)
 
-        try:
-            if provider == 'chatgpt':
-                response = self._query_chatgpt_with_tools(
-                    api_key, model, temperature, max_tokens,
-                    full_system_prompt, message, conversation_history)
-            elif provider == 'gemini':
-                response = self._query_gemini_with_tools(
-                    api_key, model, temperature, max_tokens,
-                    full_system_prompt, message, conversation_history)
-            else:
-                response = 'Proveedor de IA no soportado.'
-        except Exception as e:
-            err_safe = _redact(str(e), api_key)
-            _logger.error("Error en agente IA: %s", err_safe)
-            response = f'Error al procesar la consulta: {err_safe}'
+        response = None
+        last_error = None
+        for idx, (prov, key, mdl) in enumerate(provider_chain):
+            try:
+                if prov == 'chatgpt':
+                    response = self._query_chatgpt_with_tools(
+                        key, mdl, temperature, max_tokens,
+                        full_system_prompt, message, conversation_history)
+                elif prov == 'gemini':
+                    response = self._query_gemini_with_tools(
+                        key, mdl, temperature, max_tokens,
+                        full_system_prompt, message, conversation_history)
+                else:
+                    continue
+                if idx > 0:
+                    _logger.warning(
+                        "Agente IA: el proveedor primario falló; se respondió con el respaldo '%s'.", prov)
+                break
+            except Exception as e:
+                last_error = e
+                _logger.error("Agente IA: proveedor '%s' falló: %s", prov, _redact(str(e), key))
+                response = None
+                continue
+
+        # Modo degradado: si ningún proveedor respondió, devolver un mensaje claro
+        # (sin trazas técnicas) explicando la causa probable, sin tumbar el sistema.
+        if response is None:
+            response = self._friendly_ai_error(provider_chain[0][0], last_error)
 
         processing_time = time.time() - start_time
         request.env['estate.ai.chat.history'].sudo().create({
@@ -3152,8 +3220,10 @@ TOP 10 DISPONIBLES:
 
         ICP = request.env['ir.config_parameter'].sudo()
         ai_active = ICP.get_param('estate_ai.active', 'True')
-        api_key = ICP.get_param('estate_ai.api_key', '')
-        model = _normalize_gemini_model(ICP.get_param('estate_ai.model', ''))
+        # Credenciales del proveedor activo (claves por proveedor con respaldo a las heredadas).
+        _chain = self._ai_provider_chain(ICP)
+        api_key = _chain[0][1] if _chain else ''
+        model = _chain[0][2] if _chain else ''
         temperature = float(ICP.get_param('estate_ai.temperature', '0.7'))
         # Default 800 tokens — sufficient for most answers, avoids 503 overload
         max_tokens = int(ICP.get_param('estate_ai.max_tokens', '800'))

@@ -93,8 +93,12 @@ class EstateDocument(models.Model):
     date = fields.Date(
         string='Fecha del documento', default=fields.Date.today, tracking=True)
     expiration_date = fields.Date(
-        string='Fecha de vencimiento',
+        string='Fecha de vencimiento', index=True,
         help='Para documentos con expiración (ej: certificados anuales).')
+    expiry_notified = fields.Boolean(
+        string='Vencimiento notificado', default=False, copy=False,
+        help='Evita avisar dos veces por el mismo vencimiento. Se reinicia si '
+             'se cambia la fecha de vencimiento.')
     notes = fields.Text(string='Notas')
     uploaded_by = fields.Many2one(
         'res.users', string='Cargado por',
@@ -151,6 +155,10 @@ class EstateDocument(models.Model):
 
     # ── Auto-transición al subir archivo en placeholder ──────────────────────
     def write(self, vals):
+        # Si se cambia la fecha de vencimiento, permitir un nuevo aviso.
+        if 'expiration_date' in vals:
+            vals = dict(vals)
+            vals.setdefault('expiry_notified', False)
         # Si se sube un archivo a un placeholder, pasar automáticamente a 'received'
         if 'file' in vals and vals['file']:
             for rec in self:
@@ -160,6 +168,48 @@ class EstateDocument(models.Model):
                     rec.message_post(body='Documento cargado, marcado como Recibido.')
                     break
         return super().write(vals)
+
+    # ── Aviso de vencimiento (cron) ──────────────────────────────────────────
+    @api.model
+    def _cron_notify_expiring_documents(self):
+        """Crea una actividad recordatorio para los documentos próximos a vencer.
+
+        La anticipación (días) es configurable con el parámetro de sistema
+        'estate_document.expiry_warning_days' (por defecto 30).
+        """
+        from datetime import timedelta
+        ICP = self.env['ir.config_parameter'].sudo()
+        try:
+            days = int(ICP.get_param('estate_document.expiry_warning_days', '30') or 30)
+        except ValueError:
+            days = 30
+        today = fields.Date.context_today(self)
+        limit_date = today + timedelta(days=days)
+        docs = self.search([
+            ('expiration_date', '!=', False),
+            ('expiration_date', '<=', limit_date),
+            ('state', 'not in', ('archived', 'rejected')),
+            ('expiry_notified', '=', False),
+        ])
+        notified = 0
+        for doc in docs:
+            responsible = doc.uploaded_by \
+                or (doc.property_id.user_id if doc.property_id else False) \
+                or self.env.user
+            try:
+                doc.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    date_deadline=doc.expiration_date,
+                    summary='Documento por vencer: %s' % (doc.name or ''),
+                    note='El documento "%s" vence el %s.' % (doc.name or '', doc.expiration_date),
+                    user_id=responsible.id,
+                )
+                doc.expiry_notified = True
+                notified += 1
+            except Exception as e:
+                _logger.error("No se pudo notificar el vencimiento del documento %s: %s", doc.id, e)
+        if notified:
+            _logger.info("Vencimientos de documentos: %d aviso(s) creados.", notified)
 
     # ── Acciones del ciclo de vida ───────────────────────────────────────────
     def action_mark_received(self):

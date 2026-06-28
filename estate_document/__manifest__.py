@@ -17,6 +17,7 @@
         'security/ir.model.access.csv',
         'security/estate_document_security.xml',
         'data/document_types_data.xml',
+        'data/estate_document_cron.xml',
         'views/estate_document_views.xml',
         'views/estate_document_menus.xml',
     ],

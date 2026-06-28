@@ -53,6 +53,9 @@ class EstatePayrollLine(models.Model):
     currency_id = fields.Many2one(
         'res.currency', string='Moneda',
         default=lambda self: self.env.company.currency_id)
+    company_id = fields.Many2one(
+        'res.company', string='Compañía',
+        default=lambda self: self.env.company)
 
     state = fields.Selection([
         ('draft', 'Borrador'),

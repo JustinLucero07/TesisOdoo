@@ -407,10 +407,17 @@ class EstateFacebookStats(models.Model):
         token = ICP.get_param('estate_social.facebook_page_token', '')
         page_id = ICP.get_param('estate_social.facebook_page_id', '')
 
-        if not token:
-            raise UserError('Configure el Page Access Token en Ajustes → Redes Sociales.')
-        if not page_id:
-            raise UserError('Configure el Page ID de Facebook en Ajustes → Redes Sociales.')
+        if not token or not page_id:
+            # Sin credenciales no se lanza error (evita que el cron falle cada vez);
+            # se registra y, si viene de la interfaz, se muestra un aviso.
+            msg = ('Configure el Page Access Token y el Page ID de Facebook en '
+                   'Ajustes → Redes Sociales.')
+            _logger.info('Importación de Facebook omitida: faltan credenciales.')
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {'title': 'Facebook no configurado', 'message': msg, 'type': 'warning'},
+            }
 
         try:
             resp = request_with_retry(

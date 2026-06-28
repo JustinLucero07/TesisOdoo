@@ -19,6 +19,7 @@
         'security/estate_payroll_security.xml',
         'security/ir.model.access.csv',
         'data/estate_payroll_sequence.xml',
+        'report/estate_payroll_report.xml',
         'views/estate_payroll_views.xml',
         'views/estate_payroll_config_views.xml',
         'views/estate_payroll_menus.xml',

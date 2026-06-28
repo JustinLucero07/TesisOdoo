@@ -10,13 +10,26 @@ class EstateAIConfig(models.TransientModel):
     ], string='Proveedor de IA',
         config_parameter='estate_ai.provider', default='chatgpt')
 
-    ai_api_key = fields.Char(
-        string='API Key',
-        config_parameter='estate_ai.api_key')
-
-    ai_model = fields.Char(
-        string='Modelo',
-        config_parameter='estate_ai.model',
+    # ── Credenciales por proveedor ───────────────────────────────────────────
+    # (Los antiguos campos únicos 'ai_api_key' / 'ai_model' se retiraron de la
+    #  interfaz; el controlador aún lee esos parámetros heredados como respaldo
+    #  del proveedor activo en instalaciones previas.)
+    # Mantener una clave/modelo por proveedor permite alternar entre ChatGPT y
+    # Gemini sin volver a escribir la configuración, y habilita el respaldo
+    # automático: si el proveedor activo falla, el agente reintenta con el otro.
+    ai_openai_api_key = fields.Char(
+        string='API Key OpenAI (ChatGPT)',
+        config_parameter='estate_ai.openai_api_key')
+    ai_openai_model = fields.Char(
+        string='Modelo OpenAI',
+        config_parameter='estate_ai.openai_model',
+        default='gpt-4o-mini')
+    ai_gemini_api_key = fields.Char(
+        string='API Key Google Gemini',
+        config_parameter='estate_ai.gemini_api_key')
+    ai_gemini_model = fields.Char(
+        string='Modelo Gemini',
+        config_parameter='estate_ai.gemini_model',
         default='gemini-2.5-flash')
 
     ai_temperature = fields.Float(

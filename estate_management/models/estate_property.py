@@ -39,7 +39,7 @@ class EstateProperty(models.Model):
         return self._search(domain, limit=limit, order=order)
     property_type_id = fields.Many2one(
         'estate.property.type', string='Tipo de Propiedad',
-        required=True, tracking=True)
+        required=True, tracking=True, index=True)
     product_id = fields.Many2one(
         'product.template', string='Producto Vinculado', copy=False, readonly=True,
         help="Producto nativo de Odoo sincronizado para facturación")
@@ -47,11 +47,11 @@ class EstateProperty(models.Model):
     offer_type = fields.Selection([
         ('sale', 'Venta'),
         ('rent', 'Arrendamiento'),
-    ], string='Tipo de Oferta', default='sale', tracking=True)
+    ], string='Tipo de Oferta', default='sale', tracking=True, index=True)
 
     # --- Ubicación ---
     street = fields.Char(string='Dirección')
-    city = fields.Char(string='Ciudad', default='Cuenca', tracking=True)
+    city = fields.Char(string='Ciudad', default='Cuenca', tracking=True, index=True)
     state_id = fields.Many2one(
         'res.country.state', string='Provincia/Estado',
         default=lambda self: self.env['res.country.state'].search(
@@ -203,7 +203,7 @@ class EstateProperty(models.Model):
         ('reserved', 'Reservado'),
         ('sold', 'Vendido'),
         ('rented', 'Arrendado'),
-    ], string='Estado', default='draft', tracking=True, required=True)
+    ], string='Estado', default='draft', tracking=True, required=True, index=True)
 
     active = fields.Boolean(string='Activo', default=True)
 
@@ -275,11 +275,11 @@ class EstateProperty(models.Model):
     )
 
     # --- Relaciones y Ventas ---
-    owner_id = fields.Many2one('res.partner', string='Propietario', tracking=True)
+    owner_id = fields.Many2one('res.partner', string='Propietario', tracking=True, index=True)
     proxy_id = fields.Many2one('res.partner', string='Apoderado', tracking=True,
                                help='Persona autorizada para actuar en nombre del propietario.')
-    buyer_id = fields.Many2one('res.partner', string='Comprador', tracking=True)
-    user_id = fields.Many2one('res.users', string='Asesor Responsable', default=lambda self: self.env.user, tracking=True)
+    buyer_id = fields.Many2one('res.partner', string='Comprador', tracking=True, index=True)
+    user_id = fields.Many2one('res.users', string='Asesor Responsable', default=lambda self: self.env.user, tracking=True, index=True)
     co_user_id = fields.Many2one('res.users', string='Co-Asesor', tracking=True,
                                  help='Segundo asesor que colabora en esta propiedad.')
     commission_split_pct = fields.Float(

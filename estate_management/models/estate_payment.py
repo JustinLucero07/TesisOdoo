@@ -18,9 +18,9 @@ class EstatePayment(models.Model):
         default='Nuevo')
     contract_id = fields.Many2one(
         'estate.contract', string='Contrato', required=True, tracking=True,
-        ondelete='cascade')
+        ondelete='cascade', index=True)
     property_id = fields.Many2one(
-        related='contract_id.property_id', string='Propiedad', store=True, readonly=True)
+        related='contract_id.property_id', string='Propiedad', store=True, readonly=True, index=True)
     partner_id = fields.Many2one(
         related='contract_id.partner_id', string='Cliente', store=True, readonly=True)
     user_id = fields.Many2one(

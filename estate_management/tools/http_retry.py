@@ -75,3 +75,36 @@ def request_with_retry(method, url, retries=3, backoff=1.5, **kwargs):
     if last_exc is not None:
         raise last_exc
     raise requests.RequestException(f'Falló {url} tras {retries} intentos')
+
+
+class _RetryRequests:
+    """Reemplazo parcial de la librería `requests` que aplica reintentos
+    automáticos a get/post/put/delete mediante request_with_retry.
+
+    Uso (drop-in, sin tocar los call-sites):
+        from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
+        resp = requests.get(url, params=..., timeout=15)
+    """
+    RequestException = requests.RequestException
+    Timeout = requests.Timeout
+    ConnectionError = requests.ConnectionError
+
+    @staticmethod
+    def get(url, **kwargs):
+        return request_with_retry('GET', url, **kwargs)
+
+    @staticmethod
+    def post(url, **kwargs):
+        return request_with_retry('POST', url, **kwargs)
+
+    @staticmethod
+    def put(url, **kwargs):
+        return request_with_retry('PUT', url, **kwargs)
+
+    @staticmethod
+    def delete(url, **kwargs):
+        return request_with_retry('DELETE', url, **kwargs)
+
+
+# Instancia lista para importar como reemplazo de `requests`.
+requests_retry = _RetryRequests()

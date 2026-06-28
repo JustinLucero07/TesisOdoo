@@ -33,6 +33,13 @@ class EstateWordPressConfig(models.TransientModel):
         config_parameter='estate_wp.active',
         default=False)
 
+    wp_auto_resync = fields.Boolean(
+        string='Re-sincronización automática',
+        config_parameter='estate_wp.auto_resync',
+        default=False,
+        help='Si está activo, una tarea programada vuelve a publicar en WordPress '
+             'las propiedades ya publicadas que hayan tenido cambios relevantes.')
+
     wp_category_id = fields.Integer(
         string='Categoría WordPress (solo para Posts)',
         config_parameter='estate_wp.category_id',
@@ -73,7 +80,7 @@ class EstateWordPressConfig(models.TransientModel):
 
     def action_wp_test_connection(self):
         """Prueba la conexión y obtiene el token si es necesario."""
-        import requests
+        from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
         self.ensure_one()
 
         url = self.wp_url.rstrip('/')
@@ -104,7 +111,7 @@ class EstateWordPressConfig(models.TransientModel):
                 return self._msg('Error de Conexión', str(e))
 
     def action_fetch_wp_agents(self):
-        import requests
+        from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
         self.ensure_one()
         url = self.wp_url.rstrip('/')
         user = self.wp_username

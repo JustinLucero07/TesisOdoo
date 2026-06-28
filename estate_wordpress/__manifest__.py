@@ -15,6 +15,7 @@
     'depends': ['estate_management'],
     'data': [
         'security/ir.model.access.csv',
+        'data/estate_wordpress_cron.xml',
         'views/estate_wordpress_config_views.xml',
         'views/estate_wordpress_import_views.xml',
         'views/estate_wordpress_link_views.xml',

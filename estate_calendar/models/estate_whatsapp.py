@@ -1,8 +1,8 @@
 import logging
-import requests
 from datetime import timedelta
 
 from odoo import models, fields, api
+from odoo.addons.estate_management.tools.http_retry import request_with_retry
 
 _logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class CalendarEventWhatsApp(models.Model):
         }
 
         try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=30)
+            resp = request_with_retry('POST', url, json=payload, headers=headers, timeout=30)
             data = resp.json()
             if resp.status_code == 200 and data.get('messages'):
                 _logger.info('WhatsApp enviado a %s (cita: %s)', clean_phone, event_name)
@@ -95,7 +95,7 @@ class CalendarEventWhatsApp(models.Model):
         }
 
         try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=30)
+            resp = request_with_retry('POST', url, json=payload, headers=headers, timeout=30)
             data = resp.json()
             if resp.status_code == 200 and data.get('messages'):
                 _logger.info('WhatsApp texto enviado a %s', clean_phone)
@@ -123,6 +123,8 @@ class CalendarEventWhatsApp(models.Model):
             ('property_id', '!=', False),
         ])
 
+        notify_client = ICP.get_param('estate_calendar.whatsapp_notify_client', 'True') == 'True'
+
         for event in events:
             time_str = fields.Datetime.context_timestamp(self, event.start).strftime('%H:%M')
             client = event.client_id
@@ -130,17 +132,28 @@ class CalendarEventWhatsApp(models.Model):
             property_name = event.property_id.title if event.property_id else ''
             agent = event.user_id
             agent_name = agent.name if agent else ''
+            sent_any = False
 
-            # Enviar solo al asesor
+            # Recordatorio al asesor
             agent_partner = agent.partner_id if agent and agent.partner_id else None
             agent_phone = (getattr(agent_partner, 'mobile', None) or getattr(agent_partner, 'phone', None) or '') if agent_partner else ''
-            if not agent_phone:
-                _logger.warning('Sin teléfono para asesor "%s" — cita "%s" omitida.', agent_name, event.name)
-                continue
+            if agent_phone:
+                if self._send_whatsapp(agent_phone, event.name, time_str, client_name, property_name):
+                    sent_any = True
+                    _logger.info('Recordatorio enviado a asesor %s — cita "%s"', agent_name, event.name)
+            else:
+                _logger.warning('Sin teléfono para asesor "%s" — cita "%s".', agent_name, event.name)
 
-            if self._send_whatsapp(agent_phone, event.name, time_str, client_name, property_name):
+            # Recordatorio al cliente (si está habilitado y tiene teléfono)
+            if notify_client and client:
+                client_phone = getattr(client, 'mobile', None) or getattr(client, 'phone', None) or ''
+                if client_phone:
+                    if self._send_whatsapp(client_phone, event.name, time_str, client_name, property_name):
+                        sent_any = True
+                        _logger.info('Recordatorio enviado a cliente %s — cita "%s"', client_name, event.name)
+
+            if sent_any:
                 event.write({'whatsapp_sent': True})
-                _logger.info('Recordatorio enviado a asesor %s — cita "%s"', agent_name, event.name)
 
         _logger.info('Cron WhatsApp: %d evento(s) procesados.', len(events))
 

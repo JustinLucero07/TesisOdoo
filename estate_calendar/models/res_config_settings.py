@@ -20,6 +20,12 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='estate_calendar.whatsapp_template_name',
         default='recordatorio_cita',
         help='Nombre exacto de la plantilla aprobada en Meta (ej: recordatorio_cita)')
+    whatsapp_notify_client = fields.Boolean(
+        string='Recordar también al cliente',
+        config_parameter='estate_calendar.whatsapp_notify_client',
+        default=True,
+        help='Si está activo, el recordatorio de la cita también se envía al cliente, '
+             'además del asesor.')
     whatsapp_contract_template = fields.Char(
         string='Plantilla Contratos',
         config_parameter='estate_management.whatsapp_contract_template',

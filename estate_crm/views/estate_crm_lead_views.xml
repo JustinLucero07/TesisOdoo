@@ -18,29 +18,34 @@
             </xpath>
             <xpath expr="//div[hasclass('oe_title')]" position="before">
                 <widget name="web_ribbon" title="GOLDEN" bg_color="bg-warning" invisible="not is_golden_opportunity" />
-                <div class="oe_button_box" name="button_box_estate">
+                <!-- Barra de accesos inmobiliarios: fila propia bajo el título,
+                     como botones espaciados (no apretados). -->
+                <div class="d-flex flex-wrap gap-2 mb-3 mt-2" name="button_box_estate" invisible="type == 'lead'">
                     <button name="action_schedule_meeting" type="object"
-                        class="oe_stat_button" icon="fa-calendar"
-                        invisible="not target_property_id">
-                        <span>Agendar Visita</span>
+                        class="btn btn-outline-primary" invisible="not target_property_id">
+                        <i class="fa fa-calendar me-1"/>Agendar Visita
                     </button>
                     <button name="action_view_lead_offers" type="object"
-                        class="oe_stat_button" icon="fa-handshake-o"
+                        class="btn btn-outline-secondary"
                         invisible="offer_count == 0 and not target_property_id">
-                        <field name="offer_count" widget="statinfo" string="Ofertas"/>
+                        <i class="fa fa-handshake-o me-1"/>Ofertas
+                        <span class="badge text-bg-secondary ms-1"><field name="offer_count"/></span>
                     </button>
                     <button name="action_view_lead_contracts" type="object"
-                        class="oe_stat_button" icon="fa-file-text">
-                        <field name="contract_count" widget="statinfo" string="Contratos"/>
+                        class="btn btn-outline-secondary">
+                        <i class="fa fa-file-text me-1"/>Contratos
+                        <span class="badge text-bg-secondary ms-1"><field name="contract_count"/></span>
                     </button>
                     <button name="action_view_documents" type="object"
-                        class="oe_stat_button" icon="fa-folder-open-o"
+                        class="btn btn-outline-secondary"
                         invisible="estate_document_count == 0">
-                        <field name="estate_document_count" widget="statinfo" string="Docs"/>
+                        <i class="fa fa-folder-open-o me-1"/>Documentos
+                        <span class="badge text-bg-secondary ms-1"><field name="estate_document_count"/></span>
                     </button>
                     <button name="action_view_lead_interactions" type="object"
-                        class="oe_stat_button" icon="fa-comments-o">
-                        <field name="interaction_count" widget="statinfo" string="Interacciones"/>
+                        class="btn btn-outline-secondary">
+                        <i class="fa fa-comments-o me-1"/>Interacciones
+                        <span class="badge text-bg-secondary ms-1"><field name="interaction_count"/></span>
                     </button>
                 </div>
             </xpath>
@@ -51,35 +56,38 @@
             <!-- Botones contextuales por ETAPA del embudo:
                  1-2 Captación · 3-4 Negociación · 5+ Cierre -->
             <xpath expr="//header/field[@name='stage_id']" position="before">
-                <field name="stage_sequence" invisible="1"/>
+                <field name="gate_capture" invisible="1"/>
+                <field name="gate_offer" invisible="1"/>
+                <field name="gate_reserve" invisible="1"/>
+                <field name="gate_contract" invisible="1"/>
 
-                <!-- CAPTACIÓN (etapas 1-2): buscar propiedad y registrar necesidad -->
+                <!-- CAPTACIÓN: buscar propiedad y registrar necesidad -->
                 <button name="action_ai_matchmaker" string=" AI Matchmaker" type="object"
                     class="oe_highlight btn-info" icon="fa-magic"
-                    invisible="stage_sequence &gt; 2 or type == 'lead'"/>
+                    invisible="not gate_capture or type == 'lead'"/>
                 <button name="action_mark_pending_need" string="Marcar Con Necesidad" type="object"
                     class="btn-warning" icon="fa-bookmark"
-                    invisible="stage_sequence &gt; 2 or pending_needs_active or type == 'lead'"/>
+                    invisible="not gate_capture or pending_needs_active or type == 'lead'"/>
                 <button name="action_clear_pending_need" string="Resolver Necesidad" type="object"
                     class="btn-outline-success" icon="fa-check-circle"
                     invisible="not pending_needs_active"/>
 
-                <!-- NEGOCIACIÓN (etapas 3-4: Visita Realizada / Seguimiento): ofertar.
+                <!-- NEGOCIACIÓN (Visita Realizada / Seguimiento): ofertar.
                      Se muestra por ETAPA aunque falte la propiedad; al hacer clic
                      la acción guía a asignar la Propiedad de Interés. -->
                 <button name="action_create_offer_from_lead" string="Nueva Oferta" type="object"
                     class="btn-warning" icon="fa-handshake-o"
-                    invisible="stage_sequence &lt; 3 or stage_sequence &gt; 4 or type == 'lead'"/>
+                    invisible="not gate_offer or type == 'lead'"/>
 
-                <!-- Reservar: desde la visita hasta el cierre (etapas 3+) -->
+                <!-- Reservar: desde la Visita en adelante -->
                 <button name="action_reserve_property_from_lead" string="Reservar Propiedad" type="object"
                     class="btn-secondary" icon="fa-lock"
-                    invisible="stage_sequence &lt; 3 or type == 'lead'"/>
+                    invisible="not gate_reserve or type == 'lead'"/>
 
-                <!-- CIERRE (etapas 5+: Papeles / Avalúo / Minuta): formalizar contrato -->
+                <!-- CIERRE (Papeles / Avalúo / Minuta): formalizar contrato -->
                 <button name="action_create_contract_from_lead" string="Crear Contrato" type="object"
                     class="oe_highlight" icon="fa-file-text"
-                    invisible="stage_sequence &lt; 5 or not target_property_id or type == 'lead' or contract_count &gt; 0"
+                    invisible="not gate_contract or not target_property_id or type == 'lead' or contract_count &gt; 0"
                     confirm="¿Crear un contrato para este lead con la propiedad seleccionada?"/>
 
                 <!-- Comunicación: siempre disponible -->
