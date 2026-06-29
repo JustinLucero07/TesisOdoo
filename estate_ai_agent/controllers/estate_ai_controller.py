@@ -177,6 +177,7 @@ CAPACIDADES COMPLETAS (usa las herramientas):
 - REPORTES EXCEL: generate_excel_report — exporta CUALQUIER reporte a .xlsx con enlace de descarga
 - NAVEGAR: open_report_view — devuelve URL para ir directamente a cualquier vista de Reportes
 - SQL DIRECTO: query_database — ejecuta cualquier SELECT contra la BD para responder lo que sea
+- DOCUMENTACIÓN/AYUDA: search_knowledge — para preguntas de CÓMO se hace algo, QUÉ es o para qué sirve un módulo, qué significa un error, procedimientos o configuración, busca en los manuales y guías del sistema
 - OPERACIONES MASIVAS: batch_update_properties, batch_archive_leads
 
 DETECCIÓN DE INTENCIÓN — actúa directamente según lo que el usuario quiera:
@@ -343,13 +344,16 @@ INSTRUCCIONES DE RESPUESTA:
         domain = [('user_id', '=', user_id)]
         if session_id:
             domain.append(('session_id', '=', session_id))
+        # Tomar los MÁS RECIENTES (desc) y luego ordenarlos cronológicamente.
+        # (Antes usaba 'asc' + limit, que devolvía los más ANTIGUOS y perdía el
+        #  contexto reciente en conversaciones largas.)
         history = request.env['estate.ai.chat.history'].sudo().search(
             domain,
-            order='create_date asc',
+            order='create_date desc',
             limit=20,
         )
         messages = []
-        for h in history:
+        for h in reversed(history):
             messages.append({"role": "user", "content": h.query})
             messages.append({"role": "assistant", "content": h.response or ''})
         return messages
@@ -2125,6 +2129,25 @@ INSTRUCCIONES DE RESPUESTA:
                 except Exception as sql_err:
                     return json.dumps({'error': f'Error SQL: {str(sql_err)}'})
 
+            # ── BASE DE CONOCIMIENTO (RAG) ─────────────────────────────────────
+            elif tool_name == 'search_knowledge':
+                query = (args.get('query') or '').strip()
+                if not query:
+                    return json.dumps({'error': 'Se requiere una consulta'})
+                results = env['estate.ai.knowledge'].sudo().search_knowledge(query, top_k=4)
+                if not results:
+                    return json.dumps({
+                        'found': False,
+                        'message': ('No hay documentación indexada o no se encontró nada relevante. '
+                                    'Un administrador puede indexarla en Agente IA → Base de Conocimiento.'),
+                    }, ensure_ascii=False)
+                return json.dumps({
+                    'found': True,
+                    'passages': results,
+                    'instruction': ('Responde al usuario usando estos extractos de la documentación. '
+                                    'Cita la fuente cuando sea útil. Si no contienen la respuesta, dilo.'),
+                }, ensure_ascii=False, default=str)
+
             # ── INFORME EJECUTIVO COMPLETO ─────────────────────────────────────
             elif tool_name == 'generate_executive_report':
                 from datetime import date, timedelta
@@ -3184,7 +3207,14 @@ TOP 10 DISPONIBLES:
     def _get_tools_for_query(self, query_type):
         """Return only the tools relevant to this query type, reducing token usage."""
         allowed = self._TOOLS_BY_CATEGORY.get(query_type, self._TOOLS_BY_CATEGORY['general'])
-        return [t for t in TOOLS_OPENAI if t['function']['name'] in allowed]
+        tools = [t for t in TOOLS_OPENAI if t['function']['name'] in allowed]
+        # search_knowledge (RAG) siempre disponible: cualquier consulta puede ser
+        # "cómo se hace", "qué significa este error" o "qué hace tal módulo".
+        if not any(t['function']['name'] == 'search_knowledge' for t in tools):
+            kb = next((t for t in TOOLS_OPENAI if t['function']['name'] == 'search_knowledge'), None)
+            if kb:
+                tools.append(kb)
+        return tools
 
     # -----------------------------------------------------------------------
     # Public API endpoints
@@ -3279,19 +3309,23 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
             "Tienes la herramienta query_database que te permite ejecutar CUALQUIER consulta SQL SELECT "
             "contra toda la base de datos. Si ninguna otra herramienta sirve, usa query_database con un SQL "
             "apropiado para responder la pregunta. Tienes acceso a TODA la información del sistema.\n\n"
-            "REGLA DE CONTEXTO (MUY IMPORTANTE): Si en 'CONTEXTO ACTUAL' aparece una PROPIEDAD ACTIVA EN "
-            "PANTALLA (o cualquier registro activo: lead, contrato, cliente), y el usuario pregunta sobre "
-            "'la propiedad', 'esta propiedad', 'por qué no se vende', 'el precio', 'los interesados', "
-            "'genera la descripción', etc. SIN nombrar cuál, ASUME SIEMPRE que se refiere a ese registro "
-            "activo y usa su ID directamente con las herramientas. NUNCA pidas el ID, el nombre ni la "
-            "referencia cuando ya hay un registro activo en pantalla: ya lo tienes en el contexto. Sé "
-            "versátil: nunca pidas datos que el usuario ya te dio o que ya están en el contexto.\n\n"
-            "CONTINUIDAD DE LA CONVERSACIÓN: Si en mensajes ANTERIORES de esta misma conversación ya se "
-            "identificó o se habló de una propiedad, lead o registro concreto (por ejemplo ya le diste su "
-            "ID, ref o ficha), RECUÉRDALO y úsalo para las preguntas de seguimiento ('plan de marketing "
-            "para la propiedad', 'genera su descripción', 'agenda una visita', 'qué precio tiene', etc.) "
-            "SIN volver a pedir el ID ni el nombre. Mantén el hilo: la 'última propiedad/registro "
-            "mencionado' es el sujeto por defecto de las siguientes preguntas.\n\n"
+            "DOCUMENTACIÓN: para preguntas de CÓMO se hace algo, QUÉ es o para qué sirve un módulo, "
+            "qué significa un error, procedimientos, permisos o configuración, usa la herramienta "
+            "search_knowledge (busca en los manuales y guías) y responde citando lo que devuelva.\n\n"
+            "REGLA DE CONTEXTO (MUY IMPORTANTE): para resolver a qué propiedad/registro se refiere el "
+            "usuario cuando dice 'esa propiedad', 'la propiedad', 'su precio', 'los interesados', etc., "
+            "sigue SIEMPRE este orden de prioridad:\n"
+            "  1) Si el usuario NOMBRA una propiedad aunque sea de forma parcial (p.ej. 'el departamento "
+            "de Misicata', 'la casa de Baños', una referencia PROP-XXXX o un título), usa ESA SIEMPRE, "
+            "aunque haya otra abierta en pantalla.\n"
+            "  2) Si NO nombra ninguna pero en mensajes ANTERIORES de esta conversación ya se habló de "
+            "una propiedad/registro concreto, usa la ÚLTIMA mencionada en la conversación (mantén el hilo).\n"
+            "  3) Solo si en la conversación no se ha mencionado ninguna, usa la PROPIEDAD ACTIVA EN "
+            "PANTALLA del 'CONTEXTO ACTUAL'.\n"
+            "NUNCA cambies de propiedad/registro por tu cuenta: si veníamos hablando de una propiedad y el "
+            "usuario hace una pregunta de seguimiento ('dame sus características', 'quién es el dueño', "
+            "'genera su descripción', 'agenda una visita'), responde sobre ESA MISMA, no sobre otra ni "
+            "sobre la que esté abierta en pantalla. Y NUNCA pidas el ID: usa el nombre o el contexto.\n\n"
             "REGLA OBLIGATORIA PARA REPORTES Y GRÁFICOS:\n"
             "Cuando el usuario pida reporte, gráfico, estadística, resumen de datos, desglose, o use palabras como "
             "'muéstrame por', 'cuántos hay por', 'reporte de', 'gráfico de' → DEBES llamar a get_report_data. "
@@ -3505,6 +3539,26 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
                         contents.append(new_genai.types.Content(role='user', parts=fn_responses))
                         yield sse({'status': 'Redactando respuesta...'})
 
+                    # Si el modelo usó herramientas pero no redactó respuesta
+                    # (o agotó las rondas), forzar una respuesta final SIN
+                    # herramientas que resuma los datos ya obtenidos.
+                    if not final_text:
+                        try:
+                            yield sse({'status': 'Redactando respuesta...'})
+                            cfg_final = new_genai.types.GenerateContentConfig(
+                                system_instruction=full_system + (
+                                    "\n\nResponde AHORA al usuario en español, resumiendo de forma "
+                                    "clara y útil los datos ya obtenidos de las herramientas. "
+                                    "No llames más herramientas."),
+                                temperature=temperature,
+                                max_output_tokens=max_tokens,
+                            )
+                            final_resp = client.models.generate_content(
+                                model=model, contents=contents, config=cfg_final)
+                            final_text = (getattr(final_resp, 'text', '') or '').strip()
+                        except Exception as fe:
+                            _logger.warning("Generación final sin herramientas falló: %s", str(fe))
+
                     # Stream final text word by word
                     if final_text:
                         chunk = ''
@@ -3516,7 +3570,10 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
                         if chunk:
                             yield sse({'text': chunk})
                     else:
-                        yield sse({'text': 'Sin respuesta del modelo.'})
+                        yield sse({'text': (
+                            'No pude generar una respuesta para esa consulta. '
+                            'Intenta reformularla o sé más específico (por ejemplo, indica '
+                            'la propiedad, el cliente o el periodo).')})
 
                     # Persist history
                     try:

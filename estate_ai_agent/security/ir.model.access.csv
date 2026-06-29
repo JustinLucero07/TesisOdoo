@@ -11,3 +11,7 @@ access_estate_ai_feedback_agent,estate.ai.feedback.agent,model_estate_ai_feedbac
 access_estate_ai_feedback_manager,estate.ai.feedback.manager,model_estate_ai_feedback,estate_management.estate_group_manager,1,1,1,1
 access_estate_ai_feedback_admin,estate.ai.feedback.admin,model_estate_ai_feedback,estate_management.estate_group_admin,1,1,1,1
 access_estate_ai_feedback_marketing,estate.ai.feedback.marketing,model_estate_ai_feedback,estate_management.estate_group_marketing,1,0,1,0
+access_estate_ai_knowledge_agent,estate.ai.knowledge.agent,model_estate_ai_knowledge,estate_management.estate_group_agent,1,0,0,0
+access_estate_ai_knowledge_manager,estate.ai.knowledge.manager,model_estate_ai_knowledge,estate_management.estate_group_manager,1,1,1,1
+access_estate_ai_knowledge_admin,estate.ai.knowledge.admin,model_estate_ai_knowledge,estate_management.estate_group_admin,1,1,1,1
+access_estate_ai_knowledge_marketing,estate.ai.knowledge.marketing,model_estate_ai_knowledge,estate_management.estate_group_marketing,1,0,0,0

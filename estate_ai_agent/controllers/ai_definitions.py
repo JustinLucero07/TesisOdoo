@@ -752,6 +752,20 @@ TOOLS_OPENAI = [
             "explanation": {"type": "string", "description": "Breve explicación de qué busca esta consulta"},
         }},
     }},
+    {"type": "function", "function": {
+        "name": "search_knowledge",
+        "description": (
+            "Busca en la DOCUMENTACIÓN del sistema (manuales de usuario y técnico, guías, "
+            "matriz de permisos, READMEs de los módulos). Úsala para preguntas sobre CÓMO "
+            "hacer algo, QUÉ es o para qué sirve un módulo/función, qué significa un error, "
+            "procedimientos, configuración o ayuda de uso. NO la uses para datos en vivo "
+            "(propiedades, clientes, ventas): para eso usa las otras herramientas. "
+            "Responde citando lo que devuelva esta herramienta."
+        ),
+        "parameters": {"type": "object", "required": ["query"], "properties": {
+            "query": {"type": "string", "description": "La pregunta o tema a buscar en la documentación"},
+        }},
+    }},
 ]
 
 

@@ -39,6 +39,10 @@
                         <setting string="Estilo de Descripciones" help="Tono e instrucciones para las descripciones comerciales generadas por IA. Editable sin tocar código.">
                             <field name="ai_desc_instructions"/>
                         </setting>
+                        <setting string="Base de Conocimiento (RAG)" help="Indexa los manuales y guías del sistema para que el asistente responda preguntas de 'cómo se hace', 'qué significa' o 'qué hace tal módulo'. Reindexa tras actualizar la documentación.">
+                            <button name="action_reindex_ai_knowledge" type="object"
+                                    string="Reindexar conocimiento" class="btn-primary" icon="fa-refresh"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>

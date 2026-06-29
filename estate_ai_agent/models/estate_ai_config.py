@@ -4,6 +4,11 @@ from odoo import models, fields, api
 class EstateAIConfig(models.TransientModel):
     _inherit = 'res.config.settings'
 
+    def action_reindex_ai_knowledge(self):
+        """Reconstruye la base de conocimiento (RAG) desde los manuales y READMEs."""
+        self.ensure_one()
+        return self.env['estate.ai.knowledge'].action_reindex_knowledge()
+
     ai_provider = fields.Selection([
         ('chatgpt', 'ChatGPT (OpenAI)'),
         ('gemini', 'Google Gemini'),
