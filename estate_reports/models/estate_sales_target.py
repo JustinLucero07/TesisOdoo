@@ -38,10 +38,10 @@ class EstateSalesTarget(models.Model):
     achievement_revenue = fields.Float(string='% Cumplimiento Ingresos', compute='_compute_actuals')
     achievement_commission = fields.Float(string='% Cumplimiento Comisiones', compute='_compute_actuals')
 
-    _sql_constraints = [
-        ('unique_target', 'unique(user_id, year, month)',
-         'Ya existe una meta para ese asesor, año y mes.'),
-    ]
+    _unique_target = models.Constraint(
+        'unique(user_id, year, month)',
+        'Ya existe una meta para ese asesor, año y mes.',
+    )
 
     @api.depends('user_id', 'year', 'month')
     def _compute_display_name(self):

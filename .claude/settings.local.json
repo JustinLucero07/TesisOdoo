@@ -45,7 +45,9 @@
       "Bash(mkdir -p /home/justin/credenciales)",
       "Bash(mv \"/home/justin/Documentos/Tesis/smtp-app-2024-2972858d0f40.json\" /home/justin/credenciales/)",
       "Bash(rm -f \"docs/MANUAL_USUARIO.md\" \"docs/Manual_Usuario_Inmobi.docx\" \"docs/Manual_Usuario_Inmobi.pdf\")",
-      "Bash(xargs rm -rf)"
+      "Bash(xargs rm -rf)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -c \"s='f4e9b1f3e5a69f724c4a4ce35255a7d8861f518ce2bd1aafa2ddce226ddf427b'; print\\('longitud:', len\\(s\\)\\); print\\('primeros 26:', s[:26]\\)\")"
     ],
     "additionalDirectories": [
       "/tmp",

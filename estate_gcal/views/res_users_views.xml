@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_gcal" model="ir.ui.view">
+        <field name="name">res.users.form.gcal</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="Google Calendar" name="gcal_advisor">
+                    <group>
+                        <field name="gcal_initials" placeholder="Ej: RM"/>
+                        <field name="gcal_color_id" placeholder="Elige un color..."/>
+                    </group>
+                    <p class="text-muted">
+                        <i class="fa fa-info-circle" title="Información"/>
+                        Se usan para identificar a este asesor en el calendario compartido de
+                        Google: cada visita aparece como "(Iniciales) Propiedad / Cliente" con
+                        el color elegido.
+                    </p>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Revisión periódica de Google Calendar (borrados/ediciones hechos allá).
+         Solo actúa si el modo "Calendario compartido" está configurado. -->
+    <record id="cron_gcal_pull" model="ir.cron">
+        <field name="name">Google Calendar: revisar cambios (borrados/ediciones)</field>
+        <field name="model_id" ref="calendar.model_calendar_event"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_gcal_pull()</field>
+        <field name="interval_number">5</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>
