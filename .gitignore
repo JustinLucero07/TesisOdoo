@@ -46,6 +46,8 @@ sessions/
 *.p12
 credentials.json
 service_account.json
+smtp-app-*.json
+*-firebase-adminsdk-*.json
 
 # Backups y temporales
 *.bak
@@ -54,6 +56,8 @@ service_account.json
 *.orig
 *.rej
 *.swap
+*.backup-*.docx
+.~lock.*#
 
 # Cobertura de tests
 .coverage

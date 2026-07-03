@@ -9,7 +9,7 @@ class EstateProperty(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        properties = super(EstateProperty, self).create(vals_list)
+        properties = super().create(vals_list)
         
         # Matchmaking Proactivo en Tiempo Real (Movido desde estate_management)
         # Esto ahora es seguro porque estate_crm depende de crm

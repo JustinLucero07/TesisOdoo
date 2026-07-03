@@ -163,7 +163,7 @@ class EstatePropertyGeo(models.Model):
                 result = self._nominatim_search(', '.join(parts), countrycodes='')
             if result:
                 lat, lon, _ = result
-                super(EstateProperty, self).write({'latitude': lat, 'longitude': lon})
+                super().write({'latitude': lat, 'longitude': lon})
         except Exception as e:
             _logger.warning("_auto_geocode_silent failed: %s", e)
 
