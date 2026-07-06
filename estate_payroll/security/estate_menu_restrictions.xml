@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Oculta menús nativos de Odoo que no le corresponden al rol Asesor.
+         Se restringen a "Gerente" (estate_group_manager); como Administrador y
+         Marketing heredan ese grupo, ellos los siguen viendo con normalidad. -->
+
+    <!-- Empleados -->
+    <record id="hr.menu_hr_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[Command.set([
+            ref('hr.group_hr_manager'), ref('hr.group_hr_user'),
+            ref('estate_management.estate_group_manager'),
+        ])]"/>
+    </record>
+
+    <!-- Asistencias: solo Gerente+ ve el APP/menú completo. El "reloj" para
+         marcar entrada/salida (systray, arriba a la derecha) es independiente
+         de este menú y sigue disponible para todos — ver nota en el manual. -->
+    <record id="hr_attendance.menu_hr_attendance_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[Command.set([ref('estate_management.estate_group_manager')])]"/>
+    </record>
+
+    <!-- Gastos -->
+    <record id="hr_expense.menu_hr_expense_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[Command.set([ref('estate_management.estate_group_manager')])]"/>
+    </record>
+
+    <!-- Tableros (Dashboards) -->
+    <record id="spreadsheet_dashboard.spreadsheet_dashboard_menu_root" model="ir.ui.menu">
+        <field name="group_ids" eval="[Command.set([ref('estate_management.estate_group_manager')])]"/>
+    </record>
+</odoo>

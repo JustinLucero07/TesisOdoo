@@ -53,6 +53,12 @@
         <field name="model">estate.property</field>
         <field name="inherit_id" ref="estate_management.estate_property_view_kanban"/>
         <field name="arch" type="xml">
+            <!-- Declarar los campos usados abajo: sin esto, Odoo no los carga en el
+                 kanban y record.is_allied_listing/.allied_agency_id quedan undefined. -->
+            <xpath expr="//kanban" position="inside">
+                <field name="is_allied_listing"/>
+                <field name="allied_agency_id"/>
+            </xpath>
             <xpath expr="//div[hasclass('o_kanban_tags_section')]" position="after">
                 <div t-if="record.is_allied_listing.raw_value" class="mt-1">
                     <span class="badge text-bg-info">

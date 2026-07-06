@@ -47,7 +47,10 @@
       "Bash(rm -f \"docs/MANUAL_USUARIO.md\" \"docs/Manual_Usuario_Inmobi.docx\" \"docs/Manual_Usuario_Inmobi.pdf\")",
       "Bash(xargs rm -rf)",
       "Bash(python3 -c ' *)",
-      "Bash(python3 -c \"s='f4e9b1f3e5a69f724c4a4ce35255a7d8861f518ce2bd1aafa2ddce226ddf427b'; print\\('longitud:', len\\(s\\)\\); print\\('primeros 26:', s[:26]\\)\")"
+      "Bash(python3 -c \"s='f4e9b1f3e5a69f724c4a4ce35255a7d8861f518ce2bd1aafa2ddce226ddf427b'; print\\('longitud:', len\\(s\\)\\); print\\('primeros 26:', s[:26]\\)\")",
+      "Bash(awk '/<kanban/,/<\\\\/kanban>/' estate_crm/views/estate_property_match_views.xml)",
+      "Bash(kill 73389)",
+      "Bash(bash /tmp/diagnose_attendance_vps.sh)"
     ],
     "additionalDirectories": [
       "/tmp",

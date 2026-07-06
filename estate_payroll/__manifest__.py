@@ -14,9 +14,10 @@
     """,
     'author': 'Inmobi Community',
     'license': 'LGPL-3',
-    'depends': ['estate_management', 'hr'],
+    'depends': ['estate_management', 'hr', 'hr_attendance', 'hr_expense', 'spreadsheet_dashboard'],
     'data': [
         'security/estate_payroll_security.xml',
+        'security/estate_menu_restrictions.xml',
         'security/ir.model.access.csv',
         'data/estate_payroll_sequence.xml',
         'report/estate_payroll_report.xml',
