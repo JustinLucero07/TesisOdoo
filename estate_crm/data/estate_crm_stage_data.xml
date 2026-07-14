@@ -1,47 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="0">
-        <!-- Pipeline Inmobiliario Oficial -->
+        <!-- ══════════════════════════════════════════════════════════════
+             EMBUDO COMERCIAL (equipo Ventas) — replica el "Proceso de Ventas".
+             "Perdido" NO es etapa: se usa el mecanismo nativo de Odoo (el lead
+             se marca como Perdido y se archiva, con su motivo).
+             Los xmlid se reutilizan a propósito para no romper los botones del
+             CRM ni las automatizaciones que apuntan a ellos.
+             ══════════════════════════════════════════════════════════════ -->
         <record id="stage_lead1_estate_nuevo" model="crm.stage">
-            <field name="name">1. Nuevo / Contacto Inicial</field>
+            <field name="name">Recepción</field>
             <field name="sequence">1</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
         </record>
-        <record id="stage_lead2_estate_captacion" model="crm.stage">
-            <field name="name">2. Captación y Calificación</field>
+        <record id="stage_lead3b_estate_seguimiento" model="crm.stage">
+            <field name="name">Seguimiento</field>
             <field name="sequence">2</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
         </record>
         <record id="stage_lead2b_estate_con_necesidad" model="crm.stage">
             <field name="name">Con Necesidad Pendiente</field>
-            <field name="sequence">2</field>
-        </record>
-        <record id="stage_lead3_estate_visita" model="crm.stage">
-            <field name="name">3. Visita Realizada</field>
             <field name="sequence">3</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
         </record>
-        <record id="stage_lead3b_estate_seguimiento" model="crm.stage">
-            <field name="name">4. Seguimiento</field>
+        <record id="stage_lead_vendedores" model="crm.stage">
+            <field name="name">Vendedores</field>
             <field name="sequence">4</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
         </record>
         <record id="stage_lead4_estate_papeles" model="crm.stage">
-            <field name="name">5. Entrega de Papeles</field>
+            <field name="name">En Proceso Cierre</field>
             <field name="sequence">5</field>
-            <field name="is_won">False</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
         </record>
-        <record id="stage_lead5_estate_avaluo" model="crm.stage">
-            <field name="name">6. Avalúo Realizado</field>
-            <field name="sequence">6</field>
-        </record>
-        <record id="stage_lead6_estate_minuta" model="crm.stage">
-            <field name="name">7. Minuta Firmada</field>
-            <field name="sequence">7</field>
-        </record>
+        <!-- Etapa PUENTE: última del embudo comercial y primera del Embudo
+             Postventa. El equipo Postventa se le añade en el data de postventa.
+             El lead ganado NO se mueve: se ve en ambos embudos. -->
         <record id="stage_lead7_estate_cierre" model="crm.stage">
-            <field name="name">8. Cierre Ganado</field>
-            <field name="sequence">8</field>
+            <field name="name">Cierre</field>
+            <field name="sequence">6</field>
             <field name="is_won">True</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
         </record>
 
-        <!-- Razones de pérdida específicas para inmobiliaria -->
+        <!-- Etapa PERDIDO. Odoo de fábrica archiva los leads perdidos (por eso
+             desaparecen del embudo). Con is_lost, el lead se queda VISIBLE en
+             esta columna pero sigue contando como "Perdido" en filtros y
+             reportes. Va plegada (fold) para que cientos de perdidos no
+             estorben el día a día: se abre con un clic. -->
+        <record id="stage_lead_perdido" model="crm.stage">
+            <field name="name">Perdido</field>
+            <field name="sequence">20</field>
+            <field name="is_lost">True</field>
+            <field name="fold">True</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
+        </record>
+
+        <!-- Motivos de pérdida -->
         <record id="lost_reason_budget" model="crm.lost.reason">
             <field name="name">Falta de Presupuesto</field>
         </record>
@@ -62,6 +77,9 @@
         </record>
         <record id="lost_reason_timing" model="crm.lost.reason">
             <field name="name">Postergó la Decisión</field>
+        </record>
+        <record id="lost_reason_no_contact" model="crm.lost.reason">
+            <field name="name">Sin Contacto / No Responde</field>
         </record>
     </data>
 </odoo>

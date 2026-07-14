@@ -140,7 +140,7 @@ class EstateLeadWebhookController(http.Controller):
             'phone': phone or False,
             'type': 'opportunity',
             'description': message or False,
-            'lead_source': source,
+            'lead_source_id': env['estate.crm.lead.source'].sudo().get_by_code(source).id,
         }
         if partner:
             vals['partner_id'] = partner.id
@@ -160,7 +160,7 @@ class EstateLeadWebhookController(http.Controller):
                 _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
         if referral_partner:
             vals['referral_partner_id'] = referral_partner.id
-            vals['lead_source'] = 'referral'
+            vals['lead_source_id'] = env['estate.crm.lead.source'].sudo().get_by_code('referral').id
 
         first_stage = env.ref('estate_crm.stage_lead1_estate_nuevo', raise_if_not_found=False)
         if first_stage:

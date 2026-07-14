@@ -6,6 +6,19 @@ from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
+# Unidades para elegir la anticipación del recordatorio (cita / asesor / general).
+REMINDER_UNITS = [
+    ('minutes', 'Minutos'),
+    ('hours', 'Horas'),
+    ('days', 'Días'),
+]
+_UNIT_MULTIPLIER = {'minutes': 1, 'hours': 60, 'days': 1440}
+
+
+def reminder_to_minutes(value, unit):
+    """Convierte (valor, unidad) a minutos. Único punto de conversión."""
+    return int(value or 0) * _UNIT_MULTIPLIER.get(unit or 'minutes', 1)
+
 
 class CalendarEvent(models.Model):
     _name = 'calendar.event'
@@ -93,6 +106,76 @@ class CalendarEvent(models.Model):
     whatsapp_sent = fields.Boolean(
         string='Recordatorio WhatsApp Enviado', default=False,
         help='Se marca automáticamente cuando se envía el recordatorio.')
+    whatsapp_reminder_value = fields.Integer(
+        string='Recordar antes de',
+        help='Con cuánta anticipación recordar ESTA cita (por WhatsApp y en Google '
+             'Calendar). Vacío o 0 = usa el tiempo del asesor responsable, o el '
+             'general de Ajustes si el asesor no configuró el suyo.')
+    whatsapp_reminder_unit = fields.Selection(
+        REMINDER_UNITS, string='Unidad', default='minutes')
+    whatsapp_reminder_minutes = fields.Integer(
+        string='Recordatorio (minutos)', store=True, readonly=True,
+        compute='_compute_whatsapp_reminder_minutes',
+        help='Equivalente en minutos de la anticipación elegida (uso interno).')
+
+    @api.depends('whatsapp_reminder_value', 'whatsapp_reminder_unit')
+    def _compute_whatsapp_reminder_minutes(self):
+        for rec in self:
+            rec.whatsapp_reminder_minutes = reminder_to_minutes(
+                rec.whatsapp_reminder_value, rec.whatsapp_reminder_unit)
+
+    @api.model
+    def _global_reminder_minutes(self):
+        """Anticipación general de Ajustes, en minutos."""
+        ICP = self.env['ir.config_parameter'].sudo()
+        value = ICP.get_param('estate_calendar.whatsapp_reminder_default_value')
+        unit = ICP.get_param('estate_calendar.whatsapp_reminder_default_unit')
+        if value:
+            return reminder_to_minutes(int(value or 0), unit or 'minutes') or 60
+        # Compatibilidad con la configuración anterior (solo minutos)
+        return int(ICP.get_param('estate_calendar.whatsapp_reminder_default_minutes', '60') or 60)
+
+    def _effective_reminder_minutes(self):
+        """Minutos de anticipación efectivos para recordar esta cita, con esta
+        prioridad: 1) lo configurado en la cita, 2) lo del asesor responsable,
+        3) el valor general de Ajustes. Un único punto de verdad para que el
+        recordatorio de WhatsApp y el de Google Calendar usen el MISMO tiempo."""
+        self.ensure_one()
+        if self.whatsapp_reminder_minutes:
+            return self.whatsapp_reminder_minutes
+        if self.user_id and self.user_id.whatsapp_reminder_minutes:
+            return self.user_id.whatsapp_reminder_minutes
+        return self._global_reminder_minutes()
+
+    def _sync_reminder_alarm(self):
+        """Pone en la cita el recordatorio NATIVO de Odoo con el mismo tiempo
+        configurado, para que además del WhatsApp salte el aviso dentro de Odoo.
+
+        Solo gestiona las alarmas creadas por nosotros (las que empiezan por
+        'Inmobi:'), así que si el usuario añade las suyas a mano no se tocan."""
+        Alarm = self.env['calendar.alarm'].sudo()
+        for event in self:
+            minutes = event._effective_reminder_minutes()
+            # Quitar la alarma nuestra anterior (si el tiempo cambió)
+            ours = event.alarm_ids.filtered(lambda a: (a.name or '').startswith('Inmobi:'))
+            cmds = [(3, a.id) for a in ours]
+            if minutes > 0:
+                name = f'Inmobi: {minutes} min antes'
+                alarm = Alarm.search([('name', '=', name)], limit=1)
+                if not alarm:
+                    alarm = Alarm.create({
+                        'name': name,
+                        'alarm_type': 'notification',
+                        'interval': 'minutes',
+                        'duration': minutes,
+                    })
+                if alarm not in ours:
+                    cmds.append((4, alarm.id))
+                else:
+                    cmds = [c for c in cmds if c[1] != alarm.id]  # ya la tiene: no tocar
+            if cmds:
+                event.with_context(no_gcal_sync=True).write({'alarm_ids': cmds})
+
     # Mejora 9: Encuesta post-visita
     survey_sent = fields.Boolean(
         string='Encuesta Enviada', default=False,
@@ -142,8 +225,17 @@ class CalendarEvent(models.Model):
             if event.appointment_type in ('visit', 'signing') or event.property_id:
                 lead = event._get_related_lead()
                 if lead:
-                    lead._advance_lead_to_stage('estate_crm.stage_lead3_estate')
+                    lead._advance_lead_to_stage('estate_crm.stage_lead3b_estate_seguimiento')
+        events._sync_reminder_alarm()
         return events
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Si cambió la anticipación (o el asesor, que puede tener la suya),
+        # se re-sincroniza el recordatorio nativo de Odoo.
+        if {'whatsapp_reminder_value', 'whatsapp_reminder_unit', 'user_id'} & set(vals):
+            self._sync_reminder_alarm()
+        return res
 
     def action_done_visit(self):
         for event in self:
@@ -152,7 +244,7 @@ class CalendarEvent(models.Model):
             # Auto-avanzar lead a "Visita Realizada"
             lead = event._get_related_lead()
             if lead:
-                lead._advance_lead_to_stage('estate_crm.stage_lead4_estate')
+                lead._advance_lead_to_stage('estate_crm.stage_lead3b_estate_seguimiento')
 
             # 1. Actualizar temperatura CRM si se hizo una oferta
             if event.visit_result == 'offer_made' and event.client_id:

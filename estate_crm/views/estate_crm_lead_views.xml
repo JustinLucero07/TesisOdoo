@@ -161,13 +161,16 @@
                         placeholder="Asigna la propiedad de interés (necesaria para ofertar/contratar)..."/>
                     <field name="client_budget" widget="monetary" options="{'currency_field': 'company_currency'}"/>
                     <field name="match_percentage" widget="progressbar"/>
-                    <field name="lead_source" widget="badge"
-                        decoration-info="lead_source in ('website','wordpress','portal','ai_agent')"
-                        decoration-success="lead_source in ('referral','walk_in')"
-                        decoration-warning="lead_source in ('whatsapp','instagram')"
-                        decoration-muted="lead_source == 'other'"/>
-                    <field name="referral_partner_id" placeholder="¿Quién lo refirió?" invisible="lead_source != 'referral'"/>
+                    <field name="lead_source_code" invisible="1"/>
+                    <field name="lead_source_id" options="{'no_quick_create': False}"/>
+                    <field name="referral_partner_id" placeholder="¿Quién lo refirió?" invisible="lead_source_code != 'referral'"/>
                 </group>
+            </xpath>
+            <!-- "Propiedades" nativas de Odoo (campos personalizados por equipo, campo
+                 lead_properties): no se usan en este proyecto y su nombre en español
+                 confunde con "Propiedad" inmobiliaria. Se oculta del formulario. -->
+            <xpath expr="//field[@name='lead_properties']" position="attributes">
+                <attribute name="invisible">1</attribute>
             </xpath>
         </field>
     </record>
@@ -194,7 +197,7 @@
             <xpath expr="//kanban" position="inside">
                 <field name="is_golden_opportunity"/>
                 <field name="lead_temperature"/>
-                <field name="lead_source"/>
+                <field name="lead_source_id"/>
                 <field name="match_percentage"/>
                 <field name="expected_commission"/>
                 <field name="lead_velocity_days"/>
@@ -207,8 +210,8 @@
                     <span class="ms-2 fw-bold text-primary" t-if="record.expected_revenue.raw_value > 0">
                         <i class="fa fa-money" title="Ingreso esperado"/> $<field name="expected_revenue"/>
                     </span>
-                    <span class="ms-2 badge text-bg-secondary small" t-if="record.lead_source.raw_value">
-                        <field name="lead_source"/>
+                    <span class="ms-2 badge text-bg-secondary small" t-if="record.lead_source_id.value">
+                        <field name="lead_source_id"/>
                     </span>
                 </div>
                 <div t-if="record.match_percentage.raw_value > 0" class="mt-1">
@@ -232,7 +235,7 @@
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
             <pivot string="Análisis por Fuentes" sample="1">
-                <field name="lead_source" type="row"/>
+                <field name="lead_source_id" type="row"/>
                 <field name="stage_id" type="col"/>
                 <field name="expected_revenue" type="measure"/>
                 <field name="expected_commission" type="measure"/>
@@ -245,7 +248,7 @@
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
             <graph string="Fuentes de Mayor Rentabilidad" type="bar" sample="1">
-                <field name="lead_source"/>
+                <field name="lead_source_id"/>
                 <field name="expected_revenue" type="measure"/>
             </graph>
         </field>
@@ -283,7 +286,7 @@
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
             <pivot string="Ventas por Fuente de Captación" sample="1" display_quantity="true">
-                <field name="lead_source" type="row"/>
+                <field name="lead_source_id" type="row"/>
                 <field name="closing_payment_type" type="col"/>
                 <field name="client_budget" type="measure"/>
                 <field name="expected_revenue" type="measure"/>
@@ -297,7 +300,7 @@
         <field name="model">crm.lead</field>
         <field name="arch" type="xml">
             <graph string="Mejores Fuentes de Ventas" type="pie" sample="1">
-                <field name="lead_source"/>
+                <field name="lead_source_id"/>
                 <field name="client_budget" type="measure"/>
             </graph>
         </field>

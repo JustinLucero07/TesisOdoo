@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_estate_client_import_form" model="ir.ui.view">
+        <field name="name">estate.client.import.form</field>
+        <field name="model">estate.client.import</field>
+        <field name="arch" type="xml">
+            <form string="Importar Clientes desde Excel">
+                <header>
+                    <button name="action_start" string="Importar" type="object"
+                            class="btn-primary" invisible="state not in ('draft', 'failed')"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,pending,running,done"/>
+                </header>
+                <sheet>
+                    <div class="alert alert-info" role="alert" invisible="state != 'draft'">
+                        Sube el Excel de clientes exportado de <b>Wasi</b>. Se llenan los
+                        campos reales del contacto y se etiqueta por su tipo; para los
+                        compradores se crea una oportunidad en el CRM en la etapa que
+                        corresponde a su Estado. Es idempotente: reimportar actualiza, no
+                        duplica.
+                        <br/>
+                        <b>La importación corre en segundo plano</b>, así que puedes cerrar
+                        esta ventana y seguir trabajando: al terminar, el resultado queda aquí.
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="state not in ('pending', 'running')">
+                        <i class="fa fa-hourglass-half me-1"/>
+                        Procesando en segundo plano... Con miles de filas puede tardar varios
+                        minutos. <b>Recarga la página</b> en un rato para ver el resultado.
+                    </div>
+
+                    <group>
+                        <field name="filename" invisible="1"/>
+                        <field name="file" filename="filename" widget="binary"
+                               options="{'accepted_file_extensions': '.xlsx'}"
+                               readonly="state != 'draft'"/>
+                        <field name="create_leads" readonly="state != 'draft'"/>
+                        <field name="import_lost" invisible="not create_leads"
+                               readonly="state != 'draft'"/>
+                    </group>
+                    <group invisible="state == 'draft'">
+                        <field name="started_at"/>
+                        <field name="finished_at"/>
+                    </group>
+
+                    <separator string="Resultado" invisible="not result_log"/>
+                    <field name="result_log" readonly="1" nolabel="1"
+                           invisible="not result_log"
+                           style="white-space: pre-wrap; font-family: monospace;"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_estate_client_import_list" model="ir.ui.view">
+        <field name="name">estate.client.import.list</field>
+        <field name="model">estate.client.import</field>
+        <field name="arch" type="xml">
+            <list string="Importaciones de Clientes">
+                <field name="create_date" string="Fecha"/>
+                <field name="filename"/>
+                <field name="create_uid" string="Quién"/>
+                <field name="state" widget="badge"
+                       decoration-info="state in ('pending','running')"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'failed'"/>
+                <field name="finished_at" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_estate_client_import" model="ir.actions.act_window">
+        <field name="name">Importar Clientes (Excel / Wasi)</field>
+        <field name="res_model">estate.client.import</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Importa tus clientes desde Excel</p>
+            <p>Sube el archivo exportado de Wasi. El proceso corre en segundo plano y aquí
+               queda el historial con el resultado de cada importación.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_estate_client_import"
+              name="Importar Clientes (Excel)"
+              parent="crm.crm_menu_config"
+              action="action_estate_client_import"
+              groups="estate_management.estate_group_manager"
+              sequence="60"/>
+</odoo>

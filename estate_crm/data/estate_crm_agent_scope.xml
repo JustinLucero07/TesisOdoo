@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Asegura que los Asesores solo vean SUS propios leads: les quita el grupo
+         de ventas "Todos los documentos", cuya regla [(1,'=',1)] anulaba por OR
+         la regla restrictiva del Asesor. Idempotente. -->
+    <function model="res.users" name="_enforce_agent_crm_scope"/>
+</odoo>

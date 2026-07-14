@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Migra los leads existentes de la vieja columna 'lead_source' (texto
+         fijo) al nuevo catálogo editable. Debe cargarse DESPUÉS de
+         estate_lead_source_data.xml (necesita que existan los códigos). -->
+    <function model="crm.lead" name="_migrate_legacy_lead_source"/>
+</odoo>

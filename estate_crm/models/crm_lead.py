@@ -1,5 +1,10 @@
+import logging
+
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
+
 
 class CrmLead(models.Model):
     _inherit = 'crm.lead'
@@ -18,13 +23,13 @@ class CrmLead(models.Model):
     # identificadas por su XML id (no por números fijos), de modo que agregar o
     # reordenar etapas no descuadra la lógica de los botones.
     gate_capture = fields.Boolean(compute='_compute_stage_gates',
-        help='Etapas iniciales (hasta Captación): buscar propiedad / registrar necesidad.')
+        help='Etapas iniciales (hasta Con Necesidad): buscar propiedad / registrar necesidad.')
     gate_offer = fields.Boolean(compute='_compute_stage_gates',
-        help='Negociación (Visita / Seguimiento): crear ofertas.')
+        help='Desde Seguimiento hasta En Proceso Cierre: crear ofertas.')
     gate_reserve = fields.Boolean(compute='_compute_stage_gates',
-        help='Desde la Visita en adelante: reservar la propiedad.')
+        help='Desde Seguimiento en adelante: reservar la propiedad.')
     gate_contract = fields.Boolean(compute='_compute_stage_gates',
-        help='Desde Entrega de Papeles en adelante: formalizar contrato.')
+        help='Desde En Proceso Cierre en adelante: formalizar contrato.')
 
     @api.depends('stage_id', 'stage_id.sequence')
     def _compute_stage_gates(self):
@@ -32,38 +37,34 @@ class CrmLead(models.Model):
         def _seq(xmlid):
             st = ref(xmlid, raise_if_not_found=False)
             return st.sequence if st else None
-        s_captacion = _seq('estate_crm.stage_lead2_estate_captacion')
-        s_visita = _seq('estate_crm.stage_lead3_estate_visita')
-        s_seguimiento = _seq('estate_crm.stage_lead3b_estate_seguimiento')
-        s_papeles = _seq('estate_crm.stage_lead4_estate_papeles')
+        s_seguimiento = _seq('estate_crm.stage_lead3b_estate_seguimiento')   # 2
+        s_necesidad = _seq('estate_crm.stage_lead2b_estate_con_necesidad')   # 3
+        s_proceso = _seq('estate_crm.stage_lead4_estate_papeles')            # 5 (En Proceso Cierre)
         for lead in self:
             cur = lead.stage_id.sequence if lead.stage_id else 0
-            lead.gate_capture = bool(s_captacion is not None and cur <= s_captacion)
+            lead.gate_capture = bool(s_necesidad is not None and cur <= s_necesidad)
             lead.gate_offer = bool(
-                s_visita is not None and s_seguimiento is not None
-                and s_visita <= cur <= s_seguimiento)
-            lead.gate_reserve = bool(s_visita is not None and cur >= s_visita)
-            lead.gate_contract = bool(s_papeles is not None and cur >= s_papeles)
+                s_seguimiento is not None and s_proceso is not None
+                and s_seguimiento <= cur <= s_proceso)
+            lead.gate_reserve = bool(s_seguimiento is not None and cur >= s_seguimiento)
+            lead.gate_contract = bool(s_proceso is not None and cur >= s_proceso)
     match_percentage = fields.Integer(
         string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True,
         help='Porcentaje de compatibilidad entre el presupuesto/preferencias del cliente y la propiedad de interés. 100% = perfectamente alineado. Factores: precio vs presupuesto (50%), ciudad (20%), tipo de propiedad (15%), habitaciones (10%), área (5%).')
 
     # --- Canal de captación ---
-    lead_source = fields.Selection([
-        ('website',   'Sitio Web'),
-        ('wordpress', 'WordPress/Houzez'),
-        ('whatsapp',  'WhatsApp'),
-        ('instagram', 'Instagram'),
-        ('facebook',  'Facebook'),
-        ('google',    'Google Business'),
-        ('referral',  'Referido'),
-        ('phone',     'Llamada Telefónica'),
-        ('walk_in',   'Visita Directa'),
-        ('portal',    'Portal del Cliente'),
-        ('ai_agent',  'Agente IA'),
-        ('other',     'Otro'),
-    ], string='Fuente del Lead', default='website', tracking=True, index=True,
-       help='Canal por el que llegó este prospecto')
+    # Antes era una lista fija (Selection); ahora es un catálogo editable
+    # (estate.crm.lead.source) para poder elegir o crear una fuente nueva
+    # directamente desde este campo.
+    lead_source_id = fields.Many2one(
+        'estate.crm.lead.source', string='Fuente del Lead',
+        default=lambda self: self.env.ref('estate_crm.lead_source_website', raise_if_not_found=False),
+        tracking=True, index=True, ondelete='restrict',
+        help='Canal por el que llegó este prospecto. Si no está en la lista, '
+             'escribe el nombre y elige "Crear" para agregarla.')
+    lead_source_code = fields.Char(
+        related='lead_source_id.code', store=True, string='Código de Fuente',
+        help='Código técnico de la fuente (uso interno para filtros y colores).')
 
     referral_partner_id = fields.Many2one(
         'res.partner', string='Referido por', tracking=True, index=True,
@@ -453,6 +454,138 @@ class CrmLead(models.Model):
         if newly_golden:
             newly_golden._notify_high_score_lead()
         return result
+
+    # ── Etapa "Perdido" visible ──────────────────────────────────────────────
+    # Odoo de fábrica archiva el lead perdido (active=False), y por eso
+    # desaparece del kanban: un registro archivado NUNCA se muestra en una
+    # columna. Aquí el lead perdido se queda VISIBLE en la etapa "Perdido"
+    # (is_lost), pero se le sigue tratando como perdido en filtros y reportes.
+
+    def _lost_stage(self):
+        return self.env.ref('estate_crm.stage_lead_perdido', raise_if_not_found=False)
+
+    @api.depends('stage_id.is_lost')
+    def _compute_won_status(self):
+        """Un lead en la etapa 'Perdido' cuenta como perdido aunque siga activo,
+        para que los filtros y los reportes de ganados/perdidos sigan cuadrando."""
+        super()._compute_won_status()
+        for lead in self:
+            if lead.stage_id.is_lost:
+                lead.won_status = 'lost'
+
+    def action_set_lost(self, **additional_values):
+        """Botón 'Perdido': en vez de archivar, mueve el lead a la etapa
+        'Perdido' (probabilidad 0 y con su motivo). Así se ve en su columna.
+        Si la etapa no existiera, se cae al comportamiento nativo de Odoo."""
+        lost_stage = self._lost_stage()
+        if not lost_stage:
+            return super().action_set_lost(**additional_values)
+        self.write({
+            **additional_values,
+            'stage_id': lost_stage.id,
+            'probability': 0,
+            'automated_probability': 0,
+        })
+        return True
+
+    def action_set_won(self):
+        """Ganar un lead que estaba en 'Perdido' debe sacarlo de esa etapa."""
+        lost_stage = self._lost_stage()
+        if lost_stage:
+            self.filtered(lambda l: l.stage_id == lost_stage).write({'probability': 100})
+        return super().action_set_won()
+
+    @api.model
+    def _migrate_lost_leads_to_stage(self):
+        """Trae a la etapa 'Perdido' (visible) los leads que estaban archivados
+        como perdidos, para que dejen de estar escondidos. Idempotente."""
+        lost_stage = self._lost_stage()
+        if not lost_stage:
+            return
+        archived_lost = self.with_context(active_test=False).search([
+            ('active', '=', False),
+            ('probability', '=', 0),
+            ('stage_id', '!=', lost_stage.id),
+        ])
+        if archived_lost:
+            archived_lost.write({'active': True, 'stage_id': lost_stage.id})
+            _logger.info('Etapa Perdido: %s lead(s) archivados ahora son visibles '
+                         'en su columna.', len(archived_lost))
+
+    @api.model
+    def _cleanup_foreign_stages(self):
+        """Elimina TODA etapa de CRM que no sea de las definidas aquí.
+
+        Odoo trae de fábrica sus propias etapas (Nuevo, Calificado, Propuesta,
+        Ganado) SIN equipo asignado, o sea GLOBALES. Eso rompía tres cosas:
+          1) "Ganado" (de Odoo) también es is_won, así que los leads ganados
+             caían ahí en vez de en "Cierre" -> Cierre aparecía vacío.
+          2) Al no tener equipo, salían como columnas en TODOS los embudos
+             (incluido Postventa) y en el de cualquier usuario.
+          3) Un asesor sin equipo veía solo esas globales, o sea etapas
+             distintas a las de los demás.
+
+        Los leads que estuvieran en esas etapas se reubican (los ganados a
+        "Cierre", el resto a "Recepción") y después se borran. Idempotente."""
+        ref = lambda x: self.env.ref(f'estate_crm.{x}', raise_if_not_found=False)
+        cierre = ref('stage_lead7_estate_cierre')
+        recepcion = ref('stage_lead1_estate_nuevo')
+        if not (cierre and recepcion):
+            return
+
+        Stage = self.env['crm.stage'].sudo()
+        mine = self.env['ir.model.data'].sudo().search([
+            ('model', '=', 'crm.stage'), ('module', '=', 'estate_crm'),
+        ]).mapped('res_id')
+        foreign = Stage.search([('id', 'not in', mine)])
+        if not foreign:
+            return
+
+        for stage in foreign:
+            leads = self.with_context(active_test=False).search([('stage_id', '=', stage.id)])
+            if leads:
+                target = cierre if stage.is_won else recepcion
+                leads.write({'stage_id': target.id})
+                _logger.info('Limpieza de etapas: %s lead(s) de la etapa ajena "%s" '
+                             '-> "%s"', len(leads), stage.name, target.name)
+        names = foreign.mapped('name')
+        foreign.unlink()
+        _logger.info('Limpieza de etapas: eliminadas %s etapas ajenas al sistema: %s',
+                     len(names), ', '.join(names))
+
+    @api.model
+    def _migrate_stages_wasi(self):
+        """Migración de etapas al esquema de Wasi (embudos 'Proceso de Ventas' y
+        'Ventas Cerradas'). Reasigna los leads que estén en etapas que ya no
+        existen ANTES de que Odoo las elimine (stage_id es ondelete='restrict',
+        así que si quedara algún lead apuntando a ellas el update fallaría).
+
+        Idempotente: si las etapas viejas ya no existen, no hace nada."""
+        ref = lambda x: self.env.ref(f'estate_crm.{x}', raise_if_not_found=False)
+
+        # etapa vieja (se elimina) -> etapa nueva equivalente
+        remap = {
+            # Embudo comercial
+            'stage_lead2_estate_captacion': 'stage_lead3b_estate_seguimiento',
+            'stage_lead3_estate_visita': 'stage_lead3b_estate_seguimiento',
+            'stage_lead5_estate_avaluo': 'stage_lead4_estate_papeles',
+            'stage_lead6_estate_minuta': 'stage_lead4_estate_papeles',
+            # Embudo postventa (esquema anterior)
+            'stage_postventa_1_contrato': 'stage_pv_sena',
+            'stage_postventa_2_documentacion': 'stage_pv_escritura',
+            'stage_postventa_3_comision': 'stage_pv_comision',
+            'stage_postventa_4_entrega': 'stage_pv_registro',
+            'stage_postventa_5_cerrado': 'stage_pv_comision',
+        }
+        for old_xmlid, new_xmlid in remap.items():
+            old, new = ref(old_xmlid), ref(new_xmlid)
+            if not old or not new:
+                continue
+            leads = self.with_context(active_test=False).search([('stage_id', '=', old.id)])
+            if leads:
+                leads.write({'stage_id': new.id})
+                _logger.info('Migración de etapas: %s lead(s) de "%s" -> "%s"',
+                             len(leads), old.name, new.name)
 
     @api.depends('client_budget')
     def _compute_financials(self):
@@ -986,17 +1119,43 @@ class CrmLead(models.Model):
                 user_id=lead.user_id.id or self.env.uid,
             )
 
+    @api.model
+    def _migrate_legacy_lead_source(self):
+        """Migra la antigua columna 'lead_source' (lista fija) al nuevo
+        catálogo editable (lead_source_id), y elimina la columna vieja.
+        Se ejecuta en cada actualización del módulo; es segura de repetir:
+        si la columna vieja ya no existe, no hace nada."""
+        cr = self.env.cr
+        cr.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'crm_lead' AND column_name = 'lead_source'
+        """)
+        if not cr.fetchone():
+            return
+        cr.execute("""
+            UPDATE crm_lead l
+            SET lead_source_id = s.id
+            FROM estate_crm_lead_source s
+            WHERE l.lead_source_id IS NULL
+              AND l.lead_source IS NOT NULL
+              AND s.code = l.lead_source
+        """)
+        cr.execute("ALTER TABLE crm_lead DROP COLUMN IF EXISTS lead_source")
 
     @api.model_create_multi
     def create(self, vals_list):
         leads = super().create(vals_list)
-        for lead in leads:
-            self._notify_team_new_lead(lead)
+        # En importaciones masivas se salta la notificación: publicar un mensaje
+        # y crear una actividad por cada lead multiplicaría por miles las
+        # escrituras y hacía que la importación tardara una eternidad.
+        if not self.env.context.get('skip_lead_notification'):
+            for lead in leads:
+                self._notify_team_new_lead(lead)
         return leads
 
     def _notify_team_new_lead(self, lead):
         """Notificación interna al asesor asignado y al canal del equipo."""
-        source_label = dict(self._fields['lead_source'].selection).get(lead.lead_source or 'other', 'Desconocido')
+        source_label = lead.lead_source_id.name or 'Desconocido'
         msg = (
             f'<b>Nuevo lead recibido</b> vía <b>{source_label}</b>.<br/>'
             f'<b>Cliente:</b> {lead.partner_id.name or lead.contact_name or "Sin nombre"}<br/>'

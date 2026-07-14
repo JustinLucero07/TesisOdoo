@@ -49,6 +49,7 @@
         'views/estate_portal_templates.xml',
         'views/estate_advisor_fb_post_views.xml',
         'views/estate_menus.xml',
+        'views/estate_property_map_views.xml',
         'views/estate_access_views.xml',
         'views/res_config_settings_views.xml',
         'views/estate_finance_menu.xml',

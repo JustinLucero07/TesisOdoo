@@ -50,6 +50,12 @@
                            domain="[('type','=','opportunity')]"
                            options="{'no_create': True}"
                            placeholder="Lead CRM relacionado (opcional)"/>
+                    <label for="whatsapp_reminder_value" string="Recordar antes de"/>
+                    <div class="o_row">
+                        <field name="whatsapp_reminder_value" class="oe_inline"
+                               placeholder="0 = usa el del asesor"/>
+                        <field name="whatsapp_reminder_unit" class="oe_inline"/>
+                    </div>
                 </group>
 
                 <!-- Datos clave: aparecen al elegir una propiedad. Grupo de una

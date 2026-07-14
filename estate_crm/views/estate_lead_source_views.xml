@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_estate_lead_source_list" model="ir.ui.view">
+        <field name="name">estate.crm.lead.source.list</field>
+        <field name="model">estate.crm.lead.source</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="code" optional="hide"/>
+                <field name="active" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_estate_lead_source" model="ir.actions.act_window">
+        <field name="name">Fuentes de Lead</field>
+        <field name="res_model">estate.crm.lead.source</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Crea una nueva fuente de lead</p>
+            <p>También puedes crear una fuente nueva directamente desde el campo
+               "Fuente del Lead" en cualquier prospecto, escribiendo el nombre.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_estate_lead_source"
+              name="Fuentes de Lead"
+              parent="crm.crm_menu_config"
+              action="action_estate_lead_source"
+              groups="estate_management.estate_group_manager"
+              sequence="50"/>
+</odoo>

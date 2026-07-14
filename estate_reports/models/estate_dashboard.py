@@ -796,28 +796,23 @@ class EstateDashboard(models.TransientModel):
 
             # ── Leads by source — horizontal bars ────────────────────
             self.env.cr.execute("""
-                SELECT COALESCE(lead_source, 'other') as source,
+                SELECT COALESCE(s.name, 'Otro') as source,
                        COUNT(*) as total
-                FROM crm_lead
-                WHERE create_date >= (CURRENT_DATE - INTERVAL '3 months')
-                GROUP BY lead_source
+                FROM crm_lead l
+                LEFT JOIN estate_crm_lead_source s ON s.id = l.lead_source_id
+                WHERE l.create_date >= (CURRENT_DATE - INTERVAL '3 months')
+                GROUP BY s.name
                 ORDER BY total DESC
                 LIMIT 7
             """)
             lead_data = self.env.cr.dictfetchall()
             max_leads = max((r['total'] for r in lead_data), default=1) or 1
-            source_labels = {
-                'website': 'Web', 'wordpress': 'WordPress', 'whatsapp': 'WhatsApp',
-                'instagram': 'Instagram', 'facebook': 'Facebook', 'google': 'Google',
-                'referral': 'Referido', 'phone': 'Telefono', 'walk_in': 'Visita directa',
-                'portal': 'Portal', 'ai_agent': 'Agente IA', 'other': 'Otro',
-            }
             palette = self._PALETTE['chart']
             hbars = ''
             for i, r in enumerate(lead_data):
                 w = max(int(r['total'] / max_leads * 100), 4)
                 color = palette[i % len(palette)]
-                label = source_labels.get(r['source'], r['source'])
+                label = r['source']
                 delay = round(i * 0.09, 2)
                 hbars += (
                     f'<div style="margin-bottom:10px;">'
@@ -845,7 +840,7 @@ class EstateDashboard(models.TransientModel):
                 'type': 'bar',
                 'horizontal': True,
                 'label': 'Leads',
-                'labels': [source_labels.get(r['source'], r['source']) for r in lead_data],
+                'labels': [r['source'] for r in lead_data],
                 'values': [r['total'] for r in lead_data],
                 'colors': [palette[i % len(palette)] for i in range(len(lead_data))],
             })

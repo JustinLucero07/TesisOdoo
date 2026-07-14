@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_estate_crm" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.estate.crm</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app data-string="CRM Inmobiliario" string="CRM Inmobiliario" name="estate_crm">
+                    <block title="Clientes" name="estate_crm_clients">
+                        <setting id="estate_crm_client_import_setting"
+                                 string="Importar Clientes desde Excel"
+                                 help="Sube el Excel exportado de Wasi (u otro sistema) y crea Contactos automáticamente, deduplicando por celular/correo.">
+                            <button name="action_open_client_import" type="object"
+                                    string="Importar Clientes (Excel)" class="btn-primary"
+                                    icon="fa-upload"/>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_users_form_whatsapp_reminder" model="ir.ui.view">
+        <field name="name">res.users.form.whatsapp.reminder</field>
+        <field name="model">res.users</field>
+        <field name="inherit_id" ref="base.view_users_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//notebook" position="inside">
+                <page string="WhatsApp" name="whatsapp_advisor">
+                    <group>
+                        <label for="whatsapp_reminder_value" string="Recordar antes de"/>
+                        <div class="o_row">
+                            <field name="whatsapp_reminder_value" class="oe_inline"
+                                   placeholder="Ej: 1"/>
+                            <field name="whatsapp_reminder_unit" class="oe_inline"/>
+                        </div>
+                    </group>
+                    <p class="text-muted">
+                        <i class="fa fa-info-circle" title="Información"/>
+                        Con cuánta anticipación quiere recibir este asesor el recordatorio
+                        de WhatsApp de sus citas (minutos, horas o días). Déjalo en 0 para
+                        usar el valor general de Configuración > Ajustes > WhatsApp Citas.
+                        Cada cita puede además tener su propio tiempo, que manda sobre este.
+                    </p>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

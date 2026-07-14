@@ -22,6 +22,7 @@
         'wizards/calendar_print_wizard_views.xml',
         'views/calendar_event_views.xml',
         'views/estate_whatsapp_config_views.xml',
+        'views/res_users_views.xml',
         'views/estate_advisor_unavailability_views.xml',
         'views/estate_calendar_menus.xml',
     ],

@@ -53,6 +53,30 @@
         </field>
     </record>
 
+    <!-- Tiempo de Venta — tendencia mensual (publicación hasta venta) -->
+    <record id="estate_sales_graph_time_to_sell" model="ir.ui.view">
+        <field name="name">estate.property.graph.time.to.sell</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Tiempo de Venta" type="line" sample="1">
+                <field name="date_sold" interval="month" type="row" string="Mes de venta"/>
+                <field name="days_on_market" type="measure" string="Días en mercado"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Ventas por Canal — Agencia vs Propietario -->
+    <record id="estate_sales_graph_by_channel" model="ir.ui.view">
+        <field name="name">estate.property.graph.sales.channel</field>
+        <field name="model">estate.property</field>
+        <field name="arch" type="xml">
+            <graph string="Ventas por Canal" type="pie" sample="1">
+                <field name="sold_by" type="row" string="Vendido por"/>
+                <field name="price" type="measure" string="Precio de venta"/>
+            </graph>
+        </field>
+    </record>
+
     <!-- ═══════════════════════════════════════════════════════
          PIVOT VIEWS
     ═══════════════════════════════════════════════════════════ -->
@@ -164,6 +188,40 @@
         <field name="context">{'search_default_sold': 1, 'search_default_group_type': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Sin ventas con tiempo en mercado calculado.</p>
+        </field>
+    </record>
+
+    <!-- 4.B Tiempo de Venta (tendencia mensual) -->
+    <record id="action_sales_time_to_sell" model="ir.actions.act_window">
+        <field name="name">Tiempo de Venta</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_time_to_sell')}),
+            (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
+        <field name="domain">[('state','=','sold'),('date_listed','!=',False),('days_on_market','&gt;',0)]</field>
+        <field name="context">{'search_default_sold': 1, 'search_default_group_month': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ventas con fecha de publicación registrada aún.</p>
+            <p>Días transcurridos desde que la propiedad se publicó (Fecha de Publicación) hasta
+               que se vendió (Fecha de Venta), agrupados por mes de venta.</p>
+        </field>
+    </record>
+
+    <!-- 5. Ventas por Canal (Agencia vs Propietario) -->
+    <record id="action_sales_by_channel" model="ir.actions.act_window">
+        <field name="name">Ventas por Canal</field>
+        <field name="res_model">estate.property</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_ids" eval="[(5,0,0),
+            (0,0,{'view_mode':'graph','view_id':ref('estate_sales_graph_by_channel')}),
+            (0,0,{'view_mode':'pivot','view_id':ref('estate_sales_pivot')})]"/>
+        <field name="domain">[('state','=','sold')]</field>
+        <field name="context">{'search_default_sold': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Sin ventas registradas aún.</p>
+            <p>Indica en cada propiedad vendida si la operación la cerró la agencia o el
+               propietario (campo "¿Quién Vendió?" en la ficha de la propiedad).</p>
         </field>
     </record>
 

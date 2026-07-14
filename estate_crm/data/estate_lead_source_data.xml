@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- Fuentes de lead iniciales, equivalentes a la lista fija anterior.
+         El código técnico (code) lo usan las integraciones automáticas;
+         las fuentes que el usuario cree a mano no necesitan tener uno. -->
+    <record id="lead_source_website" model="estate.crm.lead.source">
+        <field name="name">Sitio Web</field>
+        <field name="code">website</field>
+        <field name="sequence">10</field>
+    </record>
+    <record id="lead_source_wordpress" model="estate.crm.lead.source">
+        <field name="name">WordPress/Houzez</field>
+        <field name="code">wordpress</field>
+        <field name="sequence">20</field>
+    </record>
+    <record id="lead_source_whatsapp" model="estate.crm.lead.source">
+        <field name="name">WhatsApp</field>
+        <field name="code">whatsapp</field>
+        <field name="sequence">30</field>
+    </record>
+    <record id="lead_source_instagram" model="estate.crm.lead.source">
+        <field name="name">Instagram</field>
+        <field name="code">instagram</field>
+        <field name="sequence">40</field>
+    </record>
+    <record id="lead_source_facebook" model="estate.crm.lead.source">
+        <field name="name">Facebook</field>
+        <field name="code">facebook</field>
+        <field name="sequence">50</field>
+    </record>
+    <record id="lead_source_google" model="estate.crm.lead.source">
+        <field name="name">Google Business</field>
+        <field name="code">google</field>
+        <field name="sequence">60</field>
+    </record>
+    <record id="lead_source_referral" model="estate.crm.lead.source">
+        <field name="name">Referido</field>
+        <field name="code">referral</field>
+        <field name="sequence">70</field>
+    </record>
+    <record id="lead_source_phone" model="estate.crm.lead.source">
+        <field name="name">Llamada Telefónica</field>
+        <field name="code">phone</field>
+        <field name="sequence">80</field>
+    </record>
+    <record id="lead_source_walk_in" model="estate.crm.lead.source">
+        <field name="name">Visita Directa</field>
+        <field name="code">walk_in</field>
+        <field name="sequence">90</field>
+    </record>
+    <record id="lead_source_portal" model="estate.crm.lead.source">
+        <field name="name">Portal del Cliente</field>
+        <field name="code">portal</field>
+        <field name="sequence">100</field>
+    </record>
+    <record id="lead_source_ai_agent" model="estate.crm.lead.source">
+        <field name="name">Agente IA</field>
+        <field name="code">ai_agent</field>
+        <field name="sequence">110</field>
+    </record>
+    <record id="lead_source_other" model="estate.crm.lead.source">
+        <field name="name">Otro</field>
+        <field name="code">other</field>
+        <field name="sequence">120</field>
+    </record>
+</odoo>

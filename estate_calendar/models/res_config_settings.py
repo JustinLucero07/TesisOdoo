@@ -1,5 +1,7 @@
 from odoo import models, fields
 
+from .calendar_event import REMINDER_UNITS
+
 
 class ResConfigSettings(models.TransientModel):
     _inherit = 'res.config.settings'
@@ -26,6 +28,16 @@ class ResConfigSettings(models.TransientModel):
         default=True,
         help='Si está activo, el recordatorio de la cita también se envía al cliente, '
              'además del asesor.')
+    whatsapp_reminder_default_value = fields.Integer(
+        string='Recordar antes de (general)',
+        config_parameter='estate_calendar.whatsapp_reminder_default_value',
+        default=1,
+        help='Con cuánta anticipación se envía el recordatorio por defecto. Cada asesor '
+             'puede configurar el suyo en su perfil (pestaña WhatsApp), y cada cita '
+             'puede tener el suyo propio; este valor se usa solo si no hay ninguno.')
+    whatsapp_reminder_default_unit = fields.Selection(
+        REMINDER_UNITS, string='Unidad (general)', default='hours',
+        config_parameter='estate_calendar.whatsapp_reminder_default_unit')
     whatsapp_contract_template = fields.Char(
         string='Plantilla Contratos',
         config_parameter='estate_management.whatsapp_contract_template',

@@ -259,7 +259,7 @@ class EstateCustomerPortal(CustomerPortal):
             'mobile': ref_phone,
             'email_from': ref_email or False,
             'type': 'lead',
-            'lead_source': 'referral',
+            'lead_source_id': request.env['estate.crm.lead.source'].sudo().get_by_code('referral').id,
             'referral_partner_id': partner.id,
             'user_id': user_id,
             'description': ref_notes or f"Lead referido por {partner.name} desde el portal.",

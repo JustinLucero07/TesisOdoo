@@ -117,6 +117,14 @@ class CalendarEvent(models.Model):
             body['colorId'] = advisor.gcal_color_id
         if prop and (prop.street or prop.city):
             body['location'] = f"{prop.street or ''}, {prop.city or ''}".strip(', ')
+        # Recordatorio de Google Calendar con el MISMO tiempo que el de WhatsApp
+        # (configurable por cita / asesor / general). Google limita a 40320 min.
+        if hasattr(self, '_effective_reminder_minutes'):
+            minutes = max(0, min(int(self._effective_reminder_minutes() or 0), 40320))
+            body['reminders'] = {
+                'useDefault': False,
+                'overrides': [{'method': 'popup', 'minutes': minutes}],
+            }
         return body
 
     # ── Odoo -> Google ───────────────────────────────────────────────────────

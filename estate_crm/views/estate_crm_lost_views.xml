@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- El filtro "Perdido" de Odoo busca [('won_status','=','lost'), ('active','=',False)].
+         Como ahora el lead perdido se queda VISIBLE en su columna (no se archiva),
+         la condición de 'active' lo dejaba sin resultados. Se quita esa condición:
+         won_status ya vale 'lost' gracias a la marca is_lost de la etapa. -->
+    <!-- Vista de búsqueda de OPORTUNIDADES (el filtro se llama filter_won_status_lost) -->
+    <record id="crm_lead_search_lost_filter" model="ir.ui.view">
+        <field name="name">crm.lead.search.lost.estate</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_opportunities_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='filter_won_status_lost']" position="attributes">
+                <attribute name="domain">[('won_status', '=', 'lost')]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vista de búsqueda de LEADS (ahí el filtro se llama 'lost') -->
+    <record id="crm_lead_search_lost_filter_leads" model="ir.ui.view">
+        <field name="name">crm.lead.search.lost.estate.leads</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.view_crm_case_leads_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='lost']" position="attributes">
+                <attribute name="domain">[('won_status', '=', 'lost')]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Marca "¿Es Etapa Perdida?" en el formulario de etapas, junto a "¿Es Ganada?" -->
+    <record id="crm_stage_form_is_lost" model="ir.ui.view">
+        <field name="name">crm.stage.form.is.lost</field>
+        <field name="model">crm.stage</field>
+        <field name="inherit_id" ref="crm.crm_stage_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='is_won']" position="after">
+                <field name="is_lost"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

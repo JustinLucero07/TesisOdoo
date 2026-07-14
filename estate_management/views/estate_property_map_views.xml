@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Mapa de propiedades (componente OWL con Leaflet + OpenStreetMap).
+         Odoo Community no trae la vista "map" (es de Enterprise), por eso se
+         implementa como acción cliente propia. -->
+    <record id="estate_property_map_action" model="ir.actions.client">
+        <field name="name">Mapa de Propiedades</field>
+        <field name="tag">estate_property_map</field>
+    </record>
+
+    <menuitem id="estate_menu_property_map"
+              name="Mapa"
+              parent="estate_menu_property_root"
+              action="estate_property_map_action"
+              sequence="15"/>
+</odoo>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- ══════════════════════════════════════════════════════════════
+             EMBUDO POSTVENTA (solo admins) — replica el embudo "Ventas Cerradas".
+             El lead ganado NO se mueve: se queda en "Cierre" (etapa puente) y esa
+             columna es la BANDEJA DE ENTRADA de este embudo. Desde ahí el admin lo
+             avanza por el trámite: Seña → Financiamiento → ... → Comisión.
+             ══════════════════════════════════════════════════════════════ -->
+        <record id="crm_team_postventa" model="crm.team">
+            <field name="name">Postventa</field>
+            <field name="use_opportunities">True</field>
+        </record>
+
+        <!-- Añadir el equipo Postventa a la etapa puente "Cierre" (creada en
+             estate_crm_stage_data.xml, ya cargado). Command.link = agregar sin
+             quitar el equipo Ventas que ya tiene. -->
+        <record id="stage_lead7_estate_cierre" model="crm.stage">
+            <field name="team_ids" eval="[Command.link(ref('crm_team_postventa'))]"/>
+        </record>
+
+        <!-- Etapas del trámite: secuencia 7+ para quedar DESPUÉS de "Cierre" (6),
+             que es la primera columna del embudo. -->
+        <record id="stage_pv_sena" model="crm.stage">
+            <field name="name">Seña</field>
+            <field name="sequence">7</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_financiamiento" model="crm.stage">
+            <field name="name">Financiamiento</field>
+            <field name="sequence">8</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_minuta" model="crm.stage">
+            <field name="name">Minuta</field>
+            <field name="sequence">9</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_transferencia" model="crm.stage">
+            <field name="name">Transferencia de Dominio</field>
+            <field name="sequence">10</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_impuestos" model="crm.stage">
+            <field name="name">Pago de Impuestos</field>
+            <field name="sequence">11</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_escritura" model="crm.stage">
+            <field name="name">Escritura</field>
+            <field name="sequence">12</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_registro" model="crm.stage">
+            <field name="name">Registro Propiedad</field>
+            <field name="sequence">13</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_desembolso" model="crm.stage">
+            <field name="name">Desembolso Banco</field>
+            <field name="sequence">14</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_encuesta" model="crm.stage">
+            <field name="name">Encuesta</field>
+            <field name="sequence">15</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+        <record id="stage_pv_comision" model="crm.stage">
+            <field name="name">Comisión</field>
+            <field name="sequence">16</field>
+            <field name="is_won">True</field>
+            <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
+        </record>
+    </data>
+</odoo>

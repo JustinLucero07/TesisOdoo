@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_crm_lead_postventa" model="ir.actions.act_window">
+        <field name="name">Embudo Postventa</field>
+        <field name="res_model">crm.lead</field>
+        <field name="view_mode">kanban,list,form</field>
+        <!-- Muestra los leads cuya ETAPA pertenece al equipo Postventa: eso
+             incluye "8. Cierre Ganado" (etapa puente compartida, bandeja de
+             entrada) y las etapas propias de postventa. Filtramos por ETAPA (no
+             por team_id) para que el lead ganado se vea aquí sin moverlo del
+             embudo comercial. default_team_id se pasa solo para que el kanban
+             muestre las columnas del equipo Postventa. -->
+        <field name="domain" eval="[('type', '=', 'opportunity'), ('stage_id.team_ids', 'in', ref('crm_team_postventa'))]"/>
+        <field name="context" eval="{
+            'default_type': 'opportunity',
+            'default_team_id': ref('crm_team_postventa'),
+        }"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Aquí no hay negocios en postventa todavía</p>
+            <p>Los negocios ganados aparecen en la columna "Cierre Ganado" (la misma
+               que en el embudo comercial). Arrástralos a "Contrato en Firma" para
+               iniciar el trámite de postventa.</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_crm_lead_postventa"
+              name="Embudo Postventa"
+              parent="crm.crm_menu_sales"
+              action="action_crm_lead_postventa"
+              groups="estate_management.estate_group_admin"
+              sequence="3"/>
+</odoo>

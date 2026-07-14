@@ -108,24 +108,40 @@ class CalendarEventWhatsApp(models.Model):
 
     @api.model
     def _cron_send_whatsapp_reminders(self):
-        """Cron: envía recordatorio 1 hora antes de cada cita con propiedad asignada."""
+        """Cron: envía el recordatorio de cada cita con la anticipación efectiva
+        (configurada en la propia cita, o la del asesor, o la general)."""
         ICP = self.env['ir.config_parameter'].sudo()
         if ICP.get_param('estate_calendar.whatsapp_active', 'False') != 'True':
             return
 
+        default_minutes = self._global_reminder_minutes()
         now = fields.Datetime.now()
-        one_hour = now + timedelta(hours=1)
+        # Ventana amplia de búsqueda: cubre el mayor tiempo de anticipación posible
+        # (el general, el de cualquier asesor, o el de cualquier cita próxima).
+        advisor_minutes = self.env['res.users'].sudo().search(
+            [('whatsapp_reminder_minutes', '>', 0)]).mapped('whatsapp_reminder_minutes')
+        upcoming = self.search([
+            ('start', '>=', now), ('whatsapp_sent', '=', False),
+            ('property_id', '!=', False), ('whatsapp_reminder_minutes', '>', 0),
+        ])
+        event_minutes = upcoming.mapped('whatsapp_reminder_minutes')
+        max_minutes = max([default_minutes] + advisor_minutes + event_minutes)
 
         events = self.search([
             ('start', '>=', now),
-            ('start', '<=', one_hour),
+            ('start', '<=', now + timedelta(minutes=max_minutes)),
             ('whatsapp_sent', '=', False),
             ('property_id', '!=', False),
         ])
 
         notify_client = ICP.get_param('estate_calendar.whatsapp_notify_client', 'True') == 'True'
+        processed = 0
 
         for event in events:
+            reminder_minutes = event._effective_reminder_minutes()
+            if event.start > now + timedelta(minutes=reminder_minutes):
+                continue  # aún no toca avisar esta cita
+            processed += 1
             time_str = fields.Datetime.context_timestamp(self, event.start).strftime('%H:%M')
             client = event.client_id
             client_name = client.name if client else 'Sin cliente'
@@ -155,7 +171,7 @@ class CalendarEventWhatsApp(models.Model):
             if sent_any:
                 event.write({'whatsapp_sent': True})
 
-        _logger.info('Cron WhatsApp: %d evento(s) procesados.', len(events))
+        _logger.info('Cron WhatsApp: %d evento(s) procesados.', processed)
 
     def action_send_whatsapp_followup(self):
         """Botón manual: envía seguimiento post-visita al cliente (texto libre)."""

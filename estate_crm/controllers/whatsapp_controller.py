@@ -65,7 +65,7 @@ class MetaWebhookController(http.Controller):
             cutoff = datetime.now() - timedelta(hours=24)
             existing = Lead.search([
                 ('description', 'ilike', sender_id),
-                ('lead_source', '=', source),
+                ('lead_source_id.code', '=', source),
                 ('create_date', '>=', cutoff),
             ], limit=1)
             if existing:
@@ -94,7 +94,7 @@ class MetaWebhookController(http.Controller):
             'phone': phone or False,
             'email_from': email or False,
             'type': 'opportunity',
-            'lead_source': source,
+            'lead_source_id': env['estate.crm.lead.source'].sudo().get_by_code(source).id,
             'description': (
                 f'Sender ID: {sender_id}\n'
                 f'Mensaje: {message}'

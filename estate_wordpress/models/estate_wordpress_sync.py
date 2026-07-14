@@ -194,6 +194,56 @@ class EstatePropertyWordPress(models.Model):
         wp_id = HOUZEZ_STATUS_MAP.get(self.state, 32)
         return [wp_id]
 
+    def _wp_get_or_create_term(self, cfg, taxonomy, name):
+        """Devuelve el ID de un término de taxonomía en WordPress, creándolo si
+        no existe. Se usa para el sector/barrio (property_area), que no tiene un
+        mapa fijo de IDs como las ciudades."""
+        name = (name or '').strip()
+        if not name:
+            return 0
+        base = f"{cfg['url']}/wp-json/wp/v2/{taxonomy}"
+        try:
+            resp = requests.get(
+                base, params={'search': name, 'per_page': 20},
+                auth=cfg['auth'], headers=cfg['headers'], timeout=30)
+            if resp.status_code == 200:
+                for term in (resp.json() or []):
+                    if (term.get('name') or '').strip().lower() == name.lower():
+                        return term.get('id', 0)
+
+            # No existe todavía → crearlo
+            resp = requests.post(
+                base, json={'name': name},
+                auth=cfg['auth'], headers=cfg['headers'], timeout=30)
+            if resp.status_code in (200, 201):
+                return resp.json().get('id', 0)
+            if resp.status_code == 400:
+                # WP responde 'term_exists' con el ID del término que ya estaba
+                existing = (resp.json().get('data') or {}).get('term_id')
+                if existing:
+                    return existing
+            _logger.warning("WP taxonomía %s '%s' no resuelta (%s): %s",
+                            taxonomy, name, resp.status_code, resp.text[:200])
+        except Exception as e:
+            _logger.warning("WP taxonomía %s '%s' error: %s", taxonomy, name, e)
+        return 0
+
+    def _get_houzez_area_ids(self, cfg):
+        """Sector/barrio → taxonomía property_area de Houzez.
+
+        Sin esto, la web solo mostraba la ciudad ("Cuenca, Azuay, Ecuador") y se
+        perdía el sector ("Racar"): Houzez arma la línea de ubicación con las
+        taxonomías, no con los campos meta de dirección."""
+        if not getattr(self, 'wp_publish_location', True):
+            return []
+        raw = self.sector_keywords or self.street or ''
+        ids = []
+        for part in raw.split(','):
+            term_id = self._wp_get_or_create_term(cfg, 'property_area', part)
+            if term_id and term_id not in ids:
+                ids.append(term_id)
+        return ids
+
     def _get_houzez_city_ids(self):
         """Map Odoo city → Houzez property_city taxonomy IDs."""
         if not self.city:
@@ -404,6 +454,7 @@ class EstatePropertyWordPress(models.Model):
         type_ids = self._get_houzez_type_ids()
         status_ids = self._get_houzez_status_ids()
         city_ids = self._get_houzez_city_ids()
+        area_ids = self._get_houzez_area_ids(cfg)
 
         post_data = {
             'title': self.title or self.name,
@@ -417,6 +468,9 @@ class EstatePropertyWordPress(models.Model):
             post_data['property_status'] = status_ids
         if city_ids:
             post_data['property_city'] = city_ids
+        if area_ids:
+            # Sector/barrio: sin esta taxonomía la web solo muestra la ciudad.
+            post_data['property_area'] = area_ids
         if featured_id:
             post_data['featured_media'] = featured_id
 

@@ -72,9 +72,15 @@
             <menuitem id="estate_menu_ventas_days" name="Días en Mercado"
                       parent="estate_menu_analytics_grp_prop" action="action_sales_days_market"
                       sequence="30" groups="estate_management.estate_group_manager"/>
+            <menuitem id="estate_menu_ventas_time_to_sell" name="Tiempo de Venta"
+                      parent="estate_menu_analytics_grp_prop" action="action_sales_time_to_sell"
+                      sequence="35" groups="estate_management.estate_group_manager"/>
             <menuitem id="estate_menu_ventas_avg" name="Precio Promedio Mensual"
                       parent="estate_menu_analytics_grp_prop" action="action_sales_avg_month"
                       sequence="40" groups="estate_management.estate_group_manager"/>
+            <menuitem id="estate_menu_ventas_by_channel" name="Ventas por Canal"
+                      parent="estate_menu_analytics_grp_prop" action="action_sales_by_channel"
+                      sequence="45" groups="estate_management.estate_group_manager"/>
 
         <!-- 3.B Operaciones -->
         <menuitem id="estate_menu_analytics_grp_ops" name="Operaciones"

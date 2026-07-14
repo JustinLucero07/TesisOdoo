@@ -1,0 +1,69 @@
+.o_estate_map_action {
+    height: 100%;
+    background: #f9f9f9;
+
+    .o_estate_map_canvas {
+        min-height: 400px;
+        width: 100%;
+        z-index: 0; // que no tape los dropdowns de Odoo
+    }
+
+    .o_estate_map_chip {
+        border: 1px solid #d8dadd;
+        background: #fff;
+        opacity: 0.45;
+        transition: opacity 0.15s ease, box-shadow 0.15s ease;
+
+        &.active {
+            opacity: 1;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+        }
+    }
+
+    .o_estate_map_dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 4px;
+        vertical-align: middle;
+    }
+}
+
+// Pin del marcador (divIcon, así no dependemos de las imágenes de Leaflet)
+.o_estate_map_pin {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.o_estate_map_popup {
+    min-width: 190px;
+
+    .o_estate_map_popup_title {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 2px;
+    }
+
+    .o_estate_map_popup_price {
+        color: #1877F2;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .o_estate_map_popup_meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 4px;
+
+        .badge {
+            color: #fff;
+        }
+    }
+}

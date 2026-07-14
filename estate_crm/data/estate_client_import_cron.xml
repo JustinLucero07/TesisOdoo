@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Procesa las importaciones de clientes encoladas. Miles de filas no
+             caben en una petición HTTP (el navegador corta la conexión), así que
+             el trabajo se hace aquí, en segundo plano. Al pulsar "Importar" se
+             despierta este cron de inmediato (_trigger); el intervalo largo es
+             solo la red de seguridad por si quedara alguna en cola. -->
+        <record id="ir_cron_client_import" model="ir.cron">
+            <field name="name">CRM: Procesar importaciones de clientes (Excel)</field>
+            <field name="model_id" ref="model_estate_client_import"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_run_imports()</field>
+            <field name="interval_number">30</field>
+            <field name="interval_type">minutes</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>

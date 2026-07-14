@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="estate_management.PropertyMap">
+        <div class="o_estate_map_action d-flex flex-column h-100">
+
+            <div class="o_estate_map_toolbar d-flex flex-wrap align-items-center gap-2 p-2 border-bottom bg-white">
+                <span class="fw-bold me-2">
+                    <i class="fa fa-map-marker me-1"/>Mapa de Propiedades
+                </span>
+
+                <t t-foreach="legend" t-as="item" t-key="item.key">
+                    <button type="button"
+                            class="o_estate_map_chip btn btn-sm"
+                            t-att-class="item.active ? 'active' : ''"
+                            t-on-click="() => this.toggleState(item.key)">
+                        <span class="o_estate_map_dot" t-attf-style="background:{{item.color}}"/>
+                        <t t-esc="item.label"/>
+                        <span class="badge text-bg-light ms-1" t-esc="item.count"/>
+                    </button>
+                </t>
+
+                <span class="ms-auto text-muted small">
+                    <t t-esc="visibleProperties.length"/> en el mapa
+                    <t t-if="state.noCoords">
+                        · <t t-esc="state.noCoords"/> sin coordenadas
+                    </t>
+                </span>
+            </div>
+
+            <div t-if="state.loading" class="d-flex align-items-center justify-content-center flex-grow-1 text-muted">
+                <i class="fa fa-circle-o-notch fa-spin me-2"/> Cargando mapa...
+            </div>
+
+            <div t-elif="!state.properties.length"
+                 class="d-flex flex-column align-items-center justify-content-center flex-grow-1 text-muted">
+                <i class="fa fa-map-o fa-3x mb-3"/>
+                <h4>Ninguna propiedad tiene coordenadas</h4>
+                <p>Abre una propiedad y completa su dirección: la latitud y longitud se calculan solas.</p>
+            </div>
+
+            <div t-else="" class="o_estate_map_canvas flex-grow-1" t-ref="map"/>
+        </div>
+    </t>
+
+</templates>

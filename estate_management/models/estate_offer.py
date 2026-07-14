@@ -143,7 +143,7 @@ class EstatePropertyOffer(models.Model):
     def action_counteroffer(self):
         self.write({'state': 'countered'})
         # Auto-avanzar lead a "En Negociación"
-        self._advance_lead_stage('estate_crm.stage_lead5_estate_avaluo')
+        self._advance_lead_stage('estate_crm.stage_lead4_estate_papeles')
         
     def action_simulate_counteroffer(self):
         """Simula una contraoferta basada en el tope mínimo del propietario."""
@@ -173,7 +173,7 @@ class EstatePropertyOffer(models.Model):
             self.final_agreed_amount = self.counteroffer_amount or self.offer_amount
         self.write({'state': 'accepted'})
         # Auto-avanzar lead a "En Negociación" (si aún no está más avanzado)
-        self._advance_lead_stage('estate_crm.stage_lead6_estate_minuta')
+        self._advance_lead_stage('estate_crm.stage_lead4_estate_papeles')
         # Reservar la propiedad automáticamente
         self.property_id.write({'state': 'reserved', 'buyer_id': self.partner_id.id})
         # Rechazar otras ofertas activas sobre la misma propiedad

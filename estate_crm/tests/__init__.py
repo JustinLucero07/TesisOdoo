@@ -2,3 +2,9 @@ from . import test_match_percentage
 from . import test_meta_dedup
 from . import test_negotiation_strategy
 from . import test_stage_gates
+from . import test_lead_source
+from . import test_postventa_pipeline
+from . import test_client_import
+from . import test_agent_crm_scope
+from . import test_lost_stage
+from . import test_foreign_stages

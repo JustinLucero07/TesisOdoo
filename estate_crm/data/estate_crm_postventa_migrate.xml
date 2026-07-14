@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Reasigna los leads que estén en etapas del esquema anterior a su
+         equivalente en el nuevo (embudos "Proceso de Ventas" y "Ventas
+         Cerradas"). DEBE correr después de los data de etapas (necesita que las
+         nuevas ya existan) y ANTES de que Odoo elimine las etapas obsoletas:
+         crm.lead.stage_id es ondelete='restrict', así que si quedara algún lead
+         apuntando a una etapa vieja, el borrado —y la actualización— fallaría.
+         Idempotente. -->
+    <function model="crm.lead" name="_migrate_stages_wasi"/>
+
+    <!-- Trae a la etapa "Perdido" (visible) los leads que estaban archivados
+         como perdidos, para que dejen de estar escondidos. Idempotente. -->
+    <function model="crm.lead" name="_migrate_lost_leads_to_stage"/>
+
+    <!-- Borra las etapas que NO son de este sistema (las que Odoo trae de
+         fábrica: Nuevo, Calificado, Propuesta, Ganado). Son globales (sin
+         equipo) y por eso: "Ganado" robaba los leads ganados a "Cierre", se
+         colaban como columnas en todos los embudos (incluido Postventa) y cada
+         usuario veía etapas distintas. Sus leads se reubican antes de borrarlas.
+         Idempotente. -->
+    <function model="crm.lead" name="_cleanup_foreign_stages"/>
+</odoo>

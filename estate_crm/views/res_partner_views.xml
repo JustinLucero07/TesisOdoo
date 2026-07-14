@@ -9,6 +9,7 @@
             <xpath expr="//field[@name='category_id']" position="after">
                 <field name="is_property_owner" widget="boolean_toggle"/>
                 <field name="is_allied_agency" widget="boolean_toggle"/>
+                <field name="birthday"/>
             </xpath>
         </field>
     </record>

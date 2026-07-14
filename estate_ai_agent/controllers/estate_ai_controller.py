@@ -209,6 +209,10 @@ INSTRUCCIONES DE RESPUESTA:
    Cuando el usuario pida reporte, gráfico, estadística, resumen de datos, o use palabras como
    "muéstrame", "cuántos hay por", "reporte de", "gráfico de", "estadísticas" → DEBES llamar
    a la herramienta get_report_data. NUNCA respondas con solo texto cuando se pide un gráfico.
+   NUNCA inventes cifras ni reutilices los números de los ejemplos de este prompt (son solo
+   formato, no datos reales). Los valores del [GRAFICO:...] y de la tabla deben ser EXACTAMENTE
+   los que devolvió get_report_data/query_database. Si "data" viene vacío o en 0, NO generes
+   ningún [GRAFICO:...]: dilo explícitamente (ej. "Aún no hay ventas registradas en el sistema").
    a. Llama SIEMPRE a get_report_data con el report_type correcto.
    b. Con los datos recibidos genera el formato [GRAFICO:tipo|Título,Label1:Valor1,...]:
       - chart_hint=barra → [GRAFICO:barra|Título descriptivo,Label1:Valor1,Label2:Valor2]
@@ -218,7 +222,8 @@ INSTRUCCIONES DE RESPUESTA:
    b2. KPIs Y PERÍODO (recomendado para reportes de ventas/ingresos): puedes enriquecer el título con
       metadatos usando "::" y pares clave=valor separados por ";". 'periodo' se muestra como subtítulo;
       los demás se muestran como tarjetas de KPI arriba del gráfico (máx 4). Formato:
-      [GRAFICO:linea|Ventas por Mes::periodo=Feb – Jun 2026;Ventas Totales=8;Ingresos=$1.19M;Ticket Prom.=$148.9K,Feb:1,Mar:2,Abr:4,Jun:1]
+      (solo formato, NUNCA copies estos valores): [GRAFICO:linea|<Título>::periodo=<rango>;
+      Ventas Totales=<N>;Ingresos=<$N>;Ticket Prom.=<$N>,<Mes1>:<N>,<Mes2>:<N>]
       Para series temporales (ventas/ingresos por mes) usa SIEMPRE chart_hint linea con estos KPIs.
       Si no tienes valores monetarios, omite esos KPIs (el sistema calcula Total/Promedio/Máximo solo).
    c. Después del gráfico, incluye tabla Markdown con los mismos datos. Si aplica, agrega una fila final
@@ -227,7 +232,8 @@ INSTRUCCIONES DE RESPUESTA:
       tu respuesta DEBE incluir: [GRAFICO:circular|Propiedades por Estado,Disponibles:12,Vendidas:9,Alquiladas:3]
 5. report_types disponibles (get_report_data, generate_excel_report y generate_analytics_pdf):
    VENTAS: properties_by_state | properties_by_type | sales_by_month | days_on_market_by_type |
-           ranking_advisors | kpi_general | income_by_month | sales_avg_summary
+           ranking_advisors | kpi_general | income_by_month | sales_avg_summary |
+           time_to_sell_summary | sales_by_channel
    COMISIONES: commissions_by_advisor | commissions_pending
    CONTRATOS/PAGOS: contracts_by_type | payments_by_method | expenses_by_type
    OFERTAS/VISITAS: offers_by_state | visits_by_property | visits_done_summary
@@ -236,6 +242,11 @@ INSTRUCCIONES DE RESPUESTA:
    SOCIAL/MARKETING: social_facebook | social_instagram | advisor_fb_posts
    ANÁLISIS AVANZADO: price_vs_avm | properties_no_visits | conversion_funnel | wp_sync_status | contact_ranking | properties_by_prospects
    Cuando el usuario pida "promedio de ventas" o "análisis de ventas", usa sales_avg_summary.
+   Cuando pida "cuánto se tarda en vender", "tiempo de venta" o "días en mercado" (resumen general,
+   no por tipo), usa time_to_sell_summary — incluye promedio, mediana, mínimo y máximo de días
+   desde que se publicó (date_listed) hasta que se vendió (date_sold).
+   Cuando pida "ventas por agencia", "quién vendió, la agencia o el propietario" o "cerrado por
+   agencia/propietario", usa sales_by_channel (basado en el campo sold_by de la propiedad).
    Cuando el usuario pida "ranking", usa ranking_advisors.
    Cuando pida "KPIs" o "cómo vamos", usa kpi_general.
    Cuando pida "pipeline" o "embudo de conversión", usa conversion_funnel.
@@ -2408,6 +2419,73 @@ INSTRUCCIONES DE RESPUESTA:
                 return json.dumps({'report': 'Días Promedio en Mercado por Tipo', 'data': data,
                                    'chart_hint': 'barra'}, ensure_ascii=False)
 
+            elif report_type == 'time_to_sell_summary':
+                env.cr.execute("""
+                    SELECT COUNT(*) as ventas,
+                           ROUND(AVG(days_on_market)::numeric, 1) as promedio,
+                           MIN(days_on_market) as minimo,
+                           MAX(days_on_market) as maximo,
+                           ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_on_market)::numeric, 1) as mediana
+                    FROM estate_property
+                    WHERE state = 'sold' AND date_listed IS NOT NULL AND days_on_market > 0
+                """)
+                summary_row = env.cr.dictfetchone()
+                if not summary_row or not summary_row['ventas']:
+                    return json.dumps({'report': 'Tiempo de Venta', 'data': {},
+                                       'mensaje': 'Sin ventas con fecha de publicación registrada aún.'})
+                env.cr.execute("""
+                    SELECT pt.name as tipo, ROUND(AVG(ep.days_on_market)::numeric, 1) as promedio
+                    FROM estate_property ep
+                    JOIN estate_property_type pt ON ep.property_type_id = pt.id
+                    WHERE ep.state = 'sold' AND ep.date_listed IS NOT NULL AND ep.days_on_market > 0
+                    GROUP BY pt.name
+                    ORDER BY promedio DESC
+                    LIMIT %s
+                """, (limit,))
+                by_type = env.cr.dictfetchall()
+                data = {r['tipo']: float(r['promedio']) for r in by_type}
+                return json.dumps({
+                    'report': 'Tiempo de Venta (días desde publicación hasta venta)',
+                    'data': data,
+                    'chart_hint': 'barra',
+                    'resumen': {
+                        'ventas_analizadas': int(summary_row['ventas']),
+                        'promedio_dias': float(summary_row['promedio']),
+                        'mediana_dias': float(summary_row['mediana']),
+                        'minimo_dias': int(summary_row['minimo']),
+                        'maximo_dias': int(summary_row['maximo']),
+                    },
+                }, ensure_ascii=False)
+
+            elif report_type == 'sales_by_channel':
+                env.cr.execute("""
+                    SELECT
+                        CASE sold_by
+                            WHEN 'agency' THEN 'Agencia'
+                            WHEN 'owner' THEN 'Propietario'
+                            WHEN 'external' THEN 'Externo'
+                            ELSE 'Sin especificar'
+                        END as canal,
+                        COUNT(*) as ventas,
+                        COALESCE(SUM(price), 0) as ingresos,
+                        COALESCE(SUM(commission_amount), 0) as comisiones
+                    FROM estate_property
+                    WHERE state = 'sold'
+                    GROUP BY sold_by
+                    ORDER BY ventas DESC
+                """)
+                rows = env.cr.dictfetchall()
+                if not rows:
+                    return json.dumps({'report': 'Ventas por Canal', 'data': {},
+                                       'mensaje': 'Sin ventas registradas aún.'})
+                data = {r['canal']: int(r['ventas']) for r in rows}
+                return json.dumps({
+                    'report': 'Ventas por Canal (Agencia vs Propietario)',
+                    'data': data,
+                    'chart_hint': 'circular',
+                    'detalle': rows,
+                }, ensure_ascii=False, default=str)
+
             elif report_type == 'ranking_advisors':
                 from datetime import date as _d
                 start = _d.today().replace(day=1)
@@ -2922,12 +3000,14 @@ INSTRUCCIONES DE RESPUESTA:
         messages.append({"role": "user", "content": message})
 
         max_iterations = 4
+        data_tool_called = False
+        hallucination_warned = False
         for _ in range(max_iterations):
             response = client.chat.completions.create(
                 model=model,
                 messages=messages,
                 temperature=temperature,
-                max_tokens=max_tokens,
+                max_completion_tokens=max_tokens,
                 tools=TOOLS_OPENAI,
                 tool_choice="auto",
             )
@@ -2938,6 +3018,8 @@ INSTRUCCIONES DE RESPUESTA:
                 assistant_msg = choice.message
                 messages.append(assistant_msg)
                 for tc in (assistant_msg.tool_calls or []):
+                    if tc.function.name in self._DATA_GROUNDING_TOOLS:
+                        data_tool_called = True
                     try:
                         args = json.loads(tc.function.arguments)
                     except (json.JSONDecodeError, TypeError):
@@ -2949,7 +3031,22 @@ INSTRUCCIONES DE RESPUESTA:
                         "content": tool_result,
                     })
             else:
-                return choice.message.content
+                content = choice.message.content or ''
+                if '[GRAFICO:' in content and not data_tool_called and not hallucination_warned:
+                    hallucination_warned = True
+                    messages.append(choice.message)
+                    messages.append({
+                        "role": "user",
+                        "content": (
+                            'ADVERTENCIA DEL SISTEMA: incluiste un [GRAFICO:...] sin haber llamado antes '
+                            'a ninguna herramienta de datos reales (get_report_data, query_database, etc). '
+                            'Nunca inventes cifras. Llama ahora a la herramienta correcta para obtener los '
+                            'datos reales, o si el sistema no tiene datos para esa consulta, dilo '
+                            'explícitamente sin incluir ningún [GRAFICO:...].'
+                        ),
+                    })
+                    continue
+                return content
 
         return choice.message.content or 'Sin respuesta tras múltiples iteraciones.'
 
@@ -3024,6 +3121,8 @@ INSTRUCCIONES DE RESPUESTA:
                     )
 
                     max_iterations = 4
+                    data_tool_called = False
+                    hallucination_warned = False
                     for _ in range(max_iterations):
                         response = client.models.generate_content(
                             model=model or _DEFAULT_GEMINI_MODEL,
@@ -3031,7 +3130,7 @@ INSTRUCCIONES DE RESPUESTA:
                             config=config,
                         )
                         candidate = response.candidates[0] if response.candidates else None
-                        if not candidate:
+                        if not candidate or not candidate.content:
                             break
 
                         # Check for function calls
@@ -3049,6 +3148,8 @@ INSTRUCCIONES DE RESPUESTA:
                             # Execute tools and append results
                             function_responses = []
                             for fc in function_calls:
+                                if fc.name in self._DATA_GROUNDING_TOOLS:
+                                    data_tool_called = True
                                 fc_args = dict(fc.args) if fc.args else {}
                                 tool_result_str = self._execute_tool(fc.name, fc_args)
                                 try:
@@ -3068,7 +3169,24 @@ INSTRUCCIONES DE RESPUESTA:
                                 parts=function_responses,
                             ))
                         else:
-                            return ''.join(text_parts) or response.text
+                            candidate_text = ''.join(text_parts) or response.text
+                            if ('[GRAFICO:' in (candidate_text or '') and not data_tool_called
+                                    and not hallucination_warned):
+                                hallucination_warned = True
+                                contents.append(candidate.content)
+                                contents.append(new_genai.types.Content(
+                                    role='user',
+                                    parts=[new_genai.types.Part.from_text(text=(
+                                        'ADVERTENCIA DEL SISTEMA: incluiste un [GRAFICO:...] sin haber '
+                                        'llamado antes a ninguna herramienta de datos reales '
+                                        '(get_report_data, query_database, etc). Nunca inventes cifras. '
+                                        'Llama ahora a la herramienta correcta para obtener los datos '
+                                        'reales, o si el sistema no tiene datos para esa consulta, dilo '
+                                        'explícitamente sin incluir ningún [GRAFICO:...].'
+                                    ))],
+                                ))
+                                continue
+                            return candidate_text
 
                     return response.text or 'Sin respuesta tras múltiples iteraciones.'
 
@@ -3159,6 +3277,14 @@ TOP 10 DISPONIBLES:
 
     # Smart tool selection — send only relevant tools based on query type to save tokens
     # -----------------------------------------------------------------------
+    # Herramientas que devuelven datos reales de la BD: si el modelo genera un
+    # [GRAFICO:...] sin haber llamado a ninguna de estas antes, es una alucinación.
+    _DATA_GROUNDING_TOOLS = {
+        'get_report_data', 'query_database', 'get_dashboard_summary', 'get_market_stats',
+        'search_properties', 'get_leads', 'get_payments_contracts', 'get_trend_analysis',
+        'generate_executive_report',
+    }
+
     _TOOLS_BY_CATEGORY = {
         'property': [
             'search_properties', 'get_property_detail', 'analyze_property_improvements',
@@ -3252,6 +3378,7 @@ TOP 10 DISPONIBLES:
         ai_active = ICP.get_param('estate_ai.active', 'True')
         # Credenciales del proveedor activo (claves por proveedor con respaldo a las heredadas).
         _chain = self._ai_provider_chain(ICP)
+        active_provider = _chain[0][0] if _chain else ''
         api_key = _chain[0][1] if _chain else ''
         model = _chain[0][2] if _chain else ''
         temperature = float(ICP.get_param('estate_ai.temperature', '0.7'))
@@ -3330,6 +3457,10 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
             "Cuando el usuario pida reporte, gráfico, estadística, resumen de datos, desglose, o use palabras como "
             "'muéstrame por', 'cuántos hay por', 'reporte de', 'gráfico de' → DEBES llamar a get_report_data. "
             "NUNCA respondas con solo texto cuando se pide un gráfico o reporte.\n"
+            "NUNCA inventes cifras ni reutilices los números de los ejemplos de abajo (son solo formato, "
+            "no datos reales de este sistema). El [GRAFICO:...] y la tabla deben usar EXACTAMENTE los "
+            "valores que devolvió get_report_data/query_database. Si 'data' viene vacío o en 0, NO generes "
+            "ningún [GRAFICO:...]: dilo explícitamente (ej. 'Aún no hay ventas registradas en el sistema').\n"
             "Con los datos recibidos SIEMPRE genera TODOS los gráficos posibles que apliquen.\n"
             "Tipos de gráfico disponibles (SIEMPRE incluye un título descriptivo con |):\n"
             "- [GRAFICO:barra|Título descriptivo,Label1:Valor1,Label2:Valor2,...] → barras horizontales\n"
@@ -3339,7 +3470,8 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
             "- [GRAFICO:dispersion|Título descriptivo,Label1:Valor1,...] → dispersión/scatter\n"
             "- [GRAFICO:gantt|Título descriptivo,Label1:Valor1,...] → barras horizontales tipo Gantt\n"
             "- [GRAFICO:calor|Título descriptivo,Label1:Valor1,...] → mapa de calor (intensidad por color)\n"
-            "Ejemplo: [GRAFICO:barra|Ventas por Mes,Enero:5,Febrero:8,Marzo:12]\n"
+            "Formato (solo de ejemplo, NUNCA copies estos valores): "
+            "[GRAFICO:barra|<Título>,<Label1>:<Valor1>,<Label2>:<Valor2>]\n"
             "REGLA: Elige automáticamente el MEJOR tipo de gráfico según los datos:\n"
             "- Datos temporales (meses, años) → linea\n"
             "- Proporciones/distribuciones (estados, tipos) → circular\n"
@@ -3352,7 +3484,12 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
             "Después de los gráficos incluye una tabla Markdown con los mismos datos.\n"
             "report_types: properties_by_state, properties_by_type, sales_by_month, visits_by_property, "
             "commissions_by_advisor, contracts_by_type, expenses_by_type, offers_by_state, "
-            "leads_by_temperature, payments_by_method, days_on_market_by_type.\n\n"
+            "leads_by_temperature, payments_by_method, days_on_market_by_type, time_to_sell_summary, "
+            "sales_by_channel.\n"
+            "Usa time_to_sell_summary para 'cuánto se tarda en vender' o 'tiempo de venta' (resumen "
+            "general: promedio, mediana, mínimo, máximo desde publicación hasta venta).\n"
+            "Usa sales_by_channel para 'ventas por agencia', 'quién vendió' o 'cerrado por "
+            "agencia/propietario' (según el campo sold_by de la propiedad).\n\n"
             f"CONTEXTO ACTUAL:\n{context}"
         )
 
@@ -3387,6 +3524,106 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
                 new_env['estate.ai.chat.history'].sudo().create(vals)
                 new_cr.commit()
 
+        def _stream_chatgpt():
+            """Streaming (por palabras) para el proveedor ChatGPT/OpenAI.
+            Antes esta ruta usaba SIEMPRE el cliente de Gemini sin importar el
+            proveedor configurado, por lo que una API Key de OpenAI terminaba
+            enviándose a Google y fallaba con 'API key not valid'."""
+            if not OPENAI_AVAILABLE:
+                yield sse({'error': 'Librería openai no instalada. Ejecute: pip install openai'})
+                return
+            tool_labels = {
+                'search_properties': 'Buscando propiedades', 'get_leads': 'Consultando leads CRM',
+                'get_market_stats': 'Calculando estadísticas', 'create_lead': 'Creando lead',
+                'create_property': 'Registrando propiedad', 'update_lead': 'Actualizando lead',
+                'update_property': 'Actualizando propiedad', 'schedule_visit': 'Agendando visita',
+                'reserve_property': 'Reservando propiedad', 'sell_property': 'Cerrando venta',
+                'get_report_data': 'Cargando datos', 'query_database': 'Consultando base de datos',
+                'get_dashboard_summary': 'Generando resumen', 'get_payments_contracts': 'Consultando pagos',
+                'generate_analytics_pdf': 'Generando PDF del reporte',
+                'generate_excel_report': 'Generando Excel', 'save_memory': 'Guardando memoria',
+                'recall_memory': 'Consultando memorias', 'search_knowledge': 'Buscando en manuales',
+            }
+            try:
+                client = openai.OpenAI(api_key=api_key)
+                messages = [{"role": "system", "content": full_system}]
+                messages.extend(history)
+                messages.append({"role": "user", "content": message})
+
+                final_text = ''
+                data_tool_called = False
+                hallucination_warned = False
+                for _ in range(4):
+                    response = client.chat.completions.create(
+                        model=model, messages=messages, temperature=temperature,
+                        max_completion_tokens=max_tokens, tools=active_tools, tool_choice="auto",
+                    )
+                    choice = response.choices[0]
+                    if choice.finish_reason == 'tool_calls':
+                        assistant_msg = choice.message
+                        messages.append(assistant_msg)
+                        calls = assistant_msg.tool_calls or []
+                        names = [tool_labels.get(tc.function.name, tc.function.name) for tc in calls]
+                        if names:
+                            yield sse({'status': ' · '.join(names) + '...'})
+                        for tc in calls:
+                            if tc.function.name in ctrl._DATA_GROUNDING_TOOLS:
+                                data_tool_called = True
+                            try:
+                                args = json.loads(tc.function.arguments)
+                            except (json.JSONDecodeError, TypeError):
+                                args = {}
+                            tool_result = _tool_with_cursor(tc.function.name, args)
+                            messages.append({
+                                "role": "tool", "tool_call_id": tc.id, "content": tool_result,
+                            })
+                        yield sse({'status': 'Redactando respuesta...'})
+                    else:
+                        content = choice.message.content or ''
+                        if ('[GRAFICO:' in content and not data_tool_called
+                                and not hallucination_warned):
+                            hallucination_warned = True
+                            messages.append(choice.message)
+                            messages.append({
+                                "role": "user",
+                                "content": (
+                                    'ADVERTENCIA DEL SISTEMA: incluiste un [GRAFICO:...] sin haber '
+                                    'llamado antes a ninguna herramienta de datos reales '
+                                    '(get_report_data, query_database, etc). Nunca inventes cifras. '
+                                    'Llama ahora a la herramienta correcta para obtener los datos '
+                                    'reales, o si el sistema no tiene datos para esa consulta, dilo '
+                                    'explícitamente sin incluir ningún [GRAFICO:...].'
+                                ),
+                            })
+                            continue
+                        final_text = content
+                        break
+
+                if not final_text:
+                    final_text = (
+                        'No pude generar una respuesta para esa consulta. Intenta reformularla '
+                        'o sé más específico (por ejemplo, indica la propiedad, el cliente o el periodo).'
+                    )
+
+                chunk = ''
+                for word in final_text.split(' '):
+                    chunk += word + ' '
+                    if len(chunk) >= 12:
+                        yield sse({'text': chunk})
+                        chunk = ''
+                if chunk:
+                    yield sse({'text': chunk})
+
+                try:
+                    _save_history(final_text)
+                except Exception as he:
+                    _logger.warning("No se pudo guardar historial IA: %s", str(he))
+
+            except Exception as e:
+                err_str = _redact(str(e), api_key)
+                _logger.error("Error en streaming ChatGPT: %s", err_str)
+                yield sse({'text': ctrl._friendly_ai_error('chatgpt', e)})
+
         def generate():
             # All values come from closure — no ORM calls here
             if ai_active != 'True':
@@ -3396,6 +3633,11 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
 
             if not api_key:
                 yield sse({'error': 'No hay API Key. Vaya a Configuración > Agente IA.'})
+                yield 'data: [DONE]\n\n'
+                return
+
+            if active_provider == 'chatgpt':
+                yield from _stream_chatgpt()
                 yield 'data: [DONE]\n\n'
                 return
 
@@ -3501,11 +3743,13 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
 
                     # Tool-calling loop (max 4 rounds)
                     final_text = ''
+                    data_tool_called = False
+                    hallucination_warned = False
                     for _ in range(4):
                         response = client.models.generate_content(
                             model=model, contents=contents, config=cfg)
                         candidate = response.candidates[0] if response.candidates else None
-                        if not candidate:
+                        if not candidate or not candidate.content:
                             break
 
                         fn_calls, text_parts = [], []
@@ -3516,7 +3760,27 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
                                 text_parts.append(part.text)
 
                         if not fn_calls:
-                            final_text = ''.join(text_parts) or (response.text or '')
+                            candidate_text = ''.join(text_parts) or (response.text or '')
+                            # El modelo generó un [GRAFICO:...] sin haber consultado datos
+                            # reales primero: nunca confiar en cifras inventadas, se le pide
+                            # corregir antes de aceptar la respuesta (una sola vez).
+                            if ('[GRAFICO:' in candidate_text and not data_tool_called
+                                    and not hallucination_warned):
+                                hallucination_warned = True
+                                contents.append(candidate.content)
+                                contents.append(new_genai.types.Content(
+                                    role='user',
+                                    parts=[new_genai.types.Part.from_text(text=(
+                                        'ADVERTENCIA DEL SISTEMA: incluiste un [GRAFICO:...] sin haber '
+                                        'llamado antes a ninguna herramienta de datos reales '
+                                        '(get_report_data, query_database, etc). Nunca inventes cifras. '
+                                        'Llama ahora a la herramienta correcta para obtener los datos '
+                                        'reales, o si el sistema no tiene datos para esa consulta, dilo '
+                                        'explícitamente sin incluir ningún [GRAFICO:...].'
+                                    ))],
+                                ))
+                                continue
+                            final_text = candidate_text
                             break
 
                         # Notify which tools are running
@@ -3526,6 +3790,8 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
                         contents.append(candidate.content)
                         fn_responses = []
                         for fc in fn_calls:
+                            if fc.name in self._DATA_GROUNDING_TOOLS:
+                                data_tool_called = True
                             fc_args = dict(fc.args) if fc.args else {}
                             result_str = _tool_with_cursor(fc.name, fc_args)
                             try:

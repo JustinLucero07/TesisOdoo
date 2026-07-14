@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- "Mi Flujo" / Pipeline estándar de Odoo (crm.crm_lead_action_pipeline):
+         mostrar SOLO los leads cuya etapa pertenece al embudo comercial (equipo
+         Ventas). Así:
+         - "8. Cierre Ganado" (etapa puente, tiene a Ventas) SÍ se ve como última
+           columna con los negocios ganados —no desaparecen.
+         - Las etapas propias de Postventa (Contrato en Firma, Documentación…) NO
+           aparecen aquí; eso vive solo en el Embudo Postventa. -->
+    <record id="crm.crm_lead_action_pipeline" model="ir.actions.act_window">
+        <field name="domain" eval="[('type','=','opportunity'), ('stage_id.team_ids', 'in', ref('sales_team.team_sales_department'))]"/>
+    </record>
+</odoo>

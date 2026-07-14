@@ -216,9 +216,11 @@ class EstateProperty(models.Model):
         string='Días en el Mercado', compute='_compute_days_on_market', store=True,
         help='Cantidad de días que la propiedad estuvo disponible antes de venderse.')
     sold_by = fields.Selection([
-        ('agency', 'Vendido por la Agencia'),
-        ('owner', 'Vendido por el Dueño'),
-    ], string='¿Quién Vendió?', tracking=True)
+        ('agency', 'Agencia'),
+        ('owner', 'Propietario'),
+        ('external', 'Externo'),
+    ], string='¿Quién Vendió?', tracking=True,
+        help='Mismas 3 opciones que "Cerrado por" en el asistente Vender Propiedad.')
 
     # --- Arriendo ---
     date_rented = fields.Date(string='Fecha de Arrendamiento', tracking=True)

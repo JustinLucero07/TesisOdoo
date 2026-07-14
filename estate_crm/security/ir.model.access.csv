@@ -7,3 +7,9 @@ access_meta_webhook_event_agent,meta.webhook.event.agent,model_estate_meta_webho
 access_meta_webhook_event_manager,meta.webhook.event.manager,model_estate_meta_webhook_event,estate_management.estate_group_manager,1,1,1,1
 access_meta_webhook_event_admin,meta.webhook.event.admin,model_estate_meta_webhook_event,estate_management.estate_group_admin,1,1,1,1
 access_meta_webhook_event_marketing,meta.webhook.event.marketing,model_estate_meta_webhook_event,estate_management.estate_group_marketing,1,0,0,0
+access_estate_lead_source_agent,estate.crm.lead.source.agent,model_estate_crm_lead_source,estate_management.estate_group_agent,1,0,1,0
+access_estate_lead_source_manager,estate.crm.lead.source.manager,model_estate_crm_lead_source,estate_management.estate_group_manager,1,1,1,1
+access_estate_lead_source_admin,estate.crm.lead.source.admin,model_estate_crm_lead_source,estate_management.estate_group_admin,1,1,1,1
+access_estate_lead_source_marketing,estate.crm.lead.source.marketing,model_estate_crm_lead_source,estate_management.estate_group_marketing,1,0,0,0
+access_estate_client_import_manager,estate.client.import.manager,model_estate_client_import,estate_management.estate_group_manager,1,1,1,1
+access_estate_client_import_admin,estate.client.import.admin,model_estate_client_import,estate_management.estate_group_admin,1,1,1,1

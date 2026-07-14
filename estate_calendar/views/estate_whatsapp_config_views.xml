@@ -10,8 +10,16 @@
                     <block title="Recordatorios WhatsApp — Meta Cloud API" name="whatsapp_settings">
                         <setting id="whatsapp_active_setting"
                                  string="WhatsApp Activo"
-                                 help="Enviar recordatorios automáticos por WhatsApp 1 hora antes de cada cita.">
+                                 help="Enviar recordatorios automáticos por WhatsApp antes de cada cita.">
                             <field name="whatsapp_active"/>
+                        </setting>
+                        <setting id="whatsapp_reminder_default_setting"
+                                 string="Recordar antes de (general)"
+                                 help="Con cuánta anticipación se envía el recordatorio por defecto (minutos, horas o días). Cada asesor puede configurar el suyo en su perfil, y cada cita puede tener el suyo propio.">
+                            <div class="o_row">
+                                <field name="whatsapp_reminder_default_value" class="oe_inline"/>
+                                <field name="whatsapp_reminder_default_unit" class="oe_inline"/>
+                            </div>
                         </setting>
                         <setting id="whatsapp_phone_number_id_setting"
                                  string="Phone Number ID"

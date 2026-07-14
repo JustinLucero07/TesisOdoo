@@ -113,7 +113,7 @@
                     <button name="action_publish_wordpress" string="Publicar en Web" type="object"
                             class="btn-success" icon="fa-wordpress"
                             invisible="wp_published or state == 'draft'"/>
-                    <button name="action_unpublish_wp" string="Quitar de Web" type="object"
+                    <button name="action_unpublish_wordpress" string="Quitar de Web" type="object"
                             class="btn-secondary" icon="fa-wordpress"
                             invisible="not wp_published"
                             confirm="¿Quitar esta propiedad del sitio web WordPress? En Odoo se conserva."/>
