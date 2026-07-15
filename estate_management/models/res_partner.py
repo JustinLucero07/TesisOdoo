@@ -29,7 +29,7 @@ class ResPartner(models.Model):
         ('industrial',  'Industrial'),
     ], string='Especialidad del Aliado')
 
-    # --- Documentos de identidad ---
+    # --- Documentos de identidad y Generales de Ley (para Contratos) ---
     id_type = fields.Selection([
         ('cedula',   'Cédula de Identidad'),
         ('ruc',      'RUC'),
@@ -37,6 +37,20 @@ class ResPartner(models.Model):
         ('other',    'Otro'),
     ], string='Tipo de Documento', default='cedula')
     id_number = fields.Char(string='Número de Documento')
+    marital_status = fields.Selection([
+        ('single', 'Soltero/a'),
+        ('married', 'Casado/a'),
+        ('divorced', 'Divorciado/a'),
+        ('widowed', 'Viudo/a'),
+        ('cohabiting', 'En unión libre'),
+    ], string='Estado Civil', tracking=True, help='Estado civil para comparecencia en contratos inmobiliarios y escrituras.')
+    profession = fields.Char(
+        string='Profesión / Ocupación', tracking=True,
+        help='Ocupación o profesión para generales de ley en contratos.'
+    )
+    spouse_name = fields.Char(string='Nombre del Cónyuge / Conviviente', tracking=True)
+    spouse_vat = fields.Char(string='Cédula / RUC del Cónyuge')
+
 
     # --- Cuenta bancaria para pagos de arriendo ---
     bank_account_name = fields.Char(string='Titular de la Cuenta')

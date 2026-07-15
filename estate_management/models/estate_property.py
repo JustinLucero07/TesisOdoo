@@ -60,6 +60,9 @@ class EstateProperty(models.Model):
         'res.country', string='País',
         default=lambda self: self.env['res.country'].search([('code', '=', 'EC')], limit=1))
     zip_code = fields.Char(string='Código Postal')
+    sector = fields.Char(string='Sector / Barrio', tracking=True)
+    street_number = fields.Char(string='Número de Casa/Edificio', tracking=True)
+    cadastral_code = fields.Char(string='Clave Catastral', tracking=True)
 
     _EC_POSTAL_CODES = {
         'cuenca': '010101', 'guayaquil': '090101', 'quito': '170101',
@@ -169,6 +172,19 @@ class EstateProperty(models.Model):
     exclusive_user_id = fields.Many2one(
         'res.users', string='Asesor Responsable (Captador)', tracking=True,
         help='El asesor que captó la exclusividad de esta propiedad.')
+    is_no_contract = fields.Boolean(
+        string='Sin Contrato', default=False, tracking=True,
+        help='Indica que la propiedad se gestiona sin un contrato formal firmado.')
+
+    @api.onchange('is_no_contract')
+    def _onchange_is_no_contract(self):
+        if self.is_no_contract and self.is_exclusive:
+            self.is_exclusive = False
+
+    @api.onchange('is_exclusive')
+    def _onchange_is_exclusive(self):
+        if self.is_exclusive and self.is_no_contract:
+            self.is_no_contract = False
 
     # --- Terreno / Solar ---
     is_land_type = fields.Boolean(
@@ -371,9 +387,14 @@ class EstateProperty(models.Model):
         """Acceso directo: abre el formulario de un contrato nuevo en blanco
         con la propiedad y sus datos derivados ya precargados."""
         self.ensure_one()
+        contract_type = 'rent' if self.offer_type == 'rent' else 'sale'
+        if self.is_no_contract:
+            contract_type = 'no_contract'
+        elif self.is_exclusive:
+            contract_type = 'exclusive_owner'
         ctx = {
             'default_property_id': self.id,
-            'default_contract_type': 'rent' if self.offer_type == 'rent' else 'sale',
+            'default_contract_type': contract_type,
         }
         if self.buyer_id:
             ctx['default_partner_id'] = self.buyer_id.id

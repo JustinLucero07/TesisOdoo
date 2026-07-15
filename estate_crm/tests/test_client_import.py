@@ -247,3 +247,50 @@ class TestClientImport(TransactionCase):
                          n_partners, "No debe duplicar contactos")
         self.assertEqual(self.env['crm.lead'].search_count([('partner_id', '=', p.id)]),
                          n_leads, "No debe duplicar oportunidades")
+
+    def test_vendedor_va_a_etapa_segun_estado_y_vendedores_queda_vacia(self):
+        """Un Cliente Vendedor se encauza a la etapa que corresponde a su Estado
+        en Wasi/Excel, en lugar de enviarse a la etapa Vendedores (que debe estar vacía)."""
+        self._import([
+            self._row('Juan', 'Vendedor', movil='593900000010',
+                      tipo='Cliente Vendedor', estado='Seña'),
+            self._row('María', 'Vendedora', movil='593900000011',
+                      tipo='Cliente Vendedor', estado='Seguimiento')
+        ])
+        p1 = self.env['res.partner'].search([('mobile', '=', '593900000010')], limit=1)
+        p2 = self.env['res.partner'].search([('mobile', '=', '593900000011')], limit=1)
+        lead1 = self.env['crm.lead'].search([('partner_id', '=', p1.id)], limit=1)
+        lead2 = self.env['crm.lead'].search([('partner_id', '=', p2.id)], limit=1)
+
+        self.assertEqual(lead1.stage_id, self.env.ref('estate_crm.stage_pv_sena'),
+                         "Vendedor con estado Seña debe ir a la etapa Seña del embudo postventa")
+        self.assertEqual(lead1.team_id, self.env.ref('estate_crm.crm_team_postventa'),
+                         "Trámite de postventa debe tener equipo Postventa")
+        self.assertEqual(lead2.stage_id, self.env.ref('estate_crm.stage_lead3b_estate_seguimiento'),
+                         "Vendedor con estado Seguimiento debe ir a Seguimiento")
+
+        vendedores_stage = self.env.ref('estate_crm.stage_lead_vendedores')
+        stuck_count = self.env['crm.lead'].search_count([('stage_id', '=', vendedores_stage.id)])
+        self.assertEqual(stuck_count, 0, "La etapa Vendedores debe quedar completamente vacía")
+
+    def test_reimportar_actualiza_y_vacia_etapa_vendedores(self):
+        """Si ya existían leads retenidos en la etapa Vendedores por importaciones previas,
+        al reimportar se actualizan/reubican a su etapa real y Vendedores queda vacía."""
+        vendedores_stage = self.env.ref('estate_crm.stage_lead_vendedores')
+        p = self.env['res.partner'].create({'name': 'Carlos Retenido', 'mobile': '593900000012'})
+        crm_tag = self.env['crm.tag'].search([('name', '=', 'Wasi')], limit=1) or self.env['crm.tag'].create({'name': 'Wasi'})
+        lead = self.env['crm.lead'].create({
+            'name': 'Carlos Retenido',
+            'partner_id': p.id,
+            'stage_id': vendedores_stage.id,
+            'tag_ids': [(4, crm_tag.id)]
+        })
+        self.assertEqual(lead.stage_id, vendedores_stage)
+
+        w = self._import([self._row('Carlos', 'Retenido', movil='593900000012',
+                                    tipo='Cliente Vendedor', estado='Minuta')])
+        self.assertEqual(lead.stage_id, self.env.ref('estate_crm.stage_pv_minuta'),
+                         "El lead retenido debe actualizarse a Minuta en el reimport")
+        self.assertIn('Vendedores', w.result_log)
+        self.assertEqual(self.env['crm.lead'].search_count([('stage_id', '=', vendedores_stage.id)]), 0,
+                         "La etapa Vendedores debe quedar vacía")

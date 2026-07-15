@@ -31,6 +31,20 @@
                     </button>
                 </xpath>
 
+                <!-- Cambiar etiqueta RUC por Cédula / RUC y mostrar campos de generales de ley (Estado civil, profesión) cuando es Persona -->
+                <xpath expr="//field[@name='vat']" position="attributes">
+                    <attribute name="string">Cédula / RUC</attribute>
+                    <attribute name="placeholder">Ej: 0102030405 / 0102030405001</attribute>
+                </xpath>
+                <xpath expr="//field[@name='vat']" position="after">
+                    <field name="marital_status" invisible="is_company"/>
+                    <field name="profession" invisible="is_company" placeholder="Ej: Ingeniero Comercial / Comerciante"/>
+                    <field name="id_type" invisible="is_company"/>
+                    <field name="id_number" invisible="is_company" string="Nº de Documento (Si difiere)"/>
+                    <field name="spouse_name" invisible="is_company or marital_status not in ('married', 'cohabiting')" placeholder="Nombre completo del cónyuge"/>
+                    <field name="spouse_vat" invisible="is_company or marital_status not in ('married', 'cohabiting')" placeholder="Cédula / RUC del cónyuge"/>
+                </xpath>
+
                 <!-- Tab "Inmobiliaria" con roles, alianza y etiquetas -->
                 <xpath expr="//page[@name='contact_addresses']" position="after">
                     <page string="Inmobiliaria" name="estate_info">
@@ -44,9 +58,13 @@
                                 <field name="preferred_contact"/>
                                 <field name="best_contact_time"/>
                             </group>
-                            <group string="Documento de Identidad">
+                            <group string="Documento y Generales de Ley">
                                 <field name="id_type"/>
                                 <field name="id_number"/>
+                                <field name="marital_status" invisible="is_company"/>
+                                <field name="profession" invisible="is_company"/>
+                                <field name="spouse_name" invisible="is_company or marital_status not in ('married', 'cohabiting')"/>
+                                <field name="spouse_vat" invisible="is_company or marital_status not in ('married', 'cohabiting')"/>
                             </group>
                             <group string="Cuenta Bancaria (Pagos de Arriendo)">
                                 <field name="bank_account_name"/>

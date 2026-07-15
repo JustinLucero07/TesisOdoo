@@ -47,9 +47,13 @@ STAGE_BY_ESTADO = {
     'seguimiento': 'stage_lead3b_estate_seguimiento',
     'necesidades': 'stage_lead2b_estate_con_necesidad',
     'necesidad': 'stage_lead2b_estate_con_necesidad',
+    'con necesidad': 'stage_lead2b_estate_con_necesidad',
+    'con necesidad pendiente': 'stage_lead2b_estate_con_necesidad',
+    'con necesidades': 'stage_lead2b_estate_con_necesidad',
     'en proceso cierre': 'stage_lead4_estate_papeles',
     'proceso de cierre': 'stage_lead4_estate_papeles',
     'en proceso de cierre': 'stage_lead4_estate_papeles',
+    'papeles': 'stage_lead4_estate_papeles',
     # Negocios ganados -> etapa puente "Cierre"
     'cierre': 'stage_lead7_estate_cierre',
     'vendido externo': 'stage_lead7_estate_cierre',
@@ -60,10 +64,16 @@ STAGE_BY_ESTADO = {
     'financiamiento': 'stage_pv_financiamiento',
     'minuta': 'stage_pv_minuta',
     'transferencia de dominio': 'stage_pv_transferencia',
+    'transferencia': 'stage_pv_transferencia',
     'pago de impuestos': 'stage_pv_impuestos',
+    'impuestos': 'stage_pv_impuestos',
     'escritura': 'stage_pv_escritura',
     'registro propiedad': 'stage_pv_registro',
+    'registro de propiedad': 'stage_pv_registro',
+    'registro': 'stage_pv_registro',
     'desembolso banco': 'stage_pv_desembolso',
+    'desembolso del banco': 'stage_pv_desembolso',
+    'desembolso': 'stage_pv_desembolso',
     'encuesta': 'stage_pv_encuesta',
     'comision': 'stage_pv_comision',
 }
@@ -250,12 +260,13 @@ class EstateClientImport(models.Model):
                 stages[xmlid] = rec
         stage_default = self.env.ref('estate_crm.stage_lead1_estate_nuevo', raise_if_not_found=False)
         postventa_team = self.env.ref('estate_crm.crm_team_postventa', raise_if_not_found=False)
+        ventas_team = self.env.ref('sales_team.team_sales_department', raise_if_not_found=False)
         lost_reason = self.env.ref('estate_crm.lost_reason_no_contact', raise_if_not_found=False)
         lost_stage = self.env.ref('estate_crm.stage_lead_perdido', raise_if_not_found=False)
 
         return {
-            'postventa_team': postventa_team, 'lost_reason': lost_reason,
-            'lost_stage': lost_stage,
+            'postventa_team': postventa_team, 'ventas_team': ventas_team,
+            'lost_reason': lost_reason, 'lost_stage': lost_stage,
             # Usuarios internos, para emparejar al "Encargado del cliente"
             'all_users': Users.search([('share', '=', False), ('active', '=', True)]),
             'Source': Source, 'Users': Users, 'Tag': Tag,
@@ -398,10 +409,25 @@ class EstateClientImport(models.Model):
         Lead = env['crm.lead'].sudo()
         cx = self._build_caches()
 
-        p_created = p_updated = leads_created = skipped_empty = errors = 0
+        p_created = p_updated = leads_created = leads_updated = skipped_empty = errors = 0
         advisors_found, advisors_missing = set(), set()
         unmapped_estados = Counter()
         error_samples = []
+
+        # Vaciado de la etapa "Vendedores": la etapa Vendedores debe permanecer vacía.
+        # Si hay leads que quedaron ahí por importaciones anteriores, los reubicamos
+        # antes de procesar las filas del Excel para que no se queden retenidos y se
+        # encaucen a su etapa real según el Estado.
+        stuck_leads_count = 0
+        stage_vendedores = cx['stages'].get(STAGE_VENDEDORES)
+        if stage_vendedores:
+            stuck_leads = Lead.with_context(active_test=False).search([
+                ('stage_id', '=', stage_vendedores.id)
+            ])
+            stuck_leads_count = len(stuck_leads)
+            if stuck_leads_count:
+                _logger.info('Vaciando etapa Vendedores: %s lead(s) reubicados a Recepción antes de clasificar.', stuck_leads_count)
+                stuck_leads.write({'stage_id': cx['stage_default'].id})
 
         total = len(rows)
         for n, cells in enumerate(rows, start=2):
@@ -427,7 +453,6 @@ class EstateClientImport(models.Model):
                 tipo_low = _norm(tipo)
                 is_buyer = 'comprador' in tipo_low or 'buscando' in tipo_low
                 is_owner = 'propietario' in tipo_low or 'arrendador' in tipo_low
-                # Cliente vendedor -> va a la etapa "Vendedores" del embudo comercial
                 is_seller = 'vendedor' in tipo_low and not is_buyer
 
                 encargado = get(cells, 'encargado')
@@ -517,16 +542,13 @@ class EstateClientImport(models.Model):
                         ('tag_ids', 'in', cx['crm_tag'].id),
                     ], limit=1)
 
-                    # Los vendedores van siempre a la etapa "Vendedores";
-                    # los compradores, a la etapa que corresponde a su Estado.
-                    if is_seller:
-                        stage_xmlid = STAGE_VENDEDORES
-                    else:
-                        stage_xmlid = STAGE_BY_ESTADO.get(estado)
-                        if not stage_xmlid and estado and not is_lost:
-                            # Estado que no reconocemos: se avisa en el resultado
-                            # para no dejarlo pasar en silencio.
-                            unmapped_estados[estado] += 1
+                    # Tanto compradores como vendedores van a la etapa que corresponde
+                    # a su Estado exacto en el Excel. La etapa "Vendedores" se deja vacía.
+                    stage_xmlid = STAGE_BY_ESTADO.get(estado)
+                    if not stage_xmlid and estado and not is_lost:
+                        # Estado que no reconocemos: se avisa en el resultado
+                        # para no dejarlo pasar en silencio.
+                        unmapped_estados[estado] += 1
                     stage = cx['stages'].get(stage_xmlid) or cx['stage_default']
                     lvals = {
                         'name': f'{name}' or 'Interés',
@@ -542,9 +564,16 @@ class EstateClientImport(models.Model):
                         'user_id': advisor.id if advisor else False,
                     }
                     # Si su Estado ya es un trámite de "Ventas Cerradas",
-                    # el negocio entra directo al equipo Postventa.
+                    # el negocio entra directo al equipo Postventa. Si es del embudo
+                    # comercial, se asigna al equipo Ventas.
                     if stage_xmlid in POSTVENTA_STAGES and cx['postventa_team']:
                         lvals['team_id'] = cx['postventa_team'].id
+                    elif stage_xmlid in {
+                        'stage_lead1_estate_nuevo', 'stage_lead3b_estate_seguimiento',
+                        'stage_lead2b_estate_con_necesidad', 'stage_lead4_estate_papeles'
+                    } and cx.get('ventas_team'):
+                        lvals['team_id'] = cx['ventas_team'].id
+                    
                     src_id = self._resolve_source(cx, get(cells, 'captacion'))
                     if src_id:
                         lvals['lead_source_id'] = src_id
@@ -563,6 +592,7 @@ class EstateClientImport(models.Model):
 
                     if lead:
                         lead.write(lvals)
+                        leads_updated += 1
                     else:
                         Lead.create(lvals)
                         leads_created += 1
@@ -580,6 +610,10 @@ class EstateClientImport(models.Model):
             f'Omitidos por vacío: {skipped_empty}',
             f'Errores: {errors}',
         ]
+        if leads_updated:
+            log.insert(4, f'Oportunidades CRM actualizadas (reubicadas a su etapa): {leads_updated}')
+        if stuck_leads_count:
+            log.append(f'\nLeads reubicados desde la etapa "Vendedores" (ahora vacía): {stuck_leads_count}')
         if advisors_found:
             log.append('\nAsesores emparejados con usuarios de Odoo: '
                        + ', '.join(sorted(advisors_found)))

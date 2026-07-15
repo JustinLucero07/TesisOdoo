@@ -7,19 +7,38 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app string="Inmobiliaria" name="estate_management" logo="/estate_management/static/description/icon.png">
-                    <block title="Plantilla de Contrato (Word)" name="estate_contract_tpl">
-                        <setting string="Plantilla Word (.docx)"
-                                 help="Sube un documento Word con marcadores. El botón 'Generar desde Plantilla Word' del contrato los reemplaza con los datos reales.">
+                    <block title="Plantillas de Contrato Word (.docx)" name="estate_contract_tpl">
+                        <setting string="1. Con Exclusividad - Propietario"
+                                 help="Plantilla Word para Corretaje con Exclusividad cuando comparece el propietario directamente.">
+                            <field name="estate_tpl_exclusive_owner" filename="estate_tpl_exclusive_owner_name"/>
+                            <field name="estate_tpl_exclusive_owner_name" invisible="1"/>
+                        </setting>
+                        <setting string="2. Con Exclusividad - Apoderado"
+                                 help="Plantilla Word para Corretaje con Exclusividad cuando comparece un apoderado del propietario.">
+                            <field name="estate_tpl_exclusive_proxy" filename="estate_tpl_exclusive_proxy_name"/>
+                            <field name="estate_tpl_exclusive_proxy_name" invisible="1"/>
+                        </setting>
+                        <setting string="3. Sin Exclusividad - Propietario"
+                                 help="Plantilla Word para Corretaje sin Exclusividad cuando comparece el propietario directamente.">
+                            <field name="estate_tpl_non_exclusive_owner" filename="estate_tpl_non_exclusive_owner_name"/>
+                            <field name="estate_tpl_non_exclusive_owner_name" invisible="1"/>
+                        </setting>
+                        <setting string="4. Sin Exclusividad - Apoderado"
+                                 help="Plantilla Word para Corretaje sin Exclusividad cuando comparece un apoderado del propietario.">
+                            <field name="estate_tpl_non_exclusive_proxy" filename="estate_tpl_non_exclusive_proxy_name"/>
+                            <field name="estate_tpl_non_exclusive_proxy_name" invisible="1"/>
+                        </setting>
+                        <setting string="Plantilla de Contrato General / Respaldo"
+                                 help="Plantilla por defecto para otros tipos de contrato o como respaldo general.">
                             <field name="estate_docx_template" filename="estate_docx_template_name"/>
                             <field name="estate_docx_template_name" invisible="1"/>
                             <div class="text-muted mt-2">
-                                <b>Marcadores disponibles</b> (escríbelos así en tu Word, con llaves dobles):
+                                <b>Marcadores principales disponibles:</b>
                                 <div class="mt-1" style="font-family:monospace; font-size:12px;">
-                                    {{empresa}} · {{contrato}} · {{tipo_contrato}} ·
-                                    {{cliente}} · {{cedula_cliente}} ·
-                                    {{propiedad}} · {{direccion}} · {{ciudad}} ·
-                                    {{precio}} · {{fecha_inicio}} · {{fecha_fin}} ·
-                                    {{vendedor}} · {{asesor}} · {{clausulas}}
+                                    {{cliente}} · {{cedula_cliente}} · {{estado_civil}} · {{propietario}} ·
+                                    {{propiedad}} · {{direccion}} · {{sector}} · {{calle}} · {{numero}} · {{clave_catastral}} ·
+                                    {{plazo_dias}} · {{precio}} · {{precio_letras}} · {{honorarios}} · {{honorarios_letras}} ·
+                                    {{ciudad}} · {{dia}} · {{mes}} · {{anio}}
                                 </div>
                             </div>
                         </setting>

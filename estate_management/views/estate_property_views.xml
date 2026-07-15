@@ -190,6 +190,7 @@
                             <field name="capture_sheet" filename="capture_sheet_filename"/>
                             <field name="is_exclusive" widget="boolean_toggle"/>
                             <field name="exclusive_user_id" widget="many2one_avatar_user" invisible="not is_exclusive"/>
+                            <field name="is_no_contract" widget="boolean_toggle"/>
                         </group>
                         <div invisible="not capture_sheet or not capture_is_pdf" class="mt-1">
                             <strong style="font-size:.85em"><i class="fa fa-file-pdf-o text-danger" title="PDF"/> Previsualización — Hoja de Captación</strong>
@@ -251,11 +252,14 @@
                     <group string="Ubicación">
                         <group string="Dirección">
                             <field name="street" placeholder="Ej: Av. 12 de Octubre y Tarqui"/>
+                            <field name="street_number" placeholder="Ej: 4-56 ó S/N"/>
+                            <field name="sector" placeholder="Ej: El Valle / Yanuncay"/>
                             <field name="city" placeholder="Cuenca"/>
                             <field name="state_id"/>
                             <field name="country_id"/>
                         </group>
-                        <group string="Detalles">
+                        <group string="Detalles y Catastro">
+                            <field name="cadastral_code" placeholder="Ej: 010101010101"/>
                             <field name="zip_code" placeholder="010101"/>
                             <field name="sector_keywords" placeholder="Ej: Paccha, El Valle, Ricaurte"/>
                             <field name="wp_publish_location" widget="boolean_toggle"/>

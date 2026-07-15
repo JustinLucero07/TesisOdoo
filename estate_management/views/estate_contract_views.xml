@@ -126,14 +126,23 @@
                         <group string="Información del Contrato">
                             <field name="contract_type" readonly="state != 'draft'"/>
                             <field name="property_id" readonly="state != 'draft'"/>
-                            <field name="partner_id" readonly="state != 'draft'"/>
+                            <field name="partner_id" readonly="state != 'draft'" string="Cliente / Propietario"/>
+                            <field name="proxy_partner_id"
+                                   invisible="contract_type not in ('exclusive_proxy', 'non_exclusive_proxy')"
+                                   readonly="state != 'draft'"/>
+                            <field name="proxy_name"
+                                   invisible="contract_type not in ('exclusive_proxy', 'non_exclusive_proxy')"/>
+                            <field name="proxy_vat"
+                                   invisible="contract_type not in ('exclusive_proxy', 'non_exclusive_proxy')"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="offer_id" readonly="1" invisible="not offer_id"/>
                         </group>
                         <group string="Fechas y Montos">
-                            <field name="date_start" readonly="state != 'draft'"/>
-                            <field name="date_end" readonly="state != 'draft'"/>
+                            <field name="date_start" readonly="state != 'draft' and contract_type != 'no_contract'"/>
+                            <field name="date_end" readonly="state != 'draft' and contract_type != 'no_contract'"/>
                             <field name="amount" widget="monetary" readonly="state != 'draft'"/>
+                            <field name="commission_percentage" widget="percentage"
+                                   invisible="contract_type not in ('exclusive_owner', 'exclusive_proxy', 'non_exclusive_owner', 'non_exclusive_proxy')"/>
                             <field name="currency_id" invisible="1"/>
                             <field name="total_paid" widget="monetary"/>
                         </group>

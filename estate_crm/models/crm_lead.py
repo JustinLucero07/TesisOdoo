@@ -587,6 +587,18 @@ class CrmLead(models.Model):
                 _logger.info('Migración de etapas: %s lead(s) de "%s" -> "%s"',
                              len(leads), old.name, new.name)
 
+        # Vaciado de la etapa "Vendedores": la etapa de vendedores debe estar vacía
+        # ya que los clientes importados se ubican directamente en las etapas del
+        # embudo de ventas y postventa según su Estado en el Excel.
+        vendedores_stage = ref('stage_lead_vendedores')
+        recepcion_stage = ref('stage_lead1_estate_nuevo')
+        if vendedores_stage and recepcion_stage:
+            stuck = self.with_context(active_test=False).search([('stage_id', '=', vendedores_stage.id)])
+            if stuck:
+                stuck.write({'stage_id': recepcion_stage.id})
+                _logger.info('Migración Vaciado Vendedores: %s lead(s) de "%s" reubicados a "%s".',
+                             len(stuck), vendedores_stage.name, recepcion_stage.name)
+
     @api.depends('client_budget')
     def _compute_financials(self):
         for lead in self:
