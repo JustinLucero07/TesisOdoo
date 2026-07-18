@@ -56,6 +56,17 @@
                                     <td style="padding:5px 10px;">$ <t t-esc="'{:,.2f}'.format(o.amount or 0)"/></td></tr>
                                 <tr><td style="padding:5px 10px; background:#F3F4F6; font-weight:700;">Vigencia</td>
                                     <td style="padding:5px 10px;"><span t-field="o.date_start"/> &#8212; <span t-field="o.date_end"/></td></tr>
+                                <t t-if="o.property_id.deal_payment_type">
+                                    <tr><td style="padding:5px 10px; background:#F3F4F6; font-weight:700;">Forma de Pago</td>
+                                        <td style="padding:5px 10px;">
+                                            <t t-esc="dict([('cash','Contado'),('mortgage','Cr&#233;dito Hipotecario / BIESS'),('owner','Financiamiento Directo'),('mixed','Mixto'),('other','Otro')]).get(o.property_id.deal_payment_type, '')"/>
+                                            <t t-if="o.property_id.deal_payment_details"> &#183; <t t-esc="o.property_id.deal_payment_details"/></t>
+                                        </td></tr>
+                                </t>
+                                <t t-if="o.property_id.deal_observations">
+                                    <tr><td style="padding:5px 10px; background:#F3F4F6; font-weight:700;">Observaciones del Cierre</td>
+                                        <td style="padding:5px 10px;"><t t-esc="o.property_id.deal_observations"/></td></tr>
+                                </t>
                             </table>
                         </t>
 

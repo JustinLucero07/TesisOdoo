@@ -77,6 +77,10 @@
                             class="btn-warning"
                             invisible="state not in ('sold', 'rented')"
                             confirm="¿Confirmas re-listar esta propiedad? Se borrarán los datos anteriores."/>
+                    <button name="action_edit_deal" string="Modificar Cierre / Observaciones" type="object"
+                            class="btn-secondary" icon="fa-pencil-square-o"
+                            invisible="state != 'sold'"
+                            title="Modificar los detalles del negocio cerrado, forma de pago y observaciones"/>
 
                     <!-- Acciones secundarias (solo cuando no es borrador) -->
                     <button name="action_open_map" string="Ver en Mapa" type="object"
@@ -188,14 +192,18 @@
                         <group string="Captación y Exclusividad">
                             <field name="capture_is_pdf" invisible="1"/>
                             <field name="capture_sheet" filename="capture_sheet_filename"/>
+                            <button name="action_view_capture_sheet" type="object" colspan="2"
+                                    class="btn btn-link p-0" icon="fa-eye"
+                                    invisible="not capture_sheet or not capture_is_pdf"
+                                    string="Ver en pantalla grande"/>
+                            <field name="is_no_contract" widget="boolean_toggle"/>
+                            <field name="is_allied_property" widget="boolean_toggle"/>
+                            <field name="allied_agency_id" invisible="not is_allied_property"
+                                   options="{'no_create_edit': True}"/>
+                            <field name="allied_split_pct" invisible="not is_allied_property"/>
                             <field name="is_exclusive" widget="boolean_toggle"/>
                             <field name="exclusive_user_id" widget="many2one_avatar_user" invisible="not is_exclusive"/>
-                            <field name="is_no_contract" widget="boolean_toggle"/>
                         </group>
-                        <div invisible="not capture_sheet or not capture_is_pdf" class="mt-1">
-                            <strong style="font-size:.85em"><i class="fa fa-file-pdf-o text-danger" title="PDF"/> Previsualización — Hoja de Captación</strong>
-                            <field name="capture_sheet" filename="capture_sheet_filename" widget="pdf_viewer" nolabel="1"/>
-                        </div>
                         <field name="is_land_type" invisible="1"/>
                         <group string="Terreno / Solar" invisible="not is_land_type">
                             <field name="has_iprus" widget="boolean_toggle"

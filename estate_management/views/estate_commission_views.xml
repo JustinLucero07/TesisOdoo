@@ -47,6 +47,7 @@
                 <field name="date"/>
                 <field name="name"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="lead_id" optional="show"/>
                 <field name="property_id"/>
                 <field name="type" widget="badge"
                        decoration-info="type == 'rental'"
@@ -82,15 +83,13 @@
                             invisible="state != 'draft'"/>
                     <button name="action_generate_invoice"
                             string="Generar Factura" type="object"
-                            class="btn-success"
-                            invisible="state not in ('draft', 'approved') or invoice_id != False"
-                            confirm="¿Generar una factura de proveedor para pagar esta comisión al asesor?"/>
+                            invisible="1"/>
                     <button name="action_view_invoice" string="Ver Factura" type="object"
                             invisible="not invoice_id"/>
-                    <button name="action_register_payment" string="Registrar Pago al Asesor"
-                            type="object" class="oe_highlight" icon="fa-money"
+                    <button name="action_register_payment" string="Pagar Comisión y Facturar"
+                            type="object" class="btn-success" icon="fa-check-circle"
                             invisible="state not in ('draft', 'approved')"
-                            confirm="Se marcará la comisión como PAGADA y quedará constancia. ¿Continuar?"/>
+                            confirm="Se generará/confirmará la factura de comisión y se registrará su pago contable en un solo paso. ¿Continuar?"/>
                     <button name="action_reset_to_approved" string="Revertir Pago" type="object"
                             invisible="state != 'paid'"
                             confirm="¿Revertir el pago registrado? La comisión volverá a Aprobada."/>
@@ -118,6 +117,7 @@
                     </div>
                     <group>
                         <group string="Comisión">
+                            <field name="lead_id" placeholder="Seleccionar Oportunidad / Lead..."/>
                             <field name="property_id"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="type"/>
@@ -126,7 +126,7 @@
                         <group string="Cálculo de Comisión">
                             <field name="sale_amount" widget="monetary"
                                    options="{'currency_field': 'company_currency'}"/>
-                            <field name="commission_pct" widget="percentage"/>
+                            <field name="commission_pct"/>
                             <field name="amount" widget="monetary"
                                    options="{'currency_field': 'company_currency'}"/>
                             <field name="company_currency"/>
@@ -162,6 +162,7 @@
             <search string="Buscar Comisiones">
                 <field name="name"/>
                 <field name="user_id"/>
+                <field name="lead_id"/>
                 <field name="property_id"/>
                 <filter string="Borrador" name="draft" domain="[('state','=','draft')]"/>
                 <filter string="Aprobada" name="approved" domain="[('state','=','approved')]"/>

@@ -19,8 +19,35 @@ class EstateSaleWizard(models.TransientModel):
         ('owner', 'Propietario'),
         ('external', 'Externo'),
     ], string='Cerrado por', default='agency', required=True)
+    user_id = fields.Many2one(
+        'res.users', string='Asesor a Cargo (Vendedor)',
+        default=lambda self: self._default_user_id(), required=True,
+        help='Asesor responsable del cierre y comisiones.')
+
+    def _default_user_id(self):
+        if self.env.context.get('active_id'):
+            prop = self.env['estate.property'].browse(self.env.context['active_id'])
+            if prop.user_id:
+                return prop.user_id
+        return self.env.user
+
+    is_edit_mode = fields.Boolean(
+        string='Modo Edición',
+        default=lambda self: self.env.context.get('edit_deal_mode', False))
+
     commission_pct = fields.Float(string='Comisión (%)', required=True)
     commission_amount = fields.Float(string='Monto Comisión', compute='_compute_commission_amount')
+    lead_id = fields.Many2one(
+        'crm.lead', string='Lead de Origen (CRM)',
+        domain="[('type', '=', 'opportunity')]",
+        help='Si esta venta viene de un lead del CRM, selecciónalo para completar '
+             'comprador y precio automáticamente.')
+    invoice_mode = fields.Selection([
+        ('commission', 'Facturar Solo Comisión de Corretaje (Honorarios de Agencia)'),
+        ('total', 'Facturar Valor Total del Inmueble (Proyecto Propio / Constructora)'),
+        ('none', 'Sin Factura de Venta (Solo Registro Interno en Inmobi)')
+    ], string='Modo de Facturación al Cliente', default='commission', required=True,
+       help='En corretaje tradicional, la agencia factura únicamente sus honorarios/comisión al cliente. En proyectos propios, la constructora factura el valor total de la propiedad.')
 
     # --- Datos del Negocio Cerrado ---
     buyer_proxy_id = fields.Many2one('res.partner', string='Apoderado del Comprador')
@@ -39,25 +66,48 @@ class EstateSaleWizard(models.TransientModel):
     deal_credit_advisor_phone = fields.Char(string='Teléfono Asesor de Crédito')
     deal_observations = fields.Text(string='Observaciones')
 
+    @api.onchange('lead_id')
+    def _onchange_lead_id(self):
+        for rec in self:
+            if not rec.lead_id:
+                continue
+            lead = rec.lead_id
+            if lead.partner_id:
+                rec.buyer_id = lead.partner_id
+            if lead.client_budget:
+                rec.sale_price = lead.client_budget
+            if lead.user_id:
+                rec.user_id = lead.user_id
+
     @api.depends('sale_price', 'commission_pct')
     def _compute_commission_amount(self):
         for rec in self:
-            rec.commission_amount = (rec.sale_price or 0.0) * (rec.commission_pct / 100.0)
+            if rec.sale_price and rec.commission_pct:
+                rec.commission_amount = rec.sale_price * (rec.commission_pct / 100.0)
+            else:
+                rec.commission_amount = 0.0
 
     def action_confirm_sale(self):
-        """Flujo de venta unificado y automático:
-        1. Actualiza la propiedad (comprador, precio, comisión).
-        2. Crea y CONFIRMA la orden de venta (sale.order → módulo Ventas).
-        3. Genera y CONTABILIZA la factura (account.move → módulo Facturación).
-        4. Marca la propiedad como Vendida.
-        5. Registra la comisión del asesor.
+        """
+        Confirma la venta, actualiza la propiedad con los datos de cierre,
+        genera la orden de venta nativa + factura de cliente y crea las comisiones.
         """
         self.ensure_one()
         prop = self.property_id
-        if prop.state not in ('available', 'reserved'):
-            raise UserError('Solo se puede vender una propiedad Disponible o Reservada.')
+        if self.env.context.get('edit_deal_mode') or self.is_edit_mode:
+            if prop.state != 'sold':
+                raise UserError('Solo se pueden modificar los datos de propiedades ya vendidas.')
+        else:
+            if prop.state not in ('available', 'reserved'):
+                raise UserError('Solo se puede vender una propiedad Disponible o Reservada.')
         if not self.buyer_id:
             raise UserError('Asigna un comprador para registrar la venta.')
+        if self.sale_price <= 0:
+            raise UserError('El precio de cierre de la propiedad debe ser mayor a 0.')
+        if not (0 < self.commission_pct <= 100):
+            raise UserError('El porcentaje de comisión debe estar entre 0.1% y 100%.')
+        if prop.owner_id and self.buyer_id == prop.owner_id:
+            raise UserError('El comprador no puede ser el mismo propietario del inmueble.')
 
         # Despublicar de WordPress antes de cerrar
         if prop.wp_published and prop.wp_post_id and hasattr(prop, 'action_unpublish_wordpress'):
@@ -65,6 +115,46 @@ class EstateSaleWizard(models.TransientModel):
                 prop.action_unpublish_wordpress()
             except Exception as e:
                 _logger.warning('WP unpublish al vender propiedad %s falló: %s', prop.id, e)
+
+        if self.env.context.get('edit_deal_mode') or self.is_edit_mode:
+            prop_vals = {
+                'buyer_id': self.buyer_id.id,
+                'price': self.sale_price,
+                'commission_percentage': self.commission_pct,
+                'date_sold': self.date_sold,
+                'sold_by': self.sold_by,
+                'user_id': self.user_id.id if self.user_id else False,
+                'deal_deadline': self.deal_deadline,
+                'deal_earnest_amount': self.deal_earnest_amount,
+                'deal_payment_type': self.deal_payment_type,
+                'deal_payment_details': self.deal_payment_details,
+                'deal_credit_institution': self.deal_credit_institution,
+                'deal_credit_advisor': self.deal_credit_advisor,
+                'deal_credit_advisor_phone': self.deal_credit_advisor_phone,
+                'deal_observations': self.deal_observations,
+            }
+            if self.buyer_proxy_id:
+                prop_vals['proxy_id'] = self.buyer_proxy_id.id
+            prop.with_context(no_wp_sync=True).write(prop_vals)
+
+            # Actualizar también las notas en la orden de venta (sale.order) y factura si existen
+            orders = self.env['sale.order'].search([('property_id', '=', prop.id)])
+            for ord in orders:
+                ord_vals = {}
+                if self.user_id:
+                    ord_vals['user_id'] = self.user_id.id
+                if self.deal_observations or self.deal_payment_details:
+                    notes = []
+                    if self.deal_payment_details:
+                        notes.append(f"Detalles de Pago: {self.deal_payment_details}")
+                    if self.deal_observations:
+                        notes.append(f"Observaciones: {self.deal_observations}")
+                    ord_vals['note'] = "\n\n".join(notes)
+                if ord_vals:
+                    ord.write(ord_vals)
+
+            prop.message_post(body='<b>Datos del Negocio Cerrado y documentos actualizados exitosamente.</b>')
+            return {'type': 'ir.actions.act_window_close'}
 
         # 1. Datos núcleo de la propiedad + datos del Negocio Cerrado (sin sync WP)
         prop_vals = {
@@ -74,6 +164,7 @@ class EstateSaleWizard(models.TransientModel):
             'commission_percentage': self.commission_pct,
             'date_sold': self.date_sold,
             'sold_by': self.sold_by,
+            'user_id': self.user_id.id if self.user_id else False,
             'deal_deadline': self.deal_deadline,
             'deal_earnest_amount': self.deal_earnest_amount,
             'deal_payment_type': self.deal_payment_type,
@@ -89,13 +180,14 @@ class EstateSaleWizard(models.TransientModel):
 
         # 2-3. Orden de venta confirmada + factura contabilizada
         order, invoice = prop._process_native_sale(
-            self.buyer_id, self.sale_price, self.commission_amount, self.commission_pct)
+            self.buyer_id, self.sale_price, self.commission_amount, self.commission_pct, invoice_mode=self.invoice_mode, user_id=self.user_id)
 
         # 4. Marcar vendida
         prop.with_context(no_wp_sync=True).write({'state': 'sold'})
 
         # 5. Comisión del asesor
-        prop._create_commission_records('sale', self.commission_amount, self.sale_price, self.commission_pct)
+        target_lead = self.lead_id or (order.lead_id if order and hasattr(order, 'lead_id') else False)
+        prop._create_commission_records('sale', self.commission_amount, self.sale_price, self.commission_pct, lead_id=target_lead.id if target_lead else False)
 
         # Resumen en el chatter de la propiedad
         msg = ['<b>Venta registrada</b> mediante el flujo unificado:']
@@ -106,6 +198,16 @@ class EstateSaleWizard(models.TransientModel):
             msg.append(f'• Factura {estado}: <b>{invoice.name or invoice.id}</b>')
         msg.append(f'• Comisión registrada: <b>${self.commission_amount:,.2f}</b>')
         prop.message_post(body='<br/>'.join(msg))
+
+        # 6. Marcar oportunidad de CRM como ganada si está vinculada
+        target_lead = self.lead_id or (order.lead_id if order and hasattr(order, 'lead_id') else False)
+        if target_lead and hasattr(target_lead, 'action_set_won_rainbowman'):
+            try:
+                target_lead.action_set_won_rainbowman()
+            except Exception:
+                pass
+        if target_lead:
+            target_lead.message_post(body=f'Venta de propiedad <b>{prop.title}</b> confirmada por <b>${self.sale_price:,.2f}</b> con comisión de <b>${self.commission_amount:,.2f}</b>.')
 
         # Abrir la factura generada (o la orden si no hubo factura)
         if invoice:

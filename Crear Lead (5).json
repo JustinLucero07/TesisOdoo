@@ -1,0 +1,440 @@
+{
+  "name": "Crear Lead",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "nombre"
+            },
+            {
+              "name": "telefono"
+            },
+            {
+              "name": "ciudad"
+            },
+            {
+              "name": "presupuesto",
+              "type": "number"
+            },
+            {
+              "name": "necesidades"
+            },
+            {
+              "name": "property_id",
+              "type": "number"
+            },
+            {
+              "name": "wp_post_id",
+              "type": "number"
+            },
+            {
+              "name": "user_id",
+              "type": "number"
+            },
+            {
+              "name": "lead_source_id",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "ac73d0cf-c516-4d12-a6ac-4e2989e05e18",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        2928,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "odoo_host",
+              "value": "45.132.240.234",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "odoo_db",
+              "value": "inmobi_produccion",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "odoo_login",
+              "value": "admin",
+              "type": "string"
+            },
+            {
+              "id": "c4",
+              "name": "odoo_api_key",
+              "value": "685917f42423af0fac1c6bd19da39be569755a07",
+              "type": "string"
+            },
+            {
+              "id": "p1",
+              "name": "nombre",
+              "value": "={{ $json.nombre      || 'Lead WhatsApp' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "telefono",
+              "value": "={{ $json.telefono    || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "ciudad",
+              "value": "={{ $json.ciudad      || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p4",
+              "name": "presupuesto",
+              "value": "={{ Number($json.presupuesto) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p5",
+              "name": "necesidades",
+              "value": "={{ $json.necesidades || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p6",
+              "name": "property_id",
+              "value": "={{ Number($json.property_id) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p6b",
+              "name": "wp_post_id",
+              "value": "={{ Number($json.wp_post_id) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p7",
+              "name": "user_id",
+              "value": "={{ Number($json.user_id) || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p8b",
+              "name": "lead_source_id",
+              "value": "=3",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "13b49248-70de-43d0-9f77-c8170f50f2da",
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3152,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{ $('Preparar Datos').item.json.odoo_host }}:8069/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"{{ $('Preparar Datos').item.json.odoo_db }}\", \"{{ $('Preparar Datos').item.json.odoo_login }}\", \"{{ $('Preparar Datos').item.json.odoo_api_key }}\", {}]\n  },\n  \"id\": 1\n}",
+        "options": {}
+      },
+      "id": "5af669a1-8ae0-4b8a-a57b-a58c8d74de77",
+      "name": "Autenticar Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3376,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "uid1",
+              "name": "uid",
+              "value": "={{ $json.result }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "910ed169-23ee-482f-a0f0-c23e03cbba41",
+      "name": "Extraer UID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3552,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $('Preparar Datos').item.json;\nconst uid   = $('Extraer UID').item.json.uid;\n\n// Si se encontró la propiedad por WP ID, obtenemos su ID interno de Odoo\nlet targetPropertyId = (datos.property_id > 0 && datos.property_id < 10000) ? Number(datos.property_id) : 0;\ntry {\n  // Si llegamos desde el nodo Postgres ('Execute a SQL query'), el id llega en $input.item.json.id\n  if ($input.item.json && $input.item.json.id) {\n    targetPropertyId = Number($input.item.json.id);\n  } else if ($input.item.json && $input.item.json.result && Array.isArray($input.item.json.result) && $input.item.json.result.length > 0 && $input.item.json.result[0].id) {\n    targetPropertyId = Number($input.item.json.result[0].id);\n  }\n} catch(e) {}\n\n// Construir vals del lead (IMPORTANTE: no enviamos 'lead_source' como string ya que la columna fue borrada en la base de datos)\nconst vals = {\n  name:             `WhatsApp: ${datos.nombre}`,\n  contact_name:     datos.nombre,\n  phone:            datos.telefono,\n  type:             'opportunity',\n  stage_id:         32,          // 1. Nuevo / Contacto Inicial\n  client_budget:    datos.presupuesto || 0,\n  preferred_city:   datos.ciudad || '',\n  client_needs:     datos.necesidades || ''\n};\n\n// Asignar el catálogo de fuente de lead (lead_source_id)\nif (datos.lead_source_id > 0) {\n  vals.lead_source_id = datos.lead_source_id;\n} else {\n  // Si no pasaron lead_source_id explícito, pasamos el ID por defecto para WhatsApp (ej. 3)\n  vals.lead_source_id = 3;\n}\n\n// Asignar asesor solo si se pasó\nif (datos.user_id > 0) vals.user_id = datos.user_id;\n\n// Asociar propiedad objetivo con el ID interno real de Odoo obtenido\nif (targetPropertyId > 0) vals.target_property_id = targetPropertyId;\n\nreturn [{ json: { uid, vals, datos, targetPropertyId } }];"
+      },
+      "id": "c2a785e2-421d-49d6-96c9-23ea36efe094",
+      "name": "Construir Vals Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4032,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{ $('Preparar Datos').item.json.odoo_host }}:8069/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"{{ $('Preparar Datos').item.json.odoo_db }}\",\n      {{ $json.uid }},\n      \"{{ $('Preparar Datos').item.json.odoo_login }}\",\n      \"crm.lead\",\n      \"create\",\n      [{{ JSON.stringify($json.vals) }}]\n    ]\n  },\n  \"id\": 2\n}",
+        "options": {}
+      },
+      "id": "e561049b-cd81-474e-9166-64617e98e858",
+      "name": "Crear Lead en Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4256,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.result ? 'Lead creado exitosamente con ID: ' + $json.result + '. Cliente ' + $('Preparar Datos').item.json.nombre + ' registrado en CRM.' : 'Error al crear el lead: ' + JSON.stringify($json.error || 'desconocido') }}",
+              "type": "string"
+            },
+            {
+              "id": "r2",
+              "name": "lead_id",
+              "value": "={{ $json.result || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "79ff7cf2-06d7-4c35-8c14-d3423b5a0f81",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        4480,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "select id from estate_property where wp_post_id = {{ $('Preparar Datos').item.json.wp_post_id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        3872,
+        576
+      ],
+      "id": "3751291e-c228-4472-8ebb-93d94ab713e7",
+      "name": "Execute a SQL query",
+      "credentials": {
+        "postgres": {
+          "id": "EDZ0lQ11uE0FESjr",
+          "name": "Inmobi"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4baeebbc-d1f8-4f9a-94e8-139564b1be53",
+              "leftValue": "={{ $('Preparar Datos').item.json.wp_post_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "e080dc81-61a4-493b-9f86-407bff824c71",
+              "leftValue": "={{ $('Preparar Datos').item.json.property_id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3712,
+        704
+      ],
+      "id": "2bb610a1-b7a8-451f-81a4-f5e1fef30bbf",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos": {
+      "main": [
+        [
+          {
+            "node": "Autenticar Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autenticar Odoo": {
+      "main": [
+        [
+          {
+            "node": "Extraer UID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer UID": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Construir Vals Lead": {
+      "main": [
+        [
+          {
+            "node": "Crear Lead en Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Lead en Odoo": {
+      "main": [
+        [
+          {
+            "node": "Formatear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute a SQL query": {
+      "main": [
+        [
+          {
+            "node": "Construir Vals Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Execute a SQL query",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Construir Vals Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "aabca8b2-3586-4ef2-9120-d90db1b9f93c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e571374d4ebf3078c20a0feaa411f259d18ef217cc35c9bc26b444136431c32d"
+  },
+  "id": "3czTKpWinxa89XVi",
+  "tags": []
+}

@@ -71,10 +71,20 @@
                         <table style="width:100%; border-collapse:collapse; margin-bottom:14px; border:1px solid #D8DCE5; border-top:none;">
                             <tr>
                                 <td style="width:25%; background:#004274; padding:16px; text-align:center; vertical-align:top; border-right:2px solid white;">
-                                    <div style="font-size:8px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Precio promedio</div>
-                                    <div style="font-size:20px; font-weight:900; color:white; line-height:1;">$<t t-esc="'%.0f' % o.kpi_avg_price"/></div>
+                                    <div style="font-size:8px; color:rgba(255,255,255,0.6); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Comisi&#243;n promedio (Venta)</div>
+                                    <div style="font-size:20px; font-weight:900; color:#4ADE80; line-height:1;">$<t t-esc="'{:,.0f}'.format(o.kpi_avg_commission)"/></div>
+                                    <t t-if="o.pct_change_avg_commission">
+                                        <div t-att-style="'font-size:8px; margin-top:4px; font-weight:600; ' + ('color:#4ADE80;' if o.pct_change_avg_commission &gt; 0 else 'color:#FCA5A5;')">
+                                            <t t-if="o.pct_change_avg_commission &gt; 0">&#8593;</t><t t-else="">&#8595;</t>
+                                            <t t-esc="'%.1f' % (abs(o.pct_change_avg_commission) * 100) + '%'"/> vs anterior
+                                        </div>
+                                    </t>
+                                </td>
+                                <td style="width:25%; background:#F8F9FB; padding:16px; text-align:center; vertical-align:top; border-right:1px solid #D8DCE5;">
+                                    <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Precio promedio inmueble</div>
+                                    <div style="font-size:20px; font-weight:700; color:#004274; line-height:1;">$<t t-esc="'{:,.0f}'.format(o.kpi_avg_price)"/></div>
                                     <t t-if="o.pct_change_avg">
-                                        <div t-att-style="'font-size:8px; margin-top:4px; font-weight:600; ' + ('color:#4ADE80;' if o.pct_change_avg &gt; 0 else 'color:#FCA5A5;')">
+                                        <div t-att-style="'font-size:8px; margin-top:4px; font-weight:600; ' + ('color:#15803d;' if o.pct_change_avg &gt; 0 else 'color:#C8102E;')">
                                             <t t-if="o.pct_change_avg &gt; 0">&#8593;</t><t t-else="">&#8595;</t>
                                             <t t-esc="'%.1f' % (abs(o.pct_change_avg) * 100) + '%'"/> vs anterior
                                         </div>
@@ -83,16 +93,6 @@
                                 <td style="width:25%; background:#F8F9FB; padding:16px; text-align:center; vertical-align:top; border-right:1px solid #D8DCE5;">
                                     <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">D&#237;as en mercado</div>
                                     <div style="font-size:20px; font-weight:700; color:#004274; line-height:1;"><t t-esc="'%.0f' % o.kpi_avg_days"/></div>
-                                    <t t-if="o.pct_change_days">
-                                        <div t-att-style="'font-size:8px; margin-top:4px; font-weight:600; ' + ('color:#15803d;' if o.pct_change_days &lt; 0 else 'color:#C8102E;')">
-                                            <t t-esc="'%.0f' % abs(o.pct_change_days)"/> d&#237;as
-                                            <t t-if="o.pct_change_days &lt; 0"> menos</t><t t-else=""> m&#225;s</t>
-                                        </div>
-                                    </t>
-                                </td>
-                                <td style="width:25%; background:#F8F9FB; padding:16px; text-align:center; vertical-align:top; border-right:1px solid #D8DCE5;">
-                                    <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">% vs precio listado</div>
-                                    <div style="font-size:20px; font-weight:700; color:#004274; line-height:1;"><t t-esc="'%.1f' % (o.kpi_pct_vs_listed * 100) + '%'"/></div>
                                 </td>
                                 <td style="width:25%; background:#F8F9FB; padding:16px; text-align:center; vertical-align:top;">
                                     <div style="font-size:8px; color:#888; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Tasa de cierre</div>
@@ -107,28 +107,36 @@
                         </div>
                         <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
                             <tr>
-                                <td style="width:50%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Total de operaciones</td>
+                                <td style="width:50%; background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Total de operaciones cerradas</td>
                                 <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; font-weight:700;"><t t-esc="o.kpi_count"/></td>
                             </tr>
                             <tr>
-                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Precio promedio</td>
+                                <td style="background:#f0fdf4; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#15803d; font-weight:700;">Comisi&#243;n promedio por venta (Agencia)</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; color:#16a34a; font-weight:800;">$<t t-esc="'{:,.2f}'.format(o.kpi_avg_commission)"/></td>
+                            </tr>
+                            <tr>
+                                <td style="background:#f0fdf4; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#15803d; font-weight:700;">Comisiones totales cobradas (Agencia)</td>
+                                <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5; color:#16a34a; font-weight:800;">$<t t-esc="'{:,.2f}'.format(o.kpi_total_commission)"/></td>
+                            </tr>
+                            <tr>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Precio promedio inmueble (Volumen)</td>
                                 <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">$<t t-esc="'{:,.2f}'.format(o.kpi_avg_price)"/></td>
                             </tr>
                             <tr>
-                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Mediana de precio</td>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Mediana de precio inmueble</td>
                                 <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">$<t t-esc="'{:,.2f}'.format(o.kpi_median_price)"/></td>
                             </tr>
                             <tr>
-                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">M&#237;nimo</td>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">M&#237;nimo precio inmueble</td>
                                 <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">$<t t-esc="'{:,.2f}'.format(o.kpi_min_price)"/></td>
                             </tr>
                             <tr>
-                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">M&#225;ximo</td>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">M&#225;ximo precio inmueble</td>
                                 <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;">$<t t-esc="'{:,.2f}'.format(o.kpi_max_price)"/></td>
                             </tr>
                             <tr>
-                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">Per&#237;odo anterior &#8212; promedio</td>
-                                <td style="padding:5px 10px; color:#888;">$<t t-esc="'{:,.2f}'.format(o.prev_avg_price)"/></td>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">Per&#237;odo anterior &#8212; promedio comisi&#243;n</td>
+                                <td style="padding:5px 10px; color:#888;">$<t t-esc="'{:,.2f}'.format(o.prev_avg_commission)"/></td>
                             </tr>
                         </table>
 
@@ -138,20 +146,22 @@
 
                             <t t-if="cd.get('top_cities')">
                                 <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
-                                    Top Ciudades por Volumen
+                                    Top Ciudades por Honorarios y Volumen
                                 </div>
                                 <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
                                     <thead>
                                         <tr style="background:#263d61; color:white;">
                                             <th style="padding:7px 10px; font-weight:700; text-align:left;">Ciudad</th>
-                                            <th style="padding:7px 10px; font-weight:700; text-align:right;">Volumen</th>
+                                            <th style="padding:7px 10px; font-weight:700; text-align:right;">Honorarios (Comisi&#243;n)</th>
+                                            <th style="padding:7px 10px; font-weight:700; text-align:right;">Volumen Inmuebles</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-foreach="cd.get('top_cities', [])" t-as="row">
                                             <tr t-att-style="'background:#F9FAFB;' if row_index % 2 == 0 else 'background:white;'">
                                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="row[0]"/></td>
-                                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700;">$<t t-esc="'{:,.0f}'.format(row[1])"/></td>
+                                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#16a34a;">$<t t-esc="'{:,.0f}'.format(row[1])"/></td>
+                                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; color:#555;">$<t t-esc="'{:,.0f}'.format(row[2] if len(row) &gt; 2 else row[1])"/></td>
                                             </tr>
                                         </t>
                                     </tbody>
@@ -160,20 +170,22 @@
 
                             <t t-if="cd.get('top_users')">
                                 <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
-                                    Ranking de Asesores
+                                    Ranking de Asesores (Ventas / Honorarios)
                                 </div>
                                 <table style="width:100%; border-collapse:collapse; font-size:11px; border:1px solid #D8DCE5; border-top:none; margin-bottom:14px;">
                                     <thead>
                                         <tr style="background:#263d61; color:white;">
                                             <th style="padding:7px 10px; font-weight:700; text-align:left;">Asesor</th>
-                                            <th style="padding:7px 10px; font-weight:700; text-align:right;">Volumen</th>
+                                            <th style="padding:7px 10px; font-weight:700; text-align:right;">Honorarios (Comisi&#243;n)</th>
+                                            <th style="padding:7px 10px; font-weight:700; text-align:right;">Volumen Inmuebles</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <t t-foreach="cd.get('top_users', [])" t-as="row">
                                             <tr t-att-style="'background:#F9FAFB;' if row_index % 2 == 0 else 'background:white;'">
                                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="row[0]"/></td>
-                                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700;">$<t t-esc="'{:,.0f}'.format(row[1])"/></td>
+                                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#16a34a;">$<t t-esc="'{:,.0f}'.format(row[1])"/></td>
+                                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; color:#555;">$<t t-esc="'{:,.0f}'.format(row[2] if len(row) &gt; 2 else row[1])"/></td>
                                             </tr>
                                         </t>
                                     </tbody>

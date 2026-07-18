@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Consolida el viejo campo is_allied_listing (definido antes en este módulo)
+         en estate_management.is_allied_property, antes de que la columna quede
+         huérfana. Ver EstatePropertyMatch._migrate_consolidate_allied_fields. -->
+    <function model="estate.property" name="_migrate_consolidate_allied_fields"/>
+</odoo>

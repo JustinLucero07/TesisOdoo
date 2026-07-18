@@ -29,9 +29,15 @@
               sequence="10"
               groups="estate_management.estate_group_manager"/>
 
-        <menuitem id="estate_menu_ventas_by_month" name="Ventas por Mes"
+        <menuitem id="estate_menu_ventas_by_month" name="Ventas por Mes (Honorarios vs Volumen)"
                   parent="estate_menu_ventas_root" action="action_sales_by_month"
                   sequence="10" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_ventas_avg_direct" name="Promedio de Ventas y Precios de Casas"
+                  parent="estate_menu_ventas_root" action="action_sales_avg_month"
+                  sequence="15" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_ventas_by_type_direct" name="Ventas por Tipo de Propiedad"
+                  parent="estate_menu_ventas_root" action="action_sales_by_type"
+                  sequence="18" groups="estate_management.estate_group_manager"/>
         <menuitem id="estate_menu_ventas_by_user" name="Ranking de Asesores"
                   parent="estate_menu_ventas_root" action="action_sales_by_user"
                   sequence="20" groups="estate_management.estate_group_manager"/>
@@ -66,18 +72,19 @@
                   parent="estate_menu_analytics_root" sequence="10"/>
             <menuitem id="estate_menu_analytics_property" name="Resumen"
                       parent="estate_menu_analytics_grp_prop" action="estate_analytics_property_action" sequence="10"/>
+            <!-- "Por Tipo de Propiedad" y "Precio Promedio Mensual" duplicaban la misma acción
+                 ya disponible en Ventas y Comisiones (estate_menu_ventas_by_type_direct /
+                 estate_menu_ventas_avg_direct) — se desactivan en vez de eliminarse. -->
             <menuitem id="estate_menu_ventas_by_type" name="Por Tipo de Propiedad"
-                      parent="estate_menu_analytics_grp_prop" action="action_sales_by_type"
-                      sequence="20" groups="estate_management.estate_group_manager"/>
+                      parent="estate_menu_analytics_grp_prop" action="action_sales_by_type" active="False"/>
+            <menuitem id="estate_menu_ventas_avg" name="Precio Promedio Mensual"
+                      parent="estate_menu_analytics_grp_prop" action="action_sales_avg_month" active="False"/>
             <menuitem id="estate_menu_ventas_days" name="Días en Mercado"
                       parent="estate_menu_analytics_grp_prop" action="action_sales_days_market"
                       sequence="30" groups="estate_management.estate_group_manager"/>
             <menuitem id="estate_menu_ventas_time_to_sell" name="Tiempo de Venta"
                       parent="estate_menu_analytics_grp_prop" action="action_sales_time_to_sell"
                       sequence="35" groups="estate_management.estate_group_manager"/>
-            <menuitem id="estate_menu_ventas_avg" name="Precio Promedio Mensual"
-                      parent="estate_menu_analytics_grp_prop" action="action_sales_avg_month"
-                      sequence="40" groups="estate_management.estate_group_manager"/>
             <menuitem id="estate_menu_ventas_by_channel" name="Ventas por Canal"
                       parent="estate_menu_analytics_grp_prop" action="action_sales_by_channel"
                       sequence="45" groups="estate_management.estate_group_manager"/>

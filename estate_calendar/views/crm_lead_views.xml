@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_form_inherit_calendar_visits" model="ir.ui.view">
+        <field name="name">crm.lead.form.inherit.calendar.visits</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="estate_crm.crm_lead_view_form_inherit_estate"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='action_view_lead_offers']" position="after">
+                <button name="action_view_lead_visits" type="object"
+                    class="btn btn-outline-secondary"
+                    invisible="visit_count == 0 and not target_property_id">
+                    <i class="fa fa-map-marker me-1"/>Visitas
+                    <span class="badge text-bg-secondary ms-1"><field name="visit_count"/></span>
+                </button>
+            </xpath>
+            <xpath expr="//page[@name='page_timeline']" position="before">
+                <page string="Propiedades Visitadas" name="page_visits">
+                    <field name="visit_ids" nolabel="1"
+                           context="{'default_lead_id': id, 'default_appointment_type': 'visit', 'default_property_id': target_property_id}">
+                        <list string="Visitas" editable="bottom" default_order="start desc">
+                            <field name="start" string="Fecha"/>
+                            <field name="property_id" string="Propiedad Visitada"/>
+                            <field name="user_id" widget="many2one_avatar_user" string="Asesor"/>
+                            <field name="visit_state" widget="badge"
+                                   decoration-success="visit_state == 'done'"
+                                   decoration-danger="visit_state == 'cancelled'"
+                                   decoration-info="visit_state == 'scheduled'"/>
+                            <field name="visit_rating"/>
+                            <field name="visit_result"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -60,6 +60,8 @@
                 <field name="gate_offer" invisible="1"/>
                 <field name="gate_reserve" invisible="1"/>
                 <field name="gate_contract" invisible="1"/>
+                <field name="gate_postventa_comision" invisible="1"/>
+                <field name="gate_cierre_venta" invisible="1"/>
 
                 <!-- CAPTACIÓN: buscar propiedad y registrar necesidad -->
                 <button name="action_ai_matchmaker" string=" AI Matchmaker" type="object"
@@ -84,11 +86,19 @@
                     class="btn-secondary" icon="fa-lock"
                     invisible="not gate_reserve or type == 'lead'"/>
 
-                <!-- CIERRE (Papeles / Avalúo / Minuta): formalizar contrato -->
-                <button name="action_create_contract_from_lead" string="Crear Contrato" type="object"
-                    class="oe_highlight" icon="fa-file-text"
-                    invisible="not gate_contract or not target_property_id or type == 'lead' or contract_count &gt; 0"
-                    confirm="¿Crear un contrato para este lead con la propiedad seleccionada?"/>
+                <!-- CIERRE (embudo comercial): marcar la propiedad vendida. Solo
+                     Gerente/Administrador/Marketing (implica a los dos anteriores). -->
+                <button name="action_mark_sold_and_pay_commission" string="Marcar Venta" type="object"
+                    class="btn-success oe_highlight" icon="fa-check-circle"
+                    groups="estate_management.estate_group_manager"
+                    invisible="not gate_cierre_venta or not target_property_id or type == 'lead'"
+                    confirm="¿Confirmas marcar la propiedad como vendida en el precio acordado con el cliente?"/>
+
+                <!-- POSTVENTA - COMISIÓN: aprobar la comisión ya registrada al marcar la venta -->
+                <button name="action_mark_commission" string="Marcar Comisión" type="object"
+                    class="btn-success oe_highlight" icon="fa-dollar"
+                    invisible="not gate_postventa_comision or not target_property_id or type == 'lead'"
+                    confirm="¿Confirmas aprobar el pago de la comisión de este negocio?"/>
 
                 <!-- Comunicación: siempre disponible -->
                 <button name="action_send_whatsapp" string=" WhatsApp" type="object"

@@ -32,12 +32,20 @@
                         <div class="text-muted small text-uppercase">Operaciones</div>
                         <div class="h3 m-0" style="color:#004274;" t-esc="state.k.kpi_count or 0"/>
                     </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb; background:#f0fdf4;">
+                        <div class="text-muted small text-uppercase" style="color:#15803d !important; font-weight:bold;">Comisión Promedio (Venta)</div>
+                        <div class="h4 m-0" style="color:#16a34a; font-weight:800;" t-esc="money(state.k.kpi_avg_commission)"/>
+                    </div>
                     <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
-                        <div class="text-muted small text-uppercase">Precio Promedio</div>
+                        <div class="text-muted small text-uppercase">Comisiones Totales</div>
+                        <div class="h4 m-0" style="color:#004274;" t-esc="money(state.k.kpi_total_commission)"/>
+                    </div>
+                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
+                        <div class="text-muted small text-uppercase">Precio Promedio Inmuebles</div>
                         <div class="h4 m-0" style="color:#004274;" t-esc="money(state.k.kpi_avg_price)"/>
                     </div>
                     <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
-                        <div class="text-muted small text-uppercase">Días Promedio</div>
+                        <div class="text-muted small text-uppercase">Días en Mercado</div>
                         <div class="h3 m-0" style="color:#004274;" t-esc="num(state.k.kpi_avg_days)"/>
                     </div>
                     <div class="text-center px-3 py-2 flex-fill">
@@ -97,16 +105,22 @@
                     <!-- Indicadores del período -->
                     <div class="row">
                         <div class="col-12 col-lg-6">
-                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Precios</div>
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Honorarios de Agencia (Ventas)</div>
                             <table class="table table-sm mb-4">
-                                <tr><td class="text-muted">Precio promedio</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_avg_price)"/></tr>
-                                <tr><td class="text-muted">Mediana</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_median_price)"/></tr>
-                                <tr><td class="text-muted">Mínimo</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_min_price)"/></tr>
-                                <tr><td class="text-muted">Máximo</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_max_price)"/></tr>
+                                <tr><td class="text-muted">Comisión promedio por venta</td><td class="text-end fw-bold" style="color:#16a34a;" t-esc="money(state.k.kpi_avg_commission)"/></tr>
+                                <tr><td class="text-muted">Comisiones totales generadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_total_commission)"/></tr>
+                            </table>
+
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Precios de Inmuebles Cerrados (Volumen)</div>
+                            <table class="table table-sm mb-4">
+                                <tr><td class="text-muted">Precio promedio inmueble</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_avg_price)"/></tr>
+                                <tr><td class="text-muted">Mediana precio inmueble</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_median_price)"/></tr>
+                                <tr><td class="text-muted">Mínimo precio inmueble</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_min_price)"/></tr>
+                                <tr><td class="text-muted">Máximo precio inmueble</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_max_price)"/></tr>
                             </table>
                         </div>
                         <div class="col-12 col-lg-6">
-                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Rendimiento</div>
+                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Rendimiento del Mercado</div>
                             <table class="table table-sm mb-4">
                                 <tr><td class="text-muted">Precio listado promedio</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.kpi_avg_listed)"/></tr>
                                 <tr><td class="text-muted">% logrado vs listado</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num((state.k.kpi_pct_vs_listed || 0) * 100) + '%'"/></tr>
@@ -121,8 +135,10 @@
                         <div class="col-12 col-lg-6">
                             <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Comparativa con Período Anterior</div>
                             <table class="table table-sm mb-4">
-                                <tr><td class="text-muted">Promedio anterior</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.prev_avg_price)"/></tr>
-                                <tr><td class="text-muted">Variación %</td><td class="text-end fw-bold" t-att-class="pctClass(state.k.pct_change_avg)" t-esc="num(state.k.pct_change_avg) + '%'"/></tr>
+                                <tr><td class="text-muted">Promedio comisión anterior</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.prev_avg_commission)"/></tr>
+                                <tr><td class="text-muted">Variación % comisión</td><td class="text-end fw-bold" t-att-class="pctClass(state.k.pct_change_avg_commission)" t-esc="num(state.k.pct_change_avg_commission) + '%'"/></tr>
+                                <tr><td class="text-muted">Promedio precio inmueble anterior</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.prev_avg_price)"/></tr>
+                                <tr><td class="text-muted">Variación % precio inmueble</td><td class="text-end fw-bold" t-att-class="pctClass(state.k.pct_change_avg)" t-esc="num(state.k.pct_change_avg) + '%'"/></tr>
                                 <tr><td class="text-muted">Días anteriores</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num(state.k.prev_avg_days)"/></tr>
                                 <tr><td class="text-muted">Cambio en días</td><td class="text-end fw-bold" t-att-class="pctClass(-state.k.pct_change_days)" t-esc="num(state.k.pct_change_days) + '%'"/></tr>
                             </table>

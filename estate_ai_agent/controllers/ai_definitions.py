@@ -38,13 +38,22 @@ TOOLS_OPENAI = [
         "type": "function",
         "function": {
             "name": "get_leads",
-            "description": "Obtiene leads/oportunidades del CRM con sus datos y puntuación.",
+            "description": (
+                "Obtiene leads/oportunidades del CRM con sus datos y puntuación. "
+                "Usa 'stage' para listar/filtrar por etapa del pipeline (ej. 'En Proceso Cierre', "
+                "'Cierre', 'Recepción', 'Perdido') — es la forma correcta de responder "
+                "'¿qué leads/clientes hay en [etapa]?' o '¿cuáles son?'. NUNCA uses query_database "
+                "con SQL crudo para filtrar por nombre de etapa (el campo es traducible/JSON y falla)."
+            ),
             "parameters": {
                 "type": "object",
                 "properties": {
+                    "stage": {"type": "string", "description": "Nombre (o parte del nombre) de la etapa del CRM a filtrar, ej. 'En Proceso Cierre'"},
                     "temperature": {"type": "string", "description": "Filtrar por temperatura: cold, warm, hot, boiling"},
                     "score": {"type": "string", "description": "Filtrar por puntuación: low, medium, high"},
-                    "limit": {"type": "integer", "description": "Máximo de resultados (default 10)"},
+                    "type": {"type": "string", "description": "'lead' o 'opportunity'. Si no se indica, incluye ambos"},
+                    "lost": {"type": "boolean", "description": "true para filtrar solo leads en la etapa Perdido"},
+                    "limit": {"type": "integer", "description": "Máximo de resultados (default 20, usa un número mayor para 'todos')"},
                 },
             },
         },
@@ -53,7 +62,7 @@ TOOLS_OPENAI = [
         "type": "function",
         "function": {
             "name": "get_market_stats",
-            "description": "Obtiene estadísticas del mercado inmobiliario: precio promedio, días en mercado, ventas por ciudad/tipo.",
+            "description": "Obtiene estadísticas de ventas del mercado inmobiliario: comisión promedio por venta (honorarios cobrados por la agencia), comisiones totales, días en mercado y precio promedio del inmueble (volumen por ciudad/tipo).",
             "parameters": {
                 "type": "object",
                 "properties": {

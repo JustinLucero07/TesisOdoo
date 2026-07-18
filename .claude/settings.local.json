@@ -160,7 +160,10 @@
       "Bash(python3 -c \"import ast; [ast.parse\\(open\\(f\\).read\\(\\)\\) for f in ['estate_wordpress/models/estate_wordpress_sync.py','estate_wordpress/tests/test_wp_area_taxonomy.py']]\")",
       "Bash(sed -i \"s|        'views/estate_crm_postventa_views.xml',|        'views/estate_crm_postventa_views.xml',\\\\n        'views/estate_crm_lost_views.xml',|\" estate_crm/__manifest__.py)",
       "Bash(python3 -c \"import ast; [ast.parse\\(open\\(f\\).read\\(\\)\\) for f in ['estate_crm/models/crm_lead.py','estate_crm/models/crm_stage.py','estate_crm/wizards/estate_client_import.py']]\")",
-      "Bash(python3 -c \"import xml.dom.minidom as m; [m.parse\\(f\\) for f in ['estate_crm/views/estate_crm_lost_views.xml','estate_crm/data/estate_crm_stage_data.xml','estate_crm/data/estate_crm_postventa_migrate.xml']]; print\\('XML OK'\\)\")"
+      "Bash(python3 -c \"import xml.dom.minidom as m; [m.parse\\(f\\) for f in ['estate_crm/views/estate_crm_lost_views.xml','estate_crm/data/estate_crm_stage_data.xml','estate_crm/data/estate_crm_postventa_migrate.xml']]; print\\('XML OK'\\)\")",
+      "Bash(kill 84389)",
+      "Bash(kill 101251)",
+      "Bash(kill 12450)"
     ],
     "additionalDirectories": [
       "/tmp",

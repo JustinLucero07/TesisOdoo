@@ -294,3 +294,23 @@ class TestClientImport(TransactionCase):
         self.assertIn('Vendedores', w.result_log)
         self.assertEqual(self.env['crm.lead'].search_count([('stage_id', '=', vendedores_stage.id)]), 0,
                          "La etapa Vendedores debe quedar vacía")
+
+    def test_no_retrocede_etapa_con_filas_duplicadas_o_reimport(self):
+        """Si en el Excel hay filas duplicadas (ej. caso Marcelo Zhinin: 'En Proceso Cierre'
+        y luego 'Nuevo') o si se reimporta el Excel sobre un lead ya avanzado, no debe
+        retroceder su etapa en el embudo."""
+        papeles = self.env.ref('estate_crm.stage_lead4_estate_papeles') # seq=5
+        nuevo = self.env.ref('estate_crm.stage_lead1_estate_nuevo') # seq=1
+
+        # Simulamos las 2 filas de Marcelo Zhinin en el Excel
+        self._import([
+            self._row('Marcelo', 'Zhinin', movil='593992535865',
+                      tipo='Cliente Comprador', estado='En Proceso Cierre'),
+            self._row('Marcelo', 'Zhinin', movil='593992535865',
+                      tipo='Cliente Comprador', estado='Nuevo')
+        ])
+
+        p = self.env['res.partner'].search([('mobile', '=', '593992535865')], limit=1)
+        lead = self.env['crm.lead'].search([('partner_id', '=', p.id)], limit=1)
+        self.assertEqual(lead.stage_id, papeles,
+                         "La fila 'Nuevo' no debe haber retrocedido la oportunidad desde 'En Proceso Cierre'")

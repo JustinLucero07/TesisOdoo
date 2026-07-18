@@ -12,12 +12,6 @@
                     <field name="crm_match_count" string="Leads Interesados" widget="statinfo"/>
                 </button>
             </xpath>
-            <!-- Inventario de aliados: permite marcar el inmueble como de un aliado -->
-            <xpath expr="//field[@name='exclusive_user_id']" position="after">
-                <field name="is_allied_listing" widget="boolean_toggle"/>
-                <field name="allied_agency_id" invisible="not is_allied_listing"
-                       options="{'no_create_edit': True}"/>
-            </xpath>
         </field>
     </record>
 
@@ -54,13 +48,13 @@
         <field name="inherit_id" ref="estate_management.estate_property_view_kanban"/>
         <field name="arch" type="xml">
             <!-- Declarar los campos usados abajo: sin esto, Odoo no los carga en el
-                 kanban y record.is_allied_listing/.allied_agency_id quedan undefined. -->
+                 kanban y record.is_allied_property/.allied_agency_id quedan undefined. -->
             <xpath expr="//kanban" position="inside">
-                <field name="is_allied_listing"/>
+                <field name="is_allied_property"/>
                 <field name="allied_agency_id"/>
             </xpath>
             <xpath expr="//div[hasclass('o_kanban_tags_section')]" position="after">
-                <div t-if="record.is_allied_listing.raw_value" class="mt-1">
+                <div t-if="record.is_allied_property.raw_value" class="mt-1">
                     <span class="badge text-bg-info">
                         <i class="fa fa-handshake-o me-1"/>Aliado<t t-if="record.allied_agency_id.value">: <t t-esc="record.allied_agency_id.value"/></t>
                     </span>
@@ -76,8 +70,7 @@
         <field name="inherit_id" ref="estate_management.estate_property_view_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='property_type_id']" position="after">
-                <field name="is_allied_listing" widget="badge" optional="show" string="Aliado"
-                       decoration-info="is_allied_listing == True"/>
+                <field name="is_allied_property" widget="boolean" optional="show" string="Aliado"/>
             </xpath>
         </field>
     </record>

@@ -54,7 +54,8 @@ class EstateSalesReportWizard(models.TransientModel):
         flds = ['has_data', 'kpi_avg_price', 'kpi_avg_listed', 'kpi_pct_vs_listed',
                 'kpi_avg_days', 'kpi_median_price', 'kpi_min_price', 'kpi_max_price',
                 'kpi_close_rate', 'kpi_count', 'prev_avg_price', 'pct_change_avg',
-                'prev_avg_days', 'pct_change_days', 'chart_data']
+                'prev_avg_days', 'pct_change_days', 'chart_data',
+                'kpi_avg_commission', 'kpi_total_commission', 'prev_avg_commission', 'pct_change_avg_commission']
         data = wiz.read(flds)[0]
         data.pop('id', None)
         try:
@@ -97,19 +98,23 @@ class EstateSalesReportWizard(models.TransientModel):
 
     # ── Resultados (computed para preview en el wizard) ──────────────────────
     has_data = fields.Boolean(compute='_compute_kpis', store=False)
-    kpi_avg_price = fields.Float(string='Precio promedio', compute='_compute_kpis')
+    kpi_avg_price = fields.Float(string='Precio promedio inmueble (Volumen)', compute='_compute_kpis')
+    kpi_avg_commission = fields.Float(string='Comisión promedio de venta (Honorarios)', compute='_compute_kpis')
+    kpi_total_commission = fields.Float(string='Comisiones Totales Cobradas (Ventas Agencia)', compute='_compute_kpis')
     kpi_avg_listed = fields.Float(string='Precio promedio listado', compute='_compute_kpis')
     kpi_pct_vs_listed = fields.Float(string='% logrado vs listado', compute='_compute_kpis')
     kpi_avg_days = fields.Float(string='Días promedio en mercado', compute='_compute_kpis')
-    kpi_median_price = fields.Float(string='Mediana', compute='_compute_kpis')
-    kpi_min_price = fields.Float(string='Mínimo', compute='_compute_kpis')
-    kpi_max_price = fields.Float(string='Máximo', compute='_compute_kpis')
+    kpi_median_price = fields.Float(string='Mediana de precio inmueble', compute='_compute_kpis')
+    kpi_min_price = fields.Float(string='Mínimo precio inmueble', compute='_compute_kpis')
+    kpi_max_price = fields.Float(string='Máximo precio inmueble', compute='_compute_kpis')
     kpi_close_rate = fields.Float(string='Tasa de cierre (%)', compute='_compute_kpis')
     kpi_count = fields.Integer(string='Operaciones', compute='_compute_kpis')
 
     # ── Comparativa con período anterior ─────────────────────────────────────
-    prev_avg_price = fields.Float(string='Promedio anterior', compute='_compute_kpis')
-    pct_change_avg = fields.Float(string='Variación %', compute='_compute_kpis')
+    prev_avg_price = fields.Float(string='Promedio precio anterior', compute='_compute_kpis')
+    pct_change_avg = fields.Float(string='Variación % precio', compute='_compute_kpis')
+    prev_avg_commission = fields.Float(string='Promedio comisión anterior', compute='_compute_kpis')
+    pct_change_avg_commission = fields.Float(string='Variación % comisión', compute='_compute_kpis')
     prev_avg_days = fields.Float(string='Días anteriores', compute='_compute_kpis')
     pct_change_days = fields.Float(string='Cambio en días', compute='_compute_kpis')
 
@@ -142,6 +147,8 @@ class EstateSalesReportWizard(models.TransientModel):
 
             if not sold:
                 wiz.kpi_avg_price = 0.0
+                wiz.kpi_avg_commission = 0.0
+                wiz.kpi_total_commission = 0.0
                 wiz.kpi_avg_listed = 0.0
                 wiz.kpi_pct_vs_listed = 0.0
                 wiz.kpi_avg_days = 0.0
@@ -151,16 +158,21 @@ class EstateSalesReportWizard(models.TransientModel):
                 wiz.kpi_close_rate = 0.0
                 wiz.prev_avg_price = 0.0
                 wiz.pct_change_avg = 0.0
+                wiz.prev_avg_commission = 0.0
+                wiz.pct_change_avg_commission = 0.0
                 wiz.prev_avg_days = 0.0
                 wiz.pct_change_days = 0.0
                 wiz.chart_data = '{}'
                 continue
 
             prices = sold.mapped('price')
+            commissions = sold.mapped('commission_amount')
             listed_prices = [p.bottom_price * 1.15 if p.bottom_price else p.price for p in sold]
             days = [p.days_on_market for p in sold if p.days_on_market]
 
             wiz.kpi_avg_price = sum(prices) / len(prices)
+            wiz.kpi_avg_commission = sum(commissions) / len(commissions)
+            wiz.kpi_total_commission = sum(commissions)
             wiz.kpi_avg_listed = sum(listed_prices) / len(listed_prices) if listed_prices else 0.0
             # Ratio 0-1 (el widget percentage lo muestra como %); evita el bug 10000%
             wiz.kpi_pct_vs_listed = (
@@ -177,17 +189,25 @@ class EstateSalesReportWizard(models.TransientModel):
             prev_sold = wiz._search_sold_properties(prev_from, prev_to)
             if prev_sold:
                 prev_prices = prev_sold.mapped('price')
+                prev_commissions = prev_sold.mapped('commission_amount')
                 prev_days_list = [p.days_on_market for p in prev_sold if p.days_on_market]
                 wiz.prev_avg_price = sum(prev_prices) / len(prev_prices)
                 wiz.pct_change_avg = (
                     (wiz.kpi_avg_price - wiz.prev_avg_price) / wiz.prev_avg_price
                     if wiz.prev_avg_price else 0.0
                 )
+                wiz.prev_avg_commission = sum(prev_commissions) / len(prev_commissions) if prev_commissions else 0.0
+                wiz.pct_change_avg_commission = (
+                    (wiz.kpi_avg_commission - wiz.prev_avg_commission) / wiz.prev_avg_commission
+                    if wiz.prev_avg_commission else 0.0
+                )
                 wiz.prev_avg_days = sum(prev_days_list) / len(prev_days_list) if prev_days_list else 0.0
                 wiz.pct_change_days = wiz.kpi_avg_days - wiz.prev_avg_days
             else:
                 wiz.prev_avg_price = 0.0
                 wiz.pct_change_avg = 0.0
+                wiz.prev_avg_commission = 0.0
+                wiz.pct_change_avg_commission = 0.0
                 wiz.prev_avg_days = 0.0
                 wiz.pct_change_days = 0.0
 
@@ -262,12 +282,18 @@ class EstateSalesReportWizard(models.TransientModel):
 
     def _build_chart_data(self, sold):
         """Construye datos agregados para los gráficos del template."""
-        # Top 5 ciudades por volumen
-        cities = {}
+        # Top 5 ciudades por comisión y volumen
+        cities_data = {}
         for p in sold:
             c = p.city or 'Sin ciudad'
-            cities[c] = cities.get(c, 0) + p.price
-        top_cities = sorted(cities.items(), key=lambda kv: kv[1], reverse=True)[:5]
+            if c not in cities_data:
+                cities_data[c] = {'comm': 0.0, 'vol': 0.0}
+            cities_data[c]['comm'] += p.commission_amount
+            cities_data[c]['vol'] += p.price
+        top_cities = [
+            [name, vals['comm'], vals['vol']]
+            for name, vals in sorted(cities_data.items(), key=lambda kv: kv[1]['comm'], reverse=True)[:5]
+        ]
 
         # Distribución por tipo
         types = {}
@@ -275,18 +301,25 @@ class EstateSalesReportWizard(models.TransientModel):
             t = p.property_type_id.name if p.property_type_id else 'Sin tipo'
             types[t] = types.get(t, 0) + 1
 
-        # Ranking de asesores por monto
-        users = {}
+        # Ranking de asesores por honorarios (comisión) y volumen
+        users_data = {}
         for p in sold:
             u = p.user_id.name if p.user_id else 'Sin asignar'
-            users[u] = users.get(u, 0) + p.price
-        top_users = sorted(users.items(), key=lambda kv: kv[1], reverse=True)[:10]
+            if u not in users_data:
+                users_data[u] = {'comm': 0.0, 'vol': 0.0}
+            users_data[u]['comm'] += p.commission_amount
+            users_data[u]['vol'] += p.price
+        top_users = [
+            [name, vals['comm'], vals['vol']]
+            for name, vals in sorted(users_data.items(), key=lambda kv: kv[1]['comm'], reverse=True)[:10]
+        ]
 
         return {
             'top_cities': top_cities,
             'types': list(types.items()),
             'top_users': top_users,
             'total_volume': sum(sold.mapped('price')),
+            'total_commission': sum(sold.mapped('commission_amount')),
         }
 
     # ────────────────────────────────────────────────────────────────────────
@@ -510,16 +543,19 @@ class EstateSalesReportWizard(models.TransientModel):
         ws1.write_row('A3', ['Métrica', 'Período actual', 'Período anterior'], f_header)
 
         kpis = [
-            ('Operaciones',                self.kpi_count,        len(sold), f_int),
-            ('Precio promedio',            self.kpi_avg_price,    self.prev_avg_price, f_money),
-            ('Precio promedio listado',    self.kpi_avg_listed,   '-', f_money),
-            ('% logrado vs listado',       self.kpi_pct_vs_listed, '-', f_pct),
-            ('Días promedio en mercado',   self.kpi_avg_days,     self.prev_avg_days, f_int),
-            ('Mediana',                    self.kpi_median_price, '-', f_money),
-            ('Mínimo',                     self.kpi_min_price,    '-', f_money),
-            ('Máximo',                     self.kpi_max_price,    '-', f_money),
-            ('Tasa de cierre',             self.kpi_close_rate,   '-', f_pct),
-            ('Variación promedio precio',  self.pct_change_avg,   '-', f_pct),
+            ('Operaciones Cerradas',       self.kpi_count,        len(sold), f_int),
+            ('Comisión Promedio (Venta Agencia)', self.kpi_avg_commission, self.prev_avg_commission, f_money),
+            ('Comisiones Totales Cobradas', self.kpi_total_commission, '-', f_money),
+            ('Variación Comisión Promedio', self.pct_change_avg_commission, '-', f_pct),
+            ('Precio Promedio Inmueble (Volumen)', self.kpi_avg_price, self.prev_avg_price, f_money),
+            ('Precio Promedio Listado',    self.kpi_avg_listed,   '-', f_money),
+            ('% Logrado vs Listado',       self.kpi_pct_vs_listed, '-', f_pct),
+            ('Días Promedio en Mercado',   self.kpi_avg_days,     self.prev_avg_days, f_int),
+            ('Mediana Precio Inmueble',    self.kpi_median_price, '-', f_money),
+            ('Mínimo Precio Inmueble',     self.kpi_min_price,    '-', f_money),
+            ('Máximo Precio Inmueble',     self.kpi_max_price,    '-', f_money),
+            ('Tasa de Cierre',             self.kpi_close_rate,   '-', f_pct),
+            ('Variación Promedio Precio Inmueble', self.pct_change_avg, '-', f_pct),
         ]
         for i, (label, current, prev, fmt) in enumerate(kpis, start=4):
             ws1.write(f'A{i}', label, f_text)

@@ -1,0 +1,375 @@
+{
+  "name": "Crear Cita",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "fecha"
+            },
+            {
+              "name": "hora"
+            },
+            {
+              "name": "property_id",
+              "type": "number"
+            },
+            {
+              "name": "lead_id",
+              "type": "number"
+            },
+            {
+              "name": "user_id",
+              "type": "number"
+            },
+            {
+              "name": "nombre_cliente"
+            },
+            {
+              "name": "nombre_propiedad"
+            },
+            {
+              "name": "duracion",
+              "type": "number"
+            }
+          ]
+        }
+      },
+      "id": "d72a5233-af8b-41be-8c74-8d5ef02a6440",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c1",
+              "name": "odoo_host",
+              "value": "45.132.240.234",
+              "type": "string"
+            },
+            {
+              "id": "c2",
+              "name": "odoo_db",
+              "value": "inmobi_produccion",
+              "type": "string"
+            },
+            {
+              "id": "c3",
+              "name": "odoo_login",
+              "value": "admin",
+              "type": "string"
+            },
+            {
+              "id": "c4",
+              "name": "odoo_api_key",
+              "value": "685917f42423af0fac1c6bd19da39be569755a07",
+              "type": "string"
+            },
+            {
+              "id": "p1",
+              "name": "fecha",
+              "value": "={{ $json.fecha            || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "p2",
+              "name": "hora",
+              "value": "={{ $json.hora             || '10:00' }}",
+              "type": "string"
+            },
+            {
+              "id": "p3",
+              "name": "property_id",
+              "value": "={{ Number($json.property_id)  || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p4",
+              "name": "lead_id",
+              "value": "={{ Number($json.lead_id)      || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p5",
+              "name": "user_id",
+              "value": "={{ Number($json.user_id)      || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "p6",
+              "name": "nombre_cliente",
+              "value": "={{ $json.nombre_cliente   || 'Cliente' }}",
+              "type": "string"
+            },
+            {
+              "id": "p7",
+              "name": "nombre_propiedad",
+              "value": "={{ $json.nombre_propiedad || 'Propiedad' }}",
+              "type": "string"
+            },
+            {
+              "id": "p8",
+              "name": "duracion",
+              "value": "={{ Number($json.duracion) || 1.0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fde0e670-a41c-4030-8bed-b5bbed24aa9f",
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{ $('Preparar Datos').item.json.odoo_host }}:8069/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"{{ $('Preparar Datos').item.json.odoo_db }}\", \"{{ $('Preparar Datos').item.json.odoo_login }}\", \"{{ $('Preparar Datos').item.json.odoo_api_key }}\", {}]\n  },\n  \"id\": 1\n}",
+        "options": {}
+      },
+      "id": "bbe8ffa2-0523-4a85-8c09-6ef4028833b4",
+      "name": "Autenticar Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        640,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "uid1",
+              "name": "uid",
+              "value": "={{ $json.result }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1349156a-ef55-449c-9f59-658734c89c09",
+      "name": "Extraer UID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        864,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{ $('Preparar Datos').item.json.odoo_host }}:8069/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"{{ $('Preparar Datos').item.json.odoo_db }}\",\n      {{ $json.uid }},\n      \"{{ $('Preparar Datos').item.json.odoo_login }}\",\n      \"crm.lead\",\n      \"read\",\n      [[ {{ $('Preparar Datos').item.json.lead_id || -1 }} ]],\n      {\"fields\": [\"partner_id\", \"target_property_id\", \"user_id\", \"name\", \"contact_name\", \"phone\"]}\n    ]\n  },\n  \"id\": 2\n}",
+        "options": {}
+      },
+      "id": "e44b82d3-9112-42a3-83f1-c91823ab819a",
+      "name": "Buscar Datos del Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1072,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const datos = $('Preparar Datos').item.json;\nconst uid   = $('Extraer UID').item.json.uid;\n\n// Extraer los datos del CRM Lead consultados en Odoo\nlet leadInfo = {};\ntry {\n  const resLead = $input.item.json.result || [];\n  if (Array.isArray(resLead) && resLead.length > 0) {\n    leadInfo = resLead[0];\n  }\n} catch(e) {}\n\n// Obtener propiedad (property_id): prioritariamente desde el lead de Odoo (target_property_id)\nlet propertyId = 0;\nlet nombrePropiedad = datos.nombre_propiedad || 'Propiedad';\nif (leadInfo.target_property_id && Array.isArray(leadInfo.target_property_id) && leadInfo.target_property_id[0]) {\n  propertyId = leadInfo.target_property_id[0];\n  nombrePropiedad = leadInfo.target_property_id[1];\n} else if (datos.property_id > 0) {\n  propertyId = datos.property_id;\n}\n\n// Obtener vendedor/asesor (user_id): prioritariamente desde el lead de Odoo\nlet userId = 0;\nif (leadInfo.user_id && Array.isArray(leadInfo.user_id) && leadInfo.user_id[0]) {\n  userId = leadInfo.user_id[0];\n} else if (datos.user_id > 0) {\n  userId = datos.user_id;\n}\n\n// Obtener cliente (client_id / partner_id del lead) y su nombre\nlet clientId = 0;\nlet nombreCliente = datos.nombre_cliente || 'Cliente';\nif (leadInfo.partner_id && Array.isArray(leadInfo.partner_id) && leadInfo.partner_id[0]) {\n  clientId = leadInfo.partner_id[0];\n  nombreCliente = leadInfo.partner_id[1];\n} else if (leadInfo.contact_name) {\n  nombreCliente = leadInfo.contact_name;\n}\n\n// Parsear fecha (acepta DD-MM-YYYY o YYYY-MM-DD)\nlet fecha = datos.fecha || '';\nif (fecha.match(/^\\d{2}-\\d{2}-\\d{4}$/)) {\n  const [d, m, y] = fecha.split('-');\n  fecha = `${y}-${m}-${d}`;\n}\n\nconst hora = datos.hora || '10:00';\nconst startDate = new Date(`${fecha}T${hora}:00-05:00`);  // Ecuador UTC-5\nconst stopDate  = new Date(startDate.getTime() + (datos.duracion || 1) * 3600000);\n\nconst fmt = (dt) => dt.toISOString().replace('T',' ').slice(0,19);\n\n// Construir vals del evento para calendar.event\nconst vals = {\n  name:             `Visita: ${nombrePropiedad} - ${nombreCliente}`,\n  start:            fmt(startDate),\n  stop:             fmt(stopDate),\n  duration:         datos.duracion || 1.0,\n  appointment_type: 'visit',\n  visit_state:      'scheduled'\n};\n\n// Vendedor/asesor responsable que atiende la cita\nif (userId > 0)     vals.user_id     = userId;\n// Propiedad asociada (campo en DETALLES DE LA VISITA)\nif (propertyId > 0) vals.property_id = propertyId;\n// Lead CRM asociado (campo en DETALLES DE LA VISITA)\nif (datos.lead_id > 0) vals.lead_id = datos.lead_id;\nelse if (leadInfo.id) vals.lead_id = leadInfo.id;\n// Cliente (res.partner del cliente para Cliente en DETALLES DE LA VISITA)\nif (clientId > 0) {\n  vals.client_id = clientId;\n  // Agregar al cliente a la lista de asistentes (partner_ids) sin borrar al asesor organizador\n  vals.partner_ids = [[4, clientId]];\n}\n\nreturn [{ json: { uid, vals, datos, leadInfo, propertyId, userId, clientId } }];"
+      },
+      "id": "1c3d22d8-36dd-4476-976c-2a290aa0dbf9",
+      "name": "Calcular Fecha UTC y Vals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://{{ $('Preparar Datos').item.json.odoo_host }}:8069/jsonrpc",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"{{ $('Preparar Datos').item.json.odoo_db }}\",\n      {{ $json.uid }},\n      \"{{ $('Preparar Datos').item.json.odoo_login }}\",\n      \"calendar.event\",\n      \"create\",\n      [{{ JSON.stringify($json.vals) }}]\n    ]\n  },\n  \"id\": 3\n}",
+        "options": {}
+      },
+      "id": "c77fdfb2-b00a-4203-8630-adba5fa1f32a",
+      "name": "Crear Evento Calendario",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        704
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "r1",
+              "name": "response",
+              "value": "={{ $json.result ? 'Cita agendada (ID: ' + $json.result + '). ' + $('Calcular Fecha UTC y Vals').item.json.vals.name + ' el ' + $('Preparar Datos').item.json.fecha + ' a las ' + $('Preparar Datos').item.json.hora : 'Error al agendar: ' + JSON.stringify($json.error || 'desconocido') }}",
+              "type": "string"
+            },
+            {
+              "id": "r2",
+              "name": "event_id",
+              "value": "={{ $json.result || 0 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "21cd194c-193c-47ac-b963-50ce2c276e1d",
+      "name": "Formatear Respuesta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1744,
+        704
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Preparar Datos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Datos": {
+      "main": [
+        [
+          {
+            "node": "Autenticar Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Autenticar Odoo": {
+      "main": [
+        [
+          {
+            "node": "Extraer UID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer UID": {
+      "main": [
+        [
+          {
+            "node": "Buscar Datos del Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Datos del Lead": {
+      "main": [
+        [
+          {
+            "node": "Calcular Fecha UTC y Vals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular Fecha UTC y Vals": {
+      "main": [
+        [
+          {
+            "node": "Crear Evento Calendario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Evento Calendario": {
+      "main": [
+        [
+          {
+            "node": "Formatear Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ddc86304-df1a-416c-b2aa-f5802a24c8e1",
+  "meta": {
+    "instanceId": "e571374d4ebf3078c20a0feaa411f259d18ef217cc35c9bc26b444136431c32d"
+  },
+  "id": "ku6BKbZldlU6mkZJ",
+  "tags": []
+}

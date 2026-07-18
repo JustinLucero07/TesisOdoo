@@ -22,8 +22,16 @@
                         <!-- Datos del negocio -->
                         <table class="table table-sm" style="margin-bottom:18px;">
                             <tr>
-                                <td style="width:32%;color:#555;"><strong>Vendedor (Asesor)</strong></td>
-                                <td><span t-field="o.user_id.name"/></td>
+                                <td style="width:32%;color:#555;"><strong>Asesor Comercial (Vendedor)</strong></td>
+                                <td>
+                                    <strong><span t-field="o.user_id.name"/></strong>
+                                    <t t-if="o.user_id.partner_id.phone or o.user_id.partner_id.mobile">
+                                        — Tel: <t t-esc="o.user_id.partner_id.phone or o.user_id.partner_id.mobile"/>
+                                    </t>
+                                    <t t-if="o.user_id.partner_id.email">
+                                        — Email: <t t-esc="o.user_id.partner_id.email"/>
+                                    </t>
+                                </td>
                             </tr>
                             <tr>
                                 <td style="color:#555;"><strong>Fecha del Negocio</strong></td>
@@ -72,14 +80,28 @@
                             </tr>
                         </table>
 
-                        <!-- Cliente Vendedor (propietario) -->
-                        <h4 style="color:#004274;border-bottom:1px solid #004274;padding-bottom:3px;">Cliente Vendedor</h4>
+                        <!-- Cliente Vendedor (propietario o asesor si el inmueble es propio/sin propietario registrado) -->
+                        <h4 style="color:#004274;border-bottom:1px solid #004274;padding-bottom:3px;">Cliente Vendedor (Propietario / Asesor a Cargo)</h4>
                         <table class="table table-sm" style="margin-bottom:14px;">
                             <tr>
                                 <td style="width:32%;color:#555;"><strong>Nombre</strong></td>
-                                <td><span t-field="o.owner_id.name"/></td>
+                                <td>
+                                    <t t-if="o.owner_id">
+                                        <span t-field="o.owner_id.name"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span t-field="o.user_id.name"/> <small class="text-muted">(Asesor / Vendedor a Cargo)</small>
+                                    </t>
+                                </td>
                                 <td style="width:18%;color:#555;"><strong>Teléfono</strong></td>
-                                <td><span t-field="o.owner_id.phone"/><t t-if="not o.owner_id.phone"><span t-field="o.owner_id.mobile"/></t></td>
+                                <td>
+                                    <t t-if="o.owner_id">
+                                        <span t-field="o.owner_id.phone"/><t t-if="not o.owner_id.phone"><span t-field="o.owner_id.mobile"/></t>
+                                    </t>
+                                    <t t-else="">
+                                        <t t-esc="o.user_id.partner_id.phone or o.user_id.partner_id.mobile or o.company_id.phone or ''"/>
+                                    </t>
+                                </td>
                             </tr>
                         </table>
 
@@ -111,11 +133,16 @@
                         <table style="width:100%;margin-top:48px;">
                             <tr>
                                 <td style="width:45%;text-align:center;border-top:1px solid #333;padding-top:4px;">
-                                    Firma Comprador
+                                    <strong>Firma Comprador</strong><br/>
+                                    <span t-field="o.buyer_id.name"/>
                                 </td>
                                 <td style="width:10%;"/>
                                 <td style="width:45%;text-align:center;border-top:1px solid #333;padding-top:4px;">
-                                    Firma Vendedor
+                                    <strong>Firma Vendedor / Asesor a Cargo</strong><br/>
+                                    <t t-if="o.owner_id">
+                                        <span t-field="o.owner_id.name"/> (Propietario)<br/>
+                                    </t>
+                                    <strong><span t-field="o.user_id.name"/></strong> (Asesor Comercial)
                                 </td>
                             </tr>
                         </table>

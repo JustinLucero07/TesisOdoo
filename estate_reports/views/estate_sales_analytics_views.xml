@@ -12,7 +12,8 @@
         <field name="arch" type="xml">
             <graph string="Ventas por Mes" type="bar" sample="1">
                 <field name="date_sold" interval="month" type="row" string="Mes"/>
-                <field name="price" type="measure" string="Precio de venta"/>
+                <field name="commission_amount" type="measure" string="Honorarios de Agencia (Ventas)"/>
+                <field name="price" type="measure" string="Valor Total Inmuebles (Volumen)"/>
             </graph>
         </field>
     </record>
@@ -24,7 +25,8 @@
         <field name="arch" type="xml">
             <graph string="Ranking de Asesores" type="bar" sample="1" order="DESC">
                 <field name="user_id" type="row" string="Asesor"/>
-                <field name="price" type="measure" string="Volumen vendido"/>
+                <field name="commission_amount" type="measure" string="Honorarios de Agencia (Ventas)"/>
+                <field name="price" type="measure" string="Valor Total Inmuebles"/>
             </graph>
         </field>
     </record>
@@ -34,9 +36,10 @@
         <field name="name">estate.property.graph.sales.type</field>
         <field name="model">estate.property</field>
         <field name="arch" type="xml">
-            <graph string="Por Tipo de Propiedad" type="pie" sample="1">
+            <graph string="Por Tipo de Propiedad" type="bar" sample="1">
                 <field name="property_type_id" type="row" string="Tipo"/>
-                <field name="price" type="measure" string="Precio de venta"/>
+                <field name="commission_amount" type="measure" string="Honorarios de Agencia (Ventas)"/>
+                <field name="price" type="measure" string="Valor Total Inmuebles"/>
             </graph>
         </field>
     </record>
@@ -72,7 +75,8 @@
         <field name="arch" type="xml">
             <graph string="Ventas por Canal" type="pie" sample="1">
                 <field name="sold_by" type="row" string="Vendido por"/>
-                <field name="price" type="measure" string="Precio de venta"/>
+                <field name="commission_amount" type="measure" string="Honorarios de Agencia (Ventas)"/>
+                <field name="price" type="measure" string="Valor Total Inmuebles"/>
             </graph>
         </field>
     </record>
@@ -88,7 +92,8 @@
             <pivot string="Análisis de Ventas" display_quantity="true" sample="1">
                 <field name="user_id" type="row" string="Asesor"/>
                 <field name="property_type_id" type="col" string="Tipo"/>
-                <field name="price" type="measure" string="Precio de venta"/>
+                <field name="commission_amount" type="measure" string="Honorarios de Agencia (Venta)"/>
+                <field name="price" type="measure" string="Valor Total Inmueble (Volumen)"/>
                 <field name="days_on_market" type="measure" string="Días en mercado"/>
             </pivot>
         </field>
@@ -234,10 +239,10 @@
         <field name="name">estate.property.graph.avg.month</field>
         <field name="model">estate.property</field>
         <field name="arch" type="xml">
-            <graph string="Promedio de Ventas por Mes" type="bar" sample="1">
+            <graph string="Promedio de Ventas y Precios de Inmuebles" type="bar" sample="1">
                 <field name="date_sold" interval="month" type="row" string="Mes"/>
-                <field name="price" type="measure" string="Ingresos Totales"/>
-                <field name="commission_amount" type="measure" string="Comisiones Totales"/>
+                <field name="commission_amount" type="measure" string="Honorarios Promedio / Total (Agencia)"/>
+                <field name="price" type="measure" string="Valor Promedio / Total de Casas"/>
             </graph>
         </field>
     </record>
@@ -247,10 +252,10 @@
         <field name="name">estate.property.pivot.avg.month</field>
         <field name="model">estate.property</field>
         <field name="arch" type="xml">
-            <pivot string="Promedio de Ventas" display_quantity="true" sample="1">
+            <pivot string="Promedio de Ventas y Precios" display_quantity="true" sample="1">
                 <field name="date_sold" interval="month" type="row" string="Mes"/>
-                <field name="price" type="measure" string="Precio Venta"/>
-                <field name="commission_amount" type="measure" string="Comisión"/>
+                <field name="commission_amount" type="measure" string="Honorarios de Agencia (Venta)"/>
+                <field name="price" type="measure" string="Valor Total Inmueble"/>
                 <field name="days_on_market" type="measure" string="Días en Mercado"/>
             </pivot>
         </field>

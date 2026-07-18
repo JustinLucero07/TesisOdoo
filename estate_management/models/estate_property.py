@@ -25,10 +25,7 @@ class EstateProperty(models.Model):
     @api.depends('title', 'name')
     def _compute_display_name(self):
         for rec in self:
-            if rec.name and rec.name != 'Nuevo':
-                rec.display_name = f"{rec.title} [{rec.name}]" if rec.title else rec.name
-            else:
-                rec.display_name = rec.title or 'Nuevo'
+            rec.display_name = rec.title or rec.name or 'Nuevo'
 
     @api.model
     def _name_search(self, name='', domain=None, operator='ilike', limit=100, order=None):
@@ -303,6 +300,19 @@ class EstateProperty(models.Model):
     commission_split_pct = fields.Float(
         string='Split Co-Asesor (%)', default=50.0,
         help='Porcentaje de la comisión que corresponde al Co-Asesor (el resto es del Asesor Responsable).')
+    is_allied_property = fields.Boolean(
+        string='Inmueble de Aliado', tracking=True,
+        help='Marca este inmueble como vinculado a una agencia aliada: ya sea inventario de esa '
+             'agencia que ofreces a tus clientes, o captación propia cuya comisión se reparte con '
+             'ese aliado. Al activarlo, indica la agencia y el porcentaje que nos corresponde.')
+    allied_agency_id = fields.Many2one(
+        'res.partner', string='Agencia Aliada',
+        domain=[('is_allied_agency', '=', True)],
+        help='Agencia aliada relacionada con este inmueble.')
+    allied_split_pct = fields.Float(
+        string='Nuestra Parte de Comisión (%)', default=50.0,
+        help='Porcentaje de la comisión de la propiedad que corresponde a nuestra agencia (por defecto 50%, es decir, la mitad para nosotros y la mitad para el aliado).')
+
 
     # --- Negocio Cerrado (datos del cierre, capturados al vender) ---
     deal_deadline = fields.Date(
@@ -456,6 +466,19 @@ class EstateProperty(models.Model):
     def _compute_appraisal_count(self):
         for rec in self:
             rec.appraisal_count = len(rec.appraisal_ids)
+
+    def action_view_capture_sheet(self):
+        """Abre la Hoja de Captación en una pestaña nueva a pantalla completa,
+        usando el visor de PDF nativo del navegador (en vez de un widget
+        embebido siempre visible en el formulario)."""
+        self.ensure_one()
+        if not self.capture_sheet:
+            return False
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/estate.property/{self.id}/capture_sheet?download=false',
+            'target': 'new',
+        }
 
     def action_view_price_history(self):
         self.ensure_one()
@@ -1028,6 +1051,38 @@ class EstateProperty(models.Model):
             },
         }
 
+    def action_edit_deal(self):
+        self.ensure_one()
+        if self.state != 'sold':
+            raise UserError('Solo se pueden editar los datos de cierre en propiedades vendidas.')
+        wizard = self.env['estate.sale.wizard'].create({
+            'property_id': self.id,
+            'buyer_id': self.buyer_id.id if self.buyer_id else (self.owner_id.id if self.owner_id else False),
+            'sale_price': self.price,
+            'date_sold': self.date_sold or fields.Date.today(),
+            'sold_by': self.sold_by or 'agency',
+            'commission_pct': self.commission_percentage,
+            'user_id': self.user_id.id if self.user_id else self.env.user.id,
+            'buyer_proxy_id': self.proxy_id.id if self.proxy_id else False,
+            'deal_deadline': self.deal_deadline,
+            'deal_earnest_amount': self.deal_earnest_amount,
+            'deal_payment_type': self.deal_payment_type or 'cash',
+            'deal_payment_details': self.deal_payment_details,
+            'deal_credit_institution': self.deal_credit_institution,
+            'deal_credit_advisor': self.deal_credit_advisor,
+            'deal_credit_advisor_phone': self.deal_credit_advisor_phone,
+            'deal_observations': self.deal_observations,
+        })
+        return {
+            'name': 'Modificar Datos del Negocio Cerrado',
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.sale.wizard',
+            'view_mode': 'form',
+            'res_id': wizard.id,
+            'target': 'new',
+            'context': {'edit_deal_mode': True},
+        }
+
     def action_set_sold(self):
         self.ensure_one()
         if self.state not in ('available', 'reserved'):
@@ -1071,12 +1126,18 @@ class EstateProperty(models.Model):
         first_month_commission = self.rental_price * (self.commission_percentage / 100.0)
         self._create_commission_records('rent', first_month_commission, self.rental_price, self.commission_percentage)
 
-    def _process_native_sale(self, buyer, price, commission_amount, commission_pct):
+    def _process_native_sale(self, buyer, price, commission_amount, commission_pct, invoice_mode='commission', user_id=False):
         """Crea y confirma la orden de venta nativa (sale.order) y genera +
-        contabiliza la factura (account.move) para que la venta quede registrada
-        en los módulos nativos de Ventas y Facturación. Devuelve (order, invoice).
+        contabiliza la factura (account.move) según el modo de facturación elegido:
+        - 'commission': Factura los Honorarios de Corretaje (al propietario si existe, o al cliente).
+        - 'total': Factura el Valor Total del Inmueble (al comprador, para proyectos propios).
+        - 'none': No genera facturación en Odoo.
+        Devuelve (order, invoice).
         """
         self.ensure_one()
+        if invoice_mode == 'none':
+            return False, False
+
         order = invoice = False
 
         # Vincular lead activo del comprador si existe
@@ -1092,17 +1153,30 @@ class EstateProperty(models.Model):
         ], limit=1)
 
         try:
+            # Si facturamos solo comisión (corretaje), el cliente por defecto es el dueño/propietario del inmueble si existe
+            target_partner = self.owner_id.id if (invoice_mode == 'commission' and self.owner_id) else buyer.id
             order_vals = {
-                'partner_id': buyer.id,
+                'partner_id': target_partner,
                 'property_id': self.id,
                 'estate_transaction_type': 'sale',
                 'lead_id': active_lead.id if active_lead else False,
             }
+            if user_id:
+                order_vals['user_id'] = user_id.id
+            elif self.user_id:
+                order_vals['user_id'] = self.user_id.id
             if self.product_id:
+                if invoice_mode == 'commission':
+                    line_name = f"Honorarios de Corretaje por Venta ({commission_pct}%) — {self.title}"
+                    line_price = commission_amount
+                else:
+                    line_name = f"Venta de Inmueble — {self.title}"
+                    line_price = price
+
                 order_vals['order_line'] = [(0, 0, {
                     'product_id': self.product_id.product_variant_id.id,
-                    'name': self.title,
-                    'price_unit': price,
+                    'name': line_name,
+                    'price_unit': line_price,
                     'product_uom_qty': 1,
                 })]
             order = self.env['sale.order'].create(order_vals)
@@ -1119,6 +1193,21 @@ class EstateProperty(models.Model):
                 if invoices:
                     invoices.action_post()
                     invoice = invoices[:1]
+                    if user_id:
+                        invoice.write({'invoice_user_id': user_id.id})
+                    elif self.user_id:
+                        invoice.write({'invoice_user_id': self.user_id.id})
+
+                    if hasattr(self, 'deal_payment_type') and self.deal_payment_type == 'cash' and invoice.state == 'posted' and invoice.payment_state in ('not_paid', 'partial'):
+                        try:
+                            payment_register = self.env['account.payment.register'].with_context(active_model='account.move', active_ids=invoice.ids).create({
+                                'payment_date': fields.Date.today(),
+                                'amount': invoice.amount_total,
+                            })
+                            payment_register._create_payments()
+                            _logger.info("Factura %s pagada automáticamente al ser Contado", invoice.name)
+                        except Exception as e_pay:
+                            _logger.warning("No se pudo registrar pago automático de factura al contado: %s", e_pay)
         except Exception as e:
             _logger.error('Flujo nativo de venta falló para propiedad %s: %s', self.id, e)
             raise UserError(
@@ -1127,15 +1216,29 @@ class EstateProperty(models.Model):
 
         return order, invoice
 
-    def _create_commission_records(self, commission_type, total_amount, sale_price, pct):
+    def _create_commission_records(self, commission_type, total_amount, sale_price, pct, lead_id=False):
         """Crea registros de comisión, dividiendo entre asesor y co-asesor si aplica."""
         today = fields.Date.today()
+        if not lead_id:
+            active_lead = self.env['crm.lead'].search([
+                ('target_property_id', '=', self.id),
+                ('type', '=', 'opportunity'),
+            ], limit=1)
+            lead_id = active_lead.id if active_lead else False
+
+        # Si es inmueble de aliado, nuestra agencia solo cobra nuestra porción de la comisión total
+        if self.is_allied_property:
+            allied_ratio = (self.allied_split_pct or 50.0) / 100.0
+            total_amount = total_amount * allied_ratio
+            pct = pct * allied_ratio
+
         if self.co_user_id and 0 < self.commission_split_pct < 100:
             co_ratio = self.commission_split_pct / 100.0
             co_amount = total_amount * co_ratio
             main_amount = total_amount * (1.0 - co_ratio)
             self.env['estate.commission'].create({
                 'property_id': self.id,
+                'lead_id': lead_id,
                 'user_id': self.user_id.id,
                 'sale_amount': sale_price,
                 'commission_pct': pct * (1.0 - co_ratio),
@@ -1146,6 +1249,7 @@ class EstateProperty(models.Model):
             })
             self.env['estate.commission'].create({
                 'property_id': self.id,
+                'lead_id': lead_id,
                 'user_id': self.co_user_id.id,
                 'sale_amount': sale_price,
                 'commission_pct': pct * co_ratio,
@@ -1163,6 +1267,7 @@ class EstateProperty(models.Model):
         else:
             self.env['estate.commission'].create({
                 'property_id': self.id,
+                'lead_id': lead_id,
                 'user_id': self.user_id.id,
                 'sale_amount': sale_price,
                 'commission_pct': pct,
@@ -1209,8 +1314,22 @@ class EstateProperty(models.Model):
             'invoice_origin': self.name,
             'invoice_line_ids': lines,
         }
-            
+        if self.user_id:
+            invoice_vals['invoice_user_id'] = self.user_id.id
+
         move = self.env['account.move'].create(invoice_vals)
+        if hasattr(self, 'deal_payment_type') and self.deal_payment_type == 'cash':
+            try:
+                move.action_post()
+                if move.payment_state in ('not_paid', 'partial'):
+                    payment_register = self.env['account.payment.register'].with_context(active_model='account.move', active_ids=move.ids).create({
+                        'payment_date': fields.Date.today(),
+                        'amount': move.amount_total,
+                    })
+                    payment_register._create_payments()
+                    _logger.info("Factura directa %s pagada automáticamente al ser Contado", move.name)
+            except Exception as e_pay:
+                _logger.warning("No se pudo auto-registrar pago al contado en factura directa: %s", e_pay)
 
         # Despublicar de WordPress al concretar la venta (igual que action_set_sold)
         if self.wp_published and self.wp_post_id and hasattr(self, 'action_unpublish_wordpress'):

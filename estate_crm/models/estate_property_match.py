@@ -1,6 +1,6 @@
 import operator as _op
 
-from odoo import models, fields
+from odoo import api, models, fields
 
 
 class EstatePropertyMatch(models.Model):
@@ -12,15 +12,25 @@ class EstatePropertyMatch(models.Model):
         search='_search_crm_match_count',
     )
 
-    # ── Inventario de aliados ────────────────────────────────────────────────
-    is_allied_listing = fields.Boolean(
-        string='Inmueble de aliado',
-        help='Marca este inmueble como parte del inventario de una agencia aliada '
-             '(para ofrecerlo a tus clientes sin ser captación propia).')
-    allied_agency_id = fields.Many2one(
-        'res.partner', string='Agencia aliada',
-        domain=[('is_allied_agency', '=', True)],
-        help='Agencia aliada origen de este inmueble.')
+    @api.model
+    def _migrate_consolidate_allied_fields(self):
+        """Los campos is_allied_listing/allied_agency_id (definidos antes en este
+        módulo) se consolidaron en estate_management.is_allied_property/
+        allied_agency_id. La columna is_allied_listing sigue físicamente en la
+        tabla aunque el campo ya no existe en el modelo; se rescata su valor
+        antes de que quede huérfana."""
+        self.env.cr.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'estate_property' AND column_name = 'is_allied_listing'
+        """)
+        if not self.env.cr.fetchone():
+            return
+        self.env.cr.execute("""
+            UPDATE estate_property
+            SET is_allied_property = TRUE
+            WHERE is_allied_listing IS TRUE
+              AND (is_allied_property IS NULL OR is_allied_property = FALSE)
+        """)
 
     def _search_crm_match_count(self, operator, value):
         """Permite usar el conteo (no almacenado) en dominios, ej:

@@ -5,10 +5,12 @@
         <field name="name">estate.sale.wizard.form</field>
         <field name="model">estate.sale.wizard</field>
         <field name="arch" type="xml">
-            <form string="Cerrar Venta">
+            <form string="Cerrar / Modificar Venta">
+                <field name="is_edit_mode" invisible="1"/>
                 <sheet>
                     <div class="oe_title">
-                        <h2>Confirmar Venta de Propiedad</h2>
+                        <h2 invisible="is_edit_mode">Confirmar Venta de Propiedad</h2>
+                        <h2 invisible="not is_edit_mode" class="text-primary"><i class="fa fa-pencil-square-o" title="Editar" aria-label="Editar"/> Actualizar Datos del Negocio Cerrado</h2>
                         <h3 class="text-muted">
                             <field name="property_id" readonly="1"/>
                         </h3>
@@ -16,11 +18,13 @@
 
                     <group>
                         <group string="Comprador">
+                            <field name="lead_id" placeholder="Elige un lead del CRM para llenar los datos..."/>
                             <field name="buyer_id" options="{'no_create': False}"/>
                         </group>
                         <group string="Fecha y Cierre">
                             <field name="date_sold"/>
                             <field name="sold_by"/>
+                            <field name="user_id" widget="many2one_avatar_user" options="{'no_create': True}"/>
                         </group>
                     </group>
 
@@ -34,6 +38,8 @@
                             <field name="commission_amount" widget="monetary" readonly="1"/>
                         </group>
                     </group>
+
+                    <field name="invoice_mode" invisible="1"/>
 
                     <group string="Datos del Negocio Cerrado">
                         <group>
@@ -56,8 +62,8 @@
                         <field name="deal_observations" placeholder="Observaciones adicionales del negocio..."/>
                     </group>
 
-                    <div class="alert alert-success" role="alert" style="font-size:0.9em">
-                        <i class="fa fa-check-circle"/> Al confirmar, automáticamente se:
+                    <div class="alert alert-success" role="alert" style="font-size:0.9em" invisible="is_edit_mode">
+                        <i class="fa fa-check-circle" title="Confirmación" aria-label="Confirmación"/> Al confirmar, automáticamente se:
                         <ol class="mb-0 mt-1">
                             <li>Crea y <strong>confirma la Orden de Venta</strong> (módulo Ventas)</li>
                             <li>Genera y <strong>contabiliza la Factura</strong> (módulo Facturación)</li>
@@ -65,10 +71,17 @@
                             <li>Registra la <strong>comisión</strong> del asesor</li>
                         </ol>
                     </div>
+                    <div class="alert alert-info" role="alert" style="font-size:0.9em" invisible="not is_edit_mode">
+                        <i class="fa fa-info-circle" title="Información" aria-label="Información"/> <strong>Modo Edición:</strong> Al hacer clic en <em>Actualizar Cambios</em>, se actualizará instantáneamente la ficha de la propiedad, la orden de venta y los reportes de cierre sin alterar la facturación previa ni duplicar registros contables.
+                    </div>
                 </sheet>
                 <footer>
                     <button name="action_confirm_sale" string="Confirmar Venta"
-                            type="object" class="btn-success oe_highlight" icon="fa-check"/>
+                            type="object" class="btn-success oe_highlight" icon="fa-check"
+                            invisible="is_edit_mode"/>
+                    <button name="action_confirm_sale" string="Actualizar Cambios"
+                            type="object" class="btn-primary oe_highlight" icon="fa-save"
+                            invisible="not is_edit_mode"/>
                     <button string="Cancelar" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

@@ -99,8 +99,11 @@
                                 </tr>
                             </t>
                             <tr>
-                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">Intermediario</td>
-                                <td style="padding:5px 10px;"><t t-esc="env.company.name"/></td>
+                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; color:#555; font-weight:600;">Intermediario / Asesor</td>
+                                <td style="padding:5px 10px;">
+                                    <t t-esc="env.company.name"/>
+                                    <t t-if="o.user_id"> &#183; Asesor Comercial: <strong><t t-esc="o.user_id.name"/></strong></t>
+                                </td>
                             </tr>
                         </table>
 
@@ -150,7 +153,26 @@
                                 La contraprestaci&#243;n monetaria acordada es de
                                 <strong>$<t t-esc="'{:,.2f}'.format(o.amount_total or 0)"/></strong>,
                                 que el Cliente abonar&#225; seg&#250;n el esquema de pagos acordado entre las partes.
+                                <t t-if="o.property_id and o.property_id.deal_payment_type">
+                                    <br/>&#183; <strong>Modalidad de Pago:</strong>
+                                    <t t-esc="dict([('cash','Contado'),('mortgage','Cr&#233;dito Hipotecario / BIESS'),('owner','Financiamiento Directo'),('mixed','Mixto'),('other','Otro')]).get(o.property_id.deal_payment_type, '')"/>
+                                </t>
+                                <t t-if="o.property_id and o.property_id.deal_payment_details">
+                                    <br/>&#183; <strong>Detalles de Pago:</strong> <t t-esc="o.property_id.deal_payment_details"/>
+                                </t>
                             </p>
+                            <t t-if="o.property_id and o.property_id.deal_observations">
+                                <p style="margin:0 0 10px 0;">
+                                    <strong>OBSERVACIONES / CONDICIONES ADICIONALES:</strong>
+                                    <t t-esc="o.property_id.deal_observations"/>
+                                </p>
+                            </t>
+                            <t t-elif="o.note">
+                                <p style="margin:0 0 10px 0;">
+                                    <strong>OBSERVACIONES / CONDICIONES ADICIONALES:</strong>
+                                    <t t-esc="o.note"/>
+                                </p>
+                            </t>
                             <p style="margin:0 0 10px 0;">
                                 <strong>TERCERA &#8212; Validez:</strong>
                                 El presente documento es autogenerado por el Sistema de Gesti&#243;n Inmobiliaria y est&#225; validado como documento oficial seg&#250;n las pol&#237;ticas vigentes de

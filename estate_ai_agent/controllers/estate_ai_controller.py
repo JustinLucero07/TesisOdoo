@@ -146,6 +146,14 @@ REGLA ABSOLUTA: NUNCA digas 'no puedo', 'no tengo la capacidad', 'no tengo acces
 Tienes la herramienta query_database que te permite ejecutar CUALQUIER consulta SQL SELECT
 contra toda la base de datos. Si ninguna otra herramienta sirve, usa query_database con un SQL
 apropiado. Tienes acceso a TODA la información del sistema sin excepción.
+IMPORTANTE PARA CONSULTAS SQL (query_database): La base de datos es PostgreSQL (NO SQLite ni MySQL).
+- NUNCA uses strftime o date('now'). Para extraer mes/año en PostgreSQL usa to_char(date_sold, 'YYYY-MM') o EXTRACT(YEAR FROM date_sold).
+- Para fechas relativas en PostgreSQL usa CURRENT_DATE o NOW() (ej. date_sold >= CURRENT_DATE - INTERVAL '30 days').
+- Campos como crm_stage.name, res_partner.name (título), etc. son TRADUCIBLES y se guardan como JSONB,
+  NO como texto plano. Comparar con '=' o ILIKE directo contra un string FALLA con error de tipos.
+  Si necesitas filtrar por nombre de etapa del CRM, NO uses SQL crudo: usa la herramienta get_leads
+  con el parámetro stage (ej. get_leads(stage="En Proceso Cierre")). Si de verdad necesitas SQL sobre
+  un campo traducible, castea así: nombre_columna->>'en_US' (ej. cs.name->>'en_US' ILIKE '%cierre%').
 
 REGLAS DE CONTEXTO (MUY IMPORTANTE):
 - RECUERDA la última propiedad/lead/cliente mencionado en la conversación. Si el usuario dice
@@ -205,7 +213,12 @@ INSTRUCCIONES DE RESPUESTA:
 1. Sé proactivo: si el usuario dice "crea un lead para Juan", HAZLO directamente con las herramientas.
 2. Confirma siempre las acciones realizadas con el ID creado/actualizado.
 3. Usa tablas Markdown para listados (columnas separadas por |).
-4. REGLA OBLIGATORIA PARA REPORTES Y GRÁFICOS:
+4. REGLA COMERCIAL DE ANÁLISIS DE VENTAS (DOBLE ENFOQUE PROFESIONAL):
+   Cuando el usuario pregunte por "ventas", "cierres", "promedio de ventas", "ingresos" o pida reportes de ventas, SIEMPRE analiza y presenta la información diferenciando DOS enfoques claros:
+   a) Honorarios y Comisiones de Agencia (commission_amount): Representa la ganancia real y el ingreso de la agencia inmobiliaria por las operaciones cerradas.
+   b) Volumen y Precio de Inmuebles (price): Representa el valor total y el precio promedio al que se vendieron las casas/propiedades, para evaluar qué tan costosos son los inmuebles movidos y el desempeño en el mercado.
+   En tus explicaciones, resúmenes y tablas compara ambas métricas y NO las confundas.
+5. REGLA OBLIGATORIA PARA REPORTES Y GRÁFICOS:
    Cuando el usuario pida reporte, gráfico, estadística, resumen de datos, o use palabras como
    "muéstrame", "cuántos hay por", "reporte de", "gráfico de", "estadísticas" → DEBES llamar
    a la herramienta get_report_data. NUNCA respondas con solo texto cuando se pide un gráfico.
@@ -406,17 +419,36 @@ INSTRUCCIONES DE RESPUESTA:
                 return json.dumps(result, ensure_ascii=False)
 
             elif tool_name == 'get_leads':
-                domain = [('type', '=', 'lead')]
+                domain = []
+                if args.get('type'):
+                    domain.append(('type', '=', args['type']))
                 if args.get('temperature'):
                     domain.append(('lead_temperature', '=', args['temperature']))
                 if args.get('score'):
                     domain.append(('lead_score', '=', args['score']))
-                limit = int(args.get('limit', 10))
+                if args.get('stage'):
+                    # Prefer an exact (case-insensitive) stage match first: nombres como
+                    # "Cierre" y "En Proceso Cierre" comparten la palabra "cierre", así que
+                    # un ilike de subcadena mezclaría ambas etapas distintas.
+                    stage_domain = [('stage_id.name', '=ilike', args['stage'])]
+                    if env['crm.lead'].sudo().search_count(domain + stage_domain):
+                        domain += stage_domain
+                    else:
+                        domain.append(('stage_id.name', 'ilike', args['stage']))
+                if args.get('lost') is True:
+                    domain.append(('stage_id.is_lost', '=', True))
+                limit = int(args.get('limit', 20))
                 leads = env['crm.lead'].sudo().search(domain, limit=limit)
+                if not leads:
+                    return json.dumps({
+                        'leads': [],
+                        'mensaje': 'No se encontraron leads con esos filtros.',
+                    }, ensure_ascii=False)
                 result = [
                     {
                         'id': l.id, 'nombre': l.name,
                         'cliente': l.partner_id.name if l.partner_id else l.contact_name,
+                        'asesor': l.user_id.name if l.user_id else None,
                         'presupuesto': l.client_budget,
                         'temperatura': l.lead_temperature,
                         'puntuacion': l.lead_score,
@@ -429,7 +461,7 @@ INSTRUCCIONES DE RESPUESTA:
                 return json.dumps(result, ensure_ascii=False)
 
             elif tool_name == 'get_market_stats':
-                domain = [('state', '=', 'sold'), ('days_on_market', '>', 0)]
+                domain = [('state', '=', 'sold')]
                 if args.get('city'):
                     domain.append(('city', 'ilike', args['city']))
                 if args.get('property_type'):
@@ -438,14 +470,16 @@ INSTRUCCIONES DE RESPUESTA:
                 if not sold:
                     return json.dumps({'error': 'Sin datos suficientes para el filtro indicado.'})
                 prices = sold.mapped('price')
-                days = sold.mapped('days_on_market')
+                commissions = sold.mapped('commission_amount')
+                days = [p.days_on_market for p in sold if p.days_on_market > 0]
                 stats = {
-                    'total_vendidas': len(sold),
-                    'precio_promedio': round(sum(prices) / len(prices), 2),
-                    'precio_minimo': min(prices),
-                    'precio_maximo': max(prices),
-                    'dias_promedio_venta': round(sum(days) / len(days), 1),
-                    'comision_total': round(sum(sold.mapped('commission_amount')), 2),
+                    'total_operaciones_cerradas': len(sold),
+                    'comision_promedio_por_venta_agencia': round(sum(commissions) / len(sold), 2) if sold else 0,
+                    'comisiones_totales_cobradas_agencia': round(sum(commissions), 2),
+                    'precio_promedio_inmuebles_volumen': round(sum(prices) / len(prices), 2) if prices else 0,
+                    'precio_minimo_inmueble': min(prices) if prices else 0,
+                    'precio_maximo_inmueble': max(prices) if prices else 0,
+                    'dias_promedio_en_mercado': round(sum(days) / len(days), 1) if days else 0,
                 }
                 return json.dumps(stats, ensure_ascii=False)
 
@@ -1078,24 +1112,49 @@ INSTRUCCIONES DE RESPUESTA:
                     ws['A2'] = f'Generado: {_date.today().strftime("%d/%m/%Y")}'
                     ws['A2'].font = Font(italic=True, color='666666')
 
-                    ws['A4'] = 'Categoría / Período'
-                    ws['B4'] = 'Valor'
-                    for cell in [ws['A4'], ws['B4']]:
-                        cell.font = header_font
-                        cell.fill = header_fill
-                        cell.alignment = Alignment(horizontal='center')
+                    detalle = data_obj.get('detalle', [])
+                    data_dict = data_obj.get('data', {})
 
-                    row = 5
-                    for key, val in data_obj.get('data', {}).items():
-                        ws[f'A{row}'] = str(key)
-                        ws[f'B{row}'] = val
-                        if row % 2 == 0:
-                            for col in ['A', 'B']:
-                                ws[f'{col}{row}'].fill = PatternFill(fill_type='solid', fgColor='EBF5FB')
-                        row += 1
+                    if detalle and isinstance(detalle, list) and isinstance(detalle[0], dict):
+                        headers = list(detalle[0].keys())
+                        for col_idx, h in enumerate(headers, start=1):
+                            cell = ws.cell(row=4, column=col_idx, value=str(h).replace('_', ' ').title())
+                            cell.font = header_font
+                            cell.fill = header_fill
+                            cell.alignment = Alignment(horizontal='center')
+                        row = 5
+                        for item in detalle:
+                            for col_idx, h in enumerate(headers, start=1):
+                                val = item.get(h, '')
+                                ws.cell(row=row, column=col_idx, value=val)
+                                if row % 2 == 0:
+                                    ws.cell(row=row, column=col_idx).fill = PatternFill(fill_type='solid', fgColor='EBF5FB')
+                            row += 1
+                        for col_idx in range(1, len(headers) + 1):
+                            col_letter = openpyxl.utils.get_column_letter(col_idx)
+                            ws.column_dimensions[col_letter].width = 25
+                    else:
+                        ws['A4'] = 'Categoría / Período'
+                        ws['B4'] = 'Valor'
+                        for cell in [ws['A4'], ws['B4']]:
+                            cell.font = header_font
+                            cell.fill = header_fill
+                            cell.alignment = Alignment(horizontal='center')
 
-                    ws.column_dimensions['A'].width = 35
-                    ws.column_dimensions['B'].width = 20
+                        row = 5
+                        for key, val in data_dict.items():
+                            ws[f'A{row}'] = str(key)
+                            if isinstance(val, dict):
+                                ws[f'B{row}'] = json.dumps(val, ensure_ascii=False)
+                            else:
+                                ws[f'B{row}'] = val
+                            if row % 2 == 0:
+                                for col in ['A', 'B']:
+                                    ws[f'{col}{row}'].fill = PatternFill(fill_type='solid', fgColor='EBF5FB')
+                            row += 1
+
+                        ws.column_dimensions['A'].width = 35
+                        ws.column_dimensions['B'].width = 25
 
                     buf = BytesIO()
                     wb.save(buf)
@@ -1846,10 +1905,18 @@ INSTRUCCIONES DE RESPUESTA:
                     cur_rev = sum(cur_rev_props.mapped('price'))
                     prev_rev = sum(prev_rev_props.mapped('price'))
                     delta_pct = round((cur_rev - prev_rev) / prev_rev * 100, 1) if prev_rev else 0
-                    trends['ingresos'] = {
+                    trends['volumen_casas'] = {
                         cur_label: round(cur_rev, 2), prev_label: round(prev_rev, 2),
                         'variacion_pct': f"{'+' if delta_pct >= 0 else ''}{delta_pct}%",
                         'tendencia': 'subida' if delta_pct > 0 else ('bajada' if delta_pct < 0 else 'igual'),
+                    }
+                    cur_comm = sum(cur_rev_props.mapped('commission_amount'))
+                    prev_comm = sum(prev_rev_props.mapped('commission_amount'))
+                    delta_comm_pct = round((cur_comm - prev_comm) / prev_comm * 100, 1) if prev_comm else 0
+                    trends['comisiones_agencia'] = {
+                        cur_label: round(cur_comm, 2), prev_label: round(prev_comm, 2),
+                        'variacion_pct': f"{'+' if delta_comm_pct >= 0 else ''}{delta_comm_pct}%",
+                        'tendencia': 'subida' if delta_comm_pct > 0 else ('bajada' if delta_comm_pct < 0 else 'igual'),
                     }
 
                 if metric in ('days_on_market', 'all'):
@@ -2194,9 +2261,10 @@ INSTRUCCIONES DE RESPUESTA:
                 for p in closed_month:
                     name = (p.user_id.name if p.user_id else None) or 'Sin asesor'
                     if name not in advisor_sales:
-                        advisor_sales[name] = {'count': 0, 'revenue': 0}
+                        advisor_sales[name] = {'count': 0, 'revenue': 0, 'commissions': 0}
                     advisor_sales[name]['count'] += 1
                     advisor_sales[name]['revenue'] += p.price or 0
+                    advisor_sales[name]['commissions'] += p.commission_amount or 0
                 top_advisors = sorted(advisor_sales.items(), key=lambda x: x[1]['count'], reverse=True)[:5]
 
                 try:
@@ -2215,10 +2283,10 @@ INSTRUCCIONES DE RESPUESTA:
                     },
                     'mes': {
                         'operaciones_cerradas': len(closed_month),
-                        'ingresos': round(month_revenue, 2),
-                        'comisiones': round(month_commission, 2),
+                        'ingresos_volumen_casas': round(month_revenue, 2),
+                        'comisiones_agencia': round(month_commission, 2),
                         'detalle': [
-                            {'nombre': p.name, 'precio': p.price, 'tipo': 'Venta' if p.state == 'sold' else 'Arriendo',
+                            {'nombre': p.name, 'precio_inmueble': p.price, 'comision_agencia': p.commission_amount or 0, 'tipo': 'Venta' if p.state == 'sold' else 'Arriendo',
                              'asesor': p.user_id.name if p.user_id else 'N/A'}
                             for p in closed_month
                         ],
@@ -2236,7 +2304,7 @@ INSTRUCCIONES DE RESPUESTA:
                         'pagos_vencidos': overdue_payments,
                     },
                     'ranking_asesores': [
-                        {'asesor': k, 'operaciones': v['count'], 'ingresos': round(v['revenue'], 2)}
+                        {'asesor': k, 'operaciones': v['count'], 'honorarios_agencia': round(v['commissions'], 2), 'volumen_inmuebles': round(v['revenue'], 2)}
                         for k, v in top_advisors
                     ],
                     'nota': f"Datos al {today.strftime('%d/%m/%Y')}",
@@ -2269,15 +2337,53 @@ INSTRUCCIONES DE RESPUESTA:
                 return json.dumps({'report': 'Propiedades por Estado', 'data': data,
                                    'chart_hint': 'circular'}, ensure_ascii=False)
 
-            elif report_type == 'properties_by_type':
-                types = env['estate.property.type'].sudo().search([], limit=limit)
-                data = {}
-                for t in types:
-                    cnt = env['estate.property'].sudo().search_count([('property_type_id', '=', t.id)])
-                    if cnt:
-                        data[t.name] = cnt
-                return json.dumps({'report': 'Propiedades por Tipo', 'data': data,
-                                   'chart_hint': 'barra'}, ensure_ascii=False)
+            elif report_type in ('properties_by_type', 'sales_by_type'):
+                is_sold = (report_type == 'sales_by_type')
+                env.cr.execute("""
+                    SELECT pt.name as tipo,
+                           COUNT(*) as unidades,
+                           COALESCE(SUM(ep.commission_amount), 0) as comisiones,
+                           COALESCE(SUM(ep.price), 0) as volumen,
+                           COALESCE(AVG(ep.commission_amount), 0) as comision_promedio,
+                           COALESCE(AVG(ep.price), 0) as precio_promedio
+                    FROM estate_property ep
+                    JOIN estate_property_type pt ON ep.property_type_id = pt.id
+                    """ + ("WHERE ep.state = 'sold'" if is_sold else "") + """
+                    GROUP BY pt.name
+                    ORDER BY comisiones DESC, unidades DESC
+                    LIMIT %s
+                """, (limit,))
+                rows = env.cr.dictfetchall()
+                if not rows and not is_sold:
+                    types = env['estate.property.type'].sudo().search([], limit=limit)
+                    data = {}
+                    for t in types:
+                        cnt = env['estate.property'].sudo().search_count([('property_type_id', '=', t.id)])
+                        if cnt:
+                            data[t.name] = cnt
+                    return json.dumps({'report': 'Propiedades por Tipo', 'data': data,
+                                       'chart_hint': 'barra'}, ensure_ascii=False)
+                if not rows and is_sold:
+                    return json.dumps({'report': 'Ventas por Tipo de Propiedad', 'data': {},
+                                       'mensaje': 'Sin ventas registradas aún.'}, ensure_ascii=False)
+                data = {r['tipo']: float(f"{float(r['comisiones']):.2f}") for r in rows}
+                data_unidades = {r['tipo']: int(r['unidades']) for r in rows}
+                data_volumen = {r['tipo']: float(f"{float(r['volumen']):.2f}") for r in rows}
+                detalle_clean = [
+                    {
+                        'tipo_propiedad': r['tipo'],
+                        'operaciones': int(r['unidades']),
+                        'ventas_agencia_comisiones_totales': float(f"{float(r['comisiones']):.2f}"),
+                        'ventas_agencia_comision_promedio': float(f"{float(r['comision_promedio']):.2f}"),
+                        'volumen_inmuebles_precio_total': float(f"{float(r['volumen']):.2f}"),
+                        'volumen_inmuebles_precio_promedio': float(f"{float(r['precio_promedio']):.2f}")
+                    }
+                    for r in rows
+                ]
+                titulo = 'Ventas y Honorarios por Tipo de Propiedad' if is_sold else 'Propiedades por Tipo (Comisiones vs Volumen)'
+                return json.dumps({'report': titulo, 'data': data,
+                                   'data_unidades': data_unidades, 'data_volumen': data_volumen,
+                                   'chart_hint': 'barra', 'detalle': detalle_clean}, ensure_ascii=False, default=str)
 
             elif report_type == 'properties_by_prospects':
                 # Propiedades ordenadas por nº de prospectos (leads que la tienen
@@ -2302,7 +2408,8 @@ INSTRUCCIONES DE RESPUESTA:
                 env.cr.execute("""
                     SELECT TO_CHAR(date_sold, 'Mon YYYY') as mes,
                            COUNT(*) as ventas,
-                           COALESCE(SUM(price), 0) as ingresos
+                           COALESCE(SUM(price), 0) as ingresos,
+                           COALESCE(SUM(commission_amount), 0) as comisiones
                     FROM estate_property
                     WHERE state = 'sold' AND date_sold IS NOT NULL
                     GROUP BY TO_CHAR(date_sold, 'Mon YYYY'), DATE_TRUNC('month', date_sold)
@@ -2310,10 +2417,22 @@ INSTRUCCIONES DE RESPUESTA:
                     LIMIT %s
                 """, (limit,))
                 rows = env.cr.dictfetchall()
-                data = {r['mes']: int(r['ventas']) for r in reversed(rows)}
-                return json.dumps({'report': 'Ventas por Mes', 'data': data,
+                data = {r['mes']: float(f"{float(r['comisiones']):.2f}") for r in reversed(rows)}
+                data_volumen = {r['mes']: float(f"{float(r['ingresos']):.2f}") for r in reversed(rows)}
+                data_unidades = {r['mes']: int(r['ventas']) for r in reversed(rows)}
+                detalle_clean = [
+                    {
+                        'mes': r['mes'],
+                        'unidades_vendidas': int(r['ventas']),
+                        'honorarios_agencia_comision': float(f"{float(r['comisiones']):.2f}"),
+                        'valor_total_propiedades_volumen': float(f"{float(r['ingresos']):.2f}")
+                    }
+                    for r in rows
+                ]
+                return json.dumps({'report': 'Ventas por Mes (Honorarios vs Volumen)', 'data': data,
+                                   'data_volumen': data_volumen, 'data_unidades': data_unidades,
                                    'chart_hint': 'linea',
-                                   'detalle': rows}, ensure_ascii=False, default=str)
+                                   'detalle': detalle_clean}, ensure_ascii=False, default=str)
 
             elif report_type == 'visits_by_property':
                 env.cr.execute("""
@@ -2425,7 +2544,9 @@ INSTRUCCIONES DE RESPUESTA:
                            ROUND(AVG(days_on_market)::numeric, 1) as promedio,
                            MIN(days_on_market) as minimo,
                            MAX(days_on_market) as maximo,
-                           ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_on_market)::numeric, 1) as mediana
+                           ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_on_market)::numeric, 1) as mediana,
+                           COALESCE(AVG(commission_amount), 0) as comision_promedio,
+                           COALESCE(AVG(price), 0) as precio_promedio
                     FROM estate_property
                     WHERE state = 'sold' AND date_listed IS NOT NULL AND days_on_market > 0
                 """)
@@ -2434,27 +2555,41 @@ INSTRUCCIONES DE RESPUESTA:
                     return json.dumps({'report': 'Tiempo de Venta', 'data': {},
                                        'mensaje': 'Sin ventas con fecha de publicación registrada aún.'})
                 env.cr.execute("""
-                    SELECT pt.name as tipo, ROUND(AVG(ep.days_on_market)::numeric, 1) as promedio
+                    SELECT pt.name as tipo,
+                           ROUND(AVG(ep.days_on_market)::numeric, 1) as promedio_dias,
+                           COALESCE(AVG(ep.commission_amount), 0) as comision_promedio,
+                           COALESCE(AVG(ep.price), 0) as precio_promedio
                     FROM estate_property ep
                     JOIN estate_property_type pt ON ep.property_type_id = pt.id
                     WHERE ep.state = 'sold' AND ep.date_listed IS NOT NULL AND ep.days_on_market > 0
                     GROUP BY pt.name
-                    ORDER BY promedio DESC
+                    ORDER BY promedio_dias DESC
                     LIMIT %s
                 """, (limit,))
                 by_type = env.cr.dictfetchall()
-                data = {r['tipo']: float(r['promedio']) for r in by_type}
+                data = {r['tipo']: float(r['promedio_dias']) for r in by_type}
                 return json.dumps({
-                    'report': 'Tiempo de Venta (días desde publicación hasta venta)',
+                    'report': 'Tiempo de Venta y Promedios de Operación por Tipo',
                     'data': data,
                     'chart_hint': 'barra',
                     'resumen': {
-                        'ventas_analizadas': int(summary_row['ventas']),
-                        'promedio_dias': float(summary_row['promedio']),
-                        'mediana_dias': float(summary_row['mediana']),
+                        'operaciones_analizadas': int(summary_row['ventas']),
+                        'comision_promedio_agencia': float(f"{float(summary_row['comision_promedio']):.2f}"),
+                        'precio_promedio_inmuebles': float(f"{float(summary_row['precio_promedio']):.2f}"),
+                        'promedio_dias_mercado': float(summary_row['promedio']),
+                        'mediana_dias_mercado': float(summary_row['mediana']),
                         'minimo_dias': int(summary_row['minimo']),
                         'maximo_dias': int(summary_row['maximo']),
                     },
+                    'detalle': [
+                        {
+                            'tipo_propiedad': r['tipo'],
+                            'dias_promedio_mercado': float(r['promedio_dias']),
+                            'comision_promedio_agencia': float(f"{float(r['comision_promedio']):.2f}"),
+                            'precio_promedio_inmueble': float(f"{float(r['precio_promedio']):.2f}")
+                        }
+                        for r in by_type
+                    ]
                 }, ensure_ascii=False)
 
             elif report_type == 'sales_by_channel':
@@ -2499,13 +2634,25 @@ INSTRUCCIONES DE RESPUESTA:
                     JOIN res_partner rp ON ru.partner_id = rp.id
                     WHERE ep.state = 'sold' AND ep.date_sold >= %s
                     GROUP BY rp.name
-                    ORDER BY ventas DESC
+                    ORDER BY comisiones DESC, ventas DESC
                     LIMIT %s
                 """, (start, limit))
                 rows = env.cr.dictfetchall()
-                data = {r['asesor']: int(r['ventas']) for r in rows}
-                return json.dumps({'report': 'Ranking Asesores (Mes)', 'data': data,
-                                   'chart_hint': 'barra', 'detalle': rows},
+                data = {r['asesor']: float(f"{float(r['comisiones']):.2f}") for r in rows}
+                data_volumen = {r['asesor']: float(f"{float(r['ingresos']):.2f}") for r in rows}
+                data_unidades = {r['asesor']: int(r['ventas']) for r in rows}
+                detalle_clean = [
+                    {
+                        'asesor': r['asesor'],
+                        'operaciones_cerradas': int(r['ventas']),
+                        'honorarios_agencia_comision': float(f"{float(r['comisiones']):.2f}"),
+                        'valor_propiedades_volumen': float(f"{float(r['ingresos']):.2f}")
+                    }
+                    for r in rows
+                ]
+                return json.dumps({'report': 'Ranking Asesores (Mes - Honorarios vs Volumen)', 'data': data,
+                                   'data_volumen': data_volumen, 'data_unidades': data_unidades,
+                                   'chart_hint': 'barra', 'detalle': detalle_clean},
                                   ensure_ascii=False, default=str)
 
             elif report_type == 'kpi_general':
@@ -2528,19 +2675,19 @@ INSTRUCCIONES DE RESPUESTA:
                 data = {
                     'Propiedades Totales': total_props,
                     'Disponibles': avail_props,
-                    'Vendidas este mes': sold_this_month,
-                    f'Ingresos mes (${ingresos_mes:,.0f})': sold_this_month,
-                    f'Comisiones mes (${comisiones_mes:,.0f})': sold_this_month,
+                    'Propiedades Vendidas (Mes)': sold_this_month,
+                    'Honorarios de Agencia (Comisiones Mes $)': round(comisiones_mes, 2),
+                    'Volumen Inmuebles Vendidos (Mes $)': round(ingresos_mes, 2),
                     'Días promedio en mercado': avg_days,
                     'Leads activos': active_leads,
                     'Leads calientes': hot_leads,
                 }
-                return json.dumps({'report': 'KPIs Generales del Negocio', 'data': data,
+                return json.dumps({'report': 'KPIs Generales (Honorarios vs Volumen)', 'data': data,
                                    'chart_hint': 'barra',
                                    'kpis': {
                                        'ventas_mes': sold_this_month,
-                                       'ingresos_mes': ingresos_mes,
-                                       'comisiones_mes': comisiones_mes,
+                                       'ingresos_mes': round(ingresos_mes, 2),
+                                       'comisiones_mes': round(comisiones_mes, 2),
                                        'dias_promedio': avg_days,
                                        'leads_activos': active_leads,
                                        'leads_calientes': hot_leads,
@@ -2718,27 +2865,42 @@ INSTRUCCIONES DE RESPUESTA:
                 total_commissions = sum(float(r['comisiones_total']) for r in rows)
                 n_months = len(rows)
                 avg_units_month = round(total_units / n_months, 1)
-                avg_revenue_month = round(total_revenue / n_months, 0)
-                avg_price_unit = round(total_revenue / total_units, 0) if total_units else 0
-                avg_commission_unit = round(total_commissions / total_units, 0) if total_units else 0
-                # Chart: revenue by month
-                data_revenue = {r['mes']: float(f"{float(r['ingresos_total']):.0f}") for r in reversed(rows)}
+                avg_revenue_month = round(total_revenue / n_months, 2)
+                avg_comm_month = round(total_commissions / n_months, 2)
+                avg_price_unit = round(total_revenue / total_units, 2) if total_units else 0
+                avg_commission_unit = round(total_commissions / total_units, 2) if total_units else 0
+                # Chart: comisiones y volumen por mes
+                data_comisiones = {r['mes']: float(f"{float(r['comisiones_total']):.2f}") for r in reversed(rows)}
+                data_revenue = {r['mes']: float(f"{float(r['ingresos_total']):.2f}") for r in reversed(rows)}
                 data_units = {r['mes']: int(r['unidades']) for r in reversed(rows)}
+                detalle_clean = [
+                    {
+                        'mes': r['mes'],
+                        'unidades_vendidas': int(r['unidades']),
+                        'honorarios_agencia_total': float(f"{float(r['comisiones_total']):.2f}"),
+                        'honorarios_agencia_promedio': float(f"{float(r['comision_promedio']):.2f}"),
+                        'valor_inmuebles_total': float(f"{float(r['ingresos_total']):.2f}"),
+                        'valor_inmuebles_promedio': float(f"{float(r['precio_promedio']):.2f}")
+                    }
+                    for r in rows
+                ]
                 return json.dumps({
-                    'report': 'Promedio de Ventas',
-                    'data': data_revenue,
+                    'report': 'Promedio de Ventas (Honorarios vs Volumen de Casas)',
+                    'data': data_comisiones,
+                    'data_volumen': data_revenue,
                     'data_units': data_units,
                     'chart_hint': 'linea',
                     'resumen': {
                         'meses_analizados': n_months,
                         'unidades_promedio_mes': avg_units_month,
-                        'ingresos_promedio_mes': avg_revenue_month,
-                        'precio_promedio_por_venta': avg_price_unit,
-                        'comision_promedio_por_venta': avg_commission_unit,
-                        'ingresos_totales': round(total_revenue, 0),
-                        'comisiones_totales': round(total_commissions, 0),
+                        'honorarios_agencia_promedio_mes': avg_comm_month,
+                        'honorarios_agencia_promedio_por_venta': avg_commission_unit,
+                        'volumen_casas_promedio_mes': avg_revenue_month,
+                        'precio_promedio_por_inmueble': avg_price_unit,
+                        'honorarios_agencia_totales': round(total_commissions, 2),
+                        'volumen_casas_totales': round(total_revenue, 2),
                     },
-                    'detalle': rows,
+                    'detalle': detalle_clean,
                 }, ensure_ascii=False, default=str)
 
             elif report_type == 'social_instagram':
@@ -3435,7 +3597,8 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
             "REGLA ABSOLUTA: NUNCA digas 'no puedo', 'no tengo la capacidad', 'no tengo acceso' o 'no es posible'. "
             "Tienes la herramienta query_database que te permite ejecutar CUALQUIER consulta SQL SELECT "
             "contra toda la base de datos. Si ninguna otra herramienta sirve, usa query_database con un SQL "
-            "apropiado para responder la pregunta. Tienes acceso a TODA la información del sistema.\n\n"
+            "apropiado para responder la pregunta. Tienes acceso a TODA la información del sistema. "
+            "IMPORTANTE PARA CONSULTAS SQL: La BD es PostgreSQL (NO SQLite). NUNCA uses strftime o date('now'). Usa to_char(col, 'YYYY-MM'), EXTRACT, CURRENT_DATE o NOW().\n\n"
             "DOCUMENTACIÓN: para preguntas de CÓMO se hace algo, QUÉ es o para qué sirve un módulo, "
             "qué significa un error, procedimientos, permisos o configuración, usa la herramienta "
             "search_knowledge (busca en los manuales y guías) y responde citando lo que devuelva.\n\n"
@@ -3453,6 +3616,11 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
             "usuario hace una pregunta de seguimiento ('dame sus características', 'quién es el dueño', "
             "'genera su descripción', 'agenda una visita'), responde sobre ESA MISMA, no sobre otra ni "
             "sobre la que esté abierta en pantalla. Y NUNCA pidas el ID: usa el nombre o el contexto.\n\n"
+            "REGLA COMERCIAL DE ANÁLISIS DE VENTAS (DOBLE ENFOQUE PROFESIONAL):\n"
+            "Cuando el usuario pregunte por 'ventas', 'cierres', 'promedio de ventas', 'ingresos' o pida reportes o análisis de ventas, SIEMPRE analiza y presenta la información diferenciando DOS enfoques claros:\n"
+            "  a) Honorarios y Comisiones de Agencia (commission_amount): Representa la ganancia real y el ingreso de la agencia inmobiliaria por las operaciones cerradas.\n"
+            "  b) Volumen y Precio de Inmuebles (price): Representa el valor total y el precio promedio al que se vendieron las casas/propiedades, para evaluar qué tan costosos son los inmuebles movidos y el ticket promedio en el mercado.\n"
+            "En tus explicaciones, resúmenes, gráficos y tablas compara ambas métricas por separado y NO las confundas.\n\n"
             "REGLA OBLIGATORIA PARA REPORTES Y GRÁFICOS:\n"
             "Cuando el usuario pida reporte, gráfico, estadística, resumen de datos, desglose, o use palabras como "
             "'muéstrame por', 'cuántos hay por', 'reporte de', 'gráfico de' → DEBES llamar a get_report_data. "
@@ -3598,6 +3766,29 @@ WP publicado: {'Sí' if getattr(p, 'wp_published', False) else 'No'}
                             continue
                         final_text = content
                         break
+
+                # Si se agotaron las rondas de herramientas sin redactar una
+                # respuesta final, forzar una respuesta de texto SIN herramientas
+                # que resuma los datos ya obtenidos (misma red de seguridad que
+                # la ruta de Gemini) en vez de rendirse con un mensaje genérico.
+                if not final_text:
+                    try:
+                        yield sse({'status': 'Redactando respuesta...'})
+                        messages.append({
+                            "role": "user",
+                            "content": (
+                                "Responde AHORA al usuario en español, resumiendo de forma clara y "
+                                "útil los datos ya obtenidos de las herramientas. No llames más "
+                                "herramientas."
+                            ),
+                        })
+                        final_response = client.chat.completions.create(
+                            model=model, messages=messages, temperature=temperature,
+                            max_completion_tokens=max_tokens, tool_choice="none",
+                        )
+                        final_text = (final_response.choices[0].message.content or '').strip()
+                    except Exception as fe:
+                        _logger.warning("Generación final sin herramientas falló: %s", str(fe))
 
                 if not final_text:
                     final_text = (

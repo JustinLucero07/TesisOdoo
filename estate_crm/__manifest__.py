@@ -24,6 +24,7 @@
         'views/res_partner_views.xml',
         'views/estate_interaction_views.xml',
         'views/estate_property_match_views.xml',
+        'data/estate_allied_fields_migrate.xml',
         'views/estate_lead_source_views.xml',
         'views/estate_crm_lead_views.xml',
         'views/estate_crm_actions.xml',

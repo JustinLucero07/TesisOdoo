@@ -9,6 +9,21 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//div[hasclass('oe_title')]/span[hasclass('o_form_label')]" position="attributes">
+                <attribute name="invisible">estate_transaction_type == 'commission'</attribute>
+            </xpath>
+            <xpath expr="//div[hasclass('oe_title')]/span[hasclass('o_form_label')]" position="after">
+                <span class="o_form_label text-primary" invisible="estate_transaction_type != 'commission'">
+                    Liquidación de Comisión (Asesor / Vendedor)
+                </span>
+            </xpath>
+            <xpath expr="//label[@for='partner_id'][2]" position="attributes">
+                <attribute name="invisible">move_type not in ('in_invoice', 'in_refund', 'in_receipt') or estate_transaction_type == 'commission'</attribute>
+            </xpath>
+            <xpath expr="//label[@for='partner_id'][2]" position="after">
+                <label for="partner_id" string="Vendedor (Asesor)" style="font-weight:bold; color:#0d6efd;"
+                       invisible="move_type not in ('in_invoice', 'in_refund', 'in_receipt') or estate_transaction_type != 'commission'"/>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="property_id"/>
                 <field name="estate_transaction_type"/>

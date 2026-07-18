@@ -10,7 +10,8 @@ class CrmLead(models.Model):
     _inherit = 'crm.lead'
 
     target_property_id = fields.Many2one(
-        'estate.property', string='Propiedad de Interés', index=True)
+        'estate.property', string='Propiedad de Interés', index=True,
+        domain="[('state', 'not in', ['sold', 'rented'])]")
     client_budget = fields.Float(string='Presupuesto del Cliente', tracking=True)
     # Secuencia de la etapa actual: permite mostrar/ocultar botones por etapa
     # en la vista (1-2 captación, 3-4 visita/seguimiento, 5+ cierre).
@@ -30,6 +31,10 @@ class CrmLead(models.Model):
         help='Desde Seguimiento en adelante: reservar la propiedad.')
     gate_contract = fields.Boolean(compute='_compute_stage_gates',
         help='Desde En Proceso Cierre en adelante: formalizar contrato.')
+    gate_postventa_comision = fields.Boolean(compute='_compute_stage_gates',
+        help='Etapa Comisión en el embudo de Postventa.')
+    gate_cierre_venta = fields.Boolean(compute='_compute_stage_gates',
+        help='Etapa Cierre en el embudo comercial (marcar la venta).')
 
     @api.depends('stage_id', 'stage_id.sequence')
     def _compute_stage_gates(self):
@@ -40,6 +45,8 @@ class CrmLead(models.Model):
         s_seguimiento = _seq('estate_crm.stage_lead3b_estate_seguimiento')   # 2
         s_necesidad = _seq('estate_crm.stage_lead2b_estate_con_necesidad')   # 3
         s_proceso = _seq('estate_crm.stage_lead4_estate_papeles')            # 5 (En Proceso Cierre)
+        s_cierre = ref('estate_crm.stage_lead7_estate_cierre', raise_if_not_found=False)
+        s_comision_pv = ref('estate_crm.stage_pv_comision', raise_if_not_found=False)
         for lead in self:
             cur = lead.stage_id.sequence if lead.stage_id else 0
             lead.gate_capture = bool(s_necesidad is not None and cur <= s_necesidad)
@@ -48,6 +55,8 @@ class CrmLead(models.Model):
                 and s_seguimiento <= cur <= s_proceso)
             lead.gate_reserve = bool(s_seguimiento is not None and cur >= s_seguimiento)
             lead.gate_contract = bool(s_proceso is not None and cur >= s_proceso)
+            lead.gate_cierre_venta = bool(s_cierre and lead.stage_id and lead.stage_id.id == s_cierre.id)
+            lead.gate_postventa_comision = bool(s_comision_pv and lead.stage_id and lead.stage_id.id == s_comision_pv.id)
     match_percentage = fields.Integer(
         string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True,
         help='Porcentaje de compatibilidad entre el presupuesto/preferencias del cliente y la propiedad de interés. 100% = perfectamente alineado. Factores: precio vs presupuesto (50%), ciudad (20%), tipo de propiedad (15%), habitaciones (10%), área (5%).')
@@ -164,6 +173,7 @@ class CrmLead(models.Model):
         'estate.client.interaction', 'lead_id', string='Interacciones')
     contract_count = fields.Integer(string='Contratos', compute='_compute_contract_count')
 
+
     # --- Órdenes de venta vinculadas ---
     sale_order_count = fields.Integer(string='Órdenes de Venta', compute='_compute_sale_order_count')
 
@@ -238,6 +248,49 @@ class CrmLead(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def action_mark_sold_and_pay_commission(self):
+        """Abre el asistente de venta precargado con la propiedad del lead, el comprador
+        y el precio de venta acordado, para marcar la propiedad como vendida y pagar la comisión."""
+        self.ensure_one()
+        if not self.target_property_id:
+            raise UserError('Debes asignar una Propiedad de Interés en este lead antes de marcar la venta y pagar comisión.')
+        if self.target_property_id.state in ('sold', 'rented'):
+            raise UserError(f'La propiedad "{self.target_property_id.title}" ya está marcada como vendida/arrendada.')
+            
+        sale_price = self.client_budget or self.target_property_id.price or 0.0
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Marcar Venta y Pagar Comisión',
+            'res_model': 'estate.sale.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_property_id': self.target_property_id.id,
+                'default_buyer_id': self.partner_id.id or False,
+                'default_sale_price': sale_price,
+                'default_commission_pct': self.target_property_id.commission_percentage or 5.0,
+                'default_lead_id': self.id,
+            },
+        }
+
+    def action_mark_commission(self):
+        """Etapa Comisión del embudo de Postventa: la venta ya se marcó antes
+        (etapa Cierre del embudo comercial), así que aquí solo se aprueba la
+        comisión en borrador que quedó registrada en ese momento — no vuelve
+        a abrir el asistente de venta ni toca el estado de la propiedad."""
+        self.ensure_one()
+        commissions = self.env['estate.commission'].search([
+            ('lead_id', '=', self.id), ('state', '=', 'draft'),
+        ])
+        if not commissions:
+            raise UserError(
+                'No hay una comisión en borrador para este lead. Primero debe '
+                'marcarse la venta en la etapa "Cierre" del embudo comercial.'
+            )
+        commissions.action_approve()
+        self.message_post(
+            body=f'Comisión aprobada: <b>${sum(commissions.mapped("amount")):,.2f}</b>.')
 
     def action_view_lead_contracts(self):
         self.ensure_one()
@@ -599,13 +652,28 @@ class CrmLead(models.Model):
                 _logger.info('Migración Vaciado Vendedores: %s lead(s) de "%s" reubicados a "%s".',
                              len(stuck), vendedores_stage.name, recepcion_stage.name)
 
-    @api.depends('client_budget')
+    @api.depends('client_budget', 'target_property_id', 'target_property_id.price',
+                 'target_property_id.commission_percentage', 'target_property_id.commission_split_pct',
+                 'target_property_id.co_user_id', 'target_property_id.is_allied_property',
+                 'target_property_id.allied_split_pct')
     def _compute_financials(self):
         for lead in self:
-            comm = (lead.client_budget * 0.05) if lead.client_budget else 0.0
+            base_amount = lead.client_budget or (lead.target_property_id.price if lead.target_property_id else 0.0)
+            pct = lead.target_property_id.commission_percentage if lead.target_property_id and lead.target_property_id.commission_percentage else 5.0
+            
+            if lead.target_property_id:
+                # Si es inmueble de aliado, nuestra agencia cobra según allied_split_pct (por defecto 50% = mitad de comisión)
+                if lead.target_property_id.is_allied_property:
+                    allied_ratio = (lead.target_property_id.allied_split_pct or 50.0) / 100.0
+                    pct = pct * allied_ratio
+                # Si además tiene co-asesor interno con split, calculamos la parte correspondiente
+                if lead.target_property_id.co_user_id and 0 < lead.target_property_id.commission_split_pct < 100:
+                    co_ratio = (100.0 - lead.target_property_id.commission_split_pct) / 100.0
+                    pct = pct * co_ratio
+            
+            comm = base_amount * (pct / 100.0)
             lead.expected_commission = comm
-            # "Ingreso esperado" = comisión esperada completa (5% del presupuesto),
-            # no ponderada por probabilidad, para que muestre un valor claro.
+            # "Ingreso esperado" = comisión esperada dinámica
             lead.expected_revenue = comm
 
     @api.depends('create_date', 'date_closed', 'active')
@@ -888,10 +956,10 @@ class CrmLead(models.Model):
             if not lead.stage_id or lead.stage_id.sequence < stage.sequence:
                 lead.stage_id = stage.id
 
-    def action_schedule_meeting(self):
+    def action_schedule_meeting(self, smart_calendar=True):
         """One-step visit scheduling: pre-fills the calendar event with property details."""
         self.ensure_one()
-        action = super().action_schedule_meeting()
+        action = super().action_schedule_meeting(smart_calendar=smart_calendar)
         ctx = dict(action.get('context', {}))
         # Pre-fill lead_id so the event auto-avanza el stage al guardarse
         ctx['default_lead_id'] = self.id

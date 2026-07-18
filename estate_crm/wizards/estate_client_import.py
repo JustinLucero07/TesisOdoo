@@ -42,8 +42,6 @@ STAGE_BY_ESTADO = {
     # --- Embudo comercial ("Proceso de Ventas") ---
     'nuevo': 'stage_lead1_estate_nuevo',
     'recepcion': 'stage_lead1_estate_nuevo',
-    'captado': 'stage_lead1_estate_nuevo',
-    'buscando': 'stage_lead1_estate_nuevo',
     'seguimiento': 'stage_lead3b_estate_seguimiento',
     'necesidades': 'stage_lead2b_estate_con_necesidad',
     'necesidad': 'stage_lead2b_estate_con_necesidad',
@@ -530,25 +528,48 @@ class EstateClientImport(models.Model):
                     p_created += 1
 
                 # --- Oportunidad CRM: compradores y clientes vendedores ---
-                if self.create_leads and (is_buyer or is_seller):
+                if self.create_leads:
+                    # Si no es comprador ni vendedor, verificamos si en importaciones anteriores
+                    # se le había creado erróneamente un lead en Recepción y lo archivamos para limpiar el tablero.
+                    if not (is_buyer or is_seller):
+                        old_leads = Lead.search([
+                            ('partner_id', '=', partner.id),
+                            ('stage_id', '=', cx['stage_default'].id)
+                        ])
+                        if old_leads:
+                            old_leads.write({'active': False})
+                        continue
+
                     # Sin tildes, para que "Comisión"/"comision" caigan igual
                     estado = _deaccent(get(cells, 'estado'))
                     is_lost = estado in LOST_ESTADOS
                     if is_lost and not self.import_lost:
                         continue
 
+                    stage_xmlid = STAGE_BY_ESTADO.get(estado)
+                    # Si no pertenece a ninguno de tus embudos ni es Perdido, no se crea lead.
+                    if not stage_xmlid and not is_lost:
+                        if estado:
+                            unmapped_estados[estado] += 1
+                        old_leads = Lead.search([
+                            ('partner_id', '=', partner.id),
+                            ('stage_id', '=', cx['stage_default'].id)
+                        ])
+                        if old_leads:
+                            old_leads.write({'active': False})
+                        continue
+
                     lead = Lead.with_context(active_test=False).search([
                         ('partner_id', '=', partner.id),
                         ('tag_ids', 'in', cx['crm_tag'].id),
                     ], limit=1)
+                    if not lead:
+                        lead = Lead.with_context(active_test=False).search([
+                            ('partner_id', '=', partner.id),
+                        ], order='id desc', limit=1)
 
                     # Tanto compradores como vendedores van a la etapa que corresponde
                     # a su Estado exacto en el Excel. La etapa "Vendedores" se deja vacía.
-                    stage_xmlid = STAGE_BY_ESTADO.get(estado)
-                    if not stage_xmlid and estado and not is_lost:
-                        # Estado que no reconocemos: se avisa en el resultado
-                        # para no dejarlo pasar en silencio.
-                        unmapped_estados[estado] += 1
                     stage = cx['stages'].get(stage_xmlid) or cx['stage_default']
                     lvals = {
                         'name': f'{name}' or 'Interés',
@@ -591,6 +612,35 @@ class EstateClientImport(models.Model):
                             lvals['lost_reason_id'] = cx['lost_reason'].id
 
                     if lead:
+                        # --- Prevención de retrocesos en reimportaciones o Excel con filas duplicadas ---
+                        # Si el lead ya existe (por una fila anterior del mismo Excel o una importación previa),
+                        # no debemos retroceder su etapa si la fila actual es de menor avance (ej. "Recepción"
+                        # intentando sobreescribir "En Proceso Cierre" por duplicados en Wasi).
+                        curr_stage = lead.stage_id
+                        target_stage_id = lvals.get('stage_id')
+                        target_stage = cx['stages'].get(stage_xmlid) if not is_lost else cx['lost_stage']
+                        if not target_stage and target_stage_id:
+                            target_stage = self.env['crm.stage'].browse(target_stage_id)
+
+                        if curr_stage and target_stage:
+                            is_stuck_vendedores = (curr_stage.id == cx['stages'].get(STAGE_VENDEDORES, cx['stage_default']).id)
+                            # 1) Si estaba en Perdido y entra una fila ACTIVA -> revivimos el lead
+                            if curr_stage.is_lost and not is_lost:
+                                lvals['probability'] = False
+                                lvals['lost_reason_id'] = False
+                            # 2) Si ambos son activos, o si entra un Perdido a un lead ya avanzado, verificamos avance
+                            elif not is_stuck_vendedores and not curr_stage.is_lost:
+                                if not is_lost and target_stage.sequence <= curr_stage.sequence:
+                                    # Fila de menor o igual avance (o duplicado en "Nuevo"): preservamos la etapa actual
+                                    lvals.pop('stage_id', None)
+                                    lvals.pop('team_id', None)
+                                elif is_lost and curr_stage.sequence > 1:
+                                    # Fila de "Perdido" en un contacto que tiene un proceso activo en Seguimiento/Papeles
+                                    lvals.pop('stage_id', None)
+                                    lvals.pop('team_id', None)
+                                    lvals.pop('probability', None)
+                                    lvals.pop('lost_reason_id', None)
+
                         lead.write(lvals)
                         leads_updated += 1
                     else:
@@ -622,8 +672,8 @@ class EstateClientImport(models.Model):
                        + ', '.join(sorted(advisors_missing)))
         if unmapped_estados:
             detalle = ', '.join(f'"{e}" ({n})' for e, n in unmapped_estados.most_common())
-            log.append('\nEstados del Excel que no reconozco (esos leads quedaron en '
-                       '"Recepción"): ' + detalle)
+            log.append('\nEstados del Excel no pertenecientes a tus embudos (no se crearon '
+                       'oportunidades para estos): ' + detalle)
         log.append('\nLos contactos quedaron etiquetados por su tipo (Comprador, '
                    'Propietario, ...) y las oportunidades con la etiqueta "Wasi".')
         if error_samples:
