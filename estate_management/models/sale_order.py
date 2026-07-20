@@ -22,6 +22,20 @@ class SaleOrder(models.Model):
         if self.customer_signature and not self.signature_date:
             self.signature_date = fields.Datetime.now()
 
+    @api.onchange('partner_id', 'property_id')
+    def _onchange_find_lead_id(self):
+        """Si ya se conoce cliente y/o propiedad, busca el lead del CRM que
+        originó esta operación en vez de dejarlo vacío para llenar a mano."""
+        for order in self:
+            if order.lead_id or not order.property_id:
+                continue
+            domain = [('target_property_id', '=', order.property_id.id), ('type', '=', 'opportunity')]
+            if order.partner_id:
+                domain.append(('partner_id', '=', order.partner_id.id))
+            lead = self.env['crm.lead'].search(domain, limit=1)
+            if lead:
+                order.lead_id = lead
+
     def action_confirm(self):
         result = super().action_confirm()
         for order in self:

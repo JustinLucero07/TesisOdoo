@@ -81,6 +81,11 @@
                             class="btn-secondary" icon="fa-pencil-square-o"
                             invisible="state != 'sold'"
                             title="Modificar los detalles del negocio cerrado, forma de pago y observaciones"/>
+                    <button name="action_cancel_sale" string="Anular Venta" type="object"
+                            class="btn-danger" icon="fa-ban"
+                            groups="estate_management.estate_group_manager"
+                            invisible="state != 'sold'"
+                            confirm="¿Confirmas ANULAR esta venta? Se cancelará la orden de venta, la factura y la comisión asociadas, y la propiedad volverá a estar Disponible. Esta acción no se puede deshacer."/>
 
                     <!-- Acciones secundarias (solo cuando no es borrador) -->
                     <button name="action_open_map" string="Ver en Mapa" type="object"

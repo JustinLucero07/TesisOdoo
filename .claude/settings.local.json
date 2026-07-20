@@ -163,7 +163,8 @@
       "Bash(python3 -c \"import xml.dom.minidom as m; [m.parse\\(f\\) for f in ['estate_crm/views/estate_crm_lost_views.xml','estate_crm/data/estate_crm_stage_data.xml','estate_crm/data/estate_crm_postventa_migrate.xml']]; print\\('XML OK'\\)\")",
       "Bash(kill 84389)",
       "Bash(kill 101251)",
-      "Bash(kill 12450)"
+      "Bash(kill 12450)",
+      "Bash(rsync -avz \"/home/justin/Documentos/Tesis/deploy/static\" /home/justin/Documentos/Tesis/deploy/docker-compose.yml /home/justin/Documentos/Tesis/deploy/nginx/nginx.conf --dry-run)"
     ],
     "additionalDirectories": [
       "/tmp",

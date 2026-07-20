@@ -32,21 +32,17 @@
             {
               "name": "user_id",
               "type": "number"
-            },
-            {
-              "name": "lead_source_id",
-              "type": "number"
             }
           ]
         }
       },
-      "id": "ac73d0cf-c516-4d12-a6ac-4e2989e05e18",
+      "id": "a63c6688-b72b-4068-937e-51fd01c3e556",
       "name": "Execute Workflow Trigger",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
       "position": [
-        2928,
-        704
+        3744,
+        1152
       ]
     },
     {
@@ -135,13 +131,13 @@
         },
         "options": {}
       },
-      "id": "13b49248-70de-43d0-9f77-c8170f50f2da",
+      "id": "acb13c90-7229-4e27-a6e7-04a64420f6d6",
       "name": "Preparar Datos",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3152,
-        704
+        3968,
+        1152
       ]
     },
     {
@@ -162,13 +158,13 @@
         "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"common\",\n    \"method\": \"authenticate\",\n    \"args\": [\"{{ $('Preparar Datos').item.json.odoo_db }}\", \"{{ $('Preparar Datos').item.json.odoo_login }}\", \"{{ $('Preparar Datos').item.json.odoo_api_key }}\", {}]\n  },\n  \"id\": 1\n}",
         "options": {}
       },
-      "id": "5af669a1-8ae0-4b8a-a57b-a58c8d74de77",
+      "id": "a03973a9-52bd-4f4f-8e7f-d033842b8e1b",
       "name": "Autenticar Odoo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3376,
-        704
+        4192,
+        1152
       ]
     },
     {
@@ -185,26 +181,26 @@
         },
         "options": {}
       },
-      "id": "910ed169-23ee-482f-a0f0-c23e03cbba41",
+      "id": "b3ed5e51-3097-4030-b9a8-ed8dadf6a3da",
       "name": "Extraer UID",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3552,
-        704
+        4368,
+        1152
       ]
     },
     {
       "parameters": {
-        "jsCode": "const datos = $('Preparar Datos').item.json;\nconst uid   = $('Extraer UID').item.json.uid;\n\n// Si se encontró la propiedad por WP ID, obtenemos su ID interno de Odoo\nlet targetPropertyId = (datos.property_id > 0 && datos.property_id < 10000) ? Number(datos.property_id) : 0;\ntry {\n  // Si llegamos desde el nodo Postgres ('Execute a SQL query'), el id llega en $input.item.json.id\n  if ($input.item.json && $input.item.json.id) {\n    targetPropertyId = Number($input.item.json.id);\n  } else if ($input.item.json && $input.item.json.result && Array.isArray($input.item.json.result) && $input.item.json.result.length > 0 && $input.item.json.result[0].id) {\n    targetPropertyId = Number($input.item.json.result[0].id);\n  }\n} catch(e) {}\n\n// Construir vals del lead (IMPORTANTE: no enviamos 'lead_source' como string ya que la columna fue borrada en la base de datos)\nconst vals = {\n  name:             `WhatsApp: ${datos.nombre}`,\n  contact_name:     datos.nombre,\n  phone:            datos.telefono,\n  type:             'opportunity',\n  stage_id:         32,          // 1. Nuevo / Contacto Inicial\n  client_budget:    datos.presupuesto || 0,\n  preferred_city:   datos.ciudad || '',\n  client_needs:     datos.necesidades || ''\n};\n\n// Asignar el catálogo de fuente de lead (lead_source_id)\nif (datos.lead_source_id > 0) {\n  vals.lead_source_id = datos.lead_source_id;\n} else {\n  // Si no pasaron lead_source_id explícito, pasamos el ID por defecto para WhatsApp (ej. 3)\n  vals.lead_source_id = 3;\n}\n\n// Asignar asesor solo si se pasó\nif (datos.user_id > 0) vals.user_id = datos.user_id;\n\n// Asociar propiedad objetivo con el ID interno real de Odoo obtenido\nif (targetPropertyId > 0) vals.target_property_id = targetPropertyId;\n\nreturn [{ json: { uid, vals, datos, targetPropertyId } }];"
+        "jsCode": "const datos = $('Preparar Datos').item.json;\nconst uid   = $('Extraer UID').item.json.uid;\n\n// Si se encontró la propiedad por WP ID, obtenemos su ID interno de Odoo\nlet targetPropertyId = (datos.property_id > 0 && datos.property_id < 10000) ? Number(datos.property_id) : 0;\ntry {\n  // Si llegamos desde el nodo Postgres ('Execute a SQL query'), el id llega en $input.item.json.id\n  if ($input.item.json && $input.item.json.id) {\n    targetPropertyId = Number($input.item.json.id);\n  } else if ($input.item.json && $input.item.json.result && Array.isArray($input.item.json.result) && $input.item.json.result.length > 0 && $input.item.json.result[0].id) {\n    targetPropertyId = Number($input.item.json.result[0].id);\n  }\n} catch(e) {}\n\n// Construir vals del lead (IMPORTANTE: no enviamos 'lead_source' como string ya que la columna fue borrada en la base de datos)\nconst vals = {\n  name:             `WhatsApp: ${datos.nombre}`,\n  contact_name:     datos.nombre,\n  phone:            datos.telefono,\n  type:             'opportunity',\n  stage_id:         33,          // 1. Nuevo / Contacto Inicial\n  client_budget:    datos.presupuesto || 0,\n  preferred_city:   datos.ciudad || '',\n  client_needs:     datos.necesidades || ''\n};\n\n// Asignar el catálogo de fuente de lead (lead_source_id)\nif (datos.lead_source_id > 0) {\n  vals.lead_source_id = datos.lead_source_id;\n} else {\n  // Si no pasaron lead_source_id explícito, pasamos el ID por defecto para WhatsApp (ej. 3)\n  vals.lead_source_id = 3;\n}\n\n// Asignar asesor solo si se pasó\nif (datos.user_id > 0) vals.user_id = datos.user_id;\n\n// Asociar propiedad objetivo con el ID interno real de Odoo obtenido\nif (targetPropertyId > 0) vals.target_property_id = targetPropertyId;\n\nreturn [{ json: { uid, vals, datos, targetPropertyId } }];"
       },
-      "id": "c2a785e2-421d-49d6-96c9-23ea36efe094",
+      "id": "194ab1ad-a457-4323-838b-c3648af37663",
       "name": "Construir Vals Lead",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4032,
-        704
+        4848,
+        1152
       ]
     },
     {
@@ -225,13 +221,13 @@
         "jsonBody": "={\n  \"jsonrpc\": \"2.0\",\n  \"method\": \"call\",\n  \"params\": {\n    \"service\": \"object\",\n    \"method\": \"execute_kw\",\n    \"args\": [\n      \"{{ $('Preparar Datos').item.json.odoo_db }}\",\n      {{ $json.uid }},\n      \"{{ $('Preparar Datos').item.json.odoo_login }}\",\n      \"crm.lead\",\n      \"create\",\n      [{{ JSON.stringify($json.vals) }}]\n    ]\n  },\n  \"id\": 2\n}",
         "options": {}
       },
-      "id": "e561049b-cd81-474e-9166-64617e98e858",
+      "id": "252c189e-7d0f-405f-b2de-03fedafbf6ab",
       "name": "Crear Lead en Odoo",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4256,
-        704
+        5072,
+        1152
       ]
     },
     {
@@ -254,13 +250,13 @@
         },
         "options": {}
       },
-      "id": "79ff7cf2-06d7-4c35-8c14-d3423b5a0f81",
+      "id": "4f15ba84-7add-4b40-8f31-14b91df7fd12",
       "name": "Formatear Respuesta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        4480,
-        704
+        5296,
+        1152
       ]
     },
     {
@@ -272,10 +268,10 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.6,
       "position": [
-        3872,
-        576
+        4688,
+        1024
       ],
-      "id": "3751291e-c228-4472-8ebb-93d94ab713e7",
+      "id": "2a5e7595-19ac-4863-b0e8-ac5b2089e6ad",
       "name": "Execute a SQL query",
       "credentials": {
         "postgres": {
@@ -320,10 +316,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        3712,
-        704
+        4528,
+        1152
       ],
-      "id": "2bb610a1-b7a8-451f-81a4-f5e1fef30bbf",
+      "id": "58ebda88-2436-4871-9450-cfc0fcbc7555",
       "name": "If"
     }
   ],
@@ -430,7 +426,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "aabca8b2-3586-4ef2-9120-d90db1b9f93c",
+  "versionId": "4c55132a-c913-4e0a-aa73-45f225250e07",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "e571374d4ebf3078c20a0feaa411f259d18ef217cc35c9bc26b444136431c32d"

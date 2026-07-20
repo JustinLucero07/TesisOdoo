@@ -224,7 +224,7 @@ class CalendarEvent(models.Model):
         for event in events:
             if event.appointment_type in ('visit', 'signing') or event.property_id:
                 lead = event._get_related_lead()
-                if lead and lead.stage_id.id != 32 and lead.stage_id.name != 'Oportunidades Bot':
+                if lead and lead.stage_id.name != 'Oportunidades Bot':
                     lead._advance_lead_to_stage('estate_crm.stage_lead3b_estate_seguimiento')
         events._sync_reminder_alarm()
         return events
@@ -243,7 +243,7 @@ class CalendarEvent(models.Model):
 
             # Auto-avanzar lead a "Visita Realizada" (excepto si está en "Oportunidades Bot")
             lead = event._get_related_lead()
-            if lead and lead.stage_id.id != 32 and lead.stage_id.name != 'Oportunidades Bot':
+            if lead and lead.stage_id.name != 'Oportunidades Bot':
                 lead._advance_lead_to_stage('estate_crm.stage_lead3b_estate_seguimiento')
 
             # 1. Actualizar temperatura CRM si se hizo una oferta

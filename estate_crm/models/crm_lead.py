@@ -583,6 +583,7 @@ class CrmLead(models.Model):
         ref = lambda x: self.env.ref(f'estate_crm.{x}', raise_if_not_found=False)
         cierre = ref('stage_lead7_estate_cierre')
         recepcion = ref('stage_lead1_estate_nuevo')
+        oportunidades_bot = ref('stage_lead0_estate_oportunidades_bot')
         if not (cierre and recepcion):
             return
 
@@ -597,7 +598,13 @@ class CrmLead(models.Model):
         for stage in foreign:
             leads = self.with_context(active_test=False).search([('stage_id', '=', stage.id)])
             if leads:
-                target = cierre if stage.is_won else recepcion
+                # "Oportunidades Bot" ajena (creada por n8n antes de que existiera
+                # la oficial): se conserva como etapa, solo se reubican sus leads
+                # a la nuestra en vez de mandarlos a Cierre/Recepción.
+                if oportunidades_bot and stage.name == 'Oportunidades Bot':
+                    target = oportunidades_bot
+                else:
+                    target = cierre if stage.is_won else recepcion
                 leads.write({'stage_id': target.id})
                 _logger.info('Limpieza de etapas: %s lead(s) de la etapa ajena "%s" '
                              '-> "%s"', len(leads), stage.name, target.name)

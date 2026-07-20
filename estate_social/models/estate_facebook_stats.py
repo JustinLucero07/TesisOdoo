@@ -9,15 +9,15 @@ _logger = logging.getLogger(__name__)
 
 META_API_VERSION = 'v25.0'
 
-FB_INSIGHTS_METRICS = (
+FB_INSIGHTS_CORE_METRICS = (
     'post_impressions,'
     'post_impressions_unique,'
     'post_clicks,'
+    'post_clicks_by_type'
+)
+
+FB_INSIGHTS_OPTIONAL_METRICS = (
     'post_impressions_fan_unique,'
-    'post_impressions_organic_unique,'
-    'post_impressions_paid_unique,'
-    'post_impressions_viral_unique,'
-    'post_clicks_by_type,'
     'post_impressions_by_age_gender_unique'
 )
 
@@ -307,7 +307,7 @@ class EstateFacebookStats(models.Model):
             ins_resp = request_with_retry(
                 'GET',
                 f'https://graph.facebook.com/{META_API_VERSION}/{post_id}/insights',
-                params={'metric': FB_INSIGHTS_METRICS, 'period': 'lifetime', 'access_token': token},
+                params={'metric': FB_INSIGHTS_CORE_METRICS, 'period': 'lifetime', 'access_token': token},
                 timeout=15, retries=3,
             )
             ins_payload = {}
@@ -328,21 +328,8 @@ class EstateFacebookStats(models.Model):
                         reach = val if isinstance(val, int) else 0
                     elif name == 'post_clicks':
                         clicks = val if isinstance(val, int) else 0
-                    elif name == 'post_impressions_fan_unique':
-                        fan_reach = val if isinstance(val, int) else 0
-                    elif name == 'post_impressions_organic_unique':
-                        organic_reach = val if isinstance(val, int) else 0
-                    elif name == 'post_impressions_paid_unique':
-                        paid_reach = val if isinstance(val, int) else 0
-                    elif name == 'post_impressions_viral_unique':
-                        viral_reach = val if isinstance(val, int) else 0
                     elif name == 'post_clicks_by_type' and isinstance(val, dict):
                         link_clicks = int(val.get('link clicks', 0) or 0)
-                    elif name == 'post_impressions_by_age_gender_unique' and isinstance(val, dict):
-                        gender_age_raw = {k: int(v or 0) for k, v in val.items()}
-
-                if reach and fan_reach:
-                    non_fan_reach = max(reach - fan_reach, 0)
             else:
                 err_msg = ins_payload.get('error', {}).get('message', '')
                 err_code = ins_payload.get('error', {}).get('code', '')
@@ -351,11 +338,40 @@ class EstateFacebookStats(models.Model):
                     'Insights FALLÓ para %s — HTTP %s · code=%s subcode=%s · %s',
                     post_id, ins_resp.status_code, err_code, err_sub,
                     err_msg or (getattr(ins_resp, 'text', '') or '')[:200])
-                if err_msg:
+
+                if err_code == 190:
+                    insights_error_msg = (
+                        'El Token de Facebook expiro o es invalido (code 190). '
+                        'Genere y guarde un nuevo Page Access Token permanente en Ajustes -> Redes Sociales.'
+                    )
+                elif err_code != 100 and err_msg:
                     insights_error_msg = (
                         f'Insights no disponibles (HTTP {ins_resp.status_code}, '
                         f'code {err_code}): {err_msg}'
                     )
+
+            # Consulta opcional de métricas demográficas/audiencia (se ignora si Meta no las soporta para este tipo de post)
+            try:
+                opt_resp = request_with_retry(
+                    'GET',
+                    f'https://graph.facebook.com/{META_API_VERSION}/{post_id}/insights',
+                    params={'metric': FB_INSIGHTS_OPTIONAL_METRICS, 'period': 'lifetime', 'access_token': token},
+                    timeout=10, retries=1,
+                )
+                if opt_resp.status_code == 200:
+                    opt_payload = opt_resp.json()
+                    for item in opt_payload.get('data', []):
+                        name = item.get('name', '')
+                        values = item.get('values') or [{}]
+                        val = values[-1].get('value', 0)
+                        if name == 'post_impressions_fan_unique':
+                            fan_reach = val if isinstance(val, int) else 0
+                        elif name == 'post_impressions_by_age_gender_unique' and isinstance(val, dict):
+                            gender_age_raw = {k: int(v or 0) for k, v in val.items()}
+                    if reach and fan_reach:
+                        non_fan_reach = max(reach - fan_reach, 0)
+            except Exception:
+                pass
 
             self.write({
                 'fb_post_id':       post_id,
@@ -408,8 +424,6 @@ class EstateFacebookStats(models.Model):
         page_id = ICP.get_param('estate_social.facebook_page_id', '')
 
         if not token or not page_id:
-            # Sin credenciales no se lanza error (evita que el cron falle cada vez);
-            # se registra y, si viene de la interfaz, se muestra un aviso.
             msg = ('Configure el Page Access Token y el Page ID de Facebook en '
                    'Ajustes → Redes Sociales.')
             _logger.info('Importación de Facebook omitida: faltan credenciales.')
@@ -448,20 +462,35 @@ class EstateFacebookStats(models.Model):
             if not post_id:
                 continue
 
+            post_msg = post.get('message') or ''
             property_rec = self.env['estate.property'].search(
                 [('fb_post_id', '=', post_id)], limit=1)
+            if not property_rec and post_msg:
+                # Si no está enlazado por ID, intentar coincidencia por título en la primera línea del mensaje
+                first_line = post_msg.split('\n')[0].strip()
+                if len(first_line) > 10:
+                    property_rec = self.env['estate.property'].search(
+                        [('name', 'ilike', first_line[:40])], limit=1)
+                if not property_rec:
+                    # Búsqueda por palabras clave fuertes en el mensaje (ej: sector o título único)
+                    for prop in self.env['estate.property'].search([('state', 'in', ['available', 'reserved'])]):
+                        p_name = getattr(prop, 'name', '') or getattr(prop, 'title', '') or ''
+                        if p_name and len(p_name) > 6 and p_name.lower() in post_msg.lower():
+                            property_rec = prop
+                            break
+
             existing = self.search([('fb_post_id', '=', post_id)], limit=1)
             vals = {
                 'fb_post_id':   post_id,
-                'fb_message':   (post.get('message') or '')[:500],
+                'fb_message':   post_msg[:500],
                 'fb_permalink': post.get('permalink_url', ''),
             }
             if property_rec:
                 vals['property_id'] = property_rec.id
 
             if existing:
-                existing.write(vals)
-                existing._fetch_stats()
+                if not existing.fb_permalink and vals.get('fb_permalink'):
+                    existing.write({'fb_permalink': vals['fb_permalink']})
                 updated += 1
             else:
                 rec = self.create(vals)

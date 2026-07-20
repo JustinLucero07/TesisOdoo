@@ -1001,6 +1001,58 @@ class EstateProperty(models.Model):
                 )
         self.write({'state': 'available'})
 
+    def action_cancel_sale(self):
+        """Anula una venta registrada por error: cancela el pago de la factura
+        (si lo tiene), la factura, la orden de venta y la comisión asociada, y
+        devuelve la propiedad a Disponible. Solo se detiene con un error si la
+        comisión ya fue PAGADA AL ASESOR — ese dinero salió de la agencia y
+        requiere una corrección contable manual, no un anulado automático."""
+        self.ensure_one()
+        if self.state != 'sold':
+            raise UserError('Solo se puede anular la venta de una propiedad marcada como Vendida.')
+
+        commissions = self.env['estate.commission'].search([('property_id', '=', self.id)])
+        if any(c.state == 'paid' for c in commissions):
+            raise UserError(
+                'Esta venta tiene una comisión YA PAGADA al asesor. No se puede anular '
+                'automáticamente: revierte el pago desde Contabilidad y ajusta la comisión '
+                'manualmente antes de anular la venta.'
+            )
+
+        orders = self.sale_order_ids.filtered(lambda o: o.state != 'cancel')
+        for order in orders:
+            invoices = order.invoice_ids.filtered(lambda m: m.state != 'cancel')
+            for inv in invoices:
+                if inv.payment_state in ('paid', 'in_payment', 'partial'):
+                    payments = inv._get_reconciled_payments()
+                    payments.filtered(lambda p: p.state != 'canceled').action_cancel()
+                if inv.state == 'posted':
+                    inv.button_draft()
+                inv.button_cancel()
+            order.action_cancel()
+
+        commissions.filtered(lambda c: c.state != 'cancelled').action_cancel()
+
+        self.with_context(no_wp_sync=True).write({
+            'state': 'available',
+            'buyer_id': False,
+            'proxy_id': False,
+            'date_sold': False,
+            'sold_by': False,
+            'deal_deadline': False,
+            'deal_earnest_amount': 0,
+            'deal_payment_type': False,
+            'deal_payment_details': False,
+            'deal_credit_institution': False,
+            'deal_credit_advisor': False,
+            'deal_credit_advisor_phone': False,
+            'deal_observations': False,
+        })
+        self.message_post(body=(
+            '<b>Venta anulada.</b> Se cancelaron la orden de venta, la factura y la '
+            'comisión asociadas. La propiedad vuelve a estar Disponible.'
+        ))
+
     def action_relist(self):
         """Re-listar una propiedad ya vendida/arrendada para volver al mercado."""
         self.ensure_one()
@@ -1126,7 +1178,15 @@ class EstateProperty(models.Model):
         first_month_commission = self.rental_price * (self.commission_percentage / 100.0)
         self._create_commission_records('rent', first_month_commission, self.rental_price, self.commission_percentage)
 
-    def _process_native_sale(self, buyer, price, commission_amount, commission_pct, invoice_mode='commission', user_id=False):
+    def _get_iva_tax(self):
+        """Busca el impuesto de venta IVA 15% por monto/tipo (no por ID fijo,
+        que puede variar entre bases de datos/compañías)."""
+        return self.env['account.tax'].search([
+            ('type_tax_use', '=', 'sale'), ('amount_type', '=', 'percent'),
+            ('amount', '=', 15.0), ('company_id', '=', self.env.company.id),
+        ], limit=1)
+
+    def _process_native_sale(self, buyer, price, commission_amount, commission_pct, invoice_mode='commission', user_id=False, apply_vat=False):
         """Crea y confirma la orden de venta nativa (sale.order) y genera +
         contabiliza la factura (account.move) según el modo de facturación elegido:
         - 'commission': Factura los Honorarios de Corretaje (al propietario si existe, o al cliente).
@@ -1173,12 +1233,17 @@ class EstateProperty(models.Model):
                     line_name = f"Venta de Inmueble — {self.title}"
                     line_price = price
 
-                order_vals['order_line'] = [(0, 0, {
+                line_vals = {
                     'product_id': self.product_id.product_variant_id.id,
                     'name': line_name,
                     'price_unit': line_price,
                     'product_uom_qty': 1,
-                })]
+                }
+                if apply_vat:
+                    iva = self._get_iva_tax()
+                    if iva:
+                        line_vals['tax_ids'] = [(6, 0, [iva.id])]
+                order_vals['order_line'] = [(0, 0, line_vals)]
             order = self.env['sale.order'].create(order_vals)
             order.action_confirm()
 

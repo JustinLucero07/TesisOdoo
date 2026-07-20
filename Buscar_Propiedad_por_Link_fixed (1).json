@@ -1,0 +1,181 @@
+{
+  "name": "Buscar Propiedad por Link",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "link"
+            }
+          ]
+        }
+      },
+      "id": "1a2b3c4d-1111-4444-8888-111122223333",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const propInput = $input.item.json;\nconst inputLink = propInput.link || propInput.url || '';\nconst inputMsg = propInput.mensaje || propInput.text || propInput.texto || '';\nlet cleanUrl = decodeURIComponent(inputLink);\n\n// 1. Extraer código corto de Facebook (ej: 1CzZAkr5xh)\nlet fbCode = '';\nconst matchFbShare = cleanUrl.match(/(?:share\\/p\\/|posts\\/|fbid=|photo\\/\\?fbid=)([a-zA-Z0-9_-]+)/i);\nif (matchFbShare && matchFbShare[1]) {\n  fbCode = matchFbShare[1];\n}\n\nlet longFbId = '';\nconst matchLongInit = cleanUrl.match(/(?:\\/posts\\/|fbid=|_|story_fbid=)(\\d{10,})/i);\nif (matchLongInit && matchLongInit[1]) {\n  longFbId = matchLongInit[1];\n}\n\n// 2. EXTRAER DE LA PUBLICACIÓN (Scraping e Inteligencia para resolver redirección y extraer ID oculto en HTML)\nlet scrapedTitle = '';\nlet scrapedDesc = '';\nif (inputLink.startsWith('http')) {\n  try {\n    const res = await fetch(inputLink, {\n      headers: {\n        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',\n        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',\n        'Accept-Language': 'es-ES,es;q=0.9'\n      },\n      redirect: 'follow'\n    });\n    if (res.url) {\n      const redirectedUrl = decodeURIComponent(res.url);\n      const matchRedirectId = redirectedUrl.match(/(?:\\/posts\\/|fbid=|_|story_fbid=|%2Fposts%2F|%2F)(\\d{10,})/i);\n      if (matchRedirectId && matchRedirectId[1]) {\n        longFbId = matchRedirectId[1];\n      }\n    }\n    if (res.ok) {\n      const html = await res.text();\n      if (!longFbId) {\n        const ogUrlMatch = html.match(/<meta[^>]*property=[\"']og:url[\"'][^>]*content=[\"']([^\"']+)[\"']/i) ||\n                           html.match(/<meta[^>]*content=[\"']([^\"']+)[\"'][^>]*property=[\"']og:url[\"']/i) ||\n                           html.match(/<link[^>]*rel=[\"']canonical[\"'][^>]*href=[\"']([^\"']+)[\"']/i);\n        if (ogUrlMatch && ogUrlMatch[1]) {\n          const matchFromOg = decodeURIComponent(ogUrlMatch[1]).match(/(\\d{13,17})/);\n          if (matchFromOg && matchFromOg[1]) {\n            longFbId = matchFromOg[1];\n          }\n        }\n        if (!longFbId) {\n          const anyIdMatch = html.match(/(?:\\/|fbid=|story_fbid=|post_id=|_|%2F)(\\d{13,17})(?:\\/|%2F|\"|'|&|\\s|$)/i);\n          if (anyIdMatch && anyIdMatch[1]) {\n            longFbId = anyIdMatch[1];\n          }\n        }\n        if (!longFbId) {\n          const allNums = html.match(/(\\d{13,17})/g);\n          if (allNums && allNums[0]) {\n            longFbId = allNums[0];\n          }\n        }\n      }\n      const ogTitleMatch = html.match(/<meta[^>]*property=[\"']og:title[\"'][^>]*content=[\"']([^\"']+)[\"']/i) ||\n                           html.match(/<meta[^>]*content=[\"']([^\"']+)[\"'][^>]*property=[\"']og:title[\"']/i);\n      if (ogTitleMatch && ogTitleMatch[1]) scrapedTitle = ogTitleMatch[1];\n      else {\n        const titleTagMatch = html.match(/<title[^>]*>([^<]+)<\\/title>/i);\n        if (titleTagMatch && titleTagMatch[1]) scrapedTitle = titleTagMatch[1];\n      }\n      const ogDescMatch = html.match(/<meta[^>]*property=[\"']og:description[\"'][^>]*content=[\"']([^\"']+)[\"']/i) ||\n                          html.match(/<meta[^>]*name=[\"']description[\"'][^>]*content=[\"']([^\"']+)[\"']/i);\n      if (ogDescMatch && ogDescMatch[1]) scrapedDesc = ogDescMatch[1];\n    }\n  } catch (e) {}\n\n  if (!scrapedTitle || scrapedTitle.toLowerCase().includes('facebook') || scrapedTitle.toLowerCase().includes('inicia sesión')) {\n    try {\n      const mlRes = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(inputLink)}`);\n      if (mlRes.ok) {\n        const mlJson = await mlRes.json();\n        if (mlJson.status === 'success' && mlJson.data) {\n          if (mlJson.data.url && !longFbId) {\n            const matchMlId = decodeURIComponent(mlJson.data.url).match(/(?:\\/posts\\/|fbid=|_|story_fbid=)(\\d{10,})/i);\n            if (matchMlId && matchMlId[1]) longFbId = matchMlId[1];\n          }\n          if (mlJson.data.title && !mlJson.data.title.toLowerCase().includes('facebook')) {\n            scrapedTitle = mlJson.data.title;\n          }\n          if (mlJson.data.description && !mlJson.data.description.toLowerCase().includes('facebook')) {\n            scrapedDesc = mlJson.data.description;\n          }\n        }\n      }\n    } catch (e) {}\n  }\n}\n\n// 3. Unir título, descripción, slug y el MENSAJE de WhatsApp del cliente\nlet rawText = [scrapedTitle, scrapedDesc, inputMsg].filter(Boolean).join(' ');\nif (!rawText || rawText.length < 5) {\n  const matchSlug = cleanUrl.match(/\\/([^\\/?#]+-[^\\/?#]+-[^\\/?#]+)/);\n  if (matchSlug && matchSlug[1]) rawText = matchSlug[1];\n}\n\nrawText = rawText\n  .replace(/\\| Facebook/i, '')\n  .replace(/ - Facebook/i, '')\n  .replace(/Inicia sesi[oó]n o reg[ií]strate para ver/i, '')\n  .replace(/\\.html$|\\.php$|\\.aspx$/i, '')\n  .replace(/[-_+]/g, ' ')\n  .trim();\n\nconst allWords = rawText\n  .replace(/[^\\w\\s\\u00C0-\\u017F]/g, ' ')\n  .split(/\\s+/)\n  .filter(w => w.length >= 3 && !['https', 'http', 'facebook', 'share', 'posts', 'photo', 'propiedad', 'inmobi', 'venta', 'arriendo', 'casa', 'departamento', 'terreno', 'para', 'como', 'esta', 'este', 'esto', 'hola', 'buenas', 'tardes', 'dias', 'noches', 'informacion', 'info', 'favor', 'ayuda', 'quiero', 'busco', 'interesa', 'interesado', 'publicacion', 'link', 'enlace', 'sobre', 'aqui', 'alla', 'donde', 'tiene', 'tienen'].includes(w.toLowerCase()));\n\nconst keywords = allWords.slice(0, 4);\n\nreturn [{\n  json: {\n    original_link: inputLink,\n    fb_code: fbCode || '',\n    long_fb_id: longFbId || '',\n    scraped_title: scrapedTitle || '',\n    scraped_desc: scrapedDesc || '',\n    extracted_title: rawText || (fbCode !== rawText ? rawText : ''),\n    keywords: keywords\n  }\n}];"
+      },
+      "id": "2b3c4d5e-2222-4444-8888-222233334444",
+      "name": "Extraer Título del Link",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "WITH post_info AS (\n  SELECT fs.fb_message \n  FROM estate_facebook_stats fs \n  WHERE ('{{ $json.fb_code }}' != '' AND (fs.fb_permalink ILIKE '%' || '{{ $json.fb_code }}' || '%' OR fs.fb_post_id ILIKE '%' || '{{ $json.fb_code }}' || '%'))\n     OR ('{{ $json.long_fb_id }}' != '' AND (fs.fb_permalink ILIKE '%' || '{{ $json.long_fb_id }}' || '%' OR fs.fb_post_id ILIKE '%' || '{{ $json.long_fb_id }}' || '%'))\n  LIMIT 1\n)\nSELECT \n  COALESCE(ep.id, 0) AS id,\n  to_jsonb(ep.*) AS raw_row,\n  to_jsonb(rp.*) AS advisor_row,\n  pt.name        AS tipo_propiedad,\n  (SELECT fb_message FROM post_info) AS fb_post_message\nFROM (SELECT 1) dummy\nLEFT JOIN estate_property ep ON (\n  -- 1. Por código corto O por el ID largo numérico del post resuelto del redireccionamiento\n  (('{{ $json.fb_code }}' != '' OR '{{ $json.long_fb_id }}' != '') AND (\n      EXISTS (\n          SELECT 1 FROM estate_advisor_fb_post fb \n          WHERE fb.property_id = ep.id AND (fb.url ILIKE '%' || '{{ $json.fb_code }}' || '%' OR ('{{ $json.long_fb_id }}' != '' AND fb.url ILIKE '%' || '{{ $json.long_fb_id }}' || '%'))\n      )\n      OR EXISTS (\n          SELECT 1 FROM estate_facebook_stats fs \n          WHERE fs.property_id = ep.id AND (\n                 fs.fb_permalink ILIKE '%' || '{{ $json.fb_code }}' || '%' \n              OR fs.fb_post_id ILIKE '%' || '{{ $json.fb_code }}' || '%'\n              OR ('{{ $json.long_fb_id }}' != '' AND (fs.fb_permalink ILIKE '%' || '{{ $json.long_fb_id }}' || '%' OR fs.fb_post_id ILIKE '%' || '{{ $json.long_fb_id }}' || '%'))\n          )\n      )\n  ))\n  OR\n  -- 2. Coincidencia por título/nombre con el título extraído del scraping o del mensaje\n  ('{{ $json.extracted_title }}' != '' AND (\n      COALESCE(to_jsonb(ep.*)->>'title', '') ILIKE '%' || '{{ $json.extracted_title }}' || '%'\n   OR COALESCE(to_jsonb(ep.*)->>'name',  '') ILIKE '%' || '{{ $json.extracted_title }}' || '%'))\n  OR\n  -- 3. Coincidencia por las 2 palabras clave principales extraídas del mensaje o link (ej: 'rio' y 'amarillo')\n  ('{{ $json.keywords[0] || \"--\" }}' != '--' AND '{{ $json.keywords[1] || \"--\" }}' != '--'\n   AND (COALESCE(to_jsonb(ep.*)->>'title','') ILIKE '%' || '{{ $json.keywords[0] }}' || '%'\n     OR COALESCE(to_jsonb(ep.*)->>'name','')  ILIKE '%' || '{{ $json.keywords[0] }}' || '%')\n   AND (COALESCE(to_jsonb(ep.*)->>'title','') ILIKE '%' || '{{ $json.keywords[1] }}' || '%'\n     OR COALESCE(to_jsonb(ep.*)->>'name','')  ILIKE '%' || '{{ $json.keywords[1] }}' || '%'))\n  OR\n  -- 4. Coincidencia parcial si la primera y segunda palabra clave fuerte coinciden en el título/sector (ej: 'rio amarillo')\n  ('{{ $json.keywords[0] || \"--\" }}' != '--' AND '{{ $json.keywords.join(\" \") }}' != '' AND (\n      COALESCE(to_jsonb(ep.*)->>'title','') ILIKE '%' || '{{ $json.keywords.slice(0,2).join(\" \") }}' || '%'\n   OR COALESCE(to_jsonb(ep.*)->>'name','')  ILIKE '%' || '{{ $json.keywords.slice(0,2).join(\" \") }}' || '%'))\n)\nLEFT JOIN res_users   ru ON ru.id = (to_jsonb(ep.*)->>'user_id')::int\nLEFT JOIN res_partner rp ON rp.id = ru.partner_id\nLEFT JOIN estate_property_type pt ON pt.id = (to_jsonb(ep.*)->>'property_type_id')::int\nORDER BY\n  CASE WHEN COALESCE(to_jsonb(ep.*)->>'state','') = 'available' THEN 1 ELSE 2 END,\n  ep.id DESC\nLIMIT 1;",
+        "options": {}
+      },
+      "id": "3c4d5e6f-3333-4444-8888-333344445555",
+      "name": "Buscar Propiedad por Título (Postgres)",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        660,
+        300
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "EDZ0lQ11uE0FESjr",
+          "name": "Inmobi"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1111-2222-3333",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "4d5e6f7a-4444-4444-8888-444455556666",
+      "name": "¿Se Encontró Propiedad?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prop = $input.item.json;\nconst extraido = $('Extraer Título del Link').item.json;\n\n// La fila completa viene como JSON: así no dependemos del nombre exacto de ninguna columna.\nconst raw = prop.raw_row || {};\nconst adv = prop.advisor_row || {};\n\n// Cada dato se busca probando los nombres de columna más comunes en Odoo (estándar y personalizados)\nconst titulo   = raw.title ?? raw.name ?? 'Propiedad';\nconst precio   = Number(raw.price ?? raw.selling_price ?? raw.expected_price ?? raw.list_price ?? 0);\nconst estado   = raw.state ?? raw.status ?? '';\nconst habs     = raw.bedrooms ?? raw.rooms ?? raw.habitaciones ?? null;\nconst banos    = raw.bathrooms ?? raw.bathroom ?? raw.banos ?? null;\nconst ciudad   = raw.city ?? raw.ciudad ?? raw.location ?? '';\nconst areaM2   = raw.living_area ?? raw.area ?? raw.m2 ?? raw.square_meters ?? raw.total_area ?? raw.superficie ?? raw.metros ?? null;\nconst asesorNom = adv.name ?? adv.display_name ?? 'Equipo Inmobi';\nconst asesorTel = adv.phone ?? adv.mobile ?? adv.telefono ?? '';\n\nconst precioFmt = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' }).format(precio);\n\n// Ficha en texto plano (sin markdown), con iconos solo donde corresponde\nconst lineas = [];\nlineas.push('🏡 ' + titulo);\nif (ciudad) lineas.push('📍 Ciudad: ' + ciudad);\nif (prop.tipo_propiedad) lineas.push('🏢 Tipo: ' + prop.tipo_propiedad);\nlineas.push('💰 Precio: ' + precioFmt);\n\nconst specs = [];\nif (habs)   specs.push('🛏️ ' + habs + ' habitaciones');\nif (banos)  specs.push('🚿 ' + banos + ' baños');\nif (areaM2) specs.push('📐 ' + areaM2 + ' m²');\nif (specs.length) lineas.push(specs.join(' | '));\n\nif (asesorTel) lineas.push('👤 Asesor: ' + asesorNom + ' (' + asesorTel + ')');\nelse lineas.push('👤 Asesor: ' + asesorNom);\nlineas.push('🔖 Estado: ' + (estado === 'available' ? 'Disponible' : 'Vendida/Reservada'));\n\nreturn [{\n  json: {\n    encontrado: true,\n    property_id: Number(prop.id),\n    titulo_encontrado: titulo,\n    titulo_buscado: extraido.extracted_title || extraido.fb_code,\n    precio: precio,\n    precio_formateado: precioFmt,\n    ciudad: ciudad,\n    estado: estado,\n    habitaciones: habs,\n    banos: banos,\n    area_m2: areaM2,\n    asesor_nombre: asesorNom,\n    asesor_telefono: asesorTel,\n    ficha_formateada: lineas.join('\\n'),\n    link_original: extraido.original_link\n  }\n}];"
+      },
+      "id": "5e6f7a8b-5555-4444-8888-555566667777",
+      "name": "Formatear Ficha de Propiedad",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const extraido = $('Extraer Título del Link').item.json;\nconst prop = $input.item.json || {};\nconst infoPost = prop.fb_post_message || [extraido.scraped_title, extraido.scraped_desc].filter(Boolean).join(' ') || '';\n\nif (infoPost && infoPost.length > 10 && !infoPost.toLowerCase().includes('inicia sesión')) {\n  return [{\n    json: {\n      encontrado: false,\n      requiere_busqueda_tool: true,\n      property_id: 0,\n      info_publicacion: infoPost,\n      link_original: extraido.original_link,\n      mensaje: `Información de la publicación en Facebook:\n\"${infoPost}\"\n\n(INSTRUCCIÓN DEL SISTEMA PARA EL BOT: Esta publicación existe pero aún no tiene ID de propiedad asignado. Utiliza de inmediato tu herramienta de búsqueda de propiedades / buscar_propiedades con las palabras clave, sector, m2 o precio extraídos del texto anterior para encontrar la propiedad y mostrársela al cliente).`\n    }\n  }];\n} else {\n  return [{\n    json: {\n      encontrado: false,\n      requiere_busqueda_tool: false,\n      property_id: 0,\n      titulo_buscado: extraido.extracted_title || extraido.fb_code,\n      link_original: extraido.original_link,\n      mensaje: `No encontramos ninguna propiedad que coincida con el link ('${extraido.extracted_title || extraido.fb_code}'). Puede que no esté registrada en el sistema o tenga otro título.`\n    }\n  }];\n}"
+      },
+      "id": "6f7a8b9c-6666-4444-8888-666677778888",
+      "name": "Propiedad No Encontrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1140,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extraer Título del Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Título del Link": {
+      "main": [
+        [
+          {
+            "node": "Buscar Propiedad por Título (Postgres)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Propiedad por Título (Postgres)": {
+      "main": [
+        [
+          {
+            "node": "¿Se Encontró Propiedad?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Se Encontró Propiedad?": {
+      "main": [
+        [
+          {
+            "node": "Formatear Ficha de Propiedad",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Propiedad No Encontrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b1c2d3e4-5555-4444-8888-999900001111",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "id": "4abFBLinkSearch9",
+  "tags": []
+}

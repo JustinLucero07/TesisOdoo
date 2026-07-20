@@ -8,6 +8,13 @@
              Los xmlid se reutilizan a propósito para no romper los botones del
              CRM ni las automatizaciones que apuntan a ellos.
              ══════════════════════════════════════════════════════════════ -->
+        <!-- Etapa de entrada de leads creados por el bot (WhatsApp/n8n) antes
+             de que un asesor los revise y los pase a Recepción. -->
+        <record id="stage_lead0_estate_oportunidades_bot" model="crm.stage">
+            <field name="name">Oportunidades Bot</field>
+            <field name="sequence">0</field>
+            <field name="team_ids" eval="[Command.set([ref('sales_team.team_sales_department')])]"/>
+        </record>
         <record id="stage_lead1_estate_nuevo" model="crm.stage">
             <field name="name">Recepción</field>
             <field name="sequence">1</field>

@@ -31,6 +31,21 @@ class EstateSaleWizard(models.TransientModel):
                 return prop.user_id
         return self.env.user
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'lead_id' in fields_list and not res.get('lead_id') and res.get('property_id'):
+            lead = self.env['crm.lead'].search([
+                ('target_property_id', '=', res['property_id']), ('type', '=', 'opportunity'),
+            ], limit=1)
+            if lead:
+                res['lead_id'] = lead.id
+                if 'buyer_id' in fields_list and not res.get('buyer_id') and lead.partner_id:
+                    res['buyer_id'] = lead.partner_id.id
+                if 'sale_price' in fields_list and not res.get('sale_price') and lead.client_budget:
+                    res['sale_price'] = lead.client_budget
+        return res
+
     is_edit_mode = fields.Boolean(
         string='Modo Edición',
         default=lambda self: self.env.context.get('edit_deal_mode', False))
@@ -48,6 +63,10 @@ class EstateSaleWizard(models.TransientModel):
         ('none', 'Sin Factura de Venta (Solo Registro Interno en Inmobi)')
     ], string='Modo de Facturación al Cliente', default='commission', required=True,
        help='En corretaje tradicional, la agencia factura únicamente sus honorarios/comisión al cliente. En proyectos propios, la constructora factura el valor total de la propiedad.')
+    apply_vat = fields.Boolean(
+        string='Aplicar IVA 15%', default=False,
+        help='Si se marca, la línea de la factura de esta venta lleva IVA 15%. '
+             'Si no, queda con el impuesto por defecto del producto (0%).')
 
     # --- Datos del Negocio Cerrado ---
     buyer_proxy_id = fields.Many2one('res.partner', string='Apoderado del Comprador')
@@ -180,7 +199,8 @@ class EstateSaleWizard(models.TransientModel):
 
         # 2-3. Orden de venta confirmada + factura contabilizada
         order, invoice = prop._process_native_sale(
-            self.buyer_id, self.sale_price, self.commission_amount, self.commission_pct, invoice_mode=self.invoice_mode, user_id=self.user_id)
+            self.buyer_id, self.sale_price, self.commission_amount, self.commission_pct,
+            invoice_mode=self.invoice_mode, user_id=self.user_id, apply_vat=self.apply_vat)
 
         # 4. Marcar vendida
         prop.with_context(no_wp_sync=True).write({'state': 'sold'})
