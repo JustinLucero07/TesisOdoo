@@ -10,8 +10,16 @@ class CrmLead(models.Model):
     _inherit = 'crm.lead'
 
     target_property_id = fields.Many2one(
-        'estate.property', string='Propiedad de Interés', index=True,
-        domain="[('state', 'not in', ['sold', 'rented'])]")
+        'estate.property', string='Propiedad de Interés', index=True)
+
+    @api.depends('partner_id')
+    def _compute_name(self):
+        """Odoo por defecto pone 'Oportunidad de {contacto}' cuando se crea el
+        lead escribiendo solo el contacto (kanban de creación rápida). Se
+        prefiere directamente el nombre del contacto, sin el prefijo."""
+        for lead in self:
+            if not lead.name and lead.partner_id and lead.partner_id.name:
+                lead.name = lead.partner_id.name
     client_budget = fields.Float(string='Presupuesto del Cliente', tracking=True)
     # Secuencia de la etapa actual: permite mostrar/ocultar botones por etapa
     # en la vista (1-2 captación, 3-4 visita/seguimiento, 5+ cierre).
