@@ -50,8 +50,13 @@ class TestGcalAdvisorFormat(TransactionCase):
         self.assertNotIn('/', body['summary'])
         self.assertTrue(body['summary'].startswith('(RM)'))
 
-    def test_sin_color_configurado_no_incluye_colorid(self):
+    def test_sin_color_configurado_usa_color_automatico_estable(self):
+        """Si el asesor no configuró un color a mano, se le asigna uno
+        automático (no queda sin color, y siempre es el mismo para él)."""
         advisor3 = self.env['res.users'].create({'name': 'Sin Color', 'login': 'sincolor.gcal.test'})
         ev = self._event(user_id=advisor3.id)
         body = ev._gcal_body()
-        self.assertNotIn('colorId', body)
+        self.assertIn('colorId', body)
+        self.assertEqual(body['colorId'], advisor3._gcal_default_color_id())
+        # Estable: se repite el mismo cálculo en una segunda llamada
+        self.assertEqual(ev._gcal_body()['colorId'], body['colorId'])

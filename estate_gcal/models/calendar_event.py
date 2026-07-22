@@ -113,8 +113,12 @@ class CalendarEvent(models.Model):
             'start': {'dateTime': iso(self.start), 'timeZone': 'UTC'},
             'end': {'dateTime': iso(self.stop or self.start), 'timeZone': 'UTC'},
         }
-        if advisor and advisor.gcal_color_id:
-            body['colorId'] = advisor.gcal_color_id
+        if advisor:
+            # Si el asesor no configuró un color manualmente en Ajustes, se le
+            # asigna uno automático (estable por asesor, para que cada uno se
+            # distinga en el calendario compartido en vez de salir todos con
+            # el color por defecto de Google).
+            body['colorId'] = advisor.gcal_color_id or advisor._gcal_default_color_id()
         if prop and (prop.street or prop.city):
             body['location'] = f"{prop.street or ''}, {prop.city or ''}".strip(', ')
         # Recordatorio de Google Calendar con el MISMO tiempo que el de WhatsApp

@@ -164,7 +164,18 @@
       "Bash(kill 84389)",
       "Bash(kill 101251)",
       "Bash(kill 12450)",
-      "Bash(rsync -avz \"/home/justin/Documentos/Tesis/deploy/static\" /home/justin/Documentos/Tesis/deploy/docker-compose.yml /home/justin/Documentos/Tesis/deploy/nginx/nginx.conf --dry-run)"
+      "Bash(rsync -avz \"/home/justin/Documentos/Tesis/deploy/static\" /home/justin/Documentos/Tesis/deploy/docker-compose.yml /home/justin/Documentos/Tesis/deploy/nginx/nginx.conf --dry-run)",
+      "Bash(find /home/justin/Documentos/Tesis -iname \"*.docx\" 2>/dev/null; echo ---; find /home/justin/Documentos -maxdepth 2 -iname \"*titula*\" -o -iname \"*tesis*.docx\" 2>/dev/null; echo ---; find /home/justin -maxdepth 3 -iname \"*.docx\" 2>/dev/null)",
+      "Bash(find /home/justin/Documentos/Tesis /home/justin/Descargas -maxdepth 2 -iname \"*informe*final*tesis*\" 2>/dev/null)",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Bash(python3 -c \"import fitz; print\\('pymupdf available'\\)\")",
+      "Bash(mkdir -p /tmp/claude-1000/-home-justin-Documentos-Tesis/4d953ab6-14f1-4771-a0f4-a8ae386cf904/scratchpad/logo_extract)",
+      "Bash(pdfimages -f 1 -l 1 -png \"/home/justin/Documentos/Tesis/Informe Final Tesis.pdf\" logo)",
+      "Bash(mkdir -p /tmp/claude-1000/-home-justin-Documentos-Tesis/4d953ab6-14f1-4771-a0f4-a8ae386cf904/scratchpad/figs)",
+      "Bash(pdfimages -png -p \"/home/justin/Documentos/Tesis/Informe Final Tesis.pdf\" fig)",
+      "Bash(sort -k5 -n)",
+      "Bash(google-chrome --headless --disable-gpu --no-sandbox --print-to-pdf=\"PRESENTACION_TESIS.pdf\" --print-to-pdf-no-header --no-margins \"file:///home/justin/Documentos/Tesis/docs/PRESENTACION_TESIS.html\")"
     ],
     "additionalDirectories": [
       "/tmp",
