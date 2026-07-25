@@ -1,6 +1,19 @@
 from odoo import models, fields, api
 
 
+class EstateContactPhone(models.Model):
+    _name = 'estate.contact.phone'
+    _description = 'Teléfono adicional del contacto'
+    _order = 'sequence, id'
+
+    partner_id = fields.Many2one(
+        'res.partner', string='Contacto', required=True, ondelete='cascade', index=True)
+    sequence = fields.Integer(default=10)
+    label = fields.Char(
+        string='Etiqueta', help='Ej: Casa, Trabajo, WhatsApp, Familiar…')
+    phone = fields.Char(string='Teléfono', required=True)
+
+
 class ResPartner(models.Model):
     _inherit = 'res.partner'
 
@@ -8,6 +21,10 @@ class ResPartner(models.Model):
     phone = fields.Char(index='btree_not_null')
     mobile = fields.Char(index='btree_not_null')
     email = fields.Char(index='btree_not_null')
+
+    # --- Teléfonos adicionales (un contacto puede tener varios números) ---
+    extra_phone_ids = fields.One2many(
+        'estate.contact.phone', 'partner_id', string='Teléfonos adicionales')
 
     # --- Campos de rol inmobiliario ---
     is_property_owner = fields.Boolean(

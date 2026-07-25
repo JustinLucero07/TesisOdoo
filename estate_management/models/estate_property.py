@@ -207,7 +207,10 @@ class EstateProperty(models.Model):
     # --- Comisiones ---
     commission_percentage = fields.Float(string='Porcentaje Comisión (%)', default=5.0)
     commission_amount = fields.Float(
-        string='Monto Comisión', compute='_compute_commission_amount', store=True)
+        string='Monto Comisión', compute='_compute_commission_amount',
+        inverse='_inverse_commission_amount', store=True, readonly=False,
+        help='Puedes escribir el monto directamente: el porcentaje se recalcula solo. '
+             'Y si cambias el porcentaje, el monto se recalcula a partir de este.')
 
     # --- Estado ---
     state = fields.Selection([
@@ -321,6 +324,20 @@ class EstateProperty(models.Model):
     deal_earnest_amount = fields.Float(
         string='Seña / Arras ($)',
         help='Monto entregado como reserva al cerrar el negocio.')
+    deal_earnest_received_by = fields.Selection([
+        ('owner', 'Propietario'),
+        ('landlord', 'Dueño'),
+        ('proxy', 'Apoderado'),
+    ], string='Quién Recibió la Seña')
+    deal_earnest_payment_method = fields.Selection([
+        ('cash', 'Efectivo'),
+        ('transfer', 'Transferencia'),
+        ('deposit', 'Depósito'),
+        ('other', 'Otro'),
+    ], string='Forma de Pago de la Seña', default='cash')
+    deal_earnest_payment_other = fields.Char(
+        string='Especifique Forma de Pago de la Seña',
+        help='Solo si la forma de pago de la seña es "Otro".')
     deal_payment_type = fields.Selection([
         ('cash', 'Contado'),
         ('mortgage', 'Hipotecario (BIESS/Banco)'),
@@ -395,13 +412,22 @@ class EstateProperty(models.Model):
 
     def action_new_contract(self):
         """Acceso directo: abre el formulario de un contrato nuevo en blanco
-        con la propiedad y sus datos derivados ya precargados."""
+        con la propiedad y sus datos derivados ya precargados.
+
+        El tipo de contrato de captación se deduce solo, igual que "Sin
+        Contrato": si hay Apoderado se usa la variante "(Apoderado)", si no
+        la de "(Propietario)"; y "En Exclusividad" decide si es la variante
+        con o sin exclusividad. No hace falta un check aparte de "Sin
+        Exclusividad": que "En Exclusividad" esté apagado ya significa eso."""
         self.ensure_one()
-        contract_type = 'rent' if self.offer_type == 'rent' else 'sale'
         if self.is_no_contract:
             contract_type = 'no_contract'
-        elif self.is_exclusive:
-            contract_type = 'exclusive_owner'
+        else:
+            has_proxy = bool(self.proxy_id)
+            if self.is_exclusive:
+                contract_type = 'exclusive_proxy' if has_proxy else 'exclusive_owner'
+            else:
+                contract_type = 'non_exclusive_proxy' if has_proxy else 'non_exclusive_owner'
         ctx = {
             'default_property_id': self.id,
             'default_contract_type': contract_type,
@@ -738,6 +764,11 @@ class EstateProperty(models.Model):
     def _compute_commission_amount(self):
         for rec in self:
             rec.commission_amount = (rec.price or 0.0) * (rec.commission_percentage / 100.0)
+
+    def _inverse_commission_amount(self):
+        for rec in self:
+            if rec.price:
+                rec.commission_percentage = (rec.commission_amount / rec.price) * 100.0
 
     @api.model_create_multi
     def create(self, vals_list):

@@ -31,9 +31,22 @@
                     </button>
                 </xpath>
 
+                <!-- Teléfonos adicionales: bajo el teléfono, con lista editable
+                     ("agregar una línea" añade otro número). -->
+                <xpath expr="//field[@name='phone']" position="after">
+                    <field name="extra_phone_ids" nolabel="1" colspan="2"
+                           context="{'form_view_ref': False}">
+                        <list string="Teléfonos adicionales" editable="bottom">
+                            <field name="sequence" widget="handle"/>
+                            <field name="label" placeholder="Casa, Trabajo, WhatsApp…"/>
+                            <field name="phone" placeholder="Otro número de teléfono" widget="phone"/>
+                        </list>
+                    </field>
+                </xpath>
+
                 <!-- Cambiar etiqueta RUC por Cédula / RUC y mostrar campos de generales de ley (Estado civil, profesión) cuando es Persona -->
                 <xpath expr="//field[@name='vat']" position="attributes">
-                    <attribute name="string">Cédula / RUC</attribute>
+                    <attribute name="string">RUC / Cédula</attribute>
                     <attribute name="placeholder">Ej: 0102030405 / 0102030405001</attribute>
                 </xpath>
                 <xpath expr="//field[@name='vat']" position="after">

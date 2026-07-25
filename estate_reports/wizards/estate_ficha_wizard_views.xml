@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_estate_ficha_wizard_form" model="ir.ui.view">
+        <field name="name">estate.ficha.wizard.form</field>
+        <field name="model">estate.ficha.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Imprimir Ficha de la Propiedad">
+                <div class="oe_title">
+                    <h2>Elige el diseño de la ficha</h2>
+                    <p class="text-muted">
+                        Se generará un PDF en tamaño A4 con el diseño seleccionado.
+                    </p>
+                </div>
+                <group>
+                    <field name="property_id" invisible="1"/>
+                    <field name="design" widget="radio"/>
+                    
+                    <!-- Previsualización de Diseños -->
+                    <div colspan="2" style="margin-top: 10px; padding: 15px; border: 1px solid #e0e0e0; background-color: #f9f9f9; border-radius: 5px; text-align: center;">
+                        <h4 style="margin-bottom: 10px; color: #28235d; font-weight: bold;">Previsualizaci&#243;n del Dise&#241;o</h4>
+                        
+                        <!-- Diseño 1 -->
+                        <div invisible="design != '1'">
+                            <div style="width: 150px; height: 200px; border: 1px solid #ccc; margin: 0 auto; background: #fff; position: relative;">
+                                <div style="background: #28235d; height: 20px; width: 100%;"></div>
+                                <div style="background: #dcdcdc; height: 80px; width: 100%;"></div>
+                                <div style="padding: 10px; text-align: left;">
+                                    <div style="background: #e0e0e0; height: 5px; width: 80%; margin-bottom: 3px;"></div>
+                                    <div style="background: #e0e0e0; height: 5px; width: 60%; margin-bottom: 10px;"></div>
+                                    <div style="background: #e0e0e0; height: 3px; width: 100%; margin-bottom: 2px;"></div>
+                                    <div style="background: #e0e0e0; height: 3px; width: 90%;"></div>
+                                </div>
+                                <div style="background: #28235d; height: 30px; width: 100%; position: absolute; bottom: 0;"></div>
+                            </div>
+                            <p style="margin-top: 8px; font-size: 13px; color: #555; font-weight: bold;">Portada Vertical con Franja Oscura</p>
+                        </div>
+                        
+                        <!-- Diseño 2 -->
+                        <div invisible="design != '2'">
+                            <div style="width: 150px; height: 200px; border: 1px solid #ccc; margin: 0 auto; background: #fff; position: relative;">
+                                <div style="background: #fff; border-bottom: 1px solid #eee; height: 25px; width: 100%;"></div>
+                                <div style="padding: 10px;">
+                                    <div style="background: #dcdcdc; height: 60px; width: 100%; margin-bottom: 5px;"></div>
+                                    <div style="display: flex; gap: 5px;">
+                                        <div style="background: #dcdcdc; height: 30px; width: 50%;"></div>
+                                        <div style="background: #dcdcdc; height: 30px; width: 50%;"></div>
+                                    </div>
+                                </div>
+                                <div style="background: #28235d; height: 25px; width: 100%; position: absolute; bottom: 0;"></div>
+                            </div>
+                            <p style="margin-top: 8px; font-size: 13px; color: #555; font-weight: bold;">Dise&#241;o Minimalista y Mosaico</p>
+                        </div>
+
+                        <!-- Diseño 3 -->
+                        <div invisible="design != '3'">
+                            <div style="width: 150px; height: 200px; border: 1px solid #ccc; margin: 0 auto; background: #fff; position: relative;">
+                                <div style="background: #9fa0a4; height: 110px; width: 100%; position: relative;">
+                                    <div style="background: rgba(40,35,93, 0.4); width: 100%; height: 100%; position: absolute; top: 0;"></div>
+                                </div>
+                                <div style="padding: 10px; text-align: left;">
+                                    <div style="background: #e0e0e0; height: 5px; width: 80%; margin-bottom: 10px;"></div>
+                                    <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                                        <div style="background: #f0f0f0; height: 20px; width: 30%;"></div>
+                                        <div style="background: #f0f0f0; height: 20px; width: 30%;"></div>
+                                        <div style="background: #f0f0f0; height: 20px; width: 30%;"></div>
+                                    </div>
+                                </div>
+                                <div style="background: #28235d; height: 25px; width: 100%; position: absolute; bottom: 0;"></div>
+                            </div>
+                            <p style="margin-top: 8px; font-size: 13px; color: #555; font-weight: bold;">Portada a Sangre (Foto de Fondo)</p>
+                        </div>
+                    </div>
+                    
+                    <field name="show_contact" widget="boolean_toggle"/>
+                </group>
+                <footer>
+                    <button name="action_print" string="Generar PDF" type="object"
+                            class="btn-primary" icon="fa-download"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_estate_ficha_wizard" model="ir.actions.act_window">
+        <field name="name">Descargar Ficha PDF</field>
+        <field name="res_model">estate.ficha.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_property"/>
+        <field name="binding_type">action</field>
+    </record>
+
+</odoo>

@@ -53,6 +53,17 @@
                                 <td style="color:#555;"><strong>Seña / Arras</strong></td>
                                 <td>$<span t-esc="'{:,.2f}'.format(o.deal_earnest_amount or 0)"/></td>
                             </tr>
+                            <tr t-if="o.deal_earnest_amount and (o.deal_earnest_received_by or o.deal_earnest_payment_method)">
+                                <td style="color:#555;"><strong>Recibido por / Detalle</strong></td>
+                                <td>
+                                    <span t-if="o.deal_earnest_received_by" t-esc="dict(o._fields['deal_earnest_received_by'].selection).get(o.deal_earnest_received_by, '')"/>
+                                    <t t-if="o.deal_earnest_received_by and o.deal_earnest_payment_method"> — </t>
+                                    <span t-if="o.deal_earnest_payment_method" t-esc="dict(o._fields['deal_earnest_payment_method'].selection).get(o.deal_earnest_payment_method, '')"/>
+                                    <t t-if="o.deal_earnest_payment_method == 'other' and o.deal_earnest_payment_other">
+                                        (<span t-esc="o.deal_earnest_payment_other"/>)
+                                    </t>
+                                </td>
+                            </tr>
                             <tr>
                                 <td style="color:#555;"><strong>Forma de Pago</strong></td>
                                 <td>

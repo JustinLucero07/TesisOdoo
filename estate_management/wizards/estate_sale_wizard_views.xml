@@ -42,6 +42,18 @@
 
                     <field name="invoice_mode" invisible="1"/>
 
+                    <group string="Detalles de la Seña" invisible="not deal_earnest_amount">
+                        <group>
+                            <field name="deal_earnest_received_by" widget="radio"/>
+                        </group>
+                        <group>
+                            <field name="deal_earnest_payment_method" widget="radio"/>
+                            <field name="deal_earnest_payment_other"
+                                   invisible="deal_earnest_payment_method != 'other'"
+                                   placeholder="Ej: Cheque, criptomoneda..."/>
+                        </group>
+                    </group>
+
                     <group string="Datos del Negocio Cerrado">
                         <group>
                             <field name="buyer_proxy_id" options="{'no_create': False}"/>

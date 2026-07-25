@@ -72,6 +72,18 @@ class EstateSaleWizard(models.TransientModel):
     buyer_proxy_id = fields.Many2one('res.partner', string='Apoderado del Comprador')
     deal_deadline = fields.Date(string='Fecha Máxima de Cumplimiento')
     deal_earnest_amount = fields.Float(string='Seña / Arras ($)')
+    deal_earnest_received_by = fields.Selection([
+        ('owner', 'Propietario'),
+        ('landlord', 'Dueño'),
+        ('proxy', 'Apoderado'),
+    ], string='Quién Recibió la Seña')
+    deal_earnest_payment_method = fields.Selection([
+        ('cash', 'Efectivo'),
+        ('transfer', 'Transferencia'),
+        ('deposit', 'Depósito'),
+        ('other', 'Otro'),
+    ], string='Forma de Pago de la Seña', default='cash')
+    deal_earnest_payment_other = fields.Char(string='Especifique Forma de Pago de la Seña')
     deal_payment_type = fields.Selection([
         ('cash', 'Contado'),
         ('mortgage', 'Hipotecario (BIESS/Banco)'),
@@ -84,6 +96,28 @@ class EstateSaleWizard(models.TransientModel):
     deal_credit_advisor = fields.Char(string='Asesor de Crédito')
     deal_credit_advisor_phone = fields.Char(string='Teléfono Asesor de Crédito')
     deal_observations = fields.Text(string='Observaciones')
+
+    def _deal_note_lines(self):
+        """Líneas con los datos del Negocio Cerrado para volcar en la Orden de
+        Venta (aparecen impresas en la cotización/factura), incluida la seña."""
+        lines = []
+        if self.deal_payment_details:
+            lines.append(f"Detalles de Pago: {self.deal_payment_details}")
+        if self.deal_earnest_amount:
+            received_by = dict(self._fields['deal_earnest_received_by'].selection).get(
+                self.deal_earnest_received_by, '')
+            method = dict(self._fields['deal_earnest_payment_method'].selection).get(
+                self.deal_earnest_payment_method, '')
+            detail = ' — '.join(x for x in (received_by, method) if x)
+            if self.deal_earnest_payment_method == 'other' and self.deal_earnest_payment_other:
+                detail += f" ({self.deal_earnest_payment_other})"
+            line = f"Seña / Arras: ${self.deal_earnest_amount:,.2f}"
+            if detail:
+                line += f" — {detail}"
+            lines.append(line)
+        if self.deal_observations:
+            lines.append(f"Observaciones: {self.deal_observations}")
+        return lines
 
     @api.onchange('lead_id')
     def _onchange_lead_id(self):
@@ -145,6 +179,9 @@ class EstateSaleWizard(models.TransientModel):
                 'user_id': self.user_id.id if self.user_id else False,
                 'deal_deadline': self.deal_deadline,
                 'deal_earnest_amount': self.deal_earnest_amount,
+                'deal_earnest_received_by': self.deal_earnest_received_by,
+                'deal_earnest_payment_method': self.deal_earnest_payment_method,
+                'deal_earnest_payment_other': self.deal_earnest_payment_other,
                 'deal_payment_type': self.deal_payment_type,
                 'deal_payment_details': self.deal_payment_details,
                 'deal_credit_institution': self.deal_credit_institution,
@@ -156,18 +193,34 @@ class EstateSaleWizard(models.TransientModel):
                 prop_vals['proxy_id'] = self.buyer_proxy_id.id
             prop.with_context(no_wp_sync=True).write(prop_vals)
 
+            # Sincronizar la comisión ya generada con los datos corregidos: el
+            # asesor pudo cambiar, o el precio/porcentaje pudo corregirse
+            # después de la venta original. No se tocan comisiones ya pagadas
+            # (son un registro histórico de un pago que ya se hizo).
+            commissions = self.env['estate.commission'].search([
+                ('property_id', '=', prop.id),
+                ('state', 'in', ('draft', 'approved')),
+            ])
+            if len(commissions) == 1:
+                commissions.write({
+                    'user_id': self.user_id.id,
+                    'sale_amount': self.sale_price,
+                    'commission_pct': self.commission_pct,
+                })
+            elif len(commissions) > 1:
+                prop.message_post(
+                    body='<b>Aviso:</b> hay varias comisiones (reparto con co-asesor) vinculadas '
+                         'a este negocio y no se sincronizaron automáticamente al editar — revísalas '
+                         'manualmente en el menú Comisiones si el asesor o el monto cambiaron.')
+
             # Actualizar también las notas en la orden de venta (sale.order) y factura si existen
             orders = self.env['sale.order'].search([('property_id', '=', prop.id)])
             for ord in orders:
                 ord_vals = {}
                 if self.user_id:
                     ord_vals['user_id'] = self.user_id.id
-                if self.deal_observations or self.deal_payment_details:
-                    notes = []
-                    if self.deal_payment_details:
-                        notes.append(f"Detalles de Pago: {self.deal_payment_details}")
-                    if self.deal_observations:
-                        notes.append(f"Observaciones: {self.deal_observations}")
+                notes = self._deal_note_lines()
+                if notes:
                     ord_vals['note'] = "\n\n".join(notes)
                 if ord_vals:
                     ord.write(ord_vals)
@@ -186,6 +239,9 @@ class EstateSaleWizard(models.TransientModel):
             'user_id': self.user_id.id if self.user_id else False,
             'deal_deadline': self.deal_deadline,
             'deal_earnest_amount': self.deal_earnest_amount,
+            'deal_earnest_received_by': self.deal_earnest_received_by,
+            'deal_earnest_payment_method': self.deal_earnest_payment_method,
+            'deal_earnest_payment_other': self.deal_earnest_payment_other,
             'deal_payment_type': self.deal_payment_type,
             'deal_payment_details': self.deal_payment_details,
             'deal_credit_institution': self.deal_credit_institution,
@@ -201,6 +257,13 @@ class EstateSaleWizard(models.TransientModel):
         order, invoice = prop._process_native_sale(
             self.buyer_id, self.sale_price, self.commission_amount, self.commission_pct,
             invoice_mode=self.invoice_mode, user_id=self.user_id, apply_vat=self.apply_vat)
+
+        # Volcar los datos del Negocio Cerrado (incl. seña) como nota de la
+        # orden, para que también aparezcan al imprimir la cotización/factura.
+        if order:
+            notes = self._deal_note_lines()
+            if notes:
+                order.write({'note': "\n\n".join(notes)})
 
         # 4. Marcar vendida
         prop.with_context(no_wp_sync=True).write({'state': 'sold'})

@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     FICHA DE PROPIEDAD — 3 DISEÑOS
+     Réplica fiel del documento "Fichas Inmobi": paleta #28235d / #d81f26,
+     tipografías Cormorant Garamond (display) + Jost (texto), hoja A4
+     794x1123px. El maquetado usa TABLAS porque wkhtmltopdf no soporta
+     flexbox/grid modernos.
+════════════════════════════════════════════════════════════════════ -->
+
+<record id="paperformat_ficha_a4_portrait" model="report.paperformat">
+    <field name="name">Ficha A4 Vertical</field>
+    <field name="default" eval="False"/>
+    <field name="format">A4</field>
+    <field name="orientation">Portrait</field>
+    <field name="margin_top">0</field>
+    <field name="margin_bottom">0</field>
+    <field name="margin_left">0</field>
+    <field name="margin_right">0</field>
+    <field name="header_line" eval="False"/>
+    <field name="header_spacing">0</field>
+    <field name="disable_shrinking" eval="True"/>
+    <field name="dpi">75</field>
+</record>
+
+<record id="action_report_ficha_inmobi" model="ir.actions.report">
+    <field name="name">Ficha de Propiedad (diseño)</field>
+    <field name="model">estate.property</field>
+    <field name="report_type">qweb-pdf</field>
+    <field name="report_name">estate_reports.report_ficha_inmobi</field>
+    <field name="report_file">estate_reports.report_ficha_inmobi</field>
+    <field name="paperformat_id" ref="paperformat_ficha_a4_portrait"/>
+</record>
+
+<!-- ── Tipografías de la ficha ────────────────────────────────────────
+     Se declaran aquí (y no en un bundle de assets) porque wkhtmltopdf
+     debe recibirlas sí o sí dentro del HTML del propio reporte. -->
+<template id="report_ficha_fonts">
+    <style t-out="fonts_css"/>
+    <style>
+        .article { zoom: 1.35; }
+
+        /* El layout de reportes de Odoo añade márgenes al artículo; la ficha
+           debe ocupar la hoja completa (diseño a sangre). */
+        html, body, main, .page, .article { margin:0 !important; padding:0 !important; }
+        .header { display:none !important; }
+        /* Odoo/Bootstrap pintan bordes en las tablas del reporte: se anulan
+           para que solo se vean los bordes propios de cada ficha (inline). */
+        table, tbody, tr, td, th { border-style:none; background-image:none; }
+        * { box-sizing:border-box; }
+        img { max-width:100%; }
+        p { margin:0; }
+    </style>
+</template>
+
+<!-- ── Despachador ────────────────────────────────────────────────── -->
+<template id="report_ficha_inmobi">
+    <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="doc">
+            <t t-if="design == '2'">
+                <t t-call="estate_reports.report_ficha_design2"/>
+            </t>
+            <t t-elif="design == '3'">
+                <t t-call="estate_reports.report_ficha_design3"/>
+            </t>
+            <t t-else="">
+                <t t-call="estate_reports.report_ficha_design1"/>
+            </t>
+        </t>
+    </t>
+</template>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DISEÑO 1 — EDITORIAL ELEGANTE
+════════════════════════════════════════════════════════════════════ -->
+<template id="report_ficha_design1">
+    <t t-set="f" t-value="ficha.get(doc.id)"/>
+    <div class="article" style="position:relative; width:100%; min-height:100%; overflow:hidden; background:#fff; font-family:'Ficha Sans','Jost',Helvetica,sans-serif; color:#2a2a2e;">
+        <t t-call="estate_reports.report_ficha_fonts"/>
+
+        <!-- ENCABEZADO -->
+        <div>
+            <table style="width:100%; border-collapse:collapse; background:#28235d;">
+                <tr>
+                    <td style="padding:22px 44px; vertical-align:middle;">
+                        <img src="data:image/png;base64,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" style="height:52px; width:auto;"/>
+                    </td>
+                    <td style="padding:22px 44px; vertical-align:middle; text-align:right; color:#cfcde6; font-size:12.5px; line-height:1.7;">
+                        <div style="color:#fff; letter-spacing:2.4px; font-size:11px; text-transform:uppercase;">Bienes Ra&#237;ces</div>
+                        <div><t t-esc="env.company.phone or ''"/><t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t></div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- HERO -->
+        <div>
+            <div style="position:relative; height:320px; overflow:hidden; line-height:0;">
+                <t t-if="f['hero']">
+                    <img t-att-src="image_data_uri(f['hero']) " style="width:100%; height:320px; object-fit:cover;"/>
+                </t>
+                <t t-else="">
+                    <div style="width:100%; height:320px; background:#e6e5ec;"></div>
+                </t>
+                <div style="position:absolute; left:0; bottom:0; padding:14px 24px; background:#d81f26; color:#fff; line-height:normal;">
+                    <div style="font-size:10.5px; letter-spacing:2.1px; text-transform:uppercase; color:#f6d5d6;">
+                        <t t-esc="'Precio de oportunidad' if f['es_venta'] else 'Canon mensual'"/>
+                    </div>
+                    <div style="font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-size:34px; font-weight:600; line-height:1;">US$ <t t-esc="f['precio_fmt']"/></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUERPO -->
+        <div style="padding:26px 44px 18px;">
+            <div style="font-size:11px; letter-spacing:2.6px; text-transform:uppercase; color:#d81f26; font-weight:600; margin-bottom:8px;">
+                <t t-esc="f['op']"/> &#183; <t t-esc="f['ciudad']"/>
+            </div>
+            <h1 style="margin:0; font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-weight:600; font-size:42px; line-height:1.02; color:#28235d;">
+                <t t-esc="doc.title or doc.name"/>
+            </h1>
+            <div style="margin-top:6px; font-size:15px; color:#77777f;">
+                <t t-if="doc.street"><t t-esc="doc.street"/> &#183; </t><t t-if="doc.property_type_id"><t t-esc="doc.property_type_id.name"/> &#183; </t>C&#243;d. <t t-esc="doc.name"/>
+            </div>
+
+            <!-- Franja de especificaciones -->
+            <table style="width:100%; border-collapse:collapse; margin-top:18px; border-top:1px solid #e6e5ec; border-bottom:1px solid #e6e5ec;">
+                <tr>
+                    <td style="width:20%; padding:13px 4px; text-align:center; border-right:1px solid #eeedf2;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:26px; font-weight:600; color:#28235d;"><t t-esc="f['area']"/><span style="font-size:15px;"> m&#178;</span></div>
+                        <div style="font-size:11px; letter-spacing:1.3px; text-transform:uppercase; color:#9a9aa2; margin-top:3px;">Construcci&#243;n</div>
+                    </td>
+                    <td style="width:20%; padding:13px 4px; text-align:center; border-right:1px solid #eeedf2;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:26px; font-weight:600; color:#28235d;"><t t-esc="doc.bedrooms or 0"/></div>
+                        <div style="font-size:11px; letter-spacing:1.3px; text-transform:uppercase; color:#9a9aa2; margin-top:3px;">Dormitorios</div>
+                    </td>
+                    <td style="width:20%; padding:13px 4px; text-align:center; border-right:1px solid #eeedf2;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:26px; font-weight:600; color:#28235d;"><t t-esc="f['banos']"/></div>
+                        <div style="font-size:11px; letter-spacing:1.3px; text-transform:uppercase; color:#9a9aa2; margin-top:3px;">Ba&#241;os</div>
+                    </td>
+                    <td style="width:20%; padding:13px 4px; text-align:center; border-right:1px solid #eeedf2;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:26px; font-weight:600; color:#28235d;"><t t-esc="doc.parking_spaces or 0"/></div>
+                        <div style="font-size:11px; letter-spacing:1.3px; text-transform:uppercase; color:#9a9aa2; margin-top:3px;">Parqueos</div>
+                    </td>
+                    <td style="width:20%; padding:13px 4px; text-align:center;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:26px; font-weight:600; color:#28235d;"><t t-esc="doc.year_built or '&#8212;'"/></div>
+                        <div style="font-size:11px; letter-spacing:1.3px; text-transform:uppercase; color:#9a9aa2; margin-top:3px;">A&#241;o</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Dos fotos -->
+            <t t-if="f['gal']">
+                <table style="width:100%; border-collapse:collapse; margin-top:16px;">
+                    <tr>
+                        <td style="width:50%; padding:0 6px 0 0; line-height:0;">
+                            <img t-att-src="image_data_uri(f['gal'][0]) " style="width:100%; height:172px; object-fit:cover;"/>
+                        </td>
+                        <td style="width:50%; padding:0 0 0 6px; line-height:0;">
+                            <t t-if="len(f['gal']) > 1">
+                                <img t-att-src="image_data_uri(f['gal'][1]) " style="width:100%; height:172px; object-fit:cover;"/>
+                            </t>
+                        </td>
+                    </tr>
+                </table>
+            </t>
+
+            <!-- Descripción -->
+            <div style="margin-top:18px; font-size:14px; line-height:1.75; color:#55555c; text-align:justify;">
+                <t t-raw="doc.description"/>
+            </div>
+
+            <!-- Detalles adicionales -->
+            <table style="width:100%; border-collapse:collapse; margin-top:20px; margin-bottom:16px;">
+                <tr>
+                    <td style="width:25%; vertical-align:top; padding-right:12px;">
+                        <t t-if="doc.property_type_id">
+                            <div style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa2; margin-bottom:2px;">Tipo de Propiedad</div>
+                            <div style="font-size:13px; font-weight:600; color:#28235d;"><t t-esc="doc.property_type_id.name"/></div>
+                        </t>
+                    </td>
+                    <td style="width:25%; vertical-align:top; padding-right:12px;">
+                        <div style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa2; margin-bottom:2px;">A&#241;o de Construcci&#243;n</div>
+                        <div style="font-size:13px; font-weight:600; color:#28235d;"><t t-esc="doc.year_built or 'N/E'"/></div>
+                    </td>
+                    <td style="width:25%; vertical-align:top; padding-right:12px;">
+                        <t t-if="doc.avm_estimated_price">
+                            <div style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa2; margin-bottom:2px;">Valor Estimado (AVM)</div>
+                            <div style="font-size:13px; font-weight:600; color:#28235d;">$<t t-esc="f['avm_fmt']"/></div>
+                        </t>
+                    </td>
+                    <td style="width:25%; vertical-align:top;">
+                        <t t-if="doc.days_on_market">
+                            <div style="font-size:10px; letter-spacing:1px; text-transform:uppercase; color:#9a9aa2; margin-bottom:2px;">D&#237;as en Mercado</div>
+                            <div style="font-size:13px; font-weight:600; color:#28235d;"><t t-esc="doc.days_on_market"/> d&#237;as</div>
+                        </t>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- PIE -->
+        <div style="margin-top: 30px;">
+            <table style="width:100%; border-collapse:collapse; background:#28235d; color:#fff;">
+                <tr>
+                    <td style="padding:20px 44px; vertical-align:middle;">
+                        <table style="border-collapse:collapse;">
+                            <tr>
+                                <td style="vertical-align:top; padding-right:40px;">
+                                    <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#8f8cba;">Inmobiliaria</div>
+                                    <div style="font-size:14px; font-weight:600; margin-top:3px;"><t t-esc="env.company.name"/></div>
+                                    <div style="font-size:11.5px; color:#cfcde6; line-height:1.55; margin-top:2px;">
+                                        <t t-esc="env.company.phone or ''"/><t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                        <t t-if="env.company.street"><br/><t t-esc="env.company.street"/><t t-if="env.company.city">, <t t-esc="env.company.city"/></t></t>
+                                    </div>
+                                </td>
+                                <t t-if="show_contact and doc.user_id">
+                                    <td style="vertical-align:top;">
+                                        <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#8f8cba;">Asesor</div>
+                                        <div style="font-size:14px; font-weight:600; margin-top:3px;"><t t-esc="doc.user_id.name"/></div>
+                                        <div style="font-size:11.5px; color:#cfcde6; line-height:1.55; margin-top:2px;">
+                                            <t t-esc="f['tel']"/><t t-if="f['email_asesor']"><br/><t t-esc="f['email_asesor']"/></t>
+                                        </div>
+                                    </td>
+                                </t>
+                            </tr>
+                        </table>
+                    </td>
+                    <t t-if="doc.qr_image">
+                        <td style="padding:20px 44px; vertical-align:middle; text-align:right; width:175px;">
+                            <div style="background:#fff; padding:5px; display:inline-block; line-height:0;">
+                                <img t-att-src="image_data_uri(doc.qr_image)" style="width:50px; height:50px;"/>
+                            </div>
+                        </td>
+                    </t>
+                </tr>
+            </table>
+        </div>
+    </div>
+</template>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DISEÑO 2 — MODERNO LIMPIO
+════════════════════════════════════════════════════════════════════ -->
+<template id="report_ficha_design2">
+    <t t-set="f" t-value="ficha.get(doc.id)"/>
+    <div class="article" style="position:relative; width:100%; min-height:100%; overflow:hidden; background:#fff; font-family:'Ficha Sans','Jost',Helvetica,sans-serif; color:#2a2a2e;">
+        <t t-call="estate_reports.report_ficha_fonts"/>
+
+        <!-- CUERPO (con padding lateral 52px) -->
+        <div style="padding:46px 52px 18px;">
+
+            <!-- Barra superior -->
+            <table style="width:100%; border-collapse:collapse; border-bottom:2px solid #28235d;">
+                <tr>
+                    <td style="padding:0 0 22px; vertical-align:middle;">
+                        <img src="data:image/png;base64,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" style="height:44px; width:auto;"/>
+                    </td>
+                    <td style="padding:0 0 22px; vertical-align:middle; text-align:right; font-size:11px; letter-spacing:1.8px; text-transform:uppercase; color:#9a9aa2;">
+                        C&#243;digo <t t-esc="doc.name"/><br/>
+                        <span style="color:#d81f26;"><t t-esc="f['op']"/> &#183; <t t-esc="doc.city or ''"/></span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Título + precio -->
+            <table style="width:100%; border-collapse:collapse; margin-top:34px;">
+                <tr>
+                    <td style="vertical-align:bottom;">
+                        <div style="width:44px; height:3px; background:#d81f26; margin-bottom:16px; font-size:0; line-height:0;">&#160;</div>
+                        <h1 style="margin:0; font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-weight:600; font-size:46px; line-height:0.98; color:#28235d;">
+                            <t t-esc="doc.title or doc.name"/>
+                        </h1>
+                        <div style="margin-top:10px; font-size:14.5px; color:#77777f;">
+                            <t t-esc="f['ciudad']"/><t t-if="doc.street"> &#183; <t t-esc="doc.street"/></t>
+                        </div>
+                    </td>
+                    <td style="vertical-align:bottom; text-align:right; width:230px; padding-left:24px;">
+                        <div style="font-size:10.5px; letter-spacing:1.9px; text-transform:uppercase; color:#9a9aa2;">
+                            <t t-esc="'Desde' if f['es_venta'] else 'Mensual'"/>
+                        </div>
+                        <div style="font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-size:46px; font-weight:700; line-height:1; color:#28235d;">$<t t-esc="f['precio_fmt']"/></div>
+                        <div style="font-size:11px; color:#d81f26; letter-spacing:.6px; font-weight:600;">
+                            <t t-esc="'Precio de oportunidad' if f['es_venta'] else 'Canon de arriendo'"/>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Mosaico: foto grande + 2 apiladas -->
+            <t t-if="f['hero']">
+                <table style="width:100%; border-collapse:collapse; margin-top:30px;">
+                    <tr>
+                        <td style="width:66.66%; padding:0 6px 0 0; vertical-align:top; line-height:0;">
+                            <img t-att-src="image_data_uri(f['hero']) " style="width:100%; height:274px; object-fit:cover;"/>
+                        </td>
+                        <td style="width:33.33%; padding:0 0 0 6px; vertical-align:top; line-height:0;">
+                            <t t-if="f['gal']">
+                                <img t-att-src="image_data_uri(f['gal'][0]) " style="width:100%; height:131px;  margin-bottom:12px; object-fit:cover;"/>
+                            </t>
+                            <t t-if="len(f['gal']) > 1">
+                                <img t-att-src="image_data_uri(f['gal'][1]) " style="width:100%; height:131px; object-fit:cover;"/>
+                            </t>
+                        </td>
+                    </tr>
+                </table>
+            </t>
+
+            <!-- Especificaciones 4 columnas -->
+            <table style="width:100%; border-collapse:collapse; margin-top:30px; border:1px solid #e6e5ec;">
+                <tr>
+                    <td style="width:25%; padding:18px 16px; border-right:1px solid #e6e5ec; vertical-align:top;">
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#9a9aa2;">Construcci&#243;n</div>
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:27px; font-weight:600; color:#28235d; margin-top:2px;"><t t-esc="f['area']"/> m&#178;</div>
+                    </td>
+                    <td style="width:25%; padding:18px 16px; border-right:1px solid #e6e5ec; vertical-align:top;">
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#9a9aa2;">Dormitorios</div>
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:27px; font-weight:600; color:#28235d; margin-top:2px;"><t t-esc="doc.bedrooms or 0"/></div>
+                    </td>
+                    <td style="width:25%; padding:18px 16px; border-right:1px solid #e6e5ec; vertical-align:top;">
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#9a9aa2;">Ba&#241;os</div>
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:27px; font-weight:600; color:#28235d; margin-top:2px;"><t t-esc="f['banos']"/></div>
+                    </td>
+                    <td style="width:25%; padding:18px 16px; vertical-align:top;">
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#9a9aa2;">Parqueos</div>
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:27px; font-weight:600; color:#28235d; margin-top:2px;"><t t-esc="doc.parking_spaces or 0"/></div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Descripción + 3 columnas -->
+            <div style="margin-top:28px;">
+                <p style="margin:0 0 16px; font-size:14px; line-height:1.75; color:#55555c;"><t t-esc="desc_corta.get(doc.id)"/></p>
+                <table style="width:100%; border-collapse:collapse; font-size:12.5px; line-height:1.65; color:#55555c;">
+                    <tr>
+                        <td style="width:33%; vertical-align:top; padding-right:13px;">
+                            <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Ubicaci&#243;n</div>
+                            <t t-esc="doc.street or ''"/><t t-if="doc.street"><br/></t><t t-esc="f['ciudad']"/>
+                        </td>
+                        <td style="width:33%; vertical-align:top; padding:0 13px;">
+                            <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Caracter&#237;sticas</div>
+                            <t t-if="doc.property_type_id"><t t-esc="doc.property_type_id.name"/><br/></t>
+                            <t t-esc="f['area']"/> m&#178; &#183; <t t-esc="doc.bedrooms or 0"/> dorm.
+                        </td>
+                        <td style="width:34%; vertical-align:top; padding-left:13px;">
+                            <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Detalle</div>
+                            A&#241;o &#183; <t t-esc="doc.year_built or '&#8212;'"/>
+                            <t t-if="doc.avm_estimated_price"><br/>AVM &#183; $<t t-esc="f['avm_fmt']"/></t>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- PIE claro -->
+        <div style="margin-top: 30px;">
+            <table style="width:100%; border-collapse:collapse; background:#f5f5f7; border-top:1px solid #e6e5ec;">
+                <tr>
+                    <td style="padding:22px 52px; vertical-align:middle;">
+                        <table style="border-collapse:collapse;">
+                            <tr>
+                                <td style="vertical-align:top; padding-right:44px;">
+                                    <div style="font-size:10px; letter-spacing:1.8px; text-transform:uppercase; color:#a2a2aa;"><t t-esc="env.company.name"/></div>
+                                    <div style="font-size:13.5px; color:#28235d; font-weight:600; margin-top:4px;">
+                                        <t t-esc="env.company.phone or ''"/><t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                    </div>
+                                    <div style="font-size:11.5px; color:#8a8a92; margin-top:2px;"><t t-esc="env.company.street or ''"/><t t-if="env.company.city">, <t t-esc="env.company.city"/></t></div>
+                                </td>
+                                <t t-if="show_contact and doc.user_id">
+                                    <td style="vertical-align:top;">
+                                        <div style="font-size:10px; letter-spacing:1.8px; text-transform:uppercase; color:#a2a2aa;">Asesor &#183; <t t-esc="doc.user_id.name"/></div>
+                                        <div style="font-size:13.5px; color:#28235d; font-weight:600; margin-top:4px;"><t t-esc="f['tel']"/></div>
+                                        <div style="font-size:11.5px; color:#8a8a92; margin-top:2px;"><t t-esc="f['email_asesor']"/></div>
+                                    </td>
+                                </t>
+                            </tr>
+                        </table>
+                    </td>
+                    <t t-if="doc.qr_image">
+                        <td style="padding:22px 52px; vertical-align:middle; text-align:right; width:175px; line-height:0;">
+                            <img t-att-src="image_data_uri(doc.qr_image)" style="width:50px; height:50px; border:4px solid #fff;"/>
+                        </td>
+                    </t>
+                </tr>
+            </table>
+        </div>
+    </div>
+</template>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     DISEÑO 3 — CÁLIDO ARQUITECTÓNICO
+════════════════════════════════════════════════════════════════════ -->
+<template id="report_ficha_design3">
+    <t t-set="f" t-value="ficha.get(doc.id)"/>
+    <div class="article" style="position:relative; width:100%; min-height:100%; overflow:hidden; background:#f7f3ec; font-family:'Ficha Sans','Jost',Helvetica,sans-serif; color:#2a2a2e;">
+        <t t-call="estate_reports.report_ficha_fonts"/>
+
+        <!-- HERO a sangre -->
+        <div>
+            <div style="position:relative; height:388px; overflow:hidden; line-height:0;">
+                <t t-if="f['hero']">
+                    <img t-att-src="image_data_uri(f['hero']) " style="width:100%; height:388px; object-fit:cover;"/>
+                </t>
+                <t t-else="">
+                    <div style="width:100%; height:388px; background:#28235d;"></div>
+                </t>
+                <div style="position:absolute; top:0; left:0; width:100%; height:388px; background: rgba(28,24,66,0.35);"></div>
+                <img src="data:image/png;base64,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" style="position:absolute; top:26px; left:36px; height:50px; width:auto;"/>
+                <div style="position:absolute; top:34px; right:36px; text-align:right; color:#fff; font-size:12px; line-height:1.6;">
+                    <div style="letter-spacing:2.1px; text-transform:uppercase; font-size:10.5px; color:#d8d6ea;"><t t-esc="f['op']"/></div>
+                    <t t-esc="env.company.phone or ''"/><t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                </div>
+                <div style="position:absolute; left:36px; bottom:28px; color:#fff; width:460px;">
+                    <div style="font-size:11px; letter-spacing:2.6px; text-transform:uppercase; color:#f0b7b0;">
+                        <t t-esc="f['ciudad']"/><t t-if="doc.street"> &#183; <t t-esc="doc.street"/></t>
+                    </div>
+                    <h1 style="margin:6px 0 0; font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-weight:600; font-size:48px; line-height:0.98;">
+                        <t t-esc="doc.title or doc.name"/>
+                    </h1>
+                </div>
+                <div style="position:absolute; right:36px; bottom:26px; text-align:right; background:#d81f26; color:#fff; padding:12px 20px; line-height:normal;">
+                    <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#f6d5d6;">
+                        <t t-esc="'Oportunidad' if f['es_venta'] else 'Mensual'"/>
+                    </div>
+                    <div style="font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-size:34px; font-weight:600; line-height:1;">US$ <t t-esc="f['precio_fmt']"/></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CUERPO -->
+        <div style="padding:26px 44px 18px;">
+            <p style="margin:0; font-size:14.5px; line-height:1.8; color:#5a5248;"><t t-esc="desc_corta.get(doc.id)"/></p>
+
+            <!-- Tarjetas de especificaciones -->
+            <table style="width:100%; border-collapse:collapse; margin-top:18px;">
+                <tr>
+                    <td style="width:25%; padding:0 6px 0 0; vertical-align:top;"><div style="background:#efe7da; padding:16px 18px;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:28px; font-weight:600; color:#28235d;"><t t-esc="f['area']"/> m&#178;</div>
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#8c8272; margin-top:2px;">Construcci&#243;n</div>
+                    </div></td>
+                    <td style="width:25%; padding:0 6px 0 0; vertical-align:top;"><div style="background:#efe7da; padding:16px 18px;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:28px; font-weight:600; color:#28235d;"><t t-esc="doc.bedrooms or 0"/></div>
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#8c8272; margin-top:2px;">Dormitorios</div>
+                    </div></td>
+                    <td style="width:25%; padding:0 6px 0 0; vertical-align:top;"><div style="background:#efe7da; padding:16px 18px;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:28px; font-weight:600; color:#28235d;"><t t-esc="f['banos']"/></div>
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#8c8272; margin-top:2px;">Ba&#241;os</div>
+                    </div></td>
+                    <td style="width:25%; padding:0 0 0 6px; vertical-align:top;"><div style="background:#efe7da; padding:16px 18px;">
+                        <div style="font-family:'Ficha Serif',Georgia,serif; font-size:28px; font-weight:600; color:#28235d;"><t t-esc="doc.parking_spaces or 0"/></div>
+                        <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#8c8272; margin-top:2px;">Parqueos</div>
+                    </div></td>
+                </tr>
+            </table>
+
+            <!-- Dos fotos interiores -->
+            <t t-if="f['gal']">
+                <table style="width:100%; border-collapse:collapse; margin-top:16px;">
+                    <tr>
+                        <td style="width:50%; padding:0 6px 0 0; line-height:0;">
+                            <img t-att-src="image_data_uri(f['gal'][0]) " style="width:100%; height:180px; object-fit:cover;"/>
+                        </td>
+                        <td style="width:50%; padding:0 0 0 6px; line-height:0;">
+                            <t t-if="len(f['gal']) > 1">
+                                <img t-att-src="image_data_uri(f['gal'][1]) " style="width:100%; height:180px; object-fit:cover;"/>
+                            </t>
+                        </td>
+                    </tr>
+                </table>
+            </t>
+
+            <!-- Distribución 3 columnas -->
+            <table style="width:100%; border-collapse:collapse; margin-top:18px; font-size:12.5px; line-height:1.65; color:#5a5248;">
+                <tr>
+                    <td style="width:33%; vertical-align:top; padding-right:13px;">
+                        <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Ubicaci&#243;n</div>
+                        <t t-esc="doc.street or ''"/><t t-if="doc.street"><br/></t><t t-esc="f['ciudad']"/>
+                    </td>
+                    <td style="width:33%; vertical-align:top; padding:0 13px;">
+                        <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Caracter&#237;sticas</div>
+                        <t t-if="doc.property_type_id"><t t-esc="doc.property_type_id.name"/><br/></t>
+                        <t t-esc="f['area']"/> m&#178; &#183; C&#243;d. <t t-esc="doc.name"/>
+                    </td>
+                    <td style="width:34%; vertical-align:top; padding-left:13px;">
+                        <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Detalle</div>
+                        A&#241;o &#183; <t t-esc="doc.year_built or '&#8212;'"/>
+                        <t t-if="doc.avm_estimated_price"><br/>AVM &#183; $<t t-esc="f['avm_fmt']"/></t>
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+
+        <!-- PIE -->
+        <div style="margin-top: 30px;">
+            <table style="width:100%; border-collapse:collapse; background:#28235d; color:#fff;">
+                <tr>
+                    <td style="padding:20px 44px; vertical-align:middle;">
+                        <table style="border-collapse:collapse;">
+                            <tr>
+                                <td style="vertical-align:top; padding-right:40px;">
+                                    <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#8f8cba;">Inmobiliaria</div>
+                                    <div style="font-size:14px; font-weight:600; margin-top:3px;"><t t-esc="env.company.name"/></div>
+                                    <div style="font-size:11.5px; color:#cfcde6; line-height:1.55; margin-top:2px;">
+                                        <t t-esc="env.company.phone or ''"/><t t-if="env.company.email"> &#183; <t t-esc="env.company.email"/></t>
+                                    </div>
+                                </td>
+                                <t t-if="show_contact and doc.user_id">
+                                    <td style="vertical-align:top;">
+                                        <div style="font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#8f8cba;">Asesor</div>
+                                        <div style="font-size:14px; font-weight:600; margin-top:3px;"><t t-esc="doc.user_id.name"/></div>
+                                        <div style="font-size:11.5px; color:#cfcde6; line-height:1.55; margin-top:2px;">
+                                            <t t-esc="f['tel']"/><t t-if="f['email_asesor']"> &#183; <t t-esc="f['email_asesor']"/></t>
+                                        </div>
+                                    </td>
+                                </t>
+                            </tr>
+                        </table>
+                    </td>
+                    <t t-if="doc.qr_image">
+                        <td style="padding:20px 44px; vertical-align:middle; text-align:right; width:175px;">
+                            <div style="background:#fff; padding:5px; display:inline-block; line-height:0;">
+                                <img t-att-src="image_data_uri(doc.qr_image)" style="width:50px; height:50px;"/>
+                            </div>
+                        </td>
+                    </t>
+                </tr>
+            </table>
+        </div>
+    </div>
+</template>
+
+</odoo>

@@ -69,3 +69,12 @@ htmlcov/
 # Sistema
 nohup.out
 .cache/
+
+# Archivos sueltos de trabajo (no son parte del código del proyecto)
+/varios/
+
+# Documentación de tesis (se gestiona aparte, no se sube al repo)
+/docs/
+
+# Configuración local de Claude Code
+/.claude/

@@ -18,3 +18,7 @@ access_estate_sales_report_wizard_marketing,estate.sales.report.wizard.marketing
 access_estate_sales_target_agent,estate.sales.target.agent,model_estate_sales_target,estate_management.estate_group_agent,1,0,0,0
 access_estate_sales_target_manager,estate.sales.target.manager,model_estate_sales_target,estate_management.estate_group_manager,1,1,1,1
 access_estate_sales_target_admin,estate.sales.target.admin,model_estate_sales_target,estate_management.estate_group_admin,1,1,1,1
+access_estate_ficha_wizard_agent,estate.ficha.wizard.agent,model_estate_ficha_wizard,estate_management.estate_group_agent,1,1,1,0
+access_estate_ficha_wizard_manager,estate.ficha.wizard.manager,model_estate_ficha_wizard,estate_management.estate_group_manager,1,1,1,1
+access_estate_ficha_wizard_admin,estate.ficha.wizard.admin,model_estate_ficha_wizard,estate_management.estate_group_admin,1,1,1,1
+access_estate_ficha_wizard_marketing,estate.ficha.wizard.marketing,model_estate_ficha_wizard,estate_management.estate_group_marketing,1,1,1,0

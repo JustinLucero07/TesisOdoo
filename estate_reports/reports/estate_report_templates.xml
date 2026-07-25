@@ -4,14 +4,16 @@
 <!-- ═══════════════════════════════════════════════════════════════════
      FICHA TÉCNICA — con contacto del asesor
 ════════════════════════════════════════════════════════════════════ -->
+<!-- Estas dos fichas "técnicas" ya NO se listan en el menú Imprimir (se quitó
+     su binding): la ficha ahora se genera desde el asistente de 3 diseños
+     (action_estate_ficha_wizard). Se conservan las plantillas porque el agente
+     de IA todavía puede invocar action_report_ficha_tecnica programáticamente. -->
 <record id="action_report_ficha_tecnica" model="ir.actions.report">
     <field name="name">Ficha Técnica (con contacto)</field>
     <field name="model">estate.property</field>
     <field name="report_type">qweb-pdf</field>
     <field name="report_name">estate_reports.report_ficha_tecnica_template</field>
     <field name="report_file">estate_reports.report_ficha_tecnica_template</field>
-    <field name="binding_model_id" ref="estate_management.model_estate_property"/>
-    <field name="binding_type">report</field>
     <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
 </record>
 
@@ -21,8 +23,6 @@
     <field name="report_type">qweb-pdf</field>
     <field name="report_name">estate_reports.report_ficha_tecnica_sin_contacto_template</field>
     <field name="report_file">estate_reports.report_ficha_tecnica_sin_contacto_template</field>
-    <field name="binding_model_id" ref="estate_management.model_estate_property"/>
-    <field name="binding_type">report</field>
     <field name="paperformat_id" ref="estate_management.paperformat_estate_a4"/>
 </record>
 

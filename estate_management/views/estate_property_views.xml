@@ -181,7 +181,7 @@
                                    placeholder="Precio mínimo aceptable"
                                    groups="estate_management.estate_group_manager"/>
                             <field name="commission_percentage" readonly="state == 'sold'"/>
-                            <field name="commission_amount" widget="monetary"/>
+                            <field name="commission_amount" widget="monetary" readonly="state == 'sold'"/>
                             <field name="area" readonly="state == 'sold'" placeholder="m²"/>
                             <field name="owner_id" readonly="state == 'sold'"
                                    placeholder="Buscar propietario..."/>
@@ -454,6 +454,10 @@
                                 <group>
                                     <field name="deal_deadline"/>
                                     <field name="deal_earnest_amount" widget="monetary"/>
+                                    <field name="deal_earnest_received_by"/>
+                                    <field name="deal_earnest_payment_method"/>
+                                    <field name="deal_earnest_payment_other"
+                                           invisible="deal_earnest_payment_method != 'other'"/>
                                     <field name="deal_payment_type"/>
                                     <field name="proxy_id" string="Apoderado del Comprador"/>
                                 </group>
