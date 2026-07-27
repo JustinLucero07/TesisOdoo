@@ -42,6 +42,17 @@ class AccountMove(models.Model):
                              f'marcado como <b>Pagado</b> automáticamente al confirmar la factura.')
         return result
 
+    def _create_commission_if_missing(self, prop):
+        """Genera la comisión del asesor cuando la propiedad se vende SIN pasar
+        por el asistente de venta (p.ej. al confirmarse el pago de la factura
+        desde una reserva) — de lo contrario esa venta queda sin comisión
+        registrada, aunque sí cuente como venta en reportes y rankings."""
+        existing = self.env['estate.commission'].search([
+            ('property_id', '=', prop.id), ('type', '=', 'sale'), ('state', '!=', 'cancelled'),
+        ], limit=1)
+        if not existing and prop.user_id:
+            prop._create_commission_records('sale', prop.commission_amount, prop.price, prop.commission_percentage)
+
     def action_mark_property_from_invoice(self):
         """Botón manual: actualiza el estado de la propiedad vinculada al pagar esta factura."""
         self.ensure_one()
@@ -54,6 +65,7 @@ class AccountMove(models.Model):
             raise ValidationError(
                 f'La propiedad ya está en estado "{prop.state}". Solo se puede actualizar desde Reservada o Disponible.')
         prop.write({'state': 'sold'})
+        self._create_commission_if_missing(prop)
         prop.message_post(
             body=f'Propiedad marcada como <b>VENDIDA</b> desde la factura <b>{self.name}</b>.')
         self.message_post(
@@ -71,6 +83,7 @@ class AccountMove(models.Model):
         for move in paid_invoices:
             prop = move.property_id
             prop.write({'state': 'sold'})
+            self._create_commission_if_missing(prop)
             prop.message_post(
                 body=f'Propiedad marcada como <b>VENDIDA</b> automáticamente '
                      f'(factura <b>{move.name}</b> pagada).')

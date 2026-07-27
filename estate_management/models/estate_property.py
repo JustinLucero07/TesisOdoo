@@ -1373,6 +1373,25 @@ class EstateProperty(models.Model):
                 'state': 'approved',
             })
 
+    @api.model
+    def _backfill_missing_sale_commissions(self):
+        """Utilidad de mantenimiento (ejecutar una sola vez desde el shell):
+        genera la comisión faltante de propiedades ya vendidas cuyo negocio se
+        cerró sin pasar por el asistente de venta — por ejemplo, una propiedad
+        reservada cuya factura se pagó y el cron la marcó "vendida" sola (ver
+        estate_management/models/account_move.py), camino que hasta ahora no
+        creaba el registro en estate.commission. Devuelve las propiedades corregidas."""
+        sold = self.search([('state', '=', 'sold'), ('user_id', '!=', False)])
+        fixed = self.browse()
+        for prop in sold:
+            existing = self.env['estate.commission'].search([
+                ('property_id', '=', prop.id), ('type', '=', 'sale'), ('state', '!=', 'cancelled'),
+            ], limit=1)
+            if not existing:
+                prop._create_commission_records('sale', prop.commission_amount, prop.price, prop.commission_percentage)
+                fixed |= prop
+        return fixed
+
     def action_create_invoice(self):
         self.ensure_one()
         # Validación: no facturar dos veces una propiedad ya vendida

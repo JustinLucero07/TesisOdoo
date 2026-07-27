@@ -348,41 +348,21 @@ class EstateDashboard(models.TransientModel):
         for rec in self:
             today = fields.Date.today()
             start_month = today.replace(day=1)
-            # Usar sale.order en lugar de estate.property para excluir cotizaciones canceladas
-            sales_this_month = self.env['sale.order'].search([
-                ('property_id', '!=', False),
-                ('state', 'in', ('sale', 'done')),
-                ('date_order', '>=', start_month),
+            # Directo de la propiedad: la venta y quién la vendió, con su
+            # comisión ya calculada (commission_amount = price * commission_percentage).
+            sold_this_month = self.env['estate.property'].search([
+                ('state', 'in', ('sold', 'rented')),
+                ('date_sold', '>=', start_month), ('date_sold', '<=', today),
                 ('user_id', '!=', False),
             ])
 
             advisor_data = {}
-
-            def _bucket(uid, name):
-                return advisor_data.setdefault(uid, {'name': name, 'sales': 0, 'revenue': 0.0, 'commission': 0.0})
-
-            property_ids = set()
-            for sale in sales_this_month:
-                b = _bucket(sale.user_id.id, sale.user_id.name or 'Sin nombre')
+            for prop in sold_this_month:
+                b = advisor_data.setdefault(prop.user_id.id, {
+                    'name': prop.user_id.name or 'Sin nombre', 'sales': 0, 'revenue': 0.0, 'commission': 0.0})
                 b['sales'] += 1
-                b['revenue'] += sale.property_id.price if sale.property_id else 0.0
-                if sale.property_id:
-                    property_ids.add(sale.property_id.id)
-
-            # La comisión real (no el total facturado del pedido, que varía según
-            # el modo de facturación elegido y no existe si la venta se registró
-            # "Sin Factura") se toma de estate.commission, la fuente de verdad.
-            # Se cruza por la propiedad, no por la fecha propia del registro de
-            # comisión (fecha de creación, que puede no coincidir con la fecha
-            # de la venta si el negocio se editó después o se cargó con fecha
-            # retroactiva).
-            commissions = self.env['estate.commission'].search([
-                ('state', '!=', 'cancelled'),
-                ('property_id', 'in', list(property_ids)),
-            ]) if property_ids else self.env['estate.commission']
-            for c in commissions:
-                b = _bucket(c.user_id.id, c.user_id.name or 'Sin nombre')
-                b['commission'] += c.amount
+                b['revenue'] += prop.price or 0.0
+                b['commission'] += prop.commission_amount or 0.0
 
             ranking = sorted(advisor_data.values(), key=lambda x: x['commission'], reverse=True)
 
@@ -980,44 +960,28 @@ class EstateDashboard(models.TransientModel):
         sales_chart = _parse(vals.pop('sales_chart_data', ''))
         leads_chart = _parse(vals.pop('leads_chart_data', ''))
 
-        # Ranking de asesores en el período (ventas, ingresos, comisión real)
+        # Ranking de asesores en el período: ventas, ingresos y comisión, todo
+        # directo de la propiedad (la venta y quién la vendió) — sin cruzar
+        # con otras tablas. commission_amount ya es price * commission_percentage,
+        # el mismo dato que se ve en la ficha de cada propiedad vendida.
         date_from, date_to = rec._get_period_dates()
         self.env.cr.execute("""
-            SELECT u.id AS user_id, COALESCE(pp.name, u.login) AS name,
+            SELECT COALESCE(pp.name, u.login) AS name,
                    COUNT(p.id) AS sales,
-                   COALESCE(SUM(p.price), 0) AS revenue
+                   COALESCE(SUM(p.price), 0) AS revenue,
+                   COALESCE(SUM(p.commission_amount), 0) AS commission
             FROM estate_property p
             JOIN res_users u ON u.id = p.user_id
             LEFT JOIN res_partner pp ON pp.id = u.partner_id
             WHERE p.state IN ('sold', 'rented')
               AND p.date_sold >= %s AND p.date_sold <= %s
-            GROUP BY u.id, pp.name, u.login
+            GROUP BY pp.name, u.login
             ORDER BY sales DESC, revenue DESC
             LIMIT 10
         """, (date_from, date_to))
         ranking = self.env.cr.dictfetchall()
-
-        # La comisión real (no un % fijo estimado): se toma de estate.commission,
-        # que ya refleja el % pactado por venta, los splits de co-asesor y el
-        # descuento por inmuebles de agencia aliada. Se cruza por la propiedad
-        # (no por la fecha propia de la comisión, que es la fecha de CREACIÓN
-        # del registro y puede no coincidir con date_sold si el negocio se
-        # editó después o se registró con fecha retroactiva) para que nunca
-        # quede fuera del período aunque las fechas no coincidan exactamente.
-        commission_by_user = {}
-        self.env.cr.execute("""
-            SELECT c.user_id, COALESCE(SUM(c.amount), 0) AS commission
-            FROM estate_commission c
-            JOIN estate_property p ON p.id = c.property_id
-            WHERE c.state != 'cancelled'
-              AND p.state IN ('sold', 'rented')
-              AND p.date_sold >= %s AND p.date_sold <= %s
-            GROUP BY c.user_id
-        """, (date_from, date_to))
-        commission_by_user = {row['user_id']: row['commission'] for row in self.env.cr.dictfetchall()}
-
         for r in ranking:
-            r['commission'] = round(commission_by_user.get(r.pop('user_id'), 0.0), 2)
+            r['commission'] = round(r['commission'], 2)
 
         advisors = self.env['res.users'].search(
             [('share', '=', False), ('active', '=', True)], order='name').read(['id', 'name'])
