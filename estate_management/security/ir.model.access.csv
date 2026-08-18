@@ -65,3 +65,6 @@ access_estate_advisor_fb_post_admin,estate.advisor.fb.post.admin,model_estate_ad
 access_estate_advisor_fb_post_marketing,estate.advisor.fb.post.marketing,model_estate_advisor_fb_post,estate_group_marketing,1,0,0,0
 access_estate_contact_phone_agent,estate.contact.phone.agent,model_estate_contact_phone,estate_group_agent,1,1,1,1
 access_estate_contact_phone_manager,estate.contact.phone.manager,model_estate_contact_phone,estate_group_manager,1,1,1,1
+access_estate_bot_link_agent,estate.property.bot.link.agent,model_estate_property_bot_link,estate_group_agent,1,1,1,1
+access_estate_bot_link_manager,estate.property.bot.link.manager,model_estate_property_bot_link,estate_group_manager,1,1,1,1
+access_estate_bot_link_admin,estate.property.bot.link.admin,model_estate_property_bot_link,estate_group_admin,1,1,1,1

@@ -45,6 +45,10 @@
                                 <td style="color:#555;"><strong>Propiedad</strong></td>
                                 <td><span t-field="o.title"/></td>
                             </tr>
+                            <tr t-if="o.deal_lead_origin">
+                                <td style="color:#555;"><strong>Origen del Lead</strong></td>
+                                <td><span t-field="o.deal_lead_origin"/></td>
+                            </tr>
                             <tr>
                                 <td style="color:#555;"><strong>Precio de Venta</strong></td>
                                 <td><strong>$<span t-esc="'{:,.2f}'.format(o.price or 0)"/></strong></td>
@@ -53,13 +57,15 @@
                                 <td style="color:#555;"><strong>Seña / Arras</strong></td>
                                 <td>$<span t-esc="'{:,.2f}'.format(o.deal_earnest_amount or 0)"/></td>
                             </tr>
-                            <tr t-if="o.deal_earnest_amount and (o.deal_earnest_received_by or o.deal_earnest_payment_method)">
+                            <tr t-if="o.deal_earnest_amount and (o.deal_earnest_received_by_agency or o.deal_earnest_received_by_owner or o.deal_earnest_received_by_proxy or o.deal_earnest_payment_cash or o.deal_earnest_payment_transfer or o.deal_earnest_payment_deposit or o.deal_earnest_payment_other_check)">
                                 <td style="color:#555;"><strong>Recibido por / Detalle</strong></td>
                                 <td>
-                                    <span t-if="o.deal_earnest_received_by" t-esc="dict(o._fields['deal_earnest_received_by'].selection).get(o.deal_earnest_received_by, '')"/>
-                                    <t t-if="o.deal_earnest_received_by and o.deal_earnest_payment_method"> — </t>
-                                    <span t-if="o.deal_earnest_payment_method" t-esc="dict(o._fields['deal_earnest_payment_method'].selection).get(o.deal_earnest_payment_method, '')"/>
-                                    <t t-if="o.deal_earnest_payment_method == 'other' and o.deal_earnest_payment_other">
+                                    <t t-set="rec_items" t-value="[x for x, c in [('Inmobiliaria', o.deal_earnest_received_by_agency), ('Dueño', o.deal_earnest_received_by_owner), ('Apoderado', o.deal_earnest_received_by_proxy)] if c]"/>
+                                    <t t-set="meth_items" t-value="[x for x, c in [('Efectivo', o.deal_earnest_payment_cash), ('Transferencia', o.deal_earnest_payment_transfer), ('Depósito', o.deal_earnest_payment_deposit), ('Otro', o.deal_earnest_payment_other_check)] if c]"/>
+                                    <span t-if="rec_items" t-esc="', '.join(rec_items)"/>
+                                    <t t-if="rec_items and meth_items"> — </t>
+                                    <span t-if="meth_items" t-esc="', '.join(meth_items)"/>
+                                    <t t-if="(o.deal_earnest_payment_transfer or o.deal_earnest_payment_deposit or o.deal_earnest_payment_other_check) and o.deal_earnest_payment_other">
                                         (<span t-esc="o.deal_earnest_payment_other"/>)
                                     </t>
                                 </td>
@@ -83,7 +89,17 @@
                                 <td style="width:32%;color:#555;"><strong>Nombre</strong></td>
                                 <td><span t-field="o.buyer_id.name"/></td>
                                 <td style="width:18%;color:#555;"><strong>Teléfono</strong></td>
-                                <td><span t-field="o.buyer_id.phone"/><t t-if="not o.buyer_id.phone"><span t-field="o.buyer_id.mobile"/></t></td>
+                                <td>
+                                    <t t-if="o.buyer_id.phone and o.buyer_id.mobile and o.buyer_id.phone != o.buyer_id.mobile">
+                                        <span t-field="o.buyer_id.phone"/> / <span t-field="o.buyer_id.mobile"/>
+                                    </t>
+                                    <t t-elif="o.buyer_id.phone">
+                                        <span t-field="o.buyer_id.phone"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span t-field="o.buyer_id.mobile"/>
+                                    </t>
+                                </td>
                             </tr>
                             <tr>
                                 <td style="color:#555;"><strong>Apoderado</strong></td>
@@ -107,7 +123,15 @@
                                 <td style="width:18%;color:#555;"><strong>Teléfono</strong></td>
                                 <td>
                                     <t t-if="o.owner_id">
-                                        <span t-field="o.owner_id.phone"/><t t-if="not o.owner_id.phone"><span t-field="o.owner_id.mobile"/></t>
+                                        <t t-if="o.owner_id.phone and o.owner_id.mobile and o.owner_id.phone != o.owner_id.mobile">
+                                            <span t-field="o.owner_id.phone"/> / <span t-field="o.owner_id.mobile"/>
+                                        </t>
+                                        <t t-elif="o.owner_id.phone">
+                                            <span t-field="o.owner_id.phone"/>
+                                        </t>
+                                        <t t-else="">
+                                            <span t-field="o.owner_id.mobile"/>
+                                        </t>
                                     </t>
                                     <t t-else="">
                                         <t t-esc="o.user_id.partner_id.phone or o.user_id.partner_id.mobile or o.company_id.phone or ''"/>

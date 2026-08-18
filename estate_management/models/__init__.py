@@ -3,6 +3,7 @@ from . import estate_genai_mixin
 from . import estate_property_type
 from . import estate_property_tag
 from . import estate_price_history
+from . import estate_bot_link
 from . import estate_property
 from . import estate_property_avm
 from . import estate_property_geo

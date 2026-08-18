@@ -324,20 +324,16 @@ class EstateProperty(models.Model):
     deal_earnest_amount = fields.Float(
         string='Seña / Arras ($)',
         help='Monto entregado como reserva al cerrar el negocio.')
-    deal_earnest_received_by = fields.Selection([
-        ('owner', 'Propietario'),
-        ('landlord', 'Dueño'),
-        ('proxy', 'Apoderado'),
-    ], string='Quién Recibió la Seña')
-    deal_earnest_payment_method = fields.Selection([
-        ('cash', 'Efectivo'),
-        ('transfer', 'Transferencia'),
-        ('deposit', 'Depósito'),
-        ('other', 'Otro'),
-    ], string='Forma de Pago de la Seña', default='cash')
+    deal_earnest_received_by_agency = fields.Boolean(string='Recibió Inmobiliaria')
+    deal_earnest_received_by_owner = fields.Boolean(string='Recibió Dueño')
+    deal_earnest_received_by_proxy = fields.Boolean(string='Recibió Apoderado')
+    deal_earnest_payment_cash = fields.Boolean(string='Efectivo')
+    deal_earnest_payment_transfer = fields.Boolean(string='Transferencia')
+    deal_earnest_payment_deposit = fields.Boolean(string='Depósito')
+    deal_earnest_payment_other_check = fields.Boolean(string='Otro')
     deal_earnest_payment_other = fields.Char(
-        string='Especifique Forma de Pago de la Seña',
-        help='Solo si la forma de pago de la seña es "Otro".')
+        string='Detalles del Pago (Banco, Cheque, etc.)',
+        help='Opcional: detalles del depósito o transferencia.')
     deal_payment_type = fields.Selection([
         ('cash', 'Contado'),
         ('mortgage', 'Hipotecario (BIESS/Banco)'),
@@ -352,6 +348,10 @@ class EstateProperty(models.Model):
     deal_credit_advisor = fields.Char(string='Asesor de Crédito')
     deal_credit_advisor_phone = fields.Char(string='Teléfono Asesor de Crédito')
     deal_observations = fields.Text(string='Observaciones del Negocio')
+    deal_lead_origin = fields.Char(
+        string='Origen del Lead',
+        help='Fuente/canal del lead de CRM vinculado a esta venta (Facebook, Sitio Web, '
+             'Referido, etc.), capturada al momento del cierre.')
 
     # --- Calculadora de Hipoteca ---
     mortgage_down_payment_pct = fields.Float(string='Entrada (%)', default=20.0,
@@ -393,6 +393,8 @@ class EstateProperty(models.Model):
 
     contract_ids = fields.One2many('estate.contract', 'property_id', string='Contratos')
     contract_count = fields.Integer(string='N° Contratos', compute='_compute_contract_count')
+
+    bot_link_ids = fields.One2many('estate.property.bot.link', 'property_id', string='Links del Bot')
 
     @api.depends('contract_ids')
     def _compute_contract_count(self):

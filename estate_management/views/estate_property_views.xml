@@ -454,10 +454,15 @@
                                 <group>
                                     <field name="deal_deadline"/>
                                     <field name="deal_earnest_amount" widget="monetary"/>
-                                    <field name="deal_earnest_received_by"/>
-                                    <field name="deal_earnest_payment_method"/>
+                                    <field name="deal_earnest_received_by_agency"/>
+                                    <field name="deal_earnest_received_by_owner"/>
+                                    <field name="deal_earnest_received_by_proxy"/>
+                                    <field name="deal_earnest_payment_cash"/>
+                                    <field name="deal_earnest_payment_transfer"/>
+                                    <field name="deal_earnest_payment_deposit"/>
+                                    <field name="deal_earnest_payment_other_check"/>
                                     <field name="deal_earnest_payment_other"
-                                           invisible="deal_earnest_payment_method != 'other'"/>
+                                           invisible="not deal_earnest_payment_transfer and not deal_earnest_payment_deposit and not deal_earnest_payment_other_check"/>
                                     <field name="deal_payment_type"/>
                                     <field name="proxy_id" string="Apoderado del Comprador"/>
                                 </group>
@@ -526,6 +531,7 @@
                                 <field name="wp_post_id"/>
                             </group>
                         </page>
+
                     </notebook>
                 </sheet>
                 <chatter>

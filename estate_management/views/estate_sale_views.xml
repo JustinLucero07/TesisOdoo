@@ -46,7 +46,20 @@
         <field name="inherit_id" ref="sale.view_order_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="property_id" optional="show"/>
+                <field name="property_id" string="Propiedad Vinculada" optional="show"/>
+                <field name="estate_transaction_type" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Heredar la vista de Cotizaciones para inyectar propiedad -->
+    <record id="view_quotation_tree_with_onboarding_inherit_estate" model="ir.ui.view">
+        <field name="name">sale.quotation.tree.inherit.estate</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="property_id" string="Propiedad Vinculada" optional="show"/>
                 <field name="estate_transaction_type" optional="show"/>
             </xpath>
         </field>
