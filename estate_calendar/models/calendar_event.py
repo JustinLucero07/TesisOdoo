@@ -218,8 +218,41 @@ class CalendarEvent(models.Model):
             return lead
         return self.env['crm.lead']
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if 'name' in fields_list and not res.get('name'):
+            prop_id = res.get('property_id')
+            if prop_id:
+                prop = self.env['estate.property'].browse(prop_id)
+                res['name'] = f"Visita: {prop.title or prop.name}" if prop.exists() else "Visita a Propiedad"
+            else:
+                res['name'] = 'Visita a Propiedad'
+        return res
+
+    @api.onchange('property_id')
+    def _onchange_property_id_set_name(self):
+        if self.property_id:
+            prop_title = self.property_id.title or self.property_id.name
+            if not self.name or self.name in ('Visita a Propiedad', 'Visita', 'Reunión', 'Nueva Cita'):
+                self.name = f"Visita: {prop_title}"
+
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('name'):
+                prop_id = vals.get('property_id')
+                lead_id = vals.get('lead_id')
+                name = 'Visita a Propiedad'
+                if prop_id:
+                    prop = self.env['estate.property'].browse(prop_id)
+                    if prop.exists():
+                        name = f"Visita: {prop.title or prop.name}"
+                elif lead_id:
+                    lead = self.env['crm.lead'].browse(lead_id)
+                    if lead.exists():
+                        name = f"Visita - {lead.name}"
+                vals['name'] = name
         events = super().create(vals_list)
         for event in events:
             if event.appointment_type in ('visit', 'signing') or event.property_id:

@@ -16,8 +16,9 @@
             <xpath expr="//page[@name='page_timeline']" position="before">
                 <page string="Propiedades Visitadas" name="page_visits">
                     <field name="visit_ids" nolabel="1"
-                           context="{'default_lead_id': id, 'default_appointment_type': 'visit', 'default_property_id': target_property_id}">
+                           context="{'default_lead_id': id, 'default_appointment_type': 'visit', 'default_property_id': target_property_id, 'default_name': 'Visita a Propiedad'}">
                         <list string="Visitas" editable="bottom" default_order="start desc">
+                            <field name="name" string="Asunto" optional="hide"/>
                             <field name="start" string="Fecha"/>
                             <field name="property_id" string="Propiedad Visitada"/>
                             <field name="user_id" widget="many2one_avatar_user" string="Asesor"/>
@@ -27,6 +28,7 @@
                                    decoration-info="visit_state == 'scheduled'"/>
                             <field name="visit_rating"/>
                             <field name="visit_result"/>
+                            <field name="visit_notes" string="Observaciones" optional="show"/>
                         </list>
                     </field>
                 </page>
