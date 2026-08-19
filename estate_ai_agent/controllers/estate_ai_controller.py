@@ -844,7 +844,7 @@ INSTRUCCIONES DE RESPUESTA:
                     'start': start_dt,
                     'stop': end_dt,
                     'description': args.get('notes', f"Visita agendada por Agente IA"),
-                    'user_id': env.uid,
+                    'user_id': prop.user_id.id or env.uid,
                 }
                 # Add property if the field exists (estate_calendar module)
                 CalFields = env['calendar.event']._fields

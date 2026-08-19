@@ -54,6 +54,29 @@
     </style>
 </template>
 
+<!-- ── Galería completa (resto de fotos, más allá de las 2 destacadas
+     en portada) — SIEMPRE se incluye dentro del mismo <div class="article">
+     del diseño que la llama (con t-call, antes de cerrar ese div), nunca
+     como un <div class="article"> aparte: el motor de reportes de Odoo
+     (_prepare_html) trata cada "article" como un documento independiente
+     y solo puede combinar varios en un wkhtmltopdf con QT parcheado, que
+     no está instalado aquí. Un solo "article" por propiedad = 1 body. ── -->
+<template id="report_ficha_gallery_extra">
+    <t t-if="f and f.get('gal_extra')">
+        <div style="page-break-before:always; padding:30px 40px;">
+            <div style="font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-size:24px; font-weight:600; color:#28235d; margin-bottom:4px;">Galería de Imágenes</div>
+            <div style="font-size:13px; color:#8f8cba; margin-bottom:18px;"><t t-esc="doc.title"/></div>
+            <div>
+                <t t-foreach="f['gal_extra']" t-as="extra_img">
+                    <div style="display:inline-block; width:47%; margin:1.5% 1%; vertical-align:top; line-height:0;">
+                        <img t-att-src="image_data_uri(extra_img)" style="width:100%; height:265px; object-fit:cover;"/>
+                    </div>
+                </t>
+            </div>
+        </div>
+    </t>
+</template>
+
 <!-- ── Despachador ────────────────────────────────────────────────── -->
 <template id="report_ficha_inmobi">
     <t t-call="web.html_container">
@@ -237,6 +260,7 @@
                 </tr>
             </table>
         </div>
+        <t t-call="estate_reports.report_ficha_gallery_extra"/>
     </div>
 </template>
 
@@ -385,6 +409,7 @@
                 </tr>
             </table>
         </div>
+        <t t-call="estate_reports.report_ficha_gallery_extra"/>
     </div>
 </template>
 
@@ -528,6 +553,7 @@
                 </tr>
             </table>
         </div>
+        <t t-call="estate_reports.report_ficha_gallery_extra"/>
     </div>
 </template>
 

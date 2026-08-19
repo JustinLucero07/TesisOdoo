@@ -131,7 +131,12 @@ class ReportFichaInmobi(models.AbstractModel):
         es_venta = prop.offer_type == 'sale'
         precio = prop.price if es_venta else prop.rental_price
         hero = prop.image_main or (prop.image_ids[0].image if prop.image_ids else False)
-        galeria = [i.image for i in prop.image_ids if i.image and i.image != hero][:3]
+        gal_full = [i.image for i in prop.image_ids if i.image and i.image != hero]
+        # Las primeras 2 se destacan en la página principal (diseño sin cambios);
+        # el resto de la galería completa se imprime en una página aparte, para
+        # no forzar fotos diminutas cuando hay muchas imágenes.
+        galeria = gal_full[:2]
+        gal_extra = gal_full[2:]
         ciudad = (prop.city or '') + ((', ' + prop.state_id.name) if prop.state_id else '')
         partner = prop.user_id.partner_id
         return {
@@ -140,7 +145,7 @@ class ReportFichaInmobi(models.AbstractModel):
             'precio_fmt': '{:,.0f}'.format(precio or 0).replace(',', '.'),
             'hero': hero,
             'gal': galeria,
-            'gal_ids': [i.id for i in prop.image_ids if i.image and i.image != hero][:3],
+            'gal_extra': gal_extra,
             'ciudad': ciudad,
             'tel': partner.mobile or partner.phone or self.env.company.phone or '',
             'email_asesor': partner.email or '',
