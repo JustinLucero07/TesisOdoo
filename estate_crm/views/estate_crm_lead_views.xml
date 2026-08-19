@@ -53,6 +53,13 @@
             <xpath expr="//button[@name='action_sale_quotations_new']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
+            <!-- El botón inteligente "Orders" (junto a Cotizaciones) viene en inglés
+                 y sin traducción propia — se relabela a "Venta". Se activa solo
+                 cuando ya existe una orden de venta (sale.order) vinculada a este
+                 lead como origen, y entra directo a esa orden. -->
+            <xpath expr="//button[@name='action_view_sale_order']/div/span[hasclass('o_stat_text')]" position="replace">
+                <span class="o_stat_text"> Venta</span>
+            </xpath>
             <!-- Botones contextuales por ETAPA del embudo:
                  1-2 Captación · 3-4 Negociación · 5+ Cierre -->
             <xpath expr="//header/field[@name='stage_id']" position="before">

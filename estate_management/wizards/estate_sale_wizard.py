@@ -320,6 +320,7 @@ class EstateSaleWizard(models.TransientModel):
                     'estate_transaction_type': 'sale',
                     'state': 'sale',
                     'user_id': self.user_id.id if self.user_id else False,
+                    'lead_id': self.lead_id.id if self.lead_id else False,
                 })
                 self.env['sale.order.line'].create({
                     'order_id': order.id,

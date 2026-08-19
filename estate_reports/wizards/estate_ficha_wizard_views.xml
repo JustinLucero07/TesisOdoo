@@ -16,8 +16,13 @@
                     <field name="property_id" invisible="1"/>
                     <field name="design" widget="radio"/>
                     
-                    <!-- Previsualización de Diseños -->
-                    <div colspan="2" style="margin-top: 10px; padding: 15px; border: 1px solid #e0e0e0; background-color: #f9f9f9; border-radius: 5px; text-align: center;">
+                    <!-- Previsualización de Diseños — oculta en celular (d-none):
+                         en pantallas chicas ocupaba tanto alto que el botón
+                         "Generar PDF" del footer quedaba fuera de vista sin
+                         hacer scroll dentro del diálogo. Se mantiene solo desde
+                         md hacia arriba (escritorio/tablet), donde sí hay
+                         espacio de sobra. -->
+                    <div colspan="2" class="d-none d-md-block" style="margin-top: 10px; padding: 15px; border: 1px solid #e0e0e0; background-color: #f9f9f9; border-radius: 5px; text-align: center;">
                         <h4 style="margin-bottom: 10px; color: #28235d; font-weight: bold;">Previsualizaci&#243;n del Dise&#241;o</h4>
                         
                         <!-- Diseño 1 -->
