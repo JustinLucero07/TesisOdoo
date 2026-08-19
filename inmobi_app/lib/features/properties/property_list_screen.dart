@@ -3,13 +3,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/choice_chip_row.dart';
-import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/skeleton.dart';
 import '../auth/auth_service.dart';
-import 'property_detail_screen.dart';
+import 'property_card.dart';
 import 'property_form_screen.dart';
 import 'property_model.dart';
 import 'property_service.dart';
@@ -178,98 +176,12 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       itemCount: _properties.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      separatorBuilder: (_, _) => const SizedBox(height: 14),
       itemBuilder: (context, i) {
-        final p = _properties[i];
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => PropertyDetailScreen(propertyId: p.id),
-              ),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.horizontal(
-                    left: Radius.circular(14),
-                  ),
-                  child: SizedBox(
-                    width: 96,
-                    height: 96,
-                    child: Hero(
-                      tag: 'property-image-${p.id}',
-                      child: OdooImage(
-                        odoo: _service.odoo,
-                        model: 'estate.property',
-                        id: p.id,
-                        field: 'image_main',
-                        width: 192,
-                        height: 192,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          p.title.isEmpty ? p.reference : p.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14.5,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          [
-                            if (p.city.isNotEmpty) p.city,
-                            if (p.propertyTypeName.isNotEmpty)
-                              p.propertyTypeName,
-                          ].join(' · '),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.muted,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 7),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                currency.format(p.displayPrice),
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.navy,
-                                  fontSize: 13.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            AppBadge(
-                              label: PropertyStateLabel.label(p.state),
-                              color: PropertyStateLabel.color(p.state),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return PropertyCard(
+          property: _properties[i],
+          odoo: _service.odoo,
+          currency: currency,
         );
       },
     );

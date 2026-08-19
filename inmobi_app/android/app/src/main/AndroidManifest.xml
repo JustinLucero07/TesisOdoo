@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Avisos de citas en el teléfono: mostrar la notificación (Android 13+),
+         reprogramarlas tras reiniciar el equipo y poder dispararlas aunque el
+         sistema esté en ahorro de energía. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+
     <application
         android:label="Inmobi"
         android:name="${applicationName}"

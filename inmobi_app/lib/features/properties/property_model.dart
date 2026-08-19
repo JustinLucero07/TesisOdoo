@@ -44,6 +44,10 @@ class Property {
   final int daysOnMarket;
   final double avmEstimatedPrice;
   final String avmStatus; // fair | high | low
+  final List<int> imageIds;
+  final bool wpPublished;
+  final int wpPostId;
+  final bool wpNeedsSync;
 
   Property({
     required this.id,
@@ -83,6 +87,10 @@ class Property {
     this.daysOnMarket = 0,
     this.avmEstimatedPrice = 0,
     this.avmStatus = '',
+    this.imageIds = const [],
+    this.wpPublished = false,
+    this.wpPostId = 0,
+    this.wpNeedsSync = false,
   });
 
   bool get isForSale => offerType == 'sale';
@@ -101,15 +109,22 @@ class Property {
     'offer_type',
     'state',
     'city',
+    'sector',
     'area',
     'bedrooms',
     'bathrooms',
     'property_type_id',
+    'is_exclusive',
+    // Texto liviano (no imagen) — se trae también en el listado para poder
+    // expandir la tarjeta y mostrar un resumen sin ida y vuelta al servidor.
+    'description',
+    // One2many — Odoo devuelve solo la lista de ids (liviano), no las
+    // imágenes en sí. Con eso alcanza para armar el carrusel de la tarjeta.
+    'image_ids',
   ];
 
   static const List<String> detailFields = [
     ...listFields,
-    'description',
     'street',
     'sector',
     'street_number',
@@ -129,6 +144,9 @@ class Property {
     'days_on_market',
     'avm_estimated_price',
     'avm_status',
+    'wp_published',
+    'wp_post_id',
+    'wp_needs_sync',
   ];
 
   factory Property.fromJson(Map<String, dynamic> json) {
@@ -179,6 +197,12 @@ class Property {
       daysOnMarket: asOdooInt(json['days_on_market']),
       avmEstimatedPrice: asOdooDouble(json['avm_estimated_price']),
       avmStatus: asOdooString(json['avm_status']),
+      imageIds: json['image_ids'] is List
+          ? (json['image_ids'] as List).cast<int>()
+          : const [],
+      wpPublished: json['wp_published'] == true,
+      wpPostId: asOdooInt(json['wp_post_id']),
+      wpNeedsSync: json['wp_needs_sync'] == true,
     );
   }
 }

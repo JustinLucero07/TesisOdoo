@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
@@ -191,6 +193,37 @@ class OdooClient {
         values,
       ],
     );
+  }
+
+  /// Elimina un registro — mismo `unlink` del ORM, con sus validaciones
+  /// (si el modelo lo impide, Odoo devuelve el error y se propaga).
+  Future<void> unlink({required String model, required int id}) async {
+    await callKw(
+      model: model,
+      method: 'unlink',
+      args: [
+        [id],
+      ],
+    );
+  }
+
+  /// Descarga un PDF generado por un reporte QWeb de Odoo, vía la ruta
+  /// nativa `/report/pdf/<reporte>/<ids>`. Los parámetros extra del reporte
+  /// (ej. el diseño de la ficha) viajan en `options` como JSON, para que
+  /// lleguen con su tipo real (bool/int) y no como texto.
+  Future<Uint8List> downloadReportPdf({
+    required String reportName,
+    required int id,
+    Map<String, dynamic> options = const {},
+  }) async {
+    final resp = await client.get<List<int>>(
+      '/report/pdf/$reportName/$id',
+      queryParameters: options.isEmpty
+          ? null
+          : {'options': jsonEncode(options)},
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(resp.data ?? const []);
   }
 
   /// Descarga el valor de un campo binario (imagen de galería, PDF de un

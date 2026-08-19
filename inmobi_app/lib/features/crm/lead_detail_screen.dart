@@ -13,7 +13,9 @@ import '../contracts/contract_list_screen.dart';
 import '../documents/document_service.dart';
 import '../documents/documents_section.dart';
 import '../properties/property_detail_screen.dart';
+import '../visits/visit_form_screen.dart';
 import 'crm_stage_service.dart';
+import 'interactions_section.dart';
 import 'lead_form_screen.dart';
 import 'lead_model.dart';
 import 'stage_funnel.dart';
@@ -139,15 +141,45 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        Text(
-          lead.name,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                lead.name,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            // Prioridad en estrellas, igual que el widget `priority` de Odoo.
+            if (lead.priority > 0)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(
+                  lead.priority,
+                  (_) => const Icon(
+                    Icons.star,
+                    size: 17,
+                    color: AppColors.warning,
+                  ),
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 10),
         Wrap(
           spacing: 8,
           runSpacing: 8,
           children: [
+            if (lead.isGoldenOpportunity)
+              const AppBadge(
+                label: 'Oportunidad de Oro',
+                color: Colors.white,
+                background: AppColors.warning,
+                icon: Icons.workspace_premium,
+              ),
             AppBadge(
               label: LeadTemperatureStyle.label(lead.leadTemperature),
               color: LeadTemperatureStyle.color(lead.leadTemperature),
@@ -157,11 +189,44 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               label: LeadScoreStyle.label(lead.leadScore),
               color: LeadScoreStyle.color(lead.leadScore),
             ),
+            if (lead.closingDifficulty.isNotEmpty)
+              AppBadge(
+                label: LeadClosingDifficultyStyle.label(lead.closingDifficulty),
+                color: LeadClosingDifficultyStyle.color(lead.closingDifficulty),
+              ),
             if (lead.leadSourceName.isNotEmpty)
               AppBadge(label: lead.leadSourceName, color: AppColors.mutedLight),
           ],
         ),
         const SizedBox(height: 16),
+        // Agendar una visita para este lead: se precargan la propiedad de
+        // interés y el contacto, que es justo lo que hay que llenar.
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => Navigator.of(context)
+                .push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => VisitFormScreen(
+                      initialPropertyId: lead.targetPropertyId,
+                      initialPropertyName: lead.targetPropertyName,
+                      initialClientId: lead.partnerId,
+                      initialClientName: lead.partnerName,
+                    ),
+                  ),
+                )
+                .then((saved) {
+                  if (saved == true && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Cita agendada.')),
+                    );
+                  }
+                }),
+            icon: const Icon(Icons.event_available_outlined, size: 18),
+            label: const Text('Agendar visita'),
+          ),
+        ),
+        const SizedBox(height: 18),
         const Text(
           'Etapa',
           style: TextStyle(
@@ -384,9 +449,169 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             ),
           ),
         ],
+        // Notas de la oportunidad (campo "description" del CRM)
+        if (lead.description.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.notes_outlined,
+                        size: 16,
+                        color: AppColors.navy,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Notas',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  SelectableText(
+                    lead.description,
+                    style: const TextStyle(fontSize: 13.5, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+        // Seguimiento comercial: cifras que Odoo ya calcula para este lead.
+        const SizedBox(height: 14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Seguimiento',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppColors.muted,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    if (lead.expectedRevenue > 0)
+                      _MetricChip(
+                        icon: Icons.trending_up,
+                        label: 'Ingreso esperado',
+                        value: currency.format(lead.expectedRevenue),
+                      ),
+                    if (lead.expectedCommission > 0)
+                      _MetricChip(
+                        icon: Icons.percent,
+                        label: 'Comisión esperada',
+                        value: currency.format(lead.expectedCommission),
+                      ),
+                    if (lead.dateDeadline != null)
+                      _MetricChip(
+                        icon: Icons.event_outlined,
+                        label: 'Cierre previsto',
+                        value: DateFormat(
+                          'd MMM y',
+                          'es_EC',
+                        ).format(lead.dateDeadline!),
+                      ),
+                    if (lead.completedVisitsCount > 0)
+                      _MetricChip(
+                        icon: Icons.home_outlined,
+                        label: 'Visitas hechas',
+                        value: '${lead.completedVisitsCount}',
+                      ),
+                    if (lead.lastActivityDays > 0)
+                      _MetricChip(
+                        icon: Icons.history,
+                        label: 'Sin actividad',
+                        value: '${lead.lastActivityDays} d',
+                      ),
+                    if (lead.leadVelocityDays > 0)
+                      _MetricChip(
+                        icon: Icons.speed,
+                        label: 'Antigüedad',
+                        value: '${lead.leadVelocityDays} d',
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 22),
+        InteractionsSection(
+          odoo: _odoo,
+          leadId: lead.id,
+          partnerId: lead.partnerId,
+          propertyId: lead.targetPropertyId,
+        ),
         const SizedBox(height: 22),
         DocumentsSection(odoo: _odoo, owner: DocumentOwner.lead(lead.id)),
       ],
+    );
+  }
+}
+
+/// Métrica compacta del bloque de seguimiento del lead.
+class _MetricChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  const _MetricChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.neutralBg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 15, color: AppColors.navy),
+          const SizedBox(width: 7),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: AppColors.mutedLight,
+                ),
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

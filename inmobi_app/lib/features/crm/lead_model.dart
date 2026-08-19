@@ -28,6 +28,16 @@ class Lead {
   final int preferredBedrooms;
   final double preferredMinArea;
   final double preferredMaxArea;
+  final String description; // "Notes" de Odoo, campo Html
+  final int priority; // 0-3 estrellas
+  final DateTime? dateDeadline;
+  final double expectedRevenue;
+  final double expectedCommission;
+  final bool isGoldenOpportunity;
+  final String closingDifficulty;
+  final int completedVisitsCount;
+  final int lastActivityDays;
+  final int leadVelocityDays;
 
   Lead({
     required this.id,
@@ -54,6 +64,16 @@ class Lead {
     this.preferredBedrooms = 0,
     this.preferredMinArea = 0,
     this.preferredMaxArea = 0,
+    this.description = '',
+    this.priority = 0,
+    this.dateDeadline,
+    this.expectedRevenue = 0,
+    this.expectedCommission = 0,
+    this.isGoldenOpportunity = false,
+    this.closingDifficulty = '',
+    this.completedVisitsCount = 0,
+    this.lastActivityDays = 0,
+    this.leadVelocityDays = 0,
   });
 
   static const List<String> listFields = [
@@ -80,6 +100,17 @@ class Lead {
     'preferred_bedrooms',
     'preferred_min_area',
     'preferred_max_area',
+    // "Notes" del CRM nativo + seguimiento comercial
+    'description',
+    'priority',
+    'date_deadline',
+    'expected_revenue',
+    'expected_commission',
+    'is_golden_opportunity',
+    'closing_difficulty',
+    'completed_visits_count',
+    'last_activity_days',
+    'lead_velocity_days',
   ];
 
   factory Lead.fromJson(Map<String, dynamic> json) {
@@ -116,8 +147,43 @@ class Lead {
       preferredBedrooms: asOdooInt(json['preferred_bedrooms']),
       preferredMinArea: asOdooDouble(json['preferred_min_area']),
       preferredMaxArea: asOdooDouble(json['preferred_max_area']),
+      // `description` es Html en Odoo: se limpia a texto plano para leerlo
+      // cómodo en el celular (mismo criterio que la descripción de propiedad).
+      description: asOdooString(json['description'])
+          .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+          .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n')
+          .replaceAll(RegExp(r'<[^>]*>'), '')
+          .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+          .trim(),
+      priority: asOdooInt(json['priority']),
+      dateDeadline: json['date_deadline'] is String
+          ? DateTime.tryParse(json['date_deadline'])
+          : null,
+      expectedRevenue: asOdooDouble(json['expected_revenue']),
+      expectedCommission: asOdooDouble(json['expected_commission']),
+      isGoldenOpportunity: json['is_golden_opportunity'] == true,
+      closingDifficulty: asOdooString(json['closing_difficulty']),
+      completedVisitsCount: asOdooInt(json['completed_visits_count']),
+      lastActivityDays: asOdooInt(json['last_activity_days']),
+      leadVelocityDays: asOdooInt(json['lead_velocity_days']),
     );
   }
+}
+
+class LeadClosingDifficultyStyle {
+  static String label(String value) => switch (value) {
+    'easy' => 'Cierre fácil',
+    'moderate' => 'Cierre moderado',
+    'hard' => 'Cierre difícil',
+    _ => '',
+  };
+
+  static Color color(String value) => switch (value) {
+    'easy' => AppColors.success,
+    'moderate' => AppColors.warning,
+    'hard' => AppColors.danger,
+    _ => AppColors.mutedLight,
+  };
 }
 
 class LeadScoreStyle {

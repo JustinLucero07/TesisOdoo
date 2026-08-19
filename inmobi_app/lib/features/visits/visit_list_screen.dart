@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_badge.dart';
@@ -23,8 +26,11 @@ class VisitListScreen extends StatefulWidget {
 class _VisitListScreenState extends State<VisitListScreen> {
   late final VisitService _service;
   DateTime _selectedDay = DateTime.now();
+  DateTime _focusedDay = DateTime.now();
+  CalendarFormat _calendarFormat = CalendarFormat.week;
   String? _typeFilter;
-  List<Visit> _visits = [];
+
+  Map<DateTime, List<Visit>> _monthVisits = {};
   bool _loading = true;
   String? _error;
 
@@ -36,48 +42,62 @@ class _VisitListScreenState extends State<VisitListScreen> {
     ('signing', 'Firmas'),
   ];
 
-  List<Visit> get _filteredVisits => _typeFilter == null
-      ? _visits
-      : _visits.where((v) => v.appointmentType == _typeFilter).toList();
+  DateTime _dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  List<Visit> get _visitsOfSelectedDay {
+    final all = _monthVisits[_dayKey(_selectedDay)] ?? const [];
+    return _typeFilter == null
+        ? all
+        : all.where((v) => v.appointmentType == _typeFilter).toList();
+  }
 
   @override
   void initState() {
     super.initState();
     _service = VisitService(context.read<AuthService>().odoo);
-    _load();
+    _loadMonth(_focusedDay);
   }
 
-  DateTime get _dayStart =>
-      DateTime(_selectedDay.year, _selectedDay.month, _selectedDay.day);
-
-  Future<void> _load() async {
+  Future<void> _loadMonth(DateTime month) async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final result = await _service.listByRange(
-        _dayStart,
-        _dayStart.add(const Duration(days: 1)),
-      );
-      setState(() => _visits = result);
+      // Rango con un colchón de una semana a cada lado para que las
+      // celdas del mes anterior/siguiente visibles en la cuadrícula
+      // también muestren su marcador de puntos.
+      final from = DateTime(
+        month.year,
+        month.month,
+        1,
+      ).subtract(const Duration(days: 7));
+      final to = DateTime(
+        month.year,
+        month.month + 1,
+        1,
+      ).add(const Duration(days: 7));
+      final visits = await _service.listByRange(from, to);
+      final map = <DateTime, List<Visit>>{};
+      for (final v in visits) {
+        map.putIfAbsent(_dayKey(v.start), () => []).add(v);
+      }
+      if (mounted) setState(() => _monthVisits = map);
+      // Programa en el teléfono el aviso de las citas futuras que se acaban
+      // de cargar, para que suene aunque la app esté cerrada.
+      unawaited(VisitService.scheduleNotifications(visits));
     } catch (e) {
-      setState(() => _error = 'No se pudo cargar la agenda.');
+      if (mounted) setState(() => _error = 'No se pudo cargar la agenda.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
-  }
-
-  void _selectDay(DateTime day) {
-    setState(() => _selectedDay = day);
-    _load();
   }
 
   Future<void> _openCreate() async {
     final saved = await Navigator.of(
       context,
     ).push<bool>(MaterialPageRoute(builder: (_) => const VisitFormScreen()));
-    if (saved == true) _load();
+    if (saved == true) _loadMonth(_focusedDay);
   }
 
   @override
@@ -90,17 +110,112 @@ class _VisitListScreenState extends State<VisitListScreen> {
       ),
       body: Column(
         children: [
-          _DateStrip(selected: _selectedDay, onSelect: _selectDay),
-          const Divider(height: 1),
-          const SizedBox(height: 8),
+          Card(
+            margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+            child: TableCalendar<Visit>(
+              locale: 'es_EC',
+              firstDay: DateTime.now().subtract(const Duration(days: 365)),
+              lastDay: DateTime.now().add(const Duration(days: 365)),
+              focusedDay: _focusedDay,
+              currentDay: DateTime.now(),
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              calendarFormat: _calendarFormat,
+              availableCalendarFormats: const {
+                CalendarFormat.month: 'Mes',
+                CalendarFormat.week: 'Semana',
+              },
+              eventLoader: (day) => _monthVisits[_dayKey(day)] ?? const [],
+              onDaySelected: (selected, focused) {
+                setState(() {
+                  _selectedDay = selected;
+                  _focusedDay = focused;
+                });
+              },
+              onFormatChanged: (format) =>
+                  setState(() => _calendarFormat = format),
+              onPageChanged: (focused) {
+                _focusedDay = focused;
+                _loadMonth(focused);
+              },
+              headerStyle: const HeaderStyle(
+                formatButtonShowsNext: false,
+                titleCentered: true,
+                formatButtonDecoration: BoxDecoration(
+                  color: AppColors.neutralBg,
+                  borderRadius: BorderRadius.all(Radius.circular(20)),
+                ),
+                formatButtonTextStyle: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.navy,
+                  fontWeight: FontWeight.w600,
+                ),
+                titleTextStyle: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.ink,
+                ),
+                leftChevronIcon: Icon(
+                  Icons.chevron_left,
+                  color: AppColors.navy,
+                ),
+                rightChevronIcon: Icon(
+                  Icons.chevron_right,
+                  color: AppColors.navy,
+                ),
+              ),
+              daysOfWeekStyle: const DaysOfWeekStyle(
+                weekdayStyle: TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.mutedLight,
+                  fontWeight: FontWeight.w600,
+                ),
+                weekendStyle: TextStyle(
+                  fontSize: 11.5,
+                  color: AppColors.mutedLight,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              calendarStyle: CalendarStyle(
+                outsideDaysVisible: false,
+                todayDecoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.15),
+                  shape: BoxShape.circle,
+                ),
+                todayTextStyle: const TextStyle(
+                  color: AppColors.accent,
+                  fontWeight: FontWeight.w700,
+                ),
+                selectedDecoration: const BoxDecoration(
+                  color: AppColors.navy,
+                  shape: BoxShape.circle,
+                ),
+                selectedTextStyle: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+                markerDecoration: const BoxDecoration(
+                  color: AppColors.accent,
+                  shape: BoxShape.circle,
+                ),
+                markersMaxCount: 3,
+                markerSize: 5,
+                markerMargin: const EdgeInsets.only(top: 3),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
           ChoiceChipRow(
             options: _typeFilters,
             value: _typeFilter,
             onChanged: (v) => setState(() => _typeFilter = v),
           ),
           const SizedBox(height: 4),
+          const Divider(height: 1),
           Expanded(
-            child: RefreshIndicator(onRefresh: _load, child: _buildBody()),
+            child: RefreshIndicator(
+              onRefresh: () => _loadMonth(_focusedDay),
+              child: _buildBody(),
+            ),
           ),
         ],
       ),
@@ -108,15 +223,15 @@ class _VisitListScreenState extends State<VisitListScreen> {
   }
 
   Widget _buildBody() {
-    if (_loading) return const SkeletonList();
+    if (_loading && _monthVisits.isEmpty) return const SkeletonList();
     if (_error != null) {
       return MessageView(
         icon: Icons.error_outline,
         message: _error!,
-        onRetry: _load,
+        onRetry: () => _loadMonth(_focusedDay),
       );
     }
-    final visits = _filteredVisits;
+    final visits = _visitsOfSelectedDay;
     if (visits.isEmpty) {
       return ListView(
         children: const [
@@ -138,11 +253,13 @@ class _VisitListScreenState extends State<VisitListScreen> {
         return Card(
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => VisitDetailScreen(visitId: v.id),
-              ),
-            ),
+            onTap: () => Navigator.of(context)
+                .push(
+                  MaterialPageRoute(
+                    builder: (_) => VisitDetailScreen(visitId: v.id),
+                  ),
+                )
+                .then((_) => _loadMonth(_focusedDay)),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -222,88 +339,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-/// Franja horizontal de 14 días (hoy ± 1 semana) para elegir el día de la
-/// agenda, sin agregar una dependencia externa de calendario.
-class _DateStrip extends StatelessWidget {
-  final DateTime selected;
-  final ValueChanged<DateTime> onSelect;
-  const _DateStrip({required this.selected, required this.onSelect});
-
-  @override
-  Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final days = List.generate(
-      14,
-      (i) => DateTime(
-        today.year,
-        today.month,
-        today.day,
-      ).add(Duration(days: i - 3)),
-    );
-    final dayFmt = DateFormat.E('es_EC');
-
-    return SizedBox(
-      height: 78,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        itemCount: days.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          final d = days[i];
-          final isSelected =
-              d.year == selected.year &&
-              d.month == selected.month &&
-              d.day == selected.day;
-          final isToday =
-              d.year == today.year &&
-              d.month == today.month &&
-              d.day == today.day;
-          return InkWell(
-            onTap: () => onSelect(d),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: 52,
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.navy : Colors.white,
-                border: Border.all(
-                  color: isSelected ? AppColors.navy : AppColors.line,
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    dayFmt.format(d).replaceAll('.', ''),
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isSelected ? Colors.white70 : AppColors.muted,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${d.day}',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isSelected
-                          ? Colors.white
-                          : (isToday ? AppColors.accent : AppColors.ink),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
     );
   }
 }

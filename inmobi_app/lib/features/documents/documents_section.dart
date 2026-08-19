@@ -51,6 +51,81 @@ class _DocumentsSectionState extends State<DocumentsSection> {
     }
   }
 
+  /// Verificar / rechazar / archivar — se llaman los MISMOS métodos del
+  /// modelo (`action_verify`, `action_reject`…), así que quedan registrados
+  /// en el chatter con el usuario y la fecha, igual que desde el ERP.
+  Future<void> _runAction(
+    EstateDocument doc,
+    String method,
+    String okMsg,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await widget.odoo.callKw(
+        model: 'estate.document',
+        method: method,
+        args: [
+          [doc.id],
+        ],
+      );
+      messenger.showSnackBar(SnackBar(content: Text(okMsg)));
+      _load();
+    } catch (e) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Odoo rechazó la acción sobre el documento.'),
+        ),
+      );
+    }
+  }
+
+  void _showActions(EstateDocument doc) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpace.sm),
+            ListTile(
+              leading: const Icon(Icons.open_in_new),
+              title: const Text('Abrir documento'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _open(doc);
+              },
+            ),
+            if (doc.state != 'verified')
+              ListTile(
+                leading: const Icon(
+                  Icons.verified_outlined,
+                  color: AppColors.success,
+                ),
+                title: const Text('Marcar como verificado'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _runAction(doc, 'action_verify', 'Documento verificado.');
+                },
+              ),
+            if (doc.state != 'rejected')
+              ListTile(
+                leading: const Icon(
+                  Icons.cancel_outlined,
+                  color: AppColors.danger,
+                ),
+                title: const Text('Rechazar documento'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _runAction(doc, 'action_reject', 'Documento rechazado.');
+                },
+              ),
+            const SizedBox(height: AppSpace.sm),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _open(EstateDocument doc) async {
     setState(() => _openingId = doc.id);
     try {
@@ -154,6 +229,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                     doc: _docs[i],
                     opening: _openingId == _docs[i].id,
                     onTap: () => _open(_docs[i]),
+                    onLongPress: () => _showActions(_docs[i]),
                     dateFmt: dateFmt,
                   ),
                 ],
@@ -169,11 +245,13 @@ class _DocumentTile extends StatelessWidget {
   final EstateDocument doc;
   final bool opening;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
   final DateFormat dateFmt;
   const _DocumentTile({
     required this.doc,
     required this.opening,
     required this.onTap,
+    required this.onLongPress,
     required this.dateFmt,
   });
 
@@ -181,6 +259,7 @@ class _DocumentTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       onTap: opening ? null : onTap,
+      onLongPress: opening ? null : onLongPress,
       leading: Icon(doc.icon, color: AppColors.navy),
       title: Text(doc.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(

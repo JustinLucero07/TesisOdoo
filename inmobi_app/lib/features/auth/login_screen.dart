@@ -14,7 +14,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _loginCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
@@ -22,10 +23,83 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   String? _error;
 
+  late final AnimationController _entrance;
+  late final Animation<double> _logoScale;
+  late final Animation<double> _logoFade;
+  late final Animation<Offset> _subtitleSlide;
+  late final Animation<double> _subtitleFade;
+  late final Animation<Offset> _fieldsSlide;
+  late final Animation<double> _fieldsFade;
+  late final Animation<Offset> _buttonSlide;
+  late final Animation<double> _buttonFade;
+
   @override
   void initState() {
     super.initState();
     _prefill();
+
+    // Entrada escalonada: el logo "llega" con un leve rebote (momento de
+    // marca, se lo gana), el resto entra con fade+slide crítico —sin
+    // rebote— para no distraer del formulario.
+    _entrance = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
+    _logoScale = Tween(begin: 0.7, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entrance,
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOutBack),
+      ),
+    );
+    _logoFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.0, 0.35, curve: Curves.easeOut),
+    );
+
+    _subtitleFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.25, 0.55, curve: Curves.easeOut),
+    );
+    _subtitleSlide = Tween(begin: const Offset(0, 0.15), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entrance,
+            curve: const Interval(0.25, 0.55, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _fieldsFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.4, 0.75, curve: Curves.easeOut),
+    );
+    _fieldsSlide = Tween(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entrance,
+            curve: const Interval(0.4, 0.75, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _buttonFade = CurvedAnimation(
+      parent: _entrance,
+      curve: const Interval(0.6, 1.0, curve: Curves.easeOut),
+    );
+    _buttonSlide = Tween(begin: const Offset(0, 0.18), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entrance,
+            curve: const Interval(0.6, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _entrance.forward();
+  }
+
+  @override
+  void dispose() {
+    _entrance.dispose();
+    super.dispose();
   }
 
   Future<void> _prefill() async {
@@ -82,72 +156,104 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 24),
                     Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 28,
-                          vertical: 22,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.navy,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: softShadow(opacity: 0.12),
-                        ),
-                        child: Image.asset(
-                          'assets/branding/logo_white.png',
-                          height: 46,
+                      child: FadeTransition(
+                        opacity: _logoFade,
+                        child: ScaleTransition(
+                          scale: _logoScale,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 28,
+                              vertical: 22,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.navy,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: softShadow(opacity: 0.12),
+                            ),
+                            child: Image.asset(
+                              'assets/branding/logo_white.png',
+                              height: 46,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Gestión Inmobiliaria',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.muted,
-                        letterSpacing: 1.2,
+                    FadeTransition(
+                      opacity: _subtitleFade,
+                      child: SlideTransition(
+                        position: _subtitleSlide,
+                        child: const Text(
+                          'Gestión Inmobiliaria',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.muted,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),
-                    TextFormField(
-                      controller: _loginCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        labelText: 'Usuario',
-                        prefixIcon: Icon(Icons.person_outline),
+                    FadeTransition(
+                      opacity: _fieldsFade,
+                      child: SlideTransition(
+                        position: _fieldsSlide,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextFormField(
+                              controller: _loginCtrl,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(
+                                labelText: 'Usuario',
+                                prefixIcon: Icon(Icons.person_outline),
+                              ),
+                              validator: (v) =>
+                                  (v == null || v.isEmpty) ? 'Requerido' : null,
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _passwordCtrl,
+                              obscureText: true,
+                              decoration: const InputDecoration(
+                                labelText: 'Contraseña',
+                                prefixIcon: Icon(Icons.lock_outline),
+                              ),
+                              validator: (v) =>
+                                  (v == null || v.isEmpty) ? 'Requerido' : null,
+                              onFieldSubmitted: (_) => _submit(),
+                            ),
+                          ],
+                        ),
                       ),
-                      validator: (v) =>
-                          (v == null || v.isEmpty) ? 'Requerido' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _passwordCtrl,
-                      obscureText: true,
-                      decoration: const InputDecoration(
-                        labelText: 'Contraseña',
-                        prefixIcon: Icon(Icons.lock_outline),
-                      ),
-                      validator: (v) =>
-                          (v == null || v.isEmpty) ? 'Requerido' : null,
-                      onFieldSubmitted: (_) => _submit(),
                     ),
                     if (_error != null) ...[
                       const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
+                      Text(
+                        _error!,
+                        style: const TextStyle(color: AppColors.danger),
+                      ),
                     ],
                     const SizedBox(height: 24),
-                    ElevatedButton(
-                      onPressed: _loading ? null : _submit,
-                      child: _loading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Iniciar sesión'),
+                    FadeTransition(
+                      opacity: _buttonFade,
+                      child: SlideTransition(
+                        position: _buttonSlide,
+                        child: ElevatedButton(
+                          onPressed: _loading ? null : _submit,
+                          child: _loading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Iniciar sesión'),
+                        ),
+                      ),
                     ),
                   ],
                 ),

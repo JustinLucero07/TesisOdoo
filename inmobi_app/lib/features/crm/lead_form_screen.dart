@@ -37,6 +37,7 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
   final _preferredMinAreaCtrl = TextEditingController();
   final _preferredMaxAreaCtrl = TextEditingController();
   final _clientNeedsCtrl = TextEditingController();
+  final _descriptionCtrl = TextEditingController();
   Many2oneValue? _stage;
   Many2oneValue? _targetProperty;
   Many2oneValue? _partner;
@@ -85,6 +86,7 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
           ? e.preferredMaxArea.toStringAsFixed(0)
           : '';
       _clientNeedsCtrl.text = e.clientNeeds;
+      _descriptionCtrl.text = e.description;
     }
   }
 
@@ -113,6 +115,15 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       'preferred_max_area':
           double.tryParse(_preferredMaxAreaCtrl.text.trim()) ?? 0.0,
       'client_needs': _clientNeedsCtrl.text.trim(),
+      // El campo es Html en Odoo: se envuelven los saltos de línea en <p>
+      // para que el chatter/formulario web lo muestre con el mismo formato.
+      'description': _descriptionCtrl.text.trim().isEmpty
+          ? false
+          : _descriptionCtrl.text
+                .trim()
+                .split('\n')
+                .map((line) => '<p>${line.isEmpty ? '<br>' : line}</p>')
+                .join(),
     };
 
     try {
@@ -252,6 +263,16 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
               maxLines: 4,
               decoration: const InputDecoration(
                 labelText: 'Necesidades especiales',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const _FormSectionTitle('Notas internas'),
+            TextFormField(
+              controller: _descriptionCtrl,
+              minLines: 4,
+              maxLines: 10,
+              decoration: const InputDecoration(
+                hintText: 'Notas de seguimiento, acuerdos, observaciones...',
                 alignLabelWithHint: true,
               ),
             ),

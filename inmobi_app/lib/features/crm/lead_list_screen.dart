@@ -213,7 +213,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
         final lead = _leads[i];
         return Card(
           child: InkWell(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => LeadDetailScreen(leadId: lead.id),
@@ -221,66 +221,89 @@ class _LeadListScreenState extends State<LeadListScreen> {
             ),
             child: Padding(
               padding: const EdgeInsets.all(14),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          lead.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
-                        ),
-                      ),
-                      AppBadge(
-                        label: LeadTemperatureStyle.label(lead.leadTemperature),
-                        color: LeadTemperatureStyle.color(lead.leadTemperature),
-                        icon: LeadTemperatureStyle.icon(lead.leadTemperature),
-                      ),
-                    ],
+                  InitialsAvatar(
+                    text: lead.contactName.isNotEmpty
+                        ? lead.contactName
+                        : lead.name,
+                    size: 46,
+                    color: LeadTemperatureStyle.color(lead.leadTemperature),
                   ),
-                  if (lead.contactName.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      lead.contactName,
-                      style: const TextStyle(
-                        color: AppColors.muted,
-                        fontSize: 12.5,
-                      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                lead.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14.5,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              LeadTemperatureStyle.icon(lead.leadTemperature),
+                              size: 16,
+                              color: LeadTemperatureStyle.color(
+                                lead.leadTemperature,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (lead.contactName.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            lead.contactName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.muted,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 9),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            AppBadge(
+                              label: LeadScoreStyle.label(lead.leadScore),
+                              color: LeadScoreStyle.color(lead.leadScore),
+                            ),
+                            if (lead.stageName.isNotEmpty)
+                              AppBadge(
+                                label: lead.stageName,
+                                color: AppColors.navyLight,
+                              ),
+                            if (lead.matchPercentage > 0)
+                              AppBadge(
+                                label: '${lead.matchPercentage}% match',
+                                color: AppColors.info,
+                              ),
+                          ],
+                        ),
+                        if (lead.clientBudget > 0) ...[
+                          const SizedBox(height: 9),
+                          Text(
+                            currency.format(lead.clientBudget),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.navy,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ],
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      AppBadge(
-                        label: LeadScoreStyle.label(lead.leadScore),
-                        color: LeadScoreStyle.color(lead.leadScore),
-                      ),
-                      const SizedBox(width: 8),
-                      if (lead.matchPercentage > 0)
-                        Text(
-                          '${lead.matchPercentage}% match',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.mutedLight,
-                          ),
-                        ),
-                      const Spacer(),
-                      if (lead.clientBudget > 0)
-                        Text(
-                          currency.format(lead.clientBudget),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.navy,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                    ],
                   ),
                 ],
               ),

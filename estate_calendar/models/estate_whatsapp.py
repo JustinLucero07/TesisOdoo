@@ -173,6 +173,47 @@ class CalendarEventWhatsApp(models.Model):
 
         _logger.info('Cron WhatsApp: %d evento(s) procesados.', processed)
 
+    def action_send_reminder_now(self):
+        """Botón manual: envía YA el recordatorio de esta cita, sin esperar al
+        cron. Reutiliza la misma plantilla y destinatarios (asesor + cliente)
+        que el envío automático; se expone como método público para poder
+        dispararlo desde la app móvil.
+
+        Devuelve un dict con `sent` (cuántos envíos salieron) y `detail`, para
+        que quien lo llame pueda dar un mensaje concreto al usuario."""
+        self.ensure_one()
+        ICP = self.env['ir.config_parameter'].sudo()
+        if ICP.get_param('estate_calendar.whatsapp_active', 'False') != 'True':
+            return {'sent': 0, 'detail': 'La integración de WhatsApp está desactivada en Ajustes.'}
+
+        time_str = fields.Datetime.context_timestamp(self, self.start).strftime('%H:%M')
+        client = self.client_id
+        client_name = client.name if client else 'Sin cliente'
+        property_name = self.property_id.title if self.property_id else ''
+        agent = self.user_id
+
+        sent = 0
+        destinos = []
+
+        agent_partner = agent.partner_id if agent and agent.partner_id else None
+        agent_phone = (getattr(agent_partner, 'mobile', None)
+                       or getattr(agent_partner, 'phone', None) or '') if agent_partner else ''
+        if agent_phone and self._send_whatsapp(agent_phone, self.name, time_str, client_name, property_name):
+            sent += 1
+            destinos.append('asesor')
+
+        notify_client = ICP.get_param('estate_calendar.whatsapp_notify_client', 'True') == 'True'
+        if notify_client and client:
+            client_phone = getattr(client, 'mobile', None) or getattr(client, 'phone', None) or ''
+            if client_phone and self._send_whatsapp(client_phone, self.name, time_str, client_name, property_name):
+                sent += 1
+                destinos.append('cliente')
+
+        if sent:
+            self.write({'whatsapp_sent': True})
+            return {'sent': sent, 'detail': 'Recordatorio enviado a: %s.' % ' y '.join(destinos)}
+        return {'sent': 0, 'detail': 'No se pudo enviar: revisa que el asesor o el cliente tengan teléfono.'}
+
     def action_send_whatsapp_followup(self):
         """Botón manual: envía seguimiento post-visita al cliente (texto libre)."""
         self.ensure_one()

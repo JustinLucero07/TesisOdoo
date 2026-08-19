@@ -7,4 +7,8 @@ class AppConfig {
 
   static const String odooServer = 'https://inmobi.tech';
   static const String odooDb = 'inmobi_produccion';
+
+  /// Sitio público (WordPress/Houzez) al que sincroniza el ERP — se usa
+  /// para abrir la publicación de una propiedad desde la app.
+  static const String wordpressSite = 'https://inmobi.com.ec';
 }

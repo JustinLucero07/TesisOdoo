@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../crm/lead_list_screen.dart';
+import '../crm/crm_shell_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../properties/property_list_screen.dart';
 import '../settings/settings_screen.dart';
@@ -33,7 +33,7 @@ class _HomeShellState extends State<HomeShell> {
     final screens = [
       DashboardScreen(onNavigate: _goTo),
       const PropertyListScreen(),
-      const LeadListScreen(),
+      const CrmShellScreen(),
       const VisitListScreen(),
       const SettingsScreen(),
     ];

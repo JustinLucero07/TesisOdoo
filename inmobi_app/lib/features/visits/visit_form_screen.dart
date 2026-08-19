@@ -15,7 +15,21 @@ import 'visit_service.dart';
 /// visita creada aquí aparece igual en el ERP y se sincroniza igual.
 class VisitFormScreen extends StatefulWidget {
   final Visit? existing;
-  const VisitFormScreen({super.key, this.existing});
+  // Precarga al agendar desde una propiedad o desde un lead, para no
+  // obligar a volver a buscar lo que ya se sabe.
+  final int? initialPropertyId;
+  final String? initialPropertyName;
+  final int? initialClientId;
+  final String? initialClientName;
+
+  const VisitFormScreen({
+    super.key,
+    this.existing,
+    this.initialPropertyId,
+    this.initialPropertyName,
+    this.initialClientId,
+    this.initialClientName,
+  });
 
   bool get isEdit => existing != null;
 
@@ -35,6 +49,9 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
   String _appointmentType = 'visit';
   String _visitState = 'scheduled';
   final _notesCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  final _reminderValueCtrl = TextEditingController();
+  String _reminderUnit = 'hours';
 
   bool _saving = false;
   String? _error;
@@ -64,10 +81,30 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
       _appointmentType = e.appointmentType;
       _visitState = e.visitState;
       _notesCtrl.text = e.notes;
-      if (e.propertyId != null)
+      _locationCtrl.text = e.location;
+      if (e.reminderValue > 0) {
+        _reminderValueCtrl.text = '${e.reminderValue}';
+        _reminderUnit = e.reminderUnit;
+      }
+      if (e.propertyId != null) {
         _property = Many2oneValue(e.propertyId!, e.propertyName);
-      if (e.clientId != null)
+      }
+      if (e.clientId != null) {
         _client = Many2oneValue(e.clientId!, e.clientName);
+      }
+    } else {
+      if (widget.initialPropertyId != null) {
+        _property = Many2oneValue(
+          widget.initialPropertyId!,
+          widget.initialPropertyName ?? '',
+        );
+      }
+      if (widget.initialClientId != null) {
+        _client = Many2oneValue(
+          widget.initialClientId!,
+          widget.initialClientName ?? '',
+        );
+      }
     }
   }
 
@@ -113,6 +150,12 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
       'property_id': _property!.id,
       if (_client != null) 'client_id': _client!.id,
       'visit_notes': _notesCtrl.text.trim(),
+      'location': _locationCtrl.text.trim(),
+      // Anticipación del recordatorio de WhatsApp para ESTA cita; si se deja
+      // vacío, el ERP usa la del asesor o la general de Ajustes.
+      'whatsapp_reminder_value':
+          int.tryParse(_reminderValueCtrl.text.trim()) ?? 0,
+      'whatsapp_reminder_unit': _reminderUnit,
       if (widget.isEdit) 'visit_state': _visitState,
     };
 
@@ -210,6 +253,42 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
                     setState(() => _visitState = v ?? 'scheduled'),
               ),
             ],
+            const SizedBox(height: 14),
+            TextFormField(
+              controller: _locationCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Lugar de encuentro',
+                prefixIcon: Icon(Icons.place_outlined),
+              ),
+            ),
+            const SizedBox(height: 14),
+            // Recordatorio de WhatsApp propio de esta cita. Vacío = se usa
+            // el del asesor, o el general configurado en el ERP.
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _reminderValueCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Recordar antes de',
+                      hintText: 'Automático',
+                      prefixIcon: Icon(Icons.notifications_active_outlined),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SelectField(
+                    label: 'Unidad',
+                    value: _reminderUnit,
+                    options: ReminderUnitStyle.options,
+                    onChanged: (v) =>
+                        setState(() => _reminderUnit = v ?? 'hours'),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _notesCtrl,

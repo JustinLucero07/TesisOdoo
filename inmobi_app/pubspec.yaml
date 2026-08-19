@@ -58,6 +58,11 @@ dependencies:
   path_provider: ^2.1.5
   # Abrir un archivo descargado (PDF, imagen) con la app nativa del sistema
   open_file: ^3.5.10
+  # Vista de calendario (mes/semana) para la Agenda, con marcadores por día
+  table_calendar: ^3.1.2
+  flutter_local_notifications: ^22.3.0
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
 
 dev_dependencies:
   flutter_test:
@@ -93,6 +98,16 @@ flutter:
 
   assets:
     - assets/branding/
+
+  # Jost es la misma tipografía de las fichas PDF que genera el ERP: la app
+  # y lo impreso comparten identidad tipográfica.
+  fonts:
+    - family: Jost
+      fonts:
+        - asset: assets/fonts/Jost-400.ttf
+          weight: 400
+        - asset: assets/fonts/Jost-600.ttf
+          weight: 600
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
