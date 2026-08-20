@@ -219,6 +219,7 @@ class EstateProperty(models.Model):
         ('reserved', 'Reservado'),
         ('sold', 'Vendido'),
         ('rented', 'Arrendado'),
+        ('cancelled', 'Retirada del Mercado'),
     ], string='Estado', default='draft', tracking=True, required=True, index=True)
 
     active = fields.Boolean(string='Activo', default=True)
@@ -1012,11 +1013,28 @@ class EstateProperty(models.Model):
             )
 
     def action_set_draft(self):
-        """Volver a borrador (desde Disponible o Reservado)."""
+        """Volver a borrador (desde Disponible o Reservado o Retirada)."""
         for prop in self:
             prop.write({'state': 'draft'})
             prop.message_post(
                 body='Propiedad guardada como borrador (retirada del mercado temporalmente).',
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+
+    def action_withdraw(self):
+        """Retira la propiedad del catálogo sin registrarla como venta."""
+        for prop in self:
+            if prop.state in ('sold', 'rented'):
+                raise UserError('No se puede retirar una propiedad que ya fue vendida o arrendada. Usa "Anular Venta" si ocurrió un error.')
+            if hasattr(prop, 'action_unpublish_wordpress') and getattr(prop, 'wp_published', False):
+                try:
+                    prop.action_unpublish_wordpress()
+                except Exception as e:
+                    _logger.warning('Error despublicando de WP al retirar propiedad %s: %s', prop.id, e)
+            prop.write({'state': 'cancelled'})
+            prop.message_post(
+                body='<b>Propiedad retirada del catálogo.</b> El propietario decidió no vender/arrendar o se canceló la publicación (sin registro de venta ni comisión).',
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
             )

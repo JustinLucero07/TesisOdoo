@@ -55,8 +55,12 @@
                             confirm="¿Confirmas publicar esta propiedad en el mercado?"/>
                     <button name="action_set_draft" string="Volver a Borrador" type="object"
                             class="btn-secondary"
-                            invisible="state not in ('available', 'reserved')"
-                            confirm="¿Retirar del mercado y guardar como borrador?"/>
+                            invisible="state not in ('available', 'reserved', 'cancelled')"
+                            confirm="¿Guardar como borrador para reactivar posteriormente?"/>
+                    <button name="action_withdraw" string="Retirar del Catálogo" type="object"
+                            class="btn-outline-danger" icon="fa-archive"
+                            invisible="state not in ('draft', 'available', 'reserved')"
+                            confirm="¿Confirmas retirar esta propiedad del catálogo? Se sacará del mercado sin registrar ninguna venta ni comisión."/>
 
                     <!-- Disponible → Reservado → Vendido / Arrendado -->
                     <button name="action_set_available" string="Disponible" type="object"
@@ -103,6 +107,8 @@
                             invisible="state != 'rented'"/>
                     <widget name="web_ribbon" title="BORRADOR" bg_color="text-bg-secondary"
                             invisible="state != 'draft'"/>
+                    <widget name="web_ribbon" title="RETIRADA" bg_color="text-bg-warning"
+                            invisible="state != 'cancelled'"/>
                     <div class="oe_title">
                         <h1>
                             <field name="title" placeholder="Título de la propiedad"/>
@@ -559,6 +565,7 @@
                 <filter name="filter_reserved" string="Reservadas" domain="[('state', '=', 'reserved')]"/>
                 <filter name="filter_sold" string="Vendidas" domain="[('state', '=', 'sold')]"/>
                 <filter name="filter_rented" string="Arrendadas" domain="[('state', '=', 'rented')]"/>
+                <filter name="filter_cancelled" string="Retiradas del Catálogo" domain="[('state', '=', 'cancelled')]"/>
                 <filter name="filter_stagnant" string="Estancadas (+60 días)"
                         domain="[('state', '=', 'available'), ('date_listed', '&lt;=', (context_today() - datetime.timedelta(days=60)).strftime('%Y-%m-%d'))]"/>
                 <separator/>

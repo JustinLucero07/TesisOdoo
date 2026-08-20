@@ -18,8 +18,8 @@
 
                     <group>
                         <group string="Comprador">
-                            <field name="lead_id" placeholder="Elige un lead del CRM para llenar los datos..." invisible="sold_by == 'owner'"/>
-                            <field name="buyer_id" options="{'no_create': False}" required="sold_by != 'owner'"/>
+                            <field name="lead_id" placeholder="Elige un lead del CRM para llenar los datos..." invisible="sold_by in ('owner', 'external')"/>
+                            <field name="buyer_id" options="{'no_create': False}" required="sold_by not in ('owner', 'external')"/>
                         </group>
                         <group string="Fecha y Cierre">
                             <field name="date_sold"/>
@@ -30,11 +30,11 @@
 
                     <group>
                         <group string="Precio de Venta">
-                            <field name="sale_price" widget="monetary" required="sold_by != 'owner'"/>
+                            <field name="sale_price" widget="monetary" required="sold_by not in ('owner', 'external')"/>
                             <field name="deal_earnest_amount" widget="monetary"/>
                         </group>
-                        <group string="Comisión" invisible="sold_by == 'owner'">
-                            <field name="commission_pct" required="sold_by != 'owner'"/>
+                        <group string="Comisión" invisible="sold_by in ('owner', 'external')">
+                            <field name="commission_pct" required="sold_by not in ('owner', 'external')"/>
                             <field name="commission_amount" widget="monetary" readonly="1"/>
                             <field name="apply_vat" widget="boolean_toggle"/>
                         </group>

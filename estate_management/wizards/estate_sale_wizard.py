@@ -163,7 +163,9 @@ class EstateSaleWizard(models.TransientModel):
     @api.depends('sale_price', 'commission_pct', 'sold_by')
     def _compute_commission_amount(self):
         for rec in self:
-            if rec.sold_by == 'owner':
+            # "Externo" se trata igual que "Propietario": la agencia no
+            # intermedió en el cierre, así que no genera comisión propia.
+            if rec.sold_by in ('owner', 'external'):
                 rec.commission_amount = 0.0
             elif rec.sale_price and rec.commission_pct:
                 rec.commission_amount = rec.sale_price * (rec.commission_pct / 100.0)
@@ -183,14 +185,14 @@ class EstateSaleWizard(models.TransientModel):
         else:
             if prop.state not in ('available', 'reserved'):
                 raise UserError('Solo se puede vender una propiedad Disponible o Reservada.')
-        if self.sold_by != 'owner':
+        if self.sold_by not in ('owner', 'external'):
             if not self.buyer_id:
-                raise UserError('Asigna un comprador para registrar la venta (a menos que haya sido venta directa por el propietario).')
+                raise UserError('Asigna un comprador para registrar la venta (a menos que haya sido venta directa por el propietario o un cierre externo).')
             if self.sale_price <= 0:
                 raise UserError('El precio de cierre de la propiedad debe ser mayor a 0.')
             if not (0 < self.commission_pct <= 100):
                 raise UserError('El porcentaje de comisión debe estar entre 0.1% y 100%.')
-        if prop.owner_id and self.buyer_id == prop.owner_id:
+        if prop.owner_id and self.buyer_id and self.buyer_id == prop.owner_id:
             raise UserError('El comprador no puede ser el mismo propietario del inmueble.')
 
         # Despublicar de WordPress antes de cerrar
@@ -306,12 +308,14 @@ class EstateSaleWizard(models.TransientModel):
 
         # 2-3. Orden de venta confirmada + factura contabilizada
         order, invoice = False, False
-        if self.sold_by != 'owner':
+        if self.sold_by not in ('owner', 'external'):
             order, invoice = prop._process_native_sale(
                 self.buyer_id, self.sale_price, self.commission_amount, self.commission_pct,
                 invoice_mode=self.invoice_mode, user_id=self.user_id, apply_vat=self.apply_vat)
         else:
-            # Crear una orden de venta de $0 para que cuente como venta en el Dashboard sin generar comisiones
+            # "Propietario" y "Externo" comparten el mismo registro: una orden
+            # de venta de $0 para que cuente como venta en el Dashboard, sin
+            # generar comisiones (la agencia no intermedió en el cierre).
             partner = self.buyer_id or prop.owner_id
             if partner:
                 order = self.env['sale.order'].create({
@@ -322,9 +326,10 @@ class EstateSaleWizard(models.TransientModel):
                     'user_id': self.user_id.id if self.user_id else False,
                     'lead_id': self.lead_id.id if self.lead_id else False,
                 })
+                origin_label = 'Propietario' if self.sold_by == 'owner' else 'Externo'
                 self.env['sale.order.line'].create({
                     'order_id': order.id,
-                    'name': f"Registro de Venta Directa (Propietario): {prop.title}",
+                    'name': f"Registro de Venta Directa ({origin_label}): {prop.title}",
                     'price_unit': 0.0,
                     'product_uom_qty': 1,
                 })
@@ -340,13 +345,14 @@ class EstateSaleWizard(models.TransientModel):
         prop.with_context(no_wp_sync=True).write({'state': 'sold'})
 
         # 5. Comisión del asesor
-        if self.sold_by != 'owner':
+        if self.sold_by not in ('owner', 'external'):
             target_lead = self.lead_id or (order.lead_id if order and hasattr(order, 'lead_id') else False)
             prop._create_commission_records('sale', self.commission_amount, self.sale_price, self.commission_pct, lead_id=target_lead.id if target_lead else False)
 
         # Resumen en el chatter de la propiedad
-        if self.sold_by == 'owner':
-            msg = ['<b>Venta registrada</b> (Cerrado por el Propietario):']
+        if self.sold_by in ('owner', 'external'):
+            origin_label = 'el Propietario' if self.sold_by == 'owner' else 'un Cierre Externo'
+            msg = [f'<b>Venta registrada</b> (Cerrado por {origin_label}):']
             msg.append('• No se generó orden de venta ni comisiones para la agencia.')
         else:
             msg = ['<b>Venta registrada</b> mediante el flujo unificado:']
