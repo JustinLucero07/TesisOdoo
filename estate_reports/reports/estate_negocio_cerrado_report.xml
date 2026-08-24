@@ -101,9 +101,21 @@
                                     </t>
                                 </td>
                             </tr>
-                            <tr>
+                            <tr t-if="o.proxy_id">
                                 <td style="color:#555;"><strong>Apoderado</strong></td>
-                                <td colspan="3"><span t-field="o.proxy_id.name"/></td>
+                                <td><span t-field="o.proxy_id.name"/></td>
+                                <td style="color:#555;"><strong>Teléfono Apoderado</strong></td>
+                                <td>
+                                    <t t-if="o.proxy_id.phone and o.proxy_id.mobile and o.proxy_id.phone != o.proxy_id.mobile">
+                                        <span t-field="o.proxy_id.phone"/> / <span t-field="o.proxy_id.mobile"/>
+                                    </t>
+                                    <t t-elif="o.proxy_id.phone">
+                                        <span t-field="o.proxy_id.phone"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span t-field="o.proxy_id.mobile"/>
+                                    </t>
+                                </td>
                             </tr>
                         </table>
 

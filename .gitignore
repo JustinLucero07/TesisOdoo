@@ -48,6 +48,9 @@ credentials.json
 service_account.json
 smtp-app-*.json
 *-firebase-adminsdk-*.json
+firebase_credentials.json
+google-services.json
+GoogleService-Info.plist
 
 # Backups y temporales
 *.bak
