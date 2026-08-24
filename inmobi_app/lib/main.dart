@@ -6,8 +6,8 @@ import 'package:provider/provider.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'features/auth/auth_gate.dart';
 import 'features/auth/auth_service.dart';
-import 'features/auth/login_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,9 +43,10 @@ class InmobiApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          home: const LoginScreen(),
+          home: const AuthGate(),
         ),
       ),
     );
   }
 }
+

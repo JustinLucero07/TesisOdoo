@@ -266,6 +266,26 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
     }
   }
 
+  Future<void> _openLocationMaps(String location) async {
+    if (location.isEmpty) return;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('$location Ecuador')}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openLocationWaze(String location) async {
+    if (location.isEmpty) return;
+    final uri = Uri.parse(
+      'https://waze.com/ul?q=${Uri.encodeComponent('$location Ecuador')}&navigate=yes',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -530,12 +550,47 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                           label: 'Asesor',
                           value: v.userName,
                         ),
-                      if (v.location.isNotEmpty)
+                      if (v.location.isNotEmpty) ...[
                         _DetailRow(
                           icon: Icons.place_outlined,
                           label: 'Lugar',
                           value: v.location,
                         ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, bottom: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _openLocationMaps(v.location),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFFEA4335)),
+                                  label: const Text('Google Maps', style: TextStyle(fontSize: 12)),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: () => _openLocationWaze(v.location),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.navigation_rounded, size: 16, color: Color(0xFF33CCFF)),
+                                  label: const Text('Waze GPS', style: TextStyle(fontSize: 12)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       _DetailRow(
                         icon: Icons.notifications_active_outlined,
                         label: 'Recordatorio',

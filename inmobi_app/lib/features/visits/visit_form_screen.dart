@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -149,6 +151,7 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
       'appointment_type': _appointmentType,
       'property_id': _property!.id,
       if (_client != null) 'client_id': _client!.id,
+      if (!widget.isEdit && _odoo.userId != null) 'user_id': _odoo.userId,
       'visit_notes': _notesCtrl.text.trim(),
       'location': _locationCtrl.text.trim(),
       // Anticipación del recordatorio de WhatsApp para ESTA cita; si se deja
@@ -165,6 +168,7 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
       } else {
         await _service.create(vals);
       }
+      unawaited(VisitService.scheduleAllUpcoming(_odoo, currentUserId: _odoo.userId));
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() => _error = 'No se pudo guardar la cita. Intenta de nuevo.');

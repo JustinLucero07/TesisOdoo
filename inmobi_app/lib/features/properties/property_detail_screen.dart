@@ -11,18 +11,19 @@ import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
 import '../contracts/contract_list_screen.dart';
+import '../crm/lead_form_screen.dart';
 import '../documents/document_service.dart';
 import '../documents/documents_section.dart';
 import '../finance/finance_screens.dart';
 import '../offers/offer_screens.dart';
 import '../visits/visit_form_screen.dart';
-import 'price_history_section.dart';
-import 'wordpress_section.dart';
 import 'ficha_download.dart';
+import 'price_history_section.dart';
 import 'property_form_screen.dart';
 import 'property_gallery.dart';
 import 'property_model.dart';
 import 'property_service.dart';
+import 'wordpress_section.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
   final int propertyId;
@@ -74,7 +75,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           .toString();
       if (mounted && phone.isNotEmpty) setState(() => _advisorPhone = phone);
     } catch (_) {
-      // Silencioso: si falla, la tarjeta del asesor simplemente no muestra botones de contacto.
+      // Silencioso
     }
   }
 
@@ -83,11 +84,68 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
-  Future<void> _whatsapp(String phone) async {
+  Future<void> _whatsappAdvisor(String phone) async {
     final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    final uri = Uri.parse('https://wa.me/$digits');
-    if (await canLaunchUrl(uri))
+    final p = _property;
+    final title = p != null ? (p.title.isEmpty ? p.reference : p.title) : '';
+    final text = Uri.encodeComponent(
+      'Hola, te contacto sobre la propiedad $title (Ref: ${p?.reference ?? ''}).',
+    );
+    final uri = Uri.parse('https://wa.me/$digits?text=$text');
+    if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  /// Abre WhatsApp con mensaje comercial para comprar/consultar
+  Future<void> _openBuyWhatsapp() async {
+    if (_property == null) return;
+    await FichaDownloader.shareCommercialWhatsapp(
+      property: _property!,
+      phone: _advisorPhone,
+    );
+  }
+
+  /// Abre ubicación en Google Maps
+  Future<void> _openInMaps() async {
+    final p = _property;
+    if (p == null) return;
+    final addressParts = [
+      p.street,
+      p.streetNumber,
+      p.sector,
+      p.city,
+      'Ecuador',
+    ].where((s) => s.isNotEmpty).join(' ');
+
+    if (addressParts.isEmpty) return;
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(addressParts)}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  /// Abre ruta en Waze
+  Future<void> _openInWaze() async {
+    final p = _property;
+    if (p == null) return;
+    final addressParts = [
+      p.street,
+      p.streetNumber,
+      p.sector,
+      p.city,
+      'Ecuador',
+    ].where((s) => s.isNotEmpty).join(' ');
+
+    if (addressParts.isEmpty) return;
+    final uri = Uri.parse(
+      'https://waze.com/ul?q=${Uri.encodeComponent(addressParts)}&navigate=yes',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
   Future<void> _openEdit() async {
@@ -111,13 +169,37 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       appBar: AppBar(
         title: const Text('Propiedad'),
         actions: [
-          if (_property != null)
+          if (_property != null) ...[
+            IconButton(
+              icon: const Icon(Icons.event_available_outlined),
+              tooltip: 'Agendar Visita',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => VisitFormScreen(
+                    initialPropertyId: _property!.id,
+                    initialPropertyName: _property!.title,
+                  ),
+                ),
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.share_outlined),
+              tooltip: 'Compartir Ficha',
+              onPressed: () => FichaDownloader.start(
+                context: context,
+                odoo: _odoo,
+                property: _property!,
+              ),
+            ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Editar',
               onPressed: _openEdit,
             ),
+          ],
         ],
       ),
+      bottomNavigationBar: _property != null ? _buildBottomStickyBar() : null,
       body: _loading
           ? const LoadingView()
           : _error != null
@@ -130,19 +212,104 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     );
   }
 
+  /// Barra inferior fija para acceso instantáneo a WhatsApp y Ficha PDF
+  Widget _buildBottomStickyBar() {
+    final p = _property!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1C1938) : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white12 : AppColors.line,
+          ),
+        ),
+        boxShadow: softShadow(opacity: isDark ? 0.25 : 0.08, isDark: isDark),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Botón Compartir Ficha
+            OutlinedButton.icon(
+              onPressed: () => FichaDownloader.start(
+                context: context,
+                odoo: _odoo,
+                property: p,
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                side: BorderSide(
+                  color: isDark ? Colors.white24 : AppColors.line,
+                ),
+              ),
+              icon: const Icon(Icons.share_rounded, size: 17),
+              label: const Text('Ficha PDF', style: TextStyle(fontWeight: FontWeight.w700)),
+            ),
+            const SizedBox(width: 10),
+
+            // Botón WhatsApp Comprar / Consultar
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: _openBuyWhatsapp,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                icon: const Icon(Icons.chat_bubble_rounded, size: 18),
+                label: Text(
+                  p.isForSale ? 'Comprar por WhatsApp' : 'Arrendar por WhatsApp',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBody(NumberFormat currency) {
     final p = _property!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateFmt = DateFormat('d MMM yyyy', 'es_EC');
+    final pricePerM2 = (p.area > 0 && p.displayPrice > 0)
+        ? (p.displayPrice / p.area)
+        : null;
 
     return ListView(
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.only(bottom: 36),
       children: [
+        // Foto de portada con badge interactiva y zoom
         Stack(
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 10,
-              child: Hero(
-                tag: 'property-image-${p.id}',
+            GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PropertyFullscreenViewer(
+                    odoo: _odoo,
+                    images: [
+                      (model: 'estate.property', id: p.id, field: 'image_main'),
+                    ],
+                  ),
+                  fullscreenDialog: true,
+                ),
+              ),
+              child: AspectRatio(
+                aspectRatio: 16 / 10,
                 child: OdooImage(
                   odoo: _odoo,
                   model: 'estate.property',
@@ -192,15 +359,15 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               Text(
                 p.title.isEmpty ? p.reference : p.title,
                 style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 4),
               Row(
                 children: [
                   const Icon(
-                    Icons.place_outlined,
+                    Icons.location_on_outlined,
                     size: 15,
                     color: AppColors.muted,
                   ),
@@ -216,13 +383,31 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 ],
               ),
               const SizedBox(height: 14),
-              Text(
-                currency.format(p.displayPrice),
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.navy,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    currency.format(p.displayPrice),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? AppColors.navyLight : AppColors.navy,
+                      letterSpacing: -0.6,
+                    ),
+                  ),
+                  if (pricePerM2 != null) ...[
+                    const SizedBox(width: 10),
+                    Text(
+                      '•  ${currency.format(pricePerM2)}/m²',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.mutedLight,
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (p.avmStatus.isNotEmpty) ...[
                 const SizedBox(height: 6),
@@ -281,7 +466,8 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 ],
               ),
               const SizedBox(height: 18),
-              // Acciones rápidas, como en la barra de la ficha del ERP.
+
+              // Fila 1 de Acciones Rápidas
               Row(
                 children: [
                   Expanded(
@@ -291,8 +477,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       onTap: () => FichaDownloader.start(
                         context: context,
                         odoo: _odoo,
-                        propertyId: p.id,
-                        propertyTitle: p.title.isEmpty ? p.reference : p.title,
+                        property: p,
                       ),
                     ),
                   ),
@@ -316,6 +501,29 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _QuickAction(
+                      icon: Icons.person_add_alt_1_outlined,
+                      label: 'Nuevo Lead',
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => LeadFormScreen(
+                            initialPropertyId: p.id,
+                            initialPropertyName: p.title.isEmpty
+                                ? p.reference
+                                : p.title,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              // Fila 2 de Acciones Rápidas
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickAction(
                       icon: Icons.handshake_outlined,
                       label: 'Ofertas',
                       onTap: () => Navigator.of(context).push(
@@ -330,11 +538,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
+                  const SizedBox(width: 10),
                   Expanded(
                     child: _QuickAction(
                       icon: Icons.description_outlined,
@@ -368,50 +572,79 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickAction(
-                      icon: Icons.assessment_outlined,
-                      label: 'Tasaciones',
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => AppraisalListScreen(propertyId: p.id),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
+
               if (p.userName.isNotEmpty) ...[
                 const SizedBox(height: 18),
                 _AdvisorCard(
                   name: p.userName,
                   phone: _advisorPhone,
                   onCall: _call,
-                  onWhatsapp: _whatsapp,
+                  onWhatsapp: _whatsappAdvisor,
                 ),
               ],
               const SizedBox(height: 18),
+
+              // Sección Ubicación con botones de Navegación GPS directa
               ExpandableSection(
-                title: 'Ubicación',
-                child: _InfoCard(
-                  rows: [
-                    if (p.street.isNotEmpty)
-                      (
-                        'Dirección',
-                        p.streetNumber.isNotEmpty
-                            ? '${p.street} ${p.streetNumber}'
-                            : p.street,
-                      ),
-                    if (p.sector.isNotEmpty) ('Sector / Barrio', p.sector),
-                    if (p.city.isNotEmpty) ('Ciudad', p.city),
-                    if (p.zipCode.isNotEmpty) ('Código Postal', p.zipCode),
-                    if (p.cadastralCode.isNotEmpty)
-                      ('Clave Catastral', p.cadastralCode),
+                title: 'Ubicación y Navegación GPS',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _InfoCard(
+                      rows: [
+                        if (p.street.isNotEmpty)
+                          (
+                            'Dirección',
+                            p.streetNumber.isNotEmpty
+                                ? '${p.street} ${p.streetNumber}'
+                                : p.street,
+                          ),
+                        if (p.sector.isNotEmpty) ('Sector / Barrio', p.sector),
+                        if (p.city.isNotEmpty) ('Ciudad', p.city),
+                        if (p.zipCode.isNotEmpty) ('Código Postal', p.zipCode),
+                        if (p.cadastralCode.isNotEmpty)
+                          ('Clave Catastral', p.cadastralCode),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _openInMaps,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFFEA4335)),
+                            label: const Text('Google Maps'),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _openInWaze,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.navigation_rounded, size: 18, color: Color(0xFF33CCFF)),
+                            label: const Text('Waze GPS'),
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 8),
+
               ExpandableSection(
                 title: 'Personas relacionadas',
                 child: _InfoCard(
@@ -423,6 +656,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 ),
               ),
               const SizedBox(height: 8),
+
               ExpandableSection(
                 title: 'Comercial',
                 child: _InfoCard(
@@ -456,11 +690,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 ),
               ],
               const SizedBox(height: 8),
+
               ExpandableSection(
                 title: 'Historial de precios',
                 child: PriceHistorySection(odoo: _odoo, propertyId: p.id),
               ),
               const SizedBox(height: 8),
+
               ExpandableSection(
                 title: 'Sitio web',
                 initiallyExpanded: true,
@@ -470,9 +706,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   onChanged: _load,
                 ),
               ),
+
               const _SectionTitle('Galería'),
               const SizedBox(height: 8),
               PropertyGallerySection(odoo: _odoo, propertyId: p.id),
+
               const _SectionTitle('Documentos'),
               const SizedBox(height: 8),
               DocumentsSection(
@@ -556,7 +794,7 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-/// Botón cuadrado de acción rápida (Ficha PDF, Agendar, Contratos).
+/// Botón cuadrado de acción rápida
 class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;

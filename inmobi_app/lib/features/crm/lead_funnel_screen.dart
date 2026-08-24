@@ -8,6 +8,7 @@ import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
 import 'crm_stage_service.dart';
 import 'lead_detail_screen.dart';
+import 'lead_form_screen.dart';
 import 'lead_model.dart';
 import 'lead_service.dart';
 
@@ -16,7 +17,8 @@ import 'lead_service.dart';
 /// columna, las oportunidades se apilan verticalmente — el mismo kanban
 /// del ERP, adaptado a una pantalla angosta.
 class LeadFunnelScreen extends StatefulWidget {
-  const LeadFunnelScreen({super.key});
+  final bool isPostSale;
+  const LeadFunnelScreen({super.key, this.isPostSale = false});
 
   @override
   State<LeadFunnelScreen> createState() => _LeadFunnelScreenState();
@@ -54,7 +56,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       _error = null;
     });
     try {
-      final stages = await _stageService.list();
+      final stages = await _stageService.list(isPostSale: widget.isPostSale);
       // Una sola consulta para todas las etapas: se traen las oportunidades
       // y se agrupan en memoria, en vez de una consulta por columna.
       final leads = await _leadService.list(limit: 300);
@@ -74,6 +76,13 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _openCreate() async {
+    final saved = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const LeadFormScreen()));
+    if (saved == true) _load();
   }
 
   @override
@@ -99,46 +108,59 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       decimalDigits: 0,
     );
 
-    return Column(
-      children: [
-        Expanded(
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: _stages.length,
-            onPageChanged: (i) => setState(() => _currentPage = i),
-            itemBuilder: (context, i) {
-              final stage = _stages[i];
-              final leads = _leadsByStage[stage.id] ?? const <Lead>[];
-              return _StageColumn(
-                stage: stage,
-                leads: leads,
-                currency: currency,
-                onRefresh: _load,
-              );
-            },
-          ),
+    return Scaffold(
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 74),
+        child: FloatingActionButton.small(
+          heroTag: null,
+          onPressed: _openCreate,
+          elevation: 4,
+          backgroundColor: const Color(0xFFD81F26),
+          tooltip: 'Nuevo Lead',
+          child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 20),
         ),
-        // Indicador de posición dentro del embudo
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              _stages.length,
-              (i) => AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                width: i == _currentPage ? 18 : 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: i == _currentPage ? AppColors.navy : AppColors.line,
-                  borderRadius: BorderRadius.circular(3),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: _stages.length,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              itemBuilder: (context, i) {
+                final stage = _stages[i];
+                final leads = _leadsByStage[stage.id] ?? const <Lead>[];
+                return _StageColumn(
+                  stage: stage,
+                  leads: leads,
+                  currency: currency,
+                  onRefresh: _load,
+                );
+              },
+            ),
+          ),
+          // Indicador de posición dentro del embudo
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 4, 0, 78),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _stages.length,
+                (i) => AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: i == _currentPage ? 18 : 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: i == _currentPage ? AppColors.navy : AppColors.line,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -244,7 +266,7 @@ class _StageColumn extends StatelessWidget {
                     ),
                   )
                 : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 100),
                     itemCount: leads.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 8),
                     itemBuilder: (context, i) => _FunnelCard(

@@ -78,6 +78,7 @@ class _RecordListScaffoldState<T> extends State<RecordListScaffold<T>> {
       floatingActionButton: widget.onCreate == null
           ? null
           : FloatingActionButton.extended(
+              heroTag: null,
               onPressed: _create,
               icon: const Icon(Icons.add),
               label: Text(widget.createLabel ?? 'Nuevo'),

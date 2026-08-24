@@ -64,54 +64,53 @@ class AppPalette {
 
   static const light = AppPalette(
     isDark: false,
-    navy: Color(0xFF28235D),
-    navyDeep: Color(0xFF1B1840),
-    navyLight: Color(0xFF423B8C),
-    accent: Color(0xFFD81F26),
-    accentSoft: Color(0xFFFDECEC),
-    background: Color(0xFFF7F6FB),
+    navy: Color(0xFF28235D), // Navy oficial Inmobi
+    navyDeep: Color(0xFF1B1740),
+    navyLight: Color(0xFF3F3787),
+    accent: Color(0xFFD81F26), // Rojo característico Inmobi
+    accentSoft: Color(0xFFFEE2E2),
+    background: Color(0xFFF8FAFC), // Fondo limpio y profesional
     surface: Colors.white,
-    surfaceAlt: Color(0xFFF1EFF7),
-    ink: Color(0xFF14112E),
-    muted: Color(0xFF63607A),
-    mutedLight: Color(0xFF9A97AB),
-    line: Color(0xFFE4E1EE),
-    success: Color(0xFF16A35A),
-    successBg: Color(0xFFDFF7E9),
-    warning: Color(0xFFE8871E),
-    warningBg: Color(0xFFFFF1DB),
-    danger: Color(0xFFE0292F),
-    dangerBg: Color(0xFFFCE4E4),
-    info: Color(0xFF0091EA),
-    infoBg: Color(0xFFE1F3FF),
-    neutralBg: Color(0xFFEFEDF5),
+    surfaceAlt: Color(0xFFF1F5F9),
+    ink: Color(0xFF0F172A),
+    muted: Color(0xFF64748B),
+    mutedLight: Color(0xFF94A3B8),
+    line: Color(0xFFE2E8F0),
+    success: Color(0xFF10B981),
+    successBg: Color(0xFFECFDF5),
+    warning: Color(0xFFF59E0B),
+    warningBg: Color(0xFFFFFBEB),
+    danger: Color(0xFFD81F26),
+    dangerBg: Color(0xFFFEF2F2),
+    info: Color(0xFF0284C7),
+    infoBg: Color(0xFFF0F9FF),
+    neutralBg: Color(0xFFF1F5F9),
   );
 
-  /// En oscuro el navy se aclara (sobre fondo oscuro el navy original es
-  /// ilegible) y los semáforos suben luminosidad para mantener contraste.
+  /// En oscuro el navy se ajusta para mantener contraste y elegancia
   static const dark = AppPalette(
     isDark: true,
-    navy: Color(0xFF9A92E0),
-    navyDeep: Color(0xFF0E0C1E),
-    navyLight: Color(0xFFB4ADEC),
-    accent: Color(0xFFFF6B6F),
-    accentSoft: Color(0xFF3A2028),
-    background: Color(0xFF121027),
-    surface: Color(0xFF1C1938),
-    surfaceAlt: Color(0xFF242047),
-    ink: Color(0xFFEDEBF7),
-    muted: Color(0xFFA29FBA),
-    mutedLight: Color(0xFF7D7A96),
-    line: Color(0xFF322E56),
-    success: Color(0xFF3DD68C),
-    successBg: Color(0xFF14301F),
-    warning: Color(0xFFFFB35C),
-    warningBg: Color(0xFF35240F),
-    danger: Color(0xFFFF6B6F),
-    dangerBg: Color(0xFF3A1A1C),
-    info: Color(0xFF4FB8F5),
-    infoBg: Color(0xFF10283A),
-    neutralBg: Color(0xFF262246),
+    navy: Color(0xFF6C63FF),
+    navyDeep: Color(0xFF28235D),
+    navyLight: Color(0xFF8B85FF),
+    accent: Color(0xFFEF4444),
+    accentSoft: Color(0xFF450A0A),
+    background: Color(0xFF0C0A1E),
+    surface: Color(0xFF161330),
+    surfaceAlt: Color(0xFF221E47),
+    ink: Color(0xFFF8FAFC),
+    muted: Color(0xFF94A3B8),
+    mutedLight: Color(0xFF64748B),
+    line: Color(0xFF28244E),
+    success: Color(0xFF34D399),
+    successBg: Color(0xFF064E3B),
+    warning: Color(0xFFFBBF24),
+    warningBg: Color(0xFF451A03),
+    danger: Color(0xFFF87171),
+    dangerBg: Color(0xFF450A0A),
+    info: Color(0xFF38BDF8),
+    infoBg: Color(0xFF0C4A6E),
+    neutralBg: Color(0xFF1E1A3C),
   );
 }
 
@@ -126,28 +125,27 @@ class AppColors {
       ? AppPalette.dark
       : AppPalette.light;
 
-  // Alias estáticos (tema claro) — se conservan para no romper el código
-  // existente; las pantallas nuevas deben usar `AppColors.of(context)`.
+  // Alias estáticos (tema claro) — Navy corporativo Inmobi y Rojo Isotipo
   static const navy = Color(0xFF28235D);
-  static const navyDeep = Color(0xFF1B1840);
-  static const navyLight = Color(0xFF423B8C);
+  static const navyDeep = Color(0xFF1B1740);
+  static const navyLight = Color(0xFF3F3787);
   static const accent = Color(0xFFD81F26);
-  static const accentLight = Color(0xFFE85B60);
-  static const ink = Color(0xFF14112E);
-  static const muted = Color(0xFF63607A);
-  static const mutedLight = Color(0xFF9A97AB);
-  static const line = Color(0xFFE4E1EE);
-  static const background = Color(0xFFF7F6FB);
+  static const accentLight = Color(0xFFEF4444);
+  static const ink = Color(0xFF0F172A);
+  static const muted = Color(0xFF64748B);
+  static const mutedLight = Color(0xFF94A3B8);
+  static const line = Color(0xFFE2E8F0);
+  static const background = Color(0xFFF8FAFC);
   static const surface = Colors.white;
-  static const success = Color(0xFF16A35A);
-  static const successBg = Color(0xFFDFF7E9);
-  static const warning = Color(0xFFE8871E);
-  static const warningBg = Color(0xFFFFF1DB);
-  static const danger = Color(0xFFE0292F);
-  static const dangerBg = Color(0xFFFCE4E4);
-  static const info = Color(0xFF0091EA);
-  static const infoBg = Color(0xFFE1F3FF);
-  static const neutralBg = Color(0xFFEFEDF5);
+  static const success = Color(0xFF10B981);
+  static const successBg = Color(0xFFECFDF5);
+  static const warning = Color(0xFFF59E0B);
+  static const warningBg = Color(0xFFFFFBEB);
+  static const danger = Color(0xFFD81F26);
+  static const dangerBg = Color(0xFFFEF2F2);
+  static const info = Color(0xFF0284C7);
+  static const infoBg = Color(0xFFF0F9FF);
+  static const neutralBg = Color(0xFFF1F5F9);
 }
 
 /// Escala tipográfica. Jost es una geométrica de proporciones amplias: a
@@ -436,6 +434,15 @@ class AppTheme {
           fontFamily: AppType.family,
         ),
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+          TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+          TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+          TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 }
@@ -450,3 +457,140 @@ List<BoxShadow> softShadow({double opacity = 0.06, bool isDark = false}) => [
     offset: const Offset(0, 6),
   ),
 ];
+
+/// Sombra de ambiente moderna tipo glow/difusa
+List<BoxShadow> modernAmbientShadow({
+  Color color = const Color(0xFF28235D),
+  double opacity = 0.07,
+  double blur = 24,
+  Offset offset = const Offset(0, 8),
+}) => [
+  BoxShadow(
+    color: color.withValues(alpha: opacity),
+    blurRadius: blur,
+    offset: offset,
+    spreadRadius: -3,
+  ),
+];
+
+/// Decoración con efecto Glassmorphism y borde sutil
+class AppGlass {
+  AppGlass._();
+
+  static BoxDecoration decoration({
+    required bool isDark,
+    double opacity = 0.85,
+    double radius = 20,
+    Color? customColor,
+    Border? border,
+  }) {
+    return BoxDecoration(
+      color: customColor ??
+          (isDark
+              ? const Color(0xFF1C1938).withValues(alpha: opacity)
+              : Colors.white.withValues(alpha: opacity)),
+      borderRadius: BorderRadius.circular(radius),
+      border: border ??
+          Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : const Color(0xFFE4E1EE).withValues(alpha: 0.9),
+            width: 1,
+          ),
+      boxShadow: softShadow(opacity: isDark ? 0.25 : 0.06, isDark: isDark),
+    );
+  }
+}
+
+/// Gradientes modernos de la marca Inmobi
+class AppGradients {
+  AppGradients._();
+
+  static const LinearGradient navyHero = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF28235D),
+      Color(0xFF1B1840),
+    ],
+  );
+
+  static const LinearGradient accentHero = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFE52D34),
+      Color(0xFFB8151B),
+    ],
+  );
+
+  static const LinearGradient cardOverlay = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Colors.transparent,
+      Color(0xCC14112E),
+    ],
+  );
+
+  static const LinearGradient badgeGlass = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xDDFFFFFF),
+      Color(0xAAFFFFFF),
+    ],
+  );
+
+  static const LinearGradient badgeGlassDark = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xDD1E1A3E),
+      Color(0xAA1E1A3E),
+    ],
+  );
+}
+
+/// Helpers para feedback háptico y micro-interacciones
+class AppFeedback {
+  AppFeedback._();
+
+  static void light() {
+    try {
+      // HapticFeedback.lightImpact();
+    } catch (_) {}
+  }
+
+  static void selection() {
+    try {
+      // HapticFeedback.selectionClick();
+    } catch (_) {}
+  }
+}
+
+/// Breakpoints y utilidades de Responsiveness
+class AppBreakpoints {
+  AppBreakpoints._();
+
+  static const double mobileMax = 600;
+  static const double tabletMax = 960;
+
+  static bool isMobile(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < mobileMax;
+
+  static bool isTablet(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    return w >= mobileMax && w < tabletMax;
+  }
+
+  static bool isDesktop(BuildContext context) =>
+      MediaQuery.sizeOf(context).width >= tabletMax;
+
+  static int gridColumns(BuildContext context) {
+    final w = MediaQuery.sizeOf(context).width;
+    if (w >= tabletMax) return 3;
+    if (w >= mobileMax) return 2;
+    return 1;
+  }
+}

@@ -14,7 +14,15 @@ import 'lead_service.dart';
 /// se recalculan al guardar, no son un campo que el usuario llene.
 class LeadFormScreen extends StatefulWidget {
   final Lead? existing;
-  const LeadFormScreen({super.key, this.existing});
+  final int? initialPropertyId;
+  final String? initialPropertyName;
+
+  const LeadFormScreen({
+    super.key,
+    this.existing,
+    this.initialPropertyId,
+    this.initialPropertyName,
+  });
 
   bool get isEdit => existing != null;
 
@@ -87,6 +95,12 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
           : '';
       _clientNeedsCtrl.text = e.clientNeeds;
       _descriptionCtrl.text = e.description;
+    } else if (widget.initialPropertyId != null) {
+      _targetProperty = Many2oneValue(
+        widget.initialPropertyId!,
+        widget.initialPropertyName ?? 'Propiedad #${widget.initialPropertyId}',
+      );
+      _nameCtrl.text = 'Interesado en ${widget.initialPropertyName ?? 'Propiedad #${widget.initialPropertyId}'}';
     }
   }
 

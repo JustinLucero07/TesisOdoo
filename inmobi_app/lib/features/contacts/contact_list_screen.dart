@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_badge.dart';
@@ -40,6 +41,8 @@ class _ContactListScreenState extends State<ContactListScreen> {
   static const _roleFilters = [
     (null, 'Todos'),
     ('owner', 'Propietarios'),
+    ('buyer', 'Compradores'),
+    ('contract', 'Con Contratos'),
     ('company', 'Empresas'),
     ('agency', 'Agencias aliadas'),
   ];
@@ -132,29 +135,69 @@ class _ContactListScreenState extends State<ContactListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openCreate,
-        icon: const Icon(Icons.person_add_alt),
-        label: const Text('Contacto'),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 74),
+        child: FloatingActionButton.small(
+          heroTag: null,
+          onPressed: _openCreate,
+          backgroundColor: const Color(0xFFD81F26),
+          elevation: 4,
+          tooltip: 'Nuevo Contacto',
+          child: const Icon(
+            Icons.person_add_alt_1_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
       ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: TextField(
-              controller: _searchCtrl,
-              decoration: InputDecoration(
-                hintText: 'Buscar por nombre, teléfono o email...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    _searchCtrl.clear();
-                    _load();
-                  },
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'Buscar por nombre, teléfono o email...',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: _searchCtrl.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _load();
+                              },
+                            )
+                          : null,
+                    ),
+                    onSubmitted: (_) => _load(),
+                  ),
                 ),
-              ),
-              onSubmitted: (_) => _load(),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: 'Nuevo Contacto',
+                  child: Material(
+                    color: const Color(0xFFD81F26),
+                    borderRadius: BorderRadius.circular(14),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: _openCreate,
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.person_add_alt_1_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           ChoiceChipRow(
@@ -286,59 +329,101 @@ class _ContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 68,
-      child: InkWell(
-        onTap: () => Navigator.of(context)
-            .push(
-              MaterialPageRoute(
-                builder: (_) => ContactDetailScreen(contactId: contact.id),
-              ),
-            )
-            .then((_) => onChanged()),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            children: [
-              InitialsAvatar(
-                text: contact.name,
-                size: 42,
-                color: contact.roleColor,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      contact.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14.5,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      [
-                        contact.roleLabel,
-                        if (contact.city.isNotEmpty) contact.city,
-                      ].join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.mutedLight,
-                      ),
-                    ),
-                  ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final phone = contact.bestPhone;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white12 : AppColors.line,
+        ),
+        boxShadow: softShadow(opacity: 0.03),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => Navigator.of(context)
+              .push(
+                MaterialPageRoute(
+                  builder: (_) => ContactDetailScreen(contactId: contact.id),
                 ),
-              ),
-              if (contact.isPropertyOwner)
-                const AppBadge(label: 'Propietario', color: AppColors.navy),
-            ],
+              )
+              .then((_) => onChanged()),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                InitialsAvatar(
+                  text: contact.name,
+                  size: 44,
+                  color: contact.roleColor,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contact.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        [
+                          contact.roleLabel,
+                          if (contact.city.isNotEmpty) contact.city,
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.muted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (phone.isNotEmpty) ...[
+                  IconButton(
+                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+                    color: const Color(0xFF25D366),
+                    tooltip: 'WhatsApp',
+                    onPressed: () {
+                      final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
+                      final full = clean.startsWith('0')
+                          ? '593${clean.substring(1)}'
+                          : clean;
+                      launchUrl(
+                        Uri.parse('https://wa.me/$full'),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.call_outlined, size: 18),
+                    color: AppColors.navy,
+                    tooltip: 'Llamar',
+                    onPressed: () => launchUrl(
+                      Uri.parse('tel:$phone'),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+                ],
+                if (contact.isPropertyOwner && phone.isEmpty)
+                  const AppBadge(label: 'Propietario', color: AppColors.navy),
+              ],
+            ),
           ),
         ),
       ),

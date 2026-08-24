@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api/odoo_json.dart';
+import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Espejo de `estate.property` — cubre los campos que un asesor necesita ver
@@ -96,6 +97,8 @@ class Property {
   bool get isForSale => offerType == 'sale';
 
   double get displayPrice => isForSale ? price : rentalPrice;
+
+  String get wpUrl => wpPostId > 0 ? '${AppConfig.wordpressSite}/?p=$wpPostId' : '';
 
   // Ojo: `image_main` NO va aquí a propósito — traerla en search_read
   // significa que Odoo la manda como base64 embebida en el JSON del

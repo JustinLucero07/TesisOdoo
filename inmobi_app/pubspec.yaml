@@ -58,11 +58,16 @@ dependencies:
   path_provider: ^2.1.5
   # Abrir un archivo descargado (PDF, imagen) con la app nativa del sistema
   open_file: ^3.5.10
+  # Compartir archivos (PDF) y textos en WhatsApp, correo y redes sociales
+  share_plus: ^10.1.4
   # Vista de calendario (mes/semana) para la Agenda, con marcadores por día
   table_calendar: ^3.1.2
   flutter_local_notifications: ^22.3.0
   timezone: ^0.11.1
   flutter_timezone: ^5.1.0
+  # Notificaciones Push con Firebase Cloud Messaging
+  firebase_core: ^3.10.1
+  firebase_messaging: ^15.2.1
 
 dev_dependencies:
   flutter_test:

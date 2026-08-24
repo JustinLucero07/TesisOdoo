@@ -23,6 +23,7 @@ class OdooClient {
   String? baseUrl;
   String? db;
   int? uid;
+  int? get userId => uid;
   String? userName;
   bool get isAuthenticated => uid != null;
 

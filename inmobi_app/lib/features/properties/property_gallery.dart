@@ -103,9 +103,9 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
   void _openViewer(int startIndex) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => _GalleryViewer(
+        builder: (_) => PropertyFullscreenViewer(
           odoo: widget.odoo,
-          images: _images,
+          images: _images.map((img) => (model: 'estate.property.image', id: img.id, field: 'image')).toList(),
           initialIndex: startIndex,
         ),
         fullscreenDialog: true,
@@ -184,21 +184,24 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
   }
 }
 
-class _GalleryViewer extends StatefulWidget {
+/// Visor interactivo a pantalla completa con soporte de Zoom (Pinch-to-zoom) y navegación fluida
+class PropertyFullscreenViewer extends StatefulWidget {
   final OdooClient odoo;
-  final List<_GalleryImage> images;
+  final List<({String model, int id, String field})> images;
   final int initialIndex;
-  const _GalleryViewer({
+
+  const PropertyFullscreenViewer({
+    super.key,
     required this.odoo,
     required this.images,
-    required this.initialIndex,
+    this.initialIndex = 0,
   });
 
   @override
-  State<_GalleryViewer> createState() => _GalleryViewerState();
+  State<PropertyFullscreenViewer> createState() => _PropertyFullscreenViewerState();
 }
 
-class _GalleryViewerState extends State<_GalleryViewer> {
+class _PropertyFullscreenViewerState extends State<PropertyFullscreenViewer> {
   late final PageController _controller;
   late int _index;
 
@@ -210,34 +213,55 @@ class _GalleryViewerState extends State<_GalleryViewer> {
   }
 
   @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.black.withValues(alpha: 0.85),
         foregroundColor: Colors.white,
         elevation: 0,
-        title: Text('${_index + 1} / ${widget.images.length}'),
+        title: Text(
+          '${_index + 1} / ${widget.images.length}',
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close_rounded),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
       ),
       body: PageView.builder(
         controller: _controller,
         itemCount: widget.images.length,
         onPageChanged: (i) => setState(() => _index = i),
         itemBuilder: (context, i) {
+          final img = widget.images[i];
           return InteractiveViewer(
             minScale: 1,
-            maxScale: 4,
+            maxScale: 4.5,
             child: Center(
               child: OdooImage(
                 odoo: widget.odoo,
-                model: 'estate.property.image',
-                id: widget.images[i].id,
-                field: 'image',
+                model: img.model,
+                id: img.id,
+                field: img.field,
                 width: 1600,
                 height: 1600,
                 fit: BoxFit.contain,
-                placeholderBuilder: (_) =>
-                    const CircularProgressIndicator(color: Colors.white),
+                placeholderBuilder: (_) => const Center(
+                  child: SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  ),
+                ),
               ),
             ),
           );

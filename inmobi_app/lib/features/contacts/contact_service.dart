@@ -33,6 +33,10 @@ class ContactService {
         domain.add(['is_allied_agency', '=', true]);
       case 'company':
         domain.add(['is_company', '=', true]);
+      case 'buyer':
+        domain.add(['property_bought_count', '>', 0]);
+      case 'contract':
+        domain.add(['contract_count', '>', 0]);
     }
     final rows = await odoo.searchRead(
       model: 'res.partner',

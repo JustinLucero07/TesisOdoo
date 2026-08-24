@@ -8,6 +8,12 @@ _logger = logging.getLogger(__name__)
 
 META_API_VERSION = 'v25.0'
 
+# Margen de gracia: si un tick del cron se salta la ventana exacta de una cita
+# (recordatorio corto + intervalo del cron), igual la recupera en el siguiente
+# tick en lugar de perderla para siempre (antes el filtro `start >= now` la
+# sacaba de la búsqueda apenas la cita quedaba en el pasado).
+_REMINDER_GRACE_MINUTES = 180
+
 
 class CalendarEventWhatsApp(models.Model):
     _inherit = 'calendar.event'
@@ -128,7 +134,7 @@ class CalendarEventWhatsApp(models.Model):
         max_minutes = max([default_minutes] + advisor_minutes + event_minutes)
 
         events = self.search([
-            ('start', '>=', now),
+            ('start', '>=', now - timedelta(minutes=_REMINDER_GRACE_MINUTES)),
             ('start', '<=', now + timedelta(minutes=max_minutes)),
             ('whatsapp_sent', '=', False),
             ('property_id', '!=', False),

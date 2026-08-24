@@ -3,13 +3,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import 'property_model.dart';
 
-/// Descarga la Ficha PDF de una propiedad usando el MISMO reporte QWeb del
-/// ERP (`estate_reports.report_ficha_inmobi`), con los tres diseños y la
-/// opción de incluir los datos del asesor — igual que el asistente del web.
+enum FichaActionType { open, sharePdf, shareWhatsappText }
+
+/// Manejo de la Ficha PDF y Ficha Comercial de una propiedad.
+/// Permite descargar, previsualizar y compartir la ficha en formato PDF
+/// o como mensaje enriquecido para WhatsApp.
 class FichaDownloader {
   static const _reportName = 'estate_reports.report_ficha_inmobi';
 
@@ -19,24 +24,32 @@ class FichaDownloader {
     ('3', 'Portada a sangre', 'Foto de fondo a página completa'),
   ];
 
-  /// Abre el selector de diseño y, al confirmar, genera y abre el PDF.
+  /// Abre el modal de opciones de ficha comercial
   static Future<void> start({
     required BuildContext context,
     required OdooClient odoo,
-    required int propertyId,
-    required String propertyTitle,
+    required Property property,
   }) async {
-    final choice =
-        await showModalBottomSheet<({String design, bool showContact})>(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: AppColors.surface,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (_) => const _FichaOptionsSheet(),
-        );
+    final choice = await showModalBottomSheet<({
+      String design,
+      bool showContact,
+      FichaActionType action,
+    })>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => _FichaOptionsSheet(property: property),
+    );
+
     if (choice == null || !context.mounted) return;
+
+    if (choice.action == FichaActionType.shareWhatsappText) {
+      await shareCommercialWhatsapp(property: property);
+      return;
+    }
 
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
@@ -62,38 +75,85 @@ class FichaDownloader {
     try {
       final bytes = await odoo.downloadReportPdf(
         reportName: _reportName,
-        id: propertyId,
+        id: property.id,
         options: {
           'design': choice.design,
           'show_contact': choice.showContact,
-          'property_id': propertyId,
+          'property_id': property.id,
         },
       );
+
       if (bytes.isEmpty) throw Exception('PDF vacío');
 
       final dir = await getTemporaryDirectory();
-      // Nombre de archivo seguro: sin caracteres que rompan rutas.
-      final safeTitle = propertyTitle
-          .replaceAll(RegExp(r'[^\w\s-]'), '')
-          .trim();
-      final fileName =
-          'Ficha_${safeTitle.isEmpty ? propertyId : safeTitle}.pdf';
+      final title = property.title.isEmpty ? property.reference : property.title;
+      final safeTitle = title.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+      final fileName = 'Ficha_${safeTitle.isEmpty ? property.id : safeTitle}.pdf';
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
       messenger.hideCurrentSnackBar();
-      await OpenFile.open(file.path);
+
+      if (choice.action == FichaActionType.sharePdf) {
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: 'Ficha Comercial: $title\nPrecio: \$${property.displayPrice.toStringAsFixed(0)}',
+        );
+      } else {
+        await OpenFile.open(file.path);
+      }
     } catch (e) {
       messenger.hideCurrentSnackBar();
       messenger.showSnackBar(
-        const SnackBar(content: Text('No se pudo generar la ficha PDF.')),
+        const SnackBar(content: Text('No se pudo generar o compartir la ficha PDF.')),
       );
     }
+  }
+
+  /// Construye y envía un mensaje formateado por WhatsApp o selector nativo
+  static Future<void> shareCommercialWhatsapp({
+    required Property property,
+    String? phone,
+  }) async {
+    final title = property.title.isEmpty ? property.reference : property.title;
+    final location = [property.sector, property.city].where((s) => s.isNotEmpty).join(', ');
+    final operation = property.isForSale ? 'VENTA' : 'ARRIENDO';
+
+    final buffer = StringBuffer();
+    buffer.writeln('✨ *OPORTUNIDAD INMOBILIARIA - $operation* ✨');
+    buffer.writeln('🏢 *$title*');
+    if (location.isNotEmpty) buffer.writeln('📍 *Ubicación:* $location');
+    buffer.writeln('💰 *Precio:* \$${property.displayPrice.toStringAsFixed(0)}');
+    buffer.writeln('📐 *Área:* ${property.area.toStringAsFixed(0)} m²');
+    buffer.writeln('🛏️ *Habitaciones:* ${property.bedrooms} | 🚿 *Baños:* ${property.bathrooms.toStringAsFixed(0)}');
+    if (property.parkingSpaces > 0) {
+      buffer.writeln('🚗 *Parqueaderos:* ${property.parkingSpaces}');
+    }
+
+    if (property.wpUrl.isNotEmpty) {
+      buffer.writeln('\n🔗 *Ver detalles y fotos online:* ${property.wpUrl}');
+    }
+
+    buffer.writeln('\n📲 *Contáctanos para más información o coordinar una visita.*');
+
+    final message = buffer.toString();
+
+    if (phone != null && phone.isNotEmpty) {
+      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+      final uri = Uri.parse('https://wa.me/$digits?text=${Uri.encodeComponent(message)}');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return;
+      }
+    }
+
+    await Share.share(message, subject: 'Ficha Comercial: $title');
   }
 }
 
 class _FichaOptionsSheet extends StatefulWidget {
-  const _FichaOptionsSheet();
+  final Property property;
+  const _FichaOptionsSheet({required this.property});
 
   @override
   State<_FichaOptionsSheet> createState() => _FichaOptionsSheetState();
@@ -107,32 +167,61 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
   Widget build(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: Container(
-                width: 38,
-                height: 4,
+                width: 42,
+                height: 4.5,
                 decoration: BoxDecoration(
                   color: AppColors.line,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
             ),
-            const SizedBox(height: 18),
-            const Text(
-              'Descargar Ficha PDF',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Elige el diseño de la ficha comercial.',
-              style: TextStyle(fontSize: 13, color: AppColors.muted),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.navy.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.share_rounded, color: AppColors.navy, size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ficha Comercial y Compartir',
+                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Elige el formato y diseño para compartir',
+                        style: TextStyle(fontSize: 12.5, color: AppColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
+            const Text(
+              'DISEÑO DEL PDF',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.mutedLight,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 8),
             ...FichaDownloader.designs.map((d) {
               final (value, title, subtitle) = d;
               final selected = _design == value;
@@ -143,10 +232,10 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                   onTap: () => setState(() => _design = value),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.all(13),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.navy.withValues(alpha: 0.06)
+                          ? AppColors.navy.withValues(alpha: 0.07)
                           : AppColors.neutralBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -160,10 +249,8 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                           selected
                               ? Icons.radio_button_checked
                               : Icons.radio_button_unchecked,
-                          size: 20,
-                          color: selected
-                              ? AppColors.navy
-                              : AppColors.mutedLight,
+                          size: 19,
+                          color: selected ? AppColors.navy : AppColors.mutedLight,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -172,12 +259,12 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                             children: [
                               Text(
                                 title,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 14,
+                                  fontSize: 13.5,
+                                  color: selected ? AppColors.navy : AppColors.ink,
                                 ),
                               ),
-                              const SizedBox(height: 2),
                               Text(
                                 subtitle,
                                 style: const TextStyle(
@@ -194,25 +281,60 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                 ),
               );
             }),
-            const SizedBox(height: 4),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               title: const Text(
-                'Incluir datos del asesor',
-                style: TextStyle(fontSize: 14),
+                'Incluir datos del asesor comercial',
+                style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w500),
               ),
               value: _showContact,
               onChanged: (v) => setState(() => _showContact = v),
             ),
             const SizedBox(height: 12),
+
+            // Acciones principales
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pop((
+                      design: _design,
+                      showContact: _showContact,
+                      action: FichaActionType.open,
+                    )),
+                    icon: const Icon(Icons.visibility_outlined, size: 18),
+                    label: const Text('Ver PDF'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop((
+                      design: _design,
+                      showContact: _showContact,
+                      action: FichaActionType.sharePdf,
+                    )),
+                    icon: const Icon(Icons.share_outlined, size: 18),
+                    label: const Text('Compartir PDF'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(
-                  context,
-                ).pop((design: _design, showContact: _showContact)),
-                icon: const Icon(Icons.download, size: 18),
-                label: const Text('Generar PDF'),
+                onPressed: () => Navigator.of(context).pop((
+                  design: _design,
+                  showContact: _showContact,
+                  action: FichaActionType.shareWhatsappText,
+                )),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF25D366),
+                  foregroundColor: Colors.white,
+                ),
+                icon: const Icon(Icons.chat_outlined, size: 18),
+                label: const Text('Compartir texto por WhatsApp'),
               ),
             ),
           ],

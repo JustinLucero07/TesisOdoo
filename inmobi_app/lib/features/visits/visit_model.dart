@@ -63,6 +63,7 @@ class Visit {
     'visit_state',
     'property_id',
     'client_id',
+    'user_id',
     'visit_notes',
     'visit_result',
     'visit_rating',

@@ -9,7 +9,14 @@ class LeadService {
     String? searchText,
     String? temperature,
     int? stageId,
-    int limit = 40,
+    bool myLeadsOnly = false,
+    int? currentUserId,
+    int? advisorId,
+    double? minBudget,
+    double? maxBudget,
+    int? priority,
+    String order = 'lead_temperature desc, write_date desc',
+    int limit = 50,
   }) async {
     final domain = <dynamic>[
       ['type', '=', 'opportunity'],
@@ -29,12 +36,27 @@ class LeadService {
     if (stageId != null) {
       domain.add(['stage_id', '=', stageId]);
     }
+    if (advisorId != null) {
+      domain.add(['user_id', '=', advisorId]);
+    } else if (myLeadsOnly && currentUserId != null) {
+      domain.add(['user_id', '=', currentUserId]);
+    }
+    if (minBudget != null && minBudget > 0) {
+      domain.add(['client_budget', '>=', minBudget]);
+    }
+    if (maxBudget != null && maxBudget > 0) {
+      domain.add(['client_budget', '<=', maxBudget]);
+    }
+    if (priority != null && priority > 0) {
+      domain.add(['priority', '>=', priority.toString()]);
+    }
+
     final rows = await odoo.searchRead(
       model: 'crm.lead',
       domain: domain,
       fields: Lead.listFields,
       limit: limit,
-      order: 'lead_temperature desc, write_date desc',
+      order: order,
     );
     return rows.map(Lead.fromJson).toList();
   }
@@ -58,9 +80,6 @@ class LeadService {
     return result as int;
   }
 
-  /// Crea una oportunidad nueva — `type: 'opportunity'` es obligatorio para
-  /// que aparezca en el listado (que solo trae oportunidades, no leads sin
-  /// calificar).
   Future<int> create(Map<String, dynamic> values) => odoo.create(
     model: 'crm.lead',
     values: {'type': 'opportunity', ...values},

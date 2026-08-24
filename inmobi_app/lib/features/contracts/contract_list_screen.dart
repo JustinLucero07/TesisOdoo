@@ -98,6 +98,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: null,
         onPressed: _openCreate,
         icon: const Icon(Icons.add),
         label: const Text('Contrato'),

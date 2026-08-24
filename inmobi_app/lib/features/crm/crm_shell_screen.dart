@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../../core/theme/app_theme.dart';
 import '../contacts/contact_list_screen.dart';
 import 'lead_funnel_screen.dart';
 import 'lead_list_screen.dart';
 
-/// Contenedor del CRM con dos vistas conmutables arriba: las oportunidades
-/// (en lista o en embudo) y el directorio de contactos. Es el mismo módulo
-/// del ERP, donde leads y contactos conviven.
+/// Contenedor del CRM con tres vistas ejecutivas:
+/// 1. Embudo Comercial de Ventas
+/// 2. Embudo de Postventa & Seguimiento
+/// 3. Directorio de Contactos
 class CrmShellScreen extends StatefulWidget {
   const CrmShellScreen({super.key});
 
@@ -16,33 +17,42 @@ class CrmShellScreen extends StatefulWidget {
 }
 
 class _CrmShellScreenState extends State<CrmShellScreen> {
-  int _tab = 0; // 0 = oportunidades, 1 = contactos
-  bool _funnelView = false;
+  int _tab = 0; // 0 = Ventas, 1 = Postventa, 2 = Contactos
+  bool _funnelView = true;
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
           child: Row(
             children: [
               Expanded(
                 child: _SegmentedToggle(
-                  options: const ['Oportunidades', 'Contactos'],
+                  options: const ['Ventas', 'Postventa', 'Contactos'],
                   selectedIndex: _tab,
-                  onChanged: (i) => setState(() => _tab = i),
+                  onChanged: (i) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _tab = i);
+                  },
                 ),
               ),
-              // El conmutador lista/embudo solo aplica a oportunidades.
-              if (_tab == 0) ...[
-                const SizedBox(width: 10),
+              // Conmutador lista / embudo (aplica a Ventas y Postventa)
+              if (_tab == 0 || _tab == 1) ...[
+                const SizedBox(width: 8),
                 _ViewModeButton(
                   icon: _funnelView
-                      ? Icons.view_list_outlined
-                      : Icons.view_kanban_outlined,
-                  tooltip: _funnelView ? 'Ver como lista' : 'Ver como embudo',
-                  onTap: () => setState(() => _funnelView = !_funnelView),
+                      ? Icons.view_list_rounded
+                      : Icons.view_kanban_rounded,
+                  tooltip: _funnelView ? 'Ver en listado' : 'Ver en embudo kanban',
+                  isDark: isDark,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    setState(() => _funnelView = !_funnelView);
+                  },
                 ),
               ],
             ],
@@ -52,7 +62,15 @@ class _CrmShellScreenState extends State<CrmShellScreen> {
           child: IndexedStack(
             index: _tab,
             children: [
-              _funnelView ? const LeadFunnelScreen() : const LeadListScreen(),
+              // Pestaña 0: Ventas
+              _funnelView
+                  ? const LeadFunnelScreen(isPostSale: false)
+                  : const LeadListScreen(isPostSale: false),
+              // Pestaña 1: Postventa
+              _funnelView
+                  ? const LeadFunnelScreen(isPostSale: true)
+                  : const LeadListScreen(isPostSale: true),
+              // Pestaña 2: Contactos
               const ContactListScreen(),
             ],
           ),
@@ -62,7 +80,7 @@ class _CrmShellScreenState extends State<CrmShellScreen> {
   }
 }
 
-/// Conmutador de dos segmentos, con la pastilla deslizándose al cambiar.
+/// Selector segmentado moderno de 3 pastillas con animación suave y paleta Inmobi
 class _SegmentedToggle extends StatelessWidget {
   final List<String> options;
   final int selectedIndex;
@@ -76,12 +94,17 @@ class _SegmentedToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      height: 40,
+      height: 42,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: AppColors.neutralBg,
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? const Color(0xFF161330) : const Color(0xFFEBEBF2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF28244E) : const Color(0xFFE2E8F0),
+        ),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -89,7 +112,7 @@ class _SegmentedToggle extends StatelessWidget {
           return Stack(
             children: [
               AnimatedPositioned(
-                duration: const Duration(milliseconds: 220),
+                duration: const Duration(milliseconds: 240),
                 curve: Curves.easeOutCubic,
                 left: segmentWidth * selectedIndex,
                 top: 0,
@@ -97,8 +120,19 @@ class _SegmentedToggle extends StatelessWidget {
                 width: segmentWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.navy,
-                    borderRadius: BorderRadius.circular(9),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF28235D), Color(0xFF1B1740)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(11),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF28235D).withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -113,9 +147,11 @@ class _SegmentedToggle extends StatelessWidget {
                         child: AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 180),
                           style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: selected ? Colors.white : AppColors.muted,
+                            fontSize: 12.5,
+                            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                            color: selected
+                                ? Colors.white
+                                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                           ),
                           child: Text(options[i]),
                         ),
@@ -135,11 +171,13 @@ class _SegmentedToggle extends StatelessWidget {
 class _ViewModeButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
+  final bool isDark;
   final VoidCallback onTap;
 
   const _ViewModeButton({
     required this.icon,
     required this.tooltip,
+    required this.isDark,
     required this.onTap,
   });
 
@@ -147,17 +185,27 @@ class _ViewModeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: AppColors.neutralBg,
-            borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: isDark ? const Color(0xFF161330) : const Color(0xFFEBEBF2),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isDark ? const Color(0xFF28244E) : const Color(0xFFE2E8F0),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: isDark ? const Color(0xFF8B85FF) : const Color(0xFF28235D),
+            ),
           ),
-          child: Icon(icon, size: 20, color: AppColors.navy),
         ),
       ),
     );

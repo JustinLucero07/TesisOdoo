@@ -13,7 +13,10 @@ import '../contracts/contract_list_screen.dart';
 import '../documents/document_service.dart';
 import '../documents/documents_section.dart';
 import '../properties/property_detail_screen.dart';
+import '../visits/visit_detail_screen.dart';
 import '../visits/visit_form_screen.dart';
+import '../visits/visit_model.dart';
+import '../visits/visit_service.dart';
 import 'crm_stage_service.dart';
 import 'interactions_section.dart';
 import 'lead_form_screen.dart';
@@ -197,34 +200,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             if (lead.leadSourceName.isNotEmpty)
               AppBadge(label: lead.leadSourceName, color: AppColors.mutedLight),
           ],
-        ),
-        const SizedBox(height: 16),
-        // Agendar una visita para este lead: se precargan la propiedad de
-        // interés y el contacto, que es justo lo que hay que llenar.
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => Navigator.of(context)
-                .push<bool>(
-                  MaterialPageRoute(
-                    builder: (_) => VisitFormScreen(
-                      initialPropertyId: lead.targetPropertyId,
-                      initialPropertyName: lead.targetPropertyName,
-                      initialClientId: lead.partnerId,
-                      initialClientName: lead.partnerName,
-                    ),
-                  ),
-                )
-                .then((saved) {
-                  if (saved == true && mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cita agendada.')),
-                    );
-                  }
-                }),
-            icon: const Icon(Icons.event_available_outlined, size: 18),
-            label: const Text('Agendar visita'),
-          ),
         ),
         const SizedBox(height: 18),
         const Text(
@@ -553,6 +528,27 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           ),
         ),
         const SizedBox(height: 22),
+        _VisitedPropertiesSection(
+          odoo: _odoo,
+          lead: lead,
+          onScheduleNew: () => Navigator.of(context)
+              .push<bool>(
+                MaterialPageRoute(
+                  builder: (_) => VisitFormScreen(
+                    initialPropertyId: lead.targetPropertyId,
+                    initialPropertyName: lead.targetPropertyName,
+                    initialClientId: lead.partnerId,
+                    initialClientName: lead.partnerName,
+                  ),
+                ),
+              )
+              .then((saved) {
+                if (saved == true && mounted) {
+                  _load();
+                }
+              }),
+        ),
+        const SizedBox(height: 22),
         InteractionsSection(
           odoo: _odoo,
           leadId: lead.id,
@@ -691,6 +687,279 @@ class _PropertyPreviewCard extends StatelessWidget {
               ),
             ),
             const Icon(Icons.chevron_right, color: AppColors.mutedLight),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Sección que muestra todas las propiedades visitadas o citas del lead
+class _VisitedPropertiesSection extends StatefulWidget {
+  final OdooClient odoo;
+  final Lead lead;
+  final VoidCallback onScheduleNew;
+
+  const _VisitedPropertiesSection({
+    required this.odoo,
+    required this.lead,
+    required this.onScheduleNew,
+  });
+
+  @override
+  State<_VisitedPropertiesSection> createState() => _VisitedPropertiesSectionState();
+}
+
+class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
+  late final VisitService _visitService;
+  List<Visit> _visits = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _visitService = VisitService(widget.odoo);
+    _loadVisits();
+  }
+
+  @override
+  void didUpdateWidget(covariant _VisitedPropertiesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.lead.id != widget.lead.id || oldWidget.lead.partnerId != widget.lead.partnerId) {
+      _loadVisits();
+    }
+  }
+
+  Future<void> _loadVisits() async {
+    setState(() => _loading = true);
+    try {
+      final visits = await _visitService.listForLead(
+        leadId: widget.lead.id,
+        partnerId: widget.lead.partnerId,
+        propertyId: widget.lead.targetPropertyId,
+      );
+      if (mounted) setState(() => _visits = visits);
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dateFmt = DateFormat('d MMM yyyy · HH:mm', 'es_EC');
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.tour_outlined,
+                  size: 18,
+                  color: Color(0xFF28235D),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'Propiedades Visitadas y Citas',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Agendar nueva visita',
+                  onPressed: widget.onScheduleNew,
+                  icon: const Icon(
+                    Icons.add_circle_outline_rounded,
+                    color: Color(0xFFD81F26),
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            if (_loading)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              )
+            else if (_visits.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1A3E) : AppColors.neutralBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : AppColors.line,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.home_work_outlined,
+                      size: 32,
+                      color: AppColors.mutedLight,
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'No hay visitas registradas para este cliente.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.muted,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: widget.onScheduleNew,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      icon: const Icon(Icons.add, size: 16),
+                      label: const Text('Agendar Primera Visita', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _visits.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 10),
+                itemBuilder: (context, i) {
+                  final v = _visits[i];
+                  final stateColor = VisitStateStyle.color(v.visitState);
+                  final hasProperty = v.propertyId != null;
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: isDark ? Colors.white12 : AppColors.line,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => VisitDetailScreen(visitId: v.id),
+                          ),
+                        ).then((_) => _loadVisits()),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              // Miniatura o Icono
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: SizedBox(
+                                  width: 48,
+                                  height: 48,
+                                  child: hasProperty
+                                      ? OdooImage(
+                                          odoo: widget.odoo,
+                                          model: 'estate.property',
+                                          id: v.propertyId!,
+                                          field: 'image_main',
+                                          width: 100,
+                                          height: 100,
+                                          errorBuilder: (_) => Container(
+                                            color: AppColors.navy.withValues(alpha: 0.08),
+                                            child: const Icon(
+                                              Icons.home_work_outlined,
+                                              size: 24,
+                                              color: AppColors.navy,
+                                            ),
+                                          ),
+                                        )
+                                      : Container(
+                                          color: AppColors.navy.withValues(alpha: 0.08),
+                                          child: const Icon(
+                                            Icons.calendar_today_rounded,
+                                            size: 22,
+                                            color: AppColors.navy,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      v.propertyName.isNotEmpty
+                                          ? v.propertyName
+                                          : v.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13.5,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.access_time_rounded,
+                                          size: 13,
+                                          color: AppColors.mutedLight,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          dateFmt.format(v.start),
+                                          style: const TextStyle(
+                                            fontSize: 11.5,
+                                            color: AppColors.muted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Badge de Estado
+                              AppBadge(
+                                label: VisitStateStyle.label(v.visitState),
+                                color: stateColor,
+                                background: stateColor.withValues(alpha: 0.12),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),

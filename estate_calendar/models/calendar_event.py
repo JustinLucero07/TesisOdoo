@@ -237,6 +237,23 @@ class CalendarEvent(models.Model):
             if not self.name or self.name in ('Visita a Propiedad', 'Visita', 'Reunión', 'Nueva Cita'):
                 self.name = f"Visita: {prop_title}"
 
+    def _format_local_datetime(self, dt):
+        """Convierte una fecha UTC de la BD a la hora local del usuario/Ecuador (ej: America/Guayaquil)."""
+        if not dt:
+            return ''
+        import pytz
+        tz_name = self.user_id.tz or self.env.user.tz or self.env.context.get('tz') or 'America/Guayaquil'
+        try:
+            user_tz = pytz.timezone(tz_name)
+            utc_dt = pytz.utc.localize(dt) if dt.tzinfo is None else dt.astimezone(pytz.utc)
+            local_dt = utc_dt.astimezone(user_tz)
+            return local_dt.strftime('%d/%m/%Y %H:%M')
+        except Exception:
+            try:
+                return fields.Datetime.context_timestamp(self, dt).strftime('%d/%m/%Y %H:%M')
+            except Exception:
+                return dt.strftime('%d/%m/%Y %H:%M')
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -259,6 +276,16 @@ class CalendarEvent(models.Model):
                 lead = event._get_related_lead()
                 if lead and lead.stage_id.name != 'Oportunidades Bot':
                     lead._advance_lead_to_stage('estate_crm.stage_lead3b_estate_seguimiento')
+            # Notificación Push Firebase al asesor asignado (en hora local)
+            if event.user_id and event.user_id.fcm_token:
+                prop_title = event.property_id.title or event.property_id.name or 'Propiedad'
+                client_name = event.client_id.name or 'Cliente'
+                date_str = event._format_local_datetime(event.start)
+                event.user_id.send_firebase_push(
+                    title="Nueva Cita Agendada",
+                    body=f"{prop_title} con {client_name} ({date_str})",
+                    data={'event_id': event.id, 'type': 'visit_created'}
+                )
         events._sync_reminder_alarm()
         return events
 
@@ -268,6 +295,16 @@ class CalendarEvent(models.Model):
         # se re-sincroniza el recordatorio nativo de Odoo.
         if {'whatsapp_reminder_value', 'whatsapp_reminder_unit', 'user_id'} & set(vals):
             self._sync_reminder_alarm()
+        if 'start' in vals or 'user_id' in vals:
+            for event in self:
+                if event.user_id and event.user_id.fcm_token:
+                    prop_title = event.property_id.title or event.property_id.name or 'Propiedad'
+                    date_str = event._format_local_datetime(event.start)
+                    event.user_id.send_firebase_push(
+                        title="Cita Actualizada",
+                        body=f"{prop_title} reprogramada para {date_str}",
+                        data={'event_id': event.id, 'type': 'visit_updated'}
+                    )
         return res
 
     def action_done_visit(self):

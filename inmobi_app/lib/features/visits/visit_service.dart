@@ -7,14 +7,19 @@ class VisitService {
   VisitService(this.odoo);
 
   /// Programa en el teléfono el aviso de cada cita futura que siga
-  /// programada. Se llama al cargar la agenda: así el asesor recibe la
-  /// notificación aunque después cierre la app o se quede sin señal.
-  static Future<void> scheduleNotifications(List<Visit> visits) async {
+  /// programada para el asesor actual o citas compartidas.
+  /// Si una cita pertenece a otro asesor o ya no está activa, se cancela su aviso.
+  static Future<void> scheduleNotifications(
+    List<Visit> visits, {
+    int? currentUserId,
+  }) async {
     final notifier = NotificationService.instance;
     if (!notifier.enabled) return;
     for (final v in visits) {
-      if (v.visitState != 'scheduled' || !v.start.isAfter(DateTime.now())) {
-        // Cancelada, realizada o ya pasada: si tenía aviso, se retira.
+      // Si la cita pertenece explícitamente a otro asesor, no se programa.
+      // Si no tiene asesor asignado o es del usuario actual, se programa.
+      final isMyVisit = currentUserId == null || v.userId == null || v.userId == currentUserId;
+      if (!isMyVisit || v.visitState != 'scheduled' || !v.start.isAfter(DateTime.now())) {
         await notifier.cancelVisit(v.id);
         continue;
       }
@@ -32,6 +37,40 @@ class VisitService {
         start: v.start,
         minutesBefore: minutes,
       );
+    }
+  }
+
+  /// Consulta todas las citas programadas futuras en Odoo y las programa en el teléfono
+  /// para que sigan sonando incluso si el usuario cierra la aplicación.
+  static Future<void> scheduleAllUpcoming(
+    OdooClient odoo, {
+    int? currentUserId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final domain = <dynamic>[
+        ['start', '>=', formatUtc(now)],
+        ['appointment_type', '!=', false],
+        ['visit_state', '=', 'scheduled'],
+      ];
+      if (currentUserId != null) {
+        domain.addAll([
+          '|',
+          ['user_id', '=', currentUserId],
+          ['user_id', '=', false],
+        ]);
+      }
+      final rows = await odoo.searchRead(
+        model: 'calendar.event',
+        domain: domain,
+        fields: Visit.listFields,
+        order: 'start asc',
+        limit: 100,
+      );
+      final visits = rows.map(Visit.fromJson).toList();
+      await scheduleNotifications(visits, currentUserId: currentUserId);
+    } catch (_) {
+      // Ignorar fallas silenciosas en background
     }
   }
 
@@ -56,15 +95,41 @@ class VisitService {
   static String formatUtc(DateTime d) =>
       d.toUtc().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
 
-  /// Trae las visitas entre [from] y [to] (inclusive), ordenadas por hora.
-  Future<List<Visit>> listByRange(DateTime from, DateTime to) async {
+  /// Trae las visitas entre [from] y [to] (inclusive), con filtros opcionales de estado, asesor y resultado.
+  Future<List<Visit>> listByRange(
+    DateTime from,
+    DateTime to, {
+    String? visitState,
+    String? visitResult,
+    String? appointmentType,
+    int? advisorId,
+    bool myVisitsOnly = false,
+    int? currentUserId,
+  }) async {
+    final domain = <dynamic>[
+      ['start', '>=', formatUtc(from)],
+      ['start', '<=', formatUtc(to)],
+      ['appointment_type', '!=', false],
+    ];
+
+    if (visitState != null && visitState.isNotEmpty) {
+      domain.add(['visit_state', '=', visitState]);
+    }
+    if (visitResult != null && visitResult.isNotEmpty) {
+      domain.add(['visit_result', '=', visitResult]);
+    }
+    if (appointmentType != null && appointmentType.isNotEmpty) {
+      domain.add(['appointment_type', '=', appointmentType]);
+    }
+    if (advisorId != null) {
+      domain.add(['user_id', '=', advisorId]);
+    } else if (myVisitsOnly && currentUserId != null) {
+      domain.add(['user_id', '=', currentUserId]);
+    }
+
     final rows = await odoo.searchRead(
       model: 'calendar.event',
-      domain: [
-        ['start', '>=', formatUtc(from)],
-        ['start', '<=', formatUtc(to)],
-        ['appointment_type', '!=', false],
-      ],
+      domain: domain,
       fields: Visit.listFields,
       order: 'start asc',
       limit: 200,
@@ -78,6 +143,36 @@ class VisitService {
     final to = from.add(const Duration(days: 1));
     final visits = await listByRange(from, to);
     return visits.length;
+  }
+
+  /// Trae el historial de visitas de propiedades relacionadas con este lead o contacto
+  Future<List<Visit>> listForLead({
+    int? leadId,
+    int? partnerId,
+    int? propertyId,
+  }) async {
+    final domain = <dynamic>[
+      ['appointment_type', '!=', false],
+    ];
+    if (partnerId != null && propertyId != null) {
+      domain.addAll([
+        '|',
+        ['partner_ids', 'in', [partnerId]],
+        ['property_id', '=', propertyId],
+      ]);
+    } else if (partnerId != null) {
+      domain.add(['partner_ids', 'in', [partnerId]]);
+    } else if (propertyId != null) {
+      domain.add(['property_id', '=', propertyId]);
+    }
+    final rows = await odoo.searchRead(
+      model: 'calendar.event',
+      domain: domain,
+      fields: Visit.listFields,
+      order: 'start desc',
+      limit: 50,
+    );
+    return rows.map(Visit.fromJson).toList();
   }
 
   Future<int> create(Map<String, dynamic> values) =>
