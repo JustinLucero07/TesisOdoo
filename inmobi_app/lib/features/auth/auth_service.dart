@@ -19,6 +19,7 @@ class AuthService extends ChangeNotifier {
 
   bool get isAuthenticated => odoo.isAuthenticated;
   String? get userName => odoo.userName;
+  bool get isAdmin => odoo.isAdmin;
 
   Future<String?> loadRememberedLogin() => _storage.read(key: _kLogin);
 

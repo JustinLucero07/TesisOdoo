@@ -49,6 +49,8 @@ class Property {
   final bool wpPublished;
   final int wpPostId;
   final bool wpNeedsSync;
+  final String captureSheetFilename;
+  final bool hasCaptureSheet;
 
   Property({
     required this.id,
@@ -92,6 +94,8 @@ class Property {
     this.wpPublished = false,
     this.wpPostId = 0,
     this.wpNeedsSync = false,
+    this.captureSheetFilename = '',
+    this.hasCaptureSheet = false,
   });
 
   bool get isForSale => offerType == 'sale';
@@ -150,9 +154,11 @@ class Property {
     'wp_published',
     'wp_post_id',
     'wp_needs_sync',
+    'capture_sheet_filename',
   ];
 
   factory Property.fromJson(Map<String, dynamic> json) {
+    final captureFn = asOdooString(json['capture_sheet_filename']);
     return Property(
       id: json['id'] as int,
       title: asOdooString(json['title']),
@@ -206,6 +212,8 @@ class Property {
       wpPublished: json['wp_published'] == true,
       wpPostId: asOdooInt(json['wp_post_id']),
       wpNeedsSync: json['wp_needs_sync'] == true,
+      captureSheetFilename: captureFn,
+      hasCaptureSheet: captureFn.isNotEmpty || (json['capture_sheet'] != null && json['capture_sheet'] != false),
     );
   }
 }

@@ -86,6 +86,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
     });
     try {
       final auth = context.read<AuthService>();
+      final isAdm = auth.isAdmin;
+      final effectiveMyLeads = !isAdm ? true : _myLeadsOnly;
+
       if (_stages.isEmpty) {
         _stages = await _stageService.list(isPostSale: widget.isPostSale);
       }
@@ -93,7 +96,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
         searchText: _searchCtrl.text,
         temperature: _temperatureFilter,
         stageId: _stageFilter,
-        myLeadsOnly: _myLeadsOnly,
+        myLeadsOnly: effectiveMyLeads,
         currentUserId: auth.odoo.userId,
         minBudget: _minBudget,
         maxBudget: _maxBudget,
@@ -122,12 +125,14 @@ class _LeadListScreenState extends State<LeadListScreen> {
 
   void _openLeadFilterModal() {
     HapticFeedback.lightImpact();
+    final auth = context.read<AuthService>();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _LeadFilterSheet(
-        myLeadsOnly: _myLeadsOnly,
+        isAdmin: auth.isAdmin,
+        myLeadsOnly: !auth.isAdmin ? true : _myLeadsOnly,
         minBudget: _minBudget,
         maxBudget: _maxBudget,
         priority: _priority,
@@ -737,6 +742,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
 
 /// Hoja modal de filtros avanzados para Leads y Oportunidades del CRM
 class _LeadFilterSheet extends StatefulWidget {
+  final bool isAdmin;
   final bool myLeadsOnly;
   final double? minBudget;
   final double? maxBudget;
@@ -746,6 +752,7 @@ class _LeadFilterSheet extends StatefulWidget {
   final Function(bool, double?, double?, int?, int?) onApply;
 
   const _LeadFilterSheet({
+    required this.isAdmin,
     required this.myLeadsOnly,
     required this.minBudget,
     required this.maxBudget,
@@ -769,7 +776,7 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
   @override
   void initState() {
     super.initState();
-    _myLeadsOnly = widget.myLeadsOnly;
+    _myLeadsOnly = widget.isAdmin ? widget.myLeadsOnly : true;
     _minBudgetCtrl = TextEditingController(
       text: widget.minBudget != null ? widget.minBudget!.toInt().toString() : '',
     );
@@ -833,7 +840,7 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                   TextButton(
                     onPressed: () {
                       setState(() {
-                        _myLeadsOnly = false;
+                        _myLeadsOnly = !widget.isAdmin ? true : false;
                         _minBudgetCtrl.clear();
                         _maxBudgetCtrl.clear();
                         _priority = null;
@@ -868,12 +875,14 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                     'Solo mis Oportunidades',
                     style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
                   ),
-                  subtitle: const Text(
-                    'Mostrar únicamente leads asignados a mi usuario',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.muted),
+                  subtitle: Text(
+                    widget.isAdmin
+                        ? 'Mostrar únicamente leads asignados a mi usuario'
+                        : 'Fijado: como asesor solo puedes consultar tus propios leads',
+                    style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
                   ),
-                  value: _myLeadsOnly,
-                  onChanged: (v) => setState(() => _myLeadsOnly = v),
+                  value: widget.isAdmin ? _myLeadsOnly : true,
+                  onChanged: widget.isAdmin ? (v) => setState(() => _myLeadsOnly = v) : null,
                 ),
               ),
               const SizedBox(height: 16),

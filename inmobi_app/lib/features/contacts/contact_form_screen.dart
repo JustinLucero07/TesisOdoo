@@ -95,10 +95,15 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
       _error = null;
     });
 
+    final mobile = _mobileCtrl.text.trim();
+    final phone = _phoneCtrl.text.trim();
+    final effectivePhone = phone.isNotEmpty ? phone : mobile;
+    final effectiveMobile = mobile.isNotEmpty ? mobile : phone;
+
     final vals = {
       'name': _nameCtrl.text.trim(),
-      'mobile': _mobileCtrl.text.trim(),
-      'phone': _phoneCtrl.text.trim(),
+      'mobile': effectiveMobile,
+      'phone': effectivePhone,
       'email': _emailCtrl.text.trim(),
       'city': _cityCtrl.text.trim(),
       'street': _streetCtrl.text.trim(),
@@ -116,10 +121,11 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
     try {
       if (widget.isEdit) {
         await _service.update(widget.existing!.id, vals);
+        if (mounted) Navigator.of(context).pop(true);
       } else {
-        await _service.create(vals);
+        final newId = await _service.create(vals);
+        if (mounted) Navigator.of(context).pop(newId);
       }
-      if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
         setState(

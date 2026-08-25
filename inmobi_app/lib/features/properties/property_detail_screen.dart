@@ -171,7 +171,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         actions: [
           if (_property != null) ...[
             IconButton(
-              icon: const Icon(Icons.event_available_outlined),
+              icon: const Icon(Icons.calendar_month_outlined),
               tooltip: 'Agendar Visita',
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
@@ -182,19 +182,59 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 ),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.share_outlined),
-              tooltip: 'Compartir Ficha',
-              onPressed: () => FichaDownloader.start(
-                context: context,
-                odoo: _odoo,
-                property: _property!,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Editar',
-              onPressed: _openEdit,
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: 'Opciones de documento',
+              onSelected: (val) {
+                if (val == 'captacion') {
+                  FichaDownloader.openCaptureSheet(
+                    context: context,
+                    odoo: _odoo,
+                    property: _property!,
+                  );
+                } else if (val == 'ficha') {
+                  FichaDownloader.start(
+                    context: context,
+                    odoo: _odoo,
+                    property: _property!,
+                  );
+                } else if (val == 'edit') {
+                  _openEdit();
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'captacion',
+                  child: Row(
+                    children: [
+                      Icon(Icons.assignment_outlined, size: 18, color: Color(0xFFD81F26)),
+                      SizedBox(width: 10),
+                      Text('Hoja de Captación (PDF)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'ficha',
+                  child: Row(
+                    children: [
+                      Icon(Icons.picture_as_pdf_outlined, size: 18, color: Color(0xFF28235D)),
+                      SizedBox(width: 10),
+                      Text('Ficha Comercial (PDF)'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18),
+                      SizedBox(width: 10),
+                      Text('Editar Propiedad'),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ],
@@ -574,6 +614,24 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+
+              // Fila 3: Documento de Captación
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickAction(
+                      icon: Icons.assignment_outlined,
+                      label: 'Hoja de Captación (PDF)',
+                      onTap: () => FichaDownloader.openCaptureSheet(
+                        context: context,
+                        odoo: _odoo,
+                        property: p,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
               if (p.userName.isNotEmpty) ...[
                 const SizedBox(height: 18),
@@ -710,6 +768,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               const _SectionTitle('Galería'),
               const SizedBox(height: 8),
               PropertyGallerySection(odoo: _odoo, propertyId: p.id),
+
+              const SizedBox(height: 18),
+              _CaptureSheetSection(
+                odoo: _odoo,
+                property: p,
+                onChanged: _load,
+              ),
 
               const _SectionTitle('Documentos'),
               const SizedBox(height: 8),
@@ -944,6 +1009,260 @@ class _StatChip extends StatelessWidget {
           Icon(icon, size: 16, color: AppColors.navy),
           const SizedBox(width: 5),
           Text(label, style: const TextStyle(fontSize: 12.5)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sección de Hoja de Captación con soporte para archivo subido (PDF/escaneado) y generación de plantilla
+class _CaptureSheetSection extends StatelessWidget {
+  final OdooClient odoo;
+  final Property property;
+  final VoidCallback onChanged;
+
+  const _CaptureSheetSection({
+    required this.odoo,
+    required this.property,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasFile = property.hasCaptureSheet || property.captureSheetFilename.isNotEmpty;
+    final fileName = property.captureSheetFilename.isNotEmpty
+        ? property.captureSheetFilename
+        : 'Hoja_Captacion_${property.id}.pdf';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: softShadow(opacity: isDark ? 0.2 : 0.05, isDark: isDark),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD81F26).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.assignment_outlined,
+                  size: 20,
+                  color: Color(0xFFD81F26),
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hoja de Captación',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14.5,
+                      ),
+                    ),
+                    Text(
+                      'Documento escaneado o PDF subido en Odoo',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.muted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (hasFile) ...[
+            Container(
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF28235D).withValues(alpha: 0.5)
+                    : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.picture_as_pdf_rounded,
+                    color: Color(0xFFD81F26),
+                    size: 26,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      fileName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Cambiar archivo',
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      size: 20,
+                      color: Color(0xFF28235D),
+                    ),
+                    onPressed: () async {
+                      final ok = await FichaDownloader.uploadCaptureSheet(
+                        context: context,
+                        odoo: odoo,
+                        propertyId: property.id,
+                      );
+                      if (ok) onChanged();
+                    },
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Eliminar',
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      size: 20,
+                      color: Color(0xFFD81F26),
+                    ),
+                    onPressed: () async {
+                      final ok = await FichaDownloader.deleteCaptureSheet(
+                        context: context,
+                        odoo: odoo,
+                        propertyId: property.id,
+                      );
+                      if (ok) onChanged();
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 42,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF28235D),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => FichaDownloader.openCaptureSheet(
+                  context: context,
+                  odoo: odoo,
+                  property: property,
+                ),
+                icon: const Icon(Icons.visibility_rounded, size: 18, color: Colors.white),
+                label: const Text(
+                  'Ver Hoja de Captación',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF28235D).withValues(alpha: 0.2)
+                    : AppColors.neutralBg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isDark ? Colors.white12 : AppColors.line,
+                ),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded, size: 18, color: AppColors.muted),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No hay archivo de captación adjunto en esta propiedad.',
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => FichaDownloader.openCaptureSheet(
+                      context: context,
+                      odoo: odoo,
+                      property: property,
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
+                    label: const Text(
+                      'Generar PDF',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final ok = await FichaDownloader.uploadCaptureSheet(
+                        context: context,
+                        odoo: odoo,
+                        propertyId: property.id,
+                      );
+                      if (ok) onChanged();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD81F26),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                    icon: const Icon(Icons.upload_file_rounded, size: 16, color: Colors.white),
+                    label: const Text(
+                      'Subir Archivo',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

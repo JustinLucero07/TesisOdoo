@@ -384,6 +384,8 @@ class OfferFormScreen extends StatefulWidget {
   final int? initialPropertyId;
   final String? initialPropertyName;
   final int? initialLeadId;
+  final int? initialPartnerId;
+  final String? initialPartnerName;
 
   const OfferFormScreen({
     super.key,
@@ -391,6 +393,8 @@ class OfferFormScreen extends StatefulWidget {
     this.initialPropertyId,
     this.initialPropertyName,
     this.initialLeadId,
+    this.initialPartnerId,
+    this.initialPartnerName,
   });
 
   bool get isEdit => existing != null;
@@ -437,15 +441,25 @@ class _OfferFormScreenState extends State<OfferFormScreen> {
       _financing = o.financingType;
       _date = o.date ?? DateTime.now();
       _expiry = o.dateExpiry;
-      if (o.propertyId != null)
+      if (o.propertyId != null) {
         _property = Many2oneValue(o.propertyId!, o.propertyName);
-      if (o.partnerId != null)
+      }
+      if (o.partnerId != null) {
         _partner = Many2oneValue(o.partnerId!, o.partnerName);
-    } else if (widget.initialPropertyId != null) {
-      _property = Many2oneValue(
-        widget.initialPropertyId!,
-        widget.initialPropertyName ?? '',
-      );
+      }
+    } else {
+      if (widget.initialPropertyId != null) {
+        _property = Many2oneValue(
+          widget.initialPropertyId!,
+          widget.initialPropertyName ?? '',
+        );
+      }
+      if (widget.initialPartnerId != null) {
+        _partner = Many2oneValue(
+          widget.initialPartnerId!,
+          widget.initialPartnerName ?? '',
+        );
+      }
     }
   }
 

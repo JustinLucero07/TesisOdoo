@@ -24,6 +24,12 @@ class LeadFunnelScreen extends StatefulWidget {
   State<LeadFunnelScreen> createState() => _LeadFunnelScreenState();
 }
 
+class _AdvisorOption {
+  final int id;
+  final String name;
+  const _AdvisorOption({required this.id, required this.name});
+}
+
 class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
   late final LeadService _leadService;
   late final CrmStageService _stageService;
@@ -35,12 +41,23 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
   String? _error;
   int _currentPage = 0;
 
+  // null = Todos los asesores (solo Admin), 0 = Mis Leads, >0 = Asesor específico
+  int? _selectedAdvisorId;
+  List<_AdvisorOption> _advisors = [];
+
   @override
   void initState() {
     super.initState();
-    final odoo = context.read<AuthService>().odoo;
+    final auth = context.read<AuthService>();
+    final odoo = auth.odoo;
     _leadService = LeadService(odoo);
     _stageService = CrmStageService(odoo);
+    // Si no es admin, fijar estrictamente en 0 (Mis Leads)
+    if (!auth.isAdmin) {
+      _selectedAdvisorId = 0;
+    } else {
+      _loadAdvisors();
+    }
     _load();
   }
 
@@ -50,16 +67,50 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
     super.dispose();
   }
 
+  Future<void> _loadAdvisors() async {
+    try {
+      final odoo = context.read<AuthService>().odoo;
+      final rows = await odoo.searchRead(
+        model: 'res.users',
+        domain: [
+          ['share', '=', false],
+        ],
+        fields: ['name'],
+        order: 'name asc',
+        limit: 60,
+      );
+      if (mounted) {
+        setState(() {
+          _advisors = rows
+              .map((r) => _AdvisorOption(id: r['id'] as int, name: r['name'] as String))
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
+      final auth = context.read<AuthService>();
+      final isAdm = auth.isAdmin;
       final stages = await _stageService.list(isPostSale: widget.isPostSale);
-      // Una sola consulta para todas las etapas: se traen las oportunidades
-      // y se agrupan en memoria, en vez de una consulta por columna.
-      final leads = await _leadService.list(limit: 300);
+
+      final bool myLeadsOnly = (!isAdm || _selectedAdvisorId == 0);
+      final int? advisorFilter =
+          (isAdm && _selectedAdvisorId != null && _selectedAdvisorId! > 0)
+              ? _selectedAdvisorId
+              : null;
+
+      final leads = await _leadService.list(
+        limit: 300,
+        myLeadsOnly: myLeadsOnly,
+        currentUserId: auth.odoo.userId,
+        advisorId: advisorFilter,
+      );
       final grouped = <int, List<Lead>>{};
       for (final lead in leads) {
         if (lead.stageId == null) continue;
@@ -76,6 +127,138 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  int get _totalLeadsCount {
+    int count = 0;
+    for (final list in _leadsByStage.values) {
+      count += list.length;
+    }
+    return count;
+  }
+
+  String get _currentAdvisorLabel {
+    if (_selectedAdvisorId == null) return 'Todos los Asesores';
+    if (_selectedAdvisorId == 0) return 'Mis Leads';
+    final match = _advisors.where((a) => a.id == _selectedAdvisorId);
+    return match.isNotEmpty ? match.first.name : 'Asesor';
+  }
+
+  Future<void> _showAdvisorPicker() async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF14112E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(20, 14, 20, 10),
+                child: Row(
+                  children: [
+                    Icon(Icons.people_alt_rounded, size: 18, color: Color(0xFF28235D)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Filtrar Embudo por Asesor',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.public_rounded, color: Color(0xFF28235D)),
+                      title: const Text('Todos los Asesores (Toda la Inmobiliaria)',
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                      trailing: _selectedAdvisorId == null
+                          ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD81F26))
+                          : null,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        setState(() => _selectedAdvisorId = null);
+                        _load();
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.person_rounded, color: Color(0xFFD81F26)),
+                      title: const Text('Mis Leads Asignados',
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                      trailing: _selectedAdvisorId == 0
+                          ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD81F26))
+                          : null,
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        setState(() => _selectedAdvisorId = 0);
+                        _load();
+                      },
+                    ),
+                    if (_advisors.isNotEmpty) ...[
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Text(
+                          'EQUIPO COMERCIAL',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                            color: AppColors.muted,
+                          ),
+                        ),
+                      ),
+                      ..._advisors.map((adv) => ListTile(
+                            leading: CircleAvatar(
+                              radius: 14,
+                              backgroundColor: const Color(0xFF28235D).withValues(alpha: 0.1),
+                              child: Text(
+                                adv.name.isNotEmpty ? adv.name[0].toUpperCase() : 'A',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF28235D),
+                                ),
+                              ),
+                            ),
+                            title: Text(adv.name, style: const TextStyle(fontSize: 13.5)),
+                            trailing: _selectedAdvisorId == adv.id
+                                ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD81F26))
+                                : null,
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              setState(() => _selectedAdvisorId = adv.id);
+                              _load();
+                            },
+                          )),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _openCreate() async {
@@ -107,6 +290,9 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       symbol: '\$',
       decimalDigits: 0,
     );
+    final auth = context.watch<AuthService>();
+    final isAdmin = auth.isAdmin;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       floatingActionButton: Padding(
@@ -122,6 +308,115 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       ),
       body: Column(
         children: [
+          // ── Barra de Filtro de Asesor (Administrador vs Asesor) ──
+          if (isAdmin)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  InkWell(
+                    onTap: _showAdvisorPicker,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF0F172A) : Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFFD81F26).withValues(alpha: 0.35),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.person_search_rounded,
+                            size: 15,
+                            color: Color(0xFFD81F26),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _currentAdvisorLabel,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF28235D),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.arrow_drop_down_rounded,
+                            size: 18,
+                            color: Color(0xFFD81F26),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF28235D).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '$_totalLeadsCount ${_totalLeadsCount == 1 ? 'lead' : 'leads'}',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF28235D),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                  ),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_pin_rounded, size: 15, color: Color(0xFFD81F26)),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Mis Oportunidades Asignadas',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF28235D),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$_totalLeadsCount ${_totalLeadsCount == 1 ? 'lead' : 'leads'}',
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
           Expanded(
             child: PageView.builder(
               controller: _pageController,

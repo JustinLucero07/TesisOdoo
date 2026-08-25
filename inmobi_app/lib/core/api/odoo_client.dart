@@ -25,6 +25,7 @@ class OdooClient {
   int? uid;
   int? get userId => uid;
   String? userName;
+  bool isAdmin = false;
   bool get isAuthenticated => uid != null;
 
   void _ensureDio(String baseUrl) {
@@ -120,11 +121,16 @@ class OdooClient {
     this.db = db;
     uid = result['uid'] as int;
     userName = result['name'] as String? ?? login;
+    isAdmin = result['is_admin'] == true ||
+        result['is_system'] == true ||
+        result['uid'] == 2 ||
+        (result['name'] as String? ?? '').toLowerCase().contains('admin');
   }
 
   void logout() {
     uid = null;
     userName = null;
+    isAdmin = false;
     _cookieJar.deleteAll();
   }
 

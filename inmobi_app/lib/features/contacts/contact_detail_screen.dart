@@ -73,17 +73,63 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
     if (await canLaunchUrl(uri)) await launchUrl(uri);
   }
 
+  Future<void> _deleteContact() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar contacto?'),
+        content: Text('Se eliminará "${_contact?.name ?? 'este contacto'}". Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD81F26)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _odoo.unlink(model: 'res.partner', id: widget.contactId);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Contacto eliminado correctamente.')),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo eliminar. El contacto puede tener documentos o registros asociados.'),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Contacto'),
         actions: [
-          if (_contact != null)
+          if (_contact != null) ...[
             IconButton(
               icon: const Icon(Icons.edit_outlined),
+              tooltip: 'Editar',
               onPressed: _openEdit,
             ),
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFD81F26)),
+              tooltip: 'Eliminar',
+              onPressed: _deleteContact,
+            ),
+          ],
         ],
       ),
       body: _loading

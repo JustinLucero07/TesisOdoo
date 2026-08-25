@@ -36,9 +36,6 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
   late final LeadService _service;
 
   final _nameCtrl = TextEditingController();
-  final _contactCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
   final _budgetCtrl = TextEditingController();
   final _preferredCityCtrl = TextEditingController();
   final _preferredBedroomsCtrl = TextEditingController();
@@ -62,9 +59,6 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
     final e = widget.existing;
     if (e != null) {
       _nameCtrl.text = e.name;
-      _contactCtrl.text = e.contactName;
-      _phoneCtrl.text = e.phone;
-      _emailCtrl.text = e.email;
       _budgetCtrl.text = e.clientBudget > 0
           ? e.clientBudget.toStringAsFixed(0)
           : '';
@@ -75,8 +69,9 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
           e.targetPropertyName,
         );
       }
-      if (e.partnerId != null)
+      if (e.partnerId != null) {
         _partner = Many2oneValue(e.partnerId!, e.partnerName);
+      }
       if (e.preferredPropertyTypeId != null) {
         _preferredPropertyType = Many2oneValue(
           e.preferredPropertyTypeId!,
@@ -113,13 +108,11 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
 
     final vals = {
       'name': _nameCtrl.text.trim(),
-      'contact_name': _contactCtrl.text.trim(),
-      'phone': _phoneCtrl.text.trim(),
-      'email_from': _emailCtrl.text.trim(),
+      'partner_id': _partner?.id ?? false,
+      if (_partner != null) 'contact_name': _partner!.name,
       'client_budget': double.tryParse(_budgetCtrl.text.trim()) ?? 0.0,
       if (_stage != null) 'stage_id': _stage!.id,
       'target_property_id': _targetProperty?.id ?? false,
-      'partner_id': _partner?.id ?? false,
       'preferred_property_type_id': _preferredPropertyType?.id ?? false,
       'preferred_city': _preferredCityCtrl.text.trim(),
       'preferred_bedrooms':
@@ -172,23 +165,12 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
                   (v == null || v.trim().isEmpty) ? 'Requerido' : null,
             ),
             const SizedBox(height: 14),
-            TextFormField(
-              controller: _contactCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Nombre del cliente',
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Teléfono'),
-            ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+            Many2oneField(
+              label: 'Contacto vinculado',
+              odoo: _odoo,
+              model: 'res.partner',
+              value: _partner,
+              onChanged: (v) => setState(() => _partner = v),
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -196,15 +178,8 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Presupuesto del cliente (\$)',
+                prefixText: '\$ ',
               ),
-            ),
-            const SizedBox(height: 14),
-            Many2oneField(
-              label: 'Contacto vinculado',
-              odoo: _odoo,
-              model: 'res.partner',
-              value: _partner,
-              onChanged: (v) => setState(() => _partner = v),
             ),
             const _FormSectionTitle('Embudo'),
             Many2oneField(

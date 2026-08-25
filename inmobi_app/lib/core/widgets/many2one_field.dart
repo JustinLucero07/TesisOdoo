@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../api/odoo_client.dart';
 import '../theme/app_theme.dart';
+import '../../features/contacts/contact_form_screen.dart';
 import 'odoo_image.dart';
 
 class Many2oneValue {
@@ -367,8 +368,17 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
               if (price > 0) currency.format(price),
             ].join(' · ');
           } else if (isPartner) {
-            final phone = (r['phone'] ?? r['mobile'] ?? '').toString();
-            final email = (r['email'] ?? '').toString();
+            final rawPhone = r['phone'];
+            final rawMobile = r['mobile'];
+            final rawEmail = r['email'];
+            final phone = (rawPhone != null && rawPhone != false && rawPhone.toString() != 'false')
+                ? rawPhone.toString()
+                : ((rawMobile != null && rawMobile != false && rawMobile.toString() != 'false')
+                    ? rawMobile.toString()
+                    : '');
+            final email = (rawEmail != null && rawEmail != false && rawEmail.toString() != 'false')
+                ? rawEmail.toString()
+                : '';
             subtitle = [
               if (phone.isNotEmpty) '📞 $phone',
               if (email.isNotEmpty) email,
@@ -391,6 +401,45 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
     }
   }
 
+  Future<void> _createNewContact() async {
+    final result = await Navigator.of(context).push<dynamic>(
+      MaterialPageRoute(builder: (_) => const ContactFormScreen()),
+    );
+    if (result != null && result is int) {
+      try {
+        final rows = await widget.odoo.searchRead(
+          model: 'res.partner',
+          domain: [
+            ['id', '=', result],
+          ],
+          fields: ['name', 'phone', 'mobile', 'email'],
+          limit: 1,
+        );
+        if (rows.isNotEmpty && mounted) {
+          final row = rows.first;
+          final name = (row['name'] ?? 'Nuevo Contacto').toString();
+          final rawPhone = row['phone'];
+          final rawMobile = row['mobile'];
+          final phone = (rawPhone != null && rawPhone != false && rawPhone.toString() != 'false')
+              ? rawPhone.toString()
+              : ((rawMobile != null && rawMobile != false && rawMobile.toString() != 'false')
+                  ? rawMobile.toString()
+                  : '');
+          Navigator.of(context).pop(
+            Many2oneValue(
+              result,
+              name,
+              subtitle: phone.isNotEmpty ? '📞 $phone' : null,
+              model: 'res.partner',
+            ),
+          );
+          return;
+        }
+      } catch (_) {}
+    }
+    _search(_searchCtrl.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -400,6 +449,21 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Seleccionar ${widget.title}'),
+        actions: [
+          if (isPartner)
+            TextButton.icon(
+              onPressed: _createNewContact,
+              icon: const Icon(Icons.person_add_alt_1_rounded, size: 18, color: Color(0xFFD81F26)),
+              label: const Text(
+                'Nuevo',
+                style: TextStyle(
+                  color: Color(0xFFD81F26),
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -432,27 +496,47 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
           Expanded(
             child: _results.isEmpty && !_loading
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          isProperty
-                              ? Icons.home_work_outlined
-                              : isPartner
-                                  ? Icons.person_search_outlined
-                                  : Icons.search_off_rounded,
-                          size: 48,
-                          color: AppColors.mutedLight,
-                        ),
-                        const SizedBox(height: 10),
-                        const Text(
-                          'No se encontraron resultados.',
-                          style: TextStyle(
-                            color: AppColors.muted,
-                            fontWeight: FontWeight.w600,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            isProperty
+                                ? Icons.home_work_outlined
+                                : isPartner
+                                    ? Icons.person_search_outlined
+                                    : Icons.search_off_rounded,
+                            size: 48,
+                            color: AppColors.mutedLight,
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 10),
+                          const Text(
+                            'No se encontraron resultados.',
+                            style: TextStyle(
+                              color: AppColors.muted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (isPartner) ...[
+                            const SizedBox(height: 14),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF28235D),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: _createNewContact,
+                              icon: const Icon(Icons.person_add_alt_1_rounded, size: 18, color: Colors.white),
+                              label: const Text(
+                                'Crear contacto rápido',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   )
                 : ListView.separated(

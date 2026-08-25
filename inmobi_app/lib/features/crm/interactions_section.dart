@@ -33,6 +33,7 @@ class Interaction {
   }
 
   static IconData iconOf(String type) => switch (type) {
+    'note' => Icons.sticky_note_2_outlined,
     'call' => Icons.call_outlined,
     'email' => Icons.email_outlined,
     'visit' => Icons.home_outlined,
@@ -42,6 +43,7 @@ class Interaction {
   };
 
   static String labelOf(String type) => switch (type) {
+    'note' => 'Nota Chatter',
     'call' => 'Llamada',
     'email' => 'Correo',
     'visit' => 'Visita',
@@ -51,6 +53,7 @@ class Interaction {
   };
 
   static Color colorOf(String type) => switch (type) {
+    'note' => const Color(0xFFD81F26),
     'call' => AppColors.navy,
     'email' => AppColors.info,
     'visit' => AppColors.success,
@@ -125,24 +128,45 @@ class _InteractionsSectionState extends State<InteractionsSection> {
     if (result == null) return;
 
     try {
-      await widget.odoo.create(
-        model: 'estate.client.interaction',
-        values: {
-          'lead_id': widget.leadId,
-          if (widget.partnerId != null) 'partner_id': widget.partnerId,
-          if (widget.propertyId != null) 'property_id': widget.propertyId,
-          'interaction_type': result.type,
-          'summary': result.summary,
-        },
-      );
+      try {
+        await widget.odoo.create(
+          model: 'estate.client.interaction',
+          values: {
+            'lead_id': widget.leadId,
+            if (widget.partnerId != null) 'partner_id': widget.partnerId,
+            if (widget.propertyId != null) 'property_id': widget.propertyId,
+            'interaction_type': result.type,
+            'summary': result.summary,
+          },
+        );
+      } catch (_) {}
+
+      // También postear en el Chatter oficial de Odoo (mail.message)
+      try {
+        final prefix = result.type == 'note'
+            ? '<b>Nota de seguimiento:</b><br/>'
+            : '<b>[${Interaction.labelOf(result.type)}]</b><br/>';
+        await widget.odoo.callKw(
+          model: 'crm.lead',
+          method: 'message_post',
+          args: [
+            [widget.leadId],
+          ],
+          kwargs: {
+            'body': '$prefix${result.summary}',
+            'message_type': 'comment',
+            'subtype_xmlid': 'mail.mt_note',
+          },
+        );
+      } catch (_) {}
+
       await _load();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'No se pudo registrar la interacción. '
-              'Revisa que el lead tenga un cliente asignado.',
+              'No se pudo registrar la nota/interacción.',
             ),
           ),
         );
@@ -303,11 +327,12 @@ class _NewInteractionSheetState extends State<_NewInteractionSheet> {
   final _summaryCtrl = TextEditingController();
 
   static const _types = [
+    ('note', 'Nota Chatter'),
     ('call', 'Llamada'),
     ('whatsapp', 'WhatsApp'),
-    ('email', 'Correo'),
-    ('visit', 'Visita'),
     ('meeting', 'Reunión'),
+    ('visit', 'Visita'),
+    ('email', 'Correo'),
     ('other', 'Otro'),
   ];
 

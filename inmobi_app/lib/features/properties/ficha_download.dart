@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
@@ -23,6 +25,179 @@ class FichaDownloader {
     ('2', 'Minimalista', 'Encabezado limpio y mosaico de fotos'),
     ('3', 'Portada a sangre', 'Foto de fondo a página completa'),
   ];
+
+  /// Descarga y abre la Hoja de Captación subida (archivo del cliente) o genera la plantilla oficial PDF
+  static Future<void> openCaptureSheet({
+    required BuildContext context,
+    required OdooClient odoo,
+    required Property property,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Row(
+          children: [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Abriendo Hoja de Captación...'),
+          ],
+        ),
+        duration: Duration(seconds: 30),
+      ),
+    );
+
+    try {
+      // 1. Primero intentar cargar el archivo subido en el campo capture_sheet de Odoo
+      final rows = await odoo.searchRead(
+        model: 'estate.property',
+        domain: [
+          ['id', '=', property.id],
+        ],
+        fields: ['capture_sheet', 'capture_sheet_filename'],
+        limit: 1,
+      );
+
+      List<int> bytes = [];
+      String fileName = 'Hoja_Captacion_${property.id}.pdf';
+
+      if (rows.isNotEmpty &&
+          rows.first['capture_sheet'] != null &&
+          rows.first['capture_sheet'] != false &&
+          rows.first['capture_sheet'].toString().isNotEmpty) {
+        final b64 = rows.first['capture_sheet'].toString();
+        bytes = base64Decode(b64);
+        final rawFn = rows.first['capture_sheet_filename']?.toString();
+        if (rawFn != null && rawFn.isNotEmpty && rawFn != 'false') {
+          fileName = rawFn;
+        }
+      } else {
+        // 2. Si no hay archivo subido, generar el reporte QWeb estándar de Odoo
+        bytes = await odoo.downloadReportPdf(
+          reportName: 'estate_management.report_capture_sheet_template',
+          id: property.id,
+        );
+        final title = property.title.isEmpty ? property.reference : property.title;
+        final safeTitle = title.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
+        fileName = 'Captacion_${safeTitle.isEmpty ? property.id : safeTitle}.pdf';
+      }
+
+      if (bytes.isEmpty) throw Exception('No se pudo obtener el archivo.');
+
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      messenger.hideCurrentSnackBar();
+      await OpenFile.open(file.path);
+    } catch (e) {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('No se pudo abrir la Hoja de Captación: $e'),
+          backgroundColor: Colors.red[800],
+        ),
+      );
+    }
+  }
+
+  /// Sube o reemplaza la Hoja de Captación desde el celular
+  static Future<bool> uploadCaptureSheet({
+    required BuildContext context,
+    required OdooClient odoo,
+    required int propertyId,
+  }) async {
+    try {
+      final res = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'webp'],
+        withData: true,
+      );
+      if (res == null || res.files.isEmpty) return false;
+
+      final file = res.files.first;
+      final bytes = file.bytes ?? (file.path != null ? await File(file.path!).readAsBytes() : null);
+      if (bytes == null || bytes.isEmpty) throw Exception('Archivo vacío');
+
+      final b64 = base64Encode(bytes);
+      await odoo.write(
+        model: 'estate.property',
+        id: propertyId,
+        values: {
+          'capture_sheet': b64,
+          'capture_sheet_filename': file.name,
+        },
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Hoja de captación "${file.name}" subida exitosamente.')),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo subir el archivo: $e'), backgroundColor: Colors.red[800]),
+        );
+      }
+      return false;
+    }
+  }
+
+  /// Elimina la Hoja de Captación subida en Odoo
+  static Future<bool> deleteCaptureSheet({
+    required BuildContext context,
+    required OdooClient odoo,
+    required int propertyId,
+  }) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('¿Eliminar Hoja de Captación?'),
+        content: const Text('Se quitará el archivo adjunto de la propiedad en Odoo.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD81F26)),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return false;
+
+    try {
+      await odoo.write(
+        model: 'estate.property',
+        id: propertyId,
+        values: {
+          'capture_sheet': false,
+          'capture_sheet_filename': false,
+        },
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Hoja de captación eliminada.')),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo eliminar el archivo adjunto.')),
+        );
+      }
+      return false;
+    }
+  }
 
   /// Abre el modal de opciones de ficha comercial
   static Future<void> start({
