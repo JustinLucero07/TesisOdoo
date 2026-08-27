@@ -179,7 +179,7 @@
                     <field name="client_budget" widget="monetary" options="{'currency_field': 'company_currency'}"/>
                     <field name="match_percentage" widget="progressbar"/>
                     <field name="lead_source_code" invisible="1"/>
-                    <field name="lead_source_id" options="{'no_quick_create': False}"/>
+                    <field name="lead_source_id" options="{'no_quick_create': False}" required="1"/>
                     <field name="referral_partner_id" placeholder="¿Quién lo refirió?" invisible="lead_source_code != 'referral'"/>
                 </group>
             </xpath>
@@ -201,6 +201,7 @@
             <xpath expr="//field[@name='expected_revenue']" position="after">
                 <field name="client_budget" string="Presupuesto" widget="monetary" options="{'currency_field': 'company_currency'}"/>
                 <field name="city" placeholder="Ciudad Deseada..."/>
+                <field name="lead_source_id" string="Fuente del Lead" required="1" options="{'no_quick_create': False}"/>
             </xpath>
         </field>
     </record>

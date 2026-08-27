@@ -69,14 +69,18 @@ class CrmLead(models.Model):
         string='Match con Propiedad (%)', compute='_compute_match_percentage', store=True,
         help='Porcentaje de compatibilidad entre el presupuesto/preferencias del cliente y la propiedad de interés. 100% = perfectamente alineado. Factores: precio vs presupuesto (50%), ciudad (20%), tipo de propiedad (15%), habitaciones (10%), área (5%).')
 
+    def _default_lead_source_id(self):
+        source = self.env.ref('estate_crm.lead_source_website', raise_if_not_found=False)
+        if not source:
+            source = self.env['estate.crm.lead.source'].search([], limit=1)
+        return source
+
     # --- Canal de captación ---
-    # Antes era una lista fija (Selection); ahora es un catálogo editable
-    # (estate.crm.lead.source) para poder elegir o crear una fuente nueva
-    # directamente desde este campo.
+    # Catálogo editable (estate.crm.lead.source) para elegir o crear una fuente.
     lead_source_id = fields.Many2one(
         'estate.crm.lead.source', string='Fuente del Lead',
-        default=lambda self: self.env.ref('estate_crm.lead_source_website', raise_if_not_found=False),
-        tracking=True, index=True, ondelete='restrict',
+        default=_default_lead_source_id,
+        required=True, tracking=True, index=True, ondelete='restrict',
         help='Canal por el que llegó este prospecto. Si no está en la lista, '
              'escribe el nombre y elige "Crear" para agregarla.')
     lead_source_code = fields.Char(

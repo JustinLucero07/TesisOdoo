@@ -44,6 +44,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   final _streetNumberCtrl = TextEditingController();
   final _zipCtrl = TextEditingController();
   final _cadastralCtrl = TextEditingController();
+  final _latCtrl = TextEditingController();
+  final _lngCtrl = TextEditingController();
   final _areaCtrl = TextEditingController();
   final _bedroomsCtrl = TextEditingController();
   final _bathroomsCtrl = TextEditingController();
@@ -86,6 +88,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       _streetNumberCtrl.text = p.streetNumber;
       _zipCtrl.text = p.zipCode;
       _cadastralCtrl.text = p.cadastralCode;
+      if (p.latitude != 0.0) _latCtrl.text = p.latitude.toString();
+      if (p.longitude != 0.0) _lngCtrl.text = p.longitude.toString();
       _areaCtrl.text = p.area > 0 ? p.area.toStringAsFixed(0) : '';
       _bedroomsCtrl.text = p.bedrooms > 0 ? '${p.bedrooms}' : '';
       _bathroomsCtrl.text = p.bathrooms > 0
@@ -129,6 +133,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       'street_number': _streetNumberCtrl.text.trim(),
       'zip_code': _zipCtrl.text.trim(),
       'cadastral_code': _cadastralCtrl.text.trim(),
+      'latitude': double.tryParse(_latCtrl.text.trim()) ?? 0.0,
+      'longitude': double.tryParse(_lngCtrl.text.trim()) ?? 0.0,
       'area': double.tryParse(_areaCtrl.text.trim()) ?? 0.0,
       'bedrooms': int.tryParse(_bedroomsCtrl.text.trim()) ?? 0,
       'bathrooms': double.tryParse(_bathroomsCtrl.text.trim()) ?? 0.0,
@@ -298,6 +304,38 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                     controller: _cadastralCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Clave catastral',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _latCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Latitud GPS',
+                      hintText: 'Ej: -2.8974',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _lngCtrl,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Longitud GPS',
+                      hintText: 'Ej: -79.0045',
                     ),
                   ),
                 ),

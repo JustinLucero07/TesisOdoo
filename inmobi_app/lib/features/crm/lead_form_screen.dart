@@ -46,6 +46,7 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
   Many2oneValue? _stage;
   Many2oneValue? _targetProperty;
   Many2oneValue? _partner;
+  Many2oneValue? _leadSource;
   Many2oneValue? _preferredPropertyType;
 
   bool _saving = false;
@@ -71,6 +72,9 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       }
       if (e.partnerId != null) {
         _partner = Many2oneValue(e.partnerId!, e.partnerName);
+      }
+      if (e.leadSourceId != null && e.leadSourceName.isNotEmpty) {
+        _leadSource = Many2oneValue(e.leadSourceId!, e.leadSourceName);
       }
       if (e.preferredPropertyTypeId != null) {
         _preferredPropertyType = Many2oneValue(
@@ -110,6 +114,7 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       'name': _nameCtrl.text.trim(),
       'partner_id': _partner?.id ?? false,
       if (_partner != null) 'contact_name': _partner!.name,
+      'lead_source_id': _leadSource?.id ?? false,
       'client_budget': double.tryParse(_budgetCtrl.text.trim()) ?? 0.0,
       if (_stage != null) 'stage_id': _stage!.id,
       'target_property_id': _targetProperty?.id ?? false,
@@ -171,6 +176,14 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
               model: 'res.partner',
               value: _partner,
               onChanged: (v) => setState(() => _partner = v),
+            ),
+            const SizedBox(height: 14),
+            Many2oneField(
+              label: 'Fuente del Lead',
+              odoo: _odoo,
+              model: 'estate.crm.lead.source',
+              value: _leadSource,
+              onChanged: (v) => setState(() => _leadSource = v),
             ),
             const SizedBox(height: 14),
             TextFormField(

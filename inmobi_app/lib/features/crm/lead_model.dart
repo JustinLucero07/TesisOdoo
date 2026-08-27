@@ -19,6 +19,7 @@ class Lead {
   final String targetPropertyName;
   final int? partnerId;
   final String partnerName;
+  final int? leadSourceId;
   final String leadSourceName;
   final String clientNeeds;
   final String smartNegotiationTips;
@@ -55,6 +56,7 @@ class Lead {
     required this.targetPropertyName,
     this.partnerId,
     this.partnerName = '',
+    this.leadSourceId,
     this.leadSourceName = '',
     this.clientNeeds = '',
     this.smartNegotiationTips = '',
@@ -134,6 +136,9 @@ class Lead {
           ? json['partner_id'][0] as int
           : null,
       partnerName: many2oneName(json['partner_id']),
+      leadSourceId: json['lead_source_id'] is List
+          ? json['lead_source_id'][0] as int
+          : null,
       leadSourceName: many2oneName(json['lead_source_id']),
       clientNeeds: asOdooString(json['client_needs']),
       smartNegotiationTips: asOdooString(json['smart_negotiation_tips']),

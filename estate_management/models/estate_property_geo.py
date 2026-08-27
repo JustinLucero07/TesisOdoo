@@ -83,8 +83,6 @@ class EstatePropertyGeo(models.Model):
     def _onchange_street_keywords(self):
         if self.street and not self.sector_keywords:
             self.sector_keywords = self.street
-        self.latitude = 0.0
-        self.longitude = 0.0
 
     @api.depends('latitude', 'longitude')
     def _compute_map_iframe(self):

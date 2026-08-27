@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/notifications/notification_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/odoo_image.dart';
 import '../auth/auth_service.dart';
 import '../auth/login_screen.dart';
 import '../contacts/contact_list_screen.dart';
@@ -111,7 +112,8 @@ class _HomeShellState extends State<HomeShell> {
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final userName = context.watch<AuthService>().userName ?? 'Asesor';
+    final auth = context.watch<AuthService>();
+    final userName = auth.userName ?? 'Asesor';
 
     return Scaffold(
       key: _scaffoldKey,
@@ -171,17 +173,12 @@ class _HomeShellState extends State<HomeShell> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          CircleAvatar(
+                          UserAvatar(
+                            odoo: auth.odoo,
+                            userId: auth.odoo.userId ?? 0,
+                            userName: userName,
                             radius: 12,
                             backgroundColor: AppColors.navy,
-                            child: Text(
-                              userName.isNotEmpty ? userName[0].toUpperCase() : 'A',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -351,17 +348,12 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        CircleAvatar(
+                        UserAvatar(
+                          odoo: auth.odoo,
+                          userId: auth.odoo.userId ?? 0,
+                          userName: userName,
                           radius: 20,
                           backgroundColor: const Color(0xFFD81F26),
-                          child: Text(
-                            userName.isNotEmpty ? userName[0].toUpperCase() : 'A',
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(

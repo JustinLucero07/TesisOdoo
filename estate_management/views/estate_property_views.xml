@@ -282,20 +282,18 @@
                             <field name="zip_code" placeholder="010101"/>
                             <field name="sector_keywords" placeholder="Ej: Paccha, El Valle, Ricaurte"/>
                             <field name="wp_publish_location" widget="boolean_toggle"/>
-                            <div class="o_field_widget mt-2" colspan="2"
-                                 invisible="latitude and longitude">
+                            <div class="o_field_widget mt-2" colspan="2">
                                 <button name="action_geocode_address"
                                         string="Ubicar en Mapa automáticamente"
                                         type="object"
-                                        class="btn btn-primary"
+                                        class="btn btn-outline-primary"
                                         icon="fa-map-marker"
                                         title="Busca la dirección exacta y actualiza el mapa"/>
                             </div>
                         </group>
-                        <group string="Coordenadas GPS (auto)" col="4"
-                               invisible="not latitude and not longitude">
-                            <field name="latitude" readonly="1" string="Latitud"/>
-                            <field name="longitude" readonly="1" string="Longitud"/>
+                        <group string="Coordenadas GPS" col="4">
+                            <field name="latitude" string="Latitud" placeholder="Ej: -2.8974"/>
+                            <field name="longitude" string="Longitud" placeholder="Ej: -79.0045"/>
                         </group>
                     </group>
                     <div invisible="not latitude and not longitude" class="mb-2">

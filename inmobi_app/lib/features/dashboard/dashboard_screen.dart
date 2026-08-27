@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
 import '../contacts/contact_form_screen.dart';
@@ -939,6 +940,7 @@ class _DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthService>();
     final firstName = userName.trim().isNotEmpty ? userName.split(' ').first : 'Asesor';
 
     return Container(
@@ -968,17 +970,12 @@ class _DashboardHeader extends StatelessWidget {
                   width: 2,
                 ),
               ),
-              child: CircleAvatar(
+              child: UserAvatar(
+                odoo: auth.odoo,
+                userId: auth.odoo.userId ?? 0,
+                userName: firstName,
                 radius: 22,
                 backgroundColor: Colors.white.withValues(alpha: 0.15),
-                child: Text(
-                  firstName.isNotEmpty ? firstName[0].toUpperCase() : 'A',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 18,
-                  ),
-                ),
               ),
             ),
             const SizedBox(width: 14),

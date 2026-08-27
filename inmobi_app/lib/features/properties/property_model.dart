@@ -46,6 +46,8 @@ class Property {
   final double avmEstimatedPrice;
   final String avmStatus; // fair | high | low
   final List<int> imageIds;
+  final double latitude;
+  final double longitude;
   final bool wpPublished;
   final int wpPostId;
   final bool wpNeedsSync;
@@ -67,6 +69,8 @@ class Property {
     this.streetNumber = '',
     this.zipCode = '',
     this.cadastralCode = '',
+    this.latitude = 0.0,
+    this.longitude = 0.0,
     required this.area,
     required this.bedrooms,
     required this.bathrooms,
@@ -137,6 +141,8 @@ class Property {
     'street_number',
     'zip_code',
     'cadastral_code',
+    'latitude',
+    'longitude',
     'bottom_price',
     'parking_spaces',
     'floor',
@@ -174,6 +180,8 @@ class Property {
       streetNumber: asOdooString(json['street_number']),
       zipCode: asOdooString(json['zip_code']),
       cadastralCode: asOdooString(json['cadastral_code']),
+      latitude: asOdooDouble(json['latitude']),
+      longitude: asOdooDouble(json['longitude']),
       area: asOdooDouble(json['area']),
       bedrooms: asOdooInt(json['bedrooms']),
       bathrooms: asOdooDouble(json['bathrooms']),

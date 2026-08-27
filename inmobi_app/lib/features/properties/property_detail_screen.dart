@@ -107,44 +107,119 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   }
 
   /// Abre ubicación en Google Maps
-  Future<void> _openInMaps() async {
+  bool get _hasGpsCoords {
+    final p = _property;
+    if (p == null) return false;
+    return p.latitude != 0.0 && p.longitude != 0.0;
+  }
+
+  String _buildLocationQuery() {
+    final p = _property;
+    if (p == null) return 'Ecuador';
+    final parts = [
+      if (p.street.isNotEmpty) p.street,
+      if (p.streetNumber.isNotEmpty) p.streetNumber,
+      if (p.sector.isNotEmpty) p.sector,
+      if (p.city.isNotEmpty) p.city,
+      'Ecuador',
+    ];
+    if (parts.length <= 1) {
+      return [p.title, p.city, 'Ecuador'].where((s) => s.isNotEmpty).join(', ');
+    }
+    return parts.join(', ');
+  }
+
+  /// Abre la ubicación en Google Maps priorizando coordenadas GPS de Odoo
+  Future<void> _openInGoogleMaps() async {
     final p = _property;
     if (p == null) return;
-    final addressParts = [
-      p.street,
-      p.streetNumber,
-      p.sector,
-      p.city,
-      'Ecuador',
-    ].where((s) => s.isNotEmpty).join(' ');
+    final String url;
+    if (_hasGpsCoords) {
+      url = 'https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}';
+    } else {
+      final query = _buildLocationQuery();
+      url = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}';
+    }
 
-    if (addressParts.isEmpty) return;
-    final uri = Uri.parse(
-      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(addressParts)}',
-    );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir Google Maps.')),
+          );
+        }
+      }
     }
   }
 
-  /// Abre ruta en Waze
+  /// Abre la ubicación en Apple Maps (Maps de iOS) priorizando coordenadas GPS de Odoo
+  Future<void> _openInAppleMaps() async {
+    final p = _property;
+    if (p == null) return;
+    final String url;
+    final title = p.title.isNotEmpty ? p.title : p.reference;
+    if (_hasGpsCoords) {
+      url = 'https://maps.apple.com/?ll=${p.latitude},${p.longitude}&q=${Uri.encodeComponent(title)}';
+    } else {
+      final query = _buildLocationQuery();
+      url = 'https://maps.apple.com/?q=${Uri.encodeComponent(query)}';
+    }
+
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir Apple Maps.')),
+          );
+        }
+      }
+    }
+  }
+
+  /// Abre ruta en Waze GPS priorizando coordenadas GPS de Odoo
   Future<void> _openInWaze() async {
     final p = _property;
     if (p == null) return;
-    final addressParts = [
-      p.street,
-      p.streetNumber,
-      p.sector,
-      p.city,
-      'Ecuador',
-    ].where((s) => s.isNotEmpty).join(' ');
+    final String url;
+    if (_hasGpsCoords) {
+      url = 'https://waze.com/ul?ll=${p.latitude},${p.longitude}&navigate=yes';
+    } else {
+      final query = _buildLocationQuery();
+      url = 'https://waze.com/ul?q=${Uri.encodeComponent(query)}&navigate=yes';
+    }
 
-    if (addressParts.isEmpty) return;
-    final uri = Uri.parse(
-      'https://waze.com/ul?q=${Uri.encodeComponent(addressParts)}&navigate=yes',
-    );
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (_) {
+      try {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.platformDefault);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir Waze.')),
+          );
+        }
+      }
     }
   }
 
@@ -664,6 +739,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                         if (p.zipCode.isNotEmpty) ('Código Postal', p.zipCode),
                         if (p.cadastralCode.isNotEmpty)
                           ('Clave Catastral', p.cadastralCode),
+                        if (p.latitude != 0.0 && p.longitude != 0.0)
+                          (
+                            'Coordenadas GPS',
+                            '${p.latitude.toStringAsFixed(6)}, ${p.longitude.toStringAsFixed(6)}',
+                          ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -671,7 +751,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: _openInMaps,
+                            onPressed: _openInGoogleMaps,
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
@@ -679,10 +759,24 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                               ),
                             ),
                             icon: const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFFEA4335)),
-                            label: const Text('Google Maps'),
+                            label: const Text('Google Maps', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _openInAppleMaps,
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            icon: const Icon(Icons.map_outlined, size: 18, color: Color(0xFF28235D)),
+                            label: const Text('Apple Maps', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: _openInWaze,
@@ -693,7 +787,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                               ),
                             ),
                             icon: const Icon(Icons.navigation_rounded, size: 18, color: Color(0xFF33CCFF)),
-                            label: const Text('Waze GPS'),
+                            label: const Text('Waze GPS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                           ),
                         ),
                       ],

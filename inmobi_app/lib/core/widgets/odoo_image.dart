@@ -84,6 +84,22 @@ class _OdooImageState extends State<OdooImage> {
       );
       final bytes = Uint8List.fromList(resp.data ?? const []);
       if (bytes.isEmpty) throw Exception('empty image');
+
+      // Odoo devuelve un SVG por defecto con la inicial cuando el usuario/registro
+      // no tiene una foto real cargada. Flutter Image.memory no renderiza SVG crudo,
+      // por lo que se detecta y se redirige al fallback con iniciales estilizadas.
+      final ct = resp.headers.value('content-type') ?? '';
+      final isSvg = ct.contains('svg') ||
+          (bytes.length >= 4 &&
+              ((bytes[0] == 60 && bytes[1] == 63) || // '<?'
+                  (bytes[0] == 60 &&
+                      bytes[1] == 115 &&
+                      bytes[2] == 118 &&
+                      bytes[3] == 103))); // '<svg'
+      if (isSvg) {
+        throw Exception('svg default placeholder');
+      }
+
       OdooImage._cache[widget._cacheKey] = bytes;
       if (!mounted) return;
       setState(() {
@@ -112,6 +128,83 @@ class _OdooImageState extends State<OdooImage> {
             child: const Icon(Icons.home_outlined, color: AppColors.navy),
           );
     }
-    return Image.memory(_bytes!, fit: widget.fit, gaplessPlayback: true);
+    return Image.memory(
+      _bytes!,
+      fit: widget.fit,
+      gaplessPlayback: true,
+      errorBuilder: (context, error, stackTrace) =>
+          widget.errorBuilder?.call(context) ??
+          Container(
+            color: AppColors.navy.withValues(alpha: 0.07),
+            child: const Icon(Icons.person_outline, color: AppColors.navy),
+          ),
+    );
+  }
+}
+
+/// Avatar de usuario con imagen cargada desde Odoo (`res.users.avatar_128`)
+/// y fallback automático a iniciales sobre círculo de color si no tiene foto.
+class UserAvatar extends StatelessWidget {
+  final OdooClient odoo;
+  final int userId;
+  final String userName;
+  final double radius;
+  final Color backgroundColor;
+
+  const UserAvatar({
+    super.key,
+    required this.odoo,
+    required this.userId,
+    required this.userName,
+    this.radius = 20,
+    this.backgroundColor = const Color(0xFFD81F26),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (userId <= 0) {
+      return _buildInitials();
+    }
+    final size = radius * 2;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: OdooImage(
+          odoo: odoo,
+          model: 'res.users',
+          id: userId,
+          field: 'avatar_128',
+          width: (size * 2).toInt(),
+          height: (size * 2).toInt(),
+          fit: BoxFit.cover,
+          placeholderBuilder: (_) => _buildInitials(),
+          errorBuilder: (_) => _buildInitials(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInitials() {
+    final clean = userName.trim();
+    final letter = clean.isNotEmpty ? clean[0].toUpperCase() : 'A';
+    return Container(
+      width: radius * 2,
+      height: radius * 2,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: radius * 0.78,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 }
