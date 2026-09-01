@@ -254,6 +254,23 @@ class CalendarEvent(models.Model):
             except Exception:
                 return dt.strftime('%d/%m/%Y %H:%M')
 
+    def _format_local_time(self, dt):
+        """Convierte una fecha/hora UTC a la hora local (HH:MM) del asesor/Ecuador (America/Guayaquil)."""
+        if not dt:
+            return ''
+        import pytz
+        tz_name = self.user_id.tz or self.env.user.tz or self.env.context.get('tz') or 'America/Guayaquil'
+        try:
+            user_tz = pytz.timezone(tz_name)
+            utc_dt = pytz.utc.localize(dt) if dt.tzinfo is None else dt.astimezone(pytz.utc)
+            local_dt = utc_dt.astimezone(user_tz)
+            return local_dt.strftime('%H:%M')
+        except Exception:
+            try:
+                return fields.Datetime.context_timestamp(self, dt).strftime('%H:%M')
+            except Exception:
+                return dt.strftime('%H:%M')
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

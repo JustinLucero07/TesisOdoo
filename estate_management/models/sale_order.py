@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api
+from markupsafe import Markup
 
 
 class SaleOrder(models.Model):
@@ -36,28 +37,44 @@ class SaleOrder(models.Model):
             if lead:
                 order.lead_id = lead
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('lead_id') and not vals.get('opportunity_id'):
+                vals['opportunity_id'] = vals['lead_id']
+            elif vals.get('opportunity_id') and not vals.get('lead_id'):
+                vals['lead_id'] = vals['opportunity_id']
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if 'lead_id' in vals and 'opportunity_id' not in vals:
+            vals['opportunity_id'] = vals['lead_id']
+        elif 'opportunity_id' in vals and 'lead_id' not in vals:
+            vals['lead_id'] = vals['opportunity_id']
+        return super().write(vals)
+
     def action_confirm(self):
         result = super().action_confirm()
         for order in self:
             if order.property_id:
                 # Notificar en el chatter de la propiedad
                 order.property_id.message_post(
-                    body=f'Orden de venta <b>{order.name}</b> CONFIRMADA para '
-                         f'<b>{order.partner_id.name}</b> por ${order.amount_total:,.2f}.')
+                    body=Markup(f'Orden de venta <b>{order.name}</b> CONFIRMADA para '
+                                f'<b>{order.partner_id.name}</b> por ${order.amount_total:,.2f}.'))
             if order.lead_id:
                 # Notificar en el chatter del lead CRM
                 order.lead_id.message_post(
-                    body=f'Orden de venta <b>{order.name}</b> confirmada para la propiedad '
-                         f'<b>{order.property_id.title if order.property_id else "N/A"}</b> '
-                         f'por ${order.amount_total:,.2f}.')
+                    body=Markup(f'Orden de venta <b>{order.name}</b> confirmada para la propiedad '
+                                f'<b>{order.property_id.title if order.property_id else "N/A"}</b> '
+                                f'por ${order.amount_total:,.2f}.'))
             # Enviar email de confirmación al cliente si tiene correo
             if order.partner_id and order.partner_id.email:
                 order.message_post(
-                    body=(f'<p>Estimado/a <strong>{order.partner_id.name}</strong>,</p>'
-                          f'<p>Su orden de venta <strong>{order.name}</strong> ha sido confirmada.</p>'
-                          f'<p><strong>Propiedad:</strong> {order.property_id.title if order.property_id else "N/A"}<br/>'
-                          f'<strong>Monto total:</strong> ${order.amount_total:,.2f}</p>'
-                          f'<p>Nuestro equipo le contactará para coordinar los siguientes pasos.</p>'),
+                    body=Markup(f'<p>Estimado/a <strong>{order.partner_id.name}</strong>,</p>'
+                                f'<p>Su orden de venta <strong>{order.name}</strong> ha sido confirmada.</p>'
+                                f'<p><strong>Propiedad:</strong> {order.property_id.title if order.property_id else "N/A"}<br/>'
+                                f'<strong>Monto total:</strong> ${order.amount_total:,.2f}</p>'
+                                f'<p>Nuestro equipo le contactará para coordinar los siguientes pasos.</p>'),
                     partner_ids=[order.partner_id.id],
                     subtype_xmlid='mail.mt_comment',
                 )

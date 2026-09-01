@@ -36,6 +36,12 @@
                         <i class="fa fa-file-text me-1"/>Contratos
                         <span class="badge text-bg-secondary ms-1"><field name="contract_count"/></span>
                     </button>
+                    <button name="action_view_lead_sale_orders" type="object"
+                        class="btn btn-outline-success"
+                        invisible="sale_order_count == 0">
+                        <i class="fa fa-usd me-1"/>Venta
+                        <span class="badge text-bg-success ms-1"><field name="sale_order_count"/></span>
+                    </button>
                     <button name="action_view_documents" type="object"
                         class="btn btn-outline-secondary"
                         invisible="estate_document_count == 0">

@@ -1,4 +1,5 @@
 import logging
+from markupsafe import Markup
 from odoo import models, fields, api
 from odoo.exceptions import UserError
 
@@ -36,7 +37,19 @@ class EstateSaleWizard(models.TransientModel):
         res = super().default_get(fields_list)
         if res.get('property_id') and self.env.context.get('edit_deal_mode'):
             prop = self.env['estate.property'].browse(res['property_id'])
+            lead = self.env['crm.lead'].search([
+                ('target_property_id', '=', prop.id), ('type', '=', 'opportunity'),
+            ], limit=1)
+            if not lead and prop.buyer_id:
+                lead = self.env['crm.lead'].search([
+                    ('partner_id', '=', prop.buyer_id.id), ('type', '=', 'opportunity'),
+                ], limit=1)
+            if not lead:
+                order = self.env['sale.order'].search([('property_id', '=', prop.id), ('lead_id', '!=', False)], limit=1)
+                if order:
+                    lead = order.lead_id
             res.update({
+                'lead_id': lead.id if lead else False,
                 'buyer_id': prop.buyer_id.id if prop.buyer_id else False,
                 'sale_price': prop.price,
                 'commission_pct': prop.commission_percentage,
@@ -126,7 +139,7 @@ class EstateSaleWizard(models.TransientModel):
         Venta (aparecen impresas en la cotización/factura), incluida la seña."""
         lines = []
         if self.deal_payment_details:
-            lines.append(f"Detalles de Pago: {self.deal_payment_details}")
+            lines.append(f"• DETALLES DE PAGO:\n  {self.deal_payment_details.strip()}")
         if self.deal_earnest_amount:
             rec_list = []
             if self.deal_earnest_received_by_agency: rec_list.append('Inmobiliaria')
@@ -141,10 +154,17 @@ class EstateSaleWizard(models.TransientModel):
             if self.deal_earnest_payment_other_check: meth_list.append('Otro')
             method_str = ', '.join(meth_list) if meth_list else 'N/A'
             if (self.deal_earnest_payment_transfer or self.deal_earnest_payment_deposit or self.deal_earnest_payment_other_check) and self.deal_earnest_payment_other:
-                method_str += f" - {self.deal_earnest_payment_other}"
-            lines.append(f"Seña/Arras: ${self.deal_earnest_amount:,.2f} (Recibido por: {received_by} - Vía: {method_str})")
+                method_str += f" ({self.deal_earnest_payment_other})"
+            lines.append(f"• SEÑA / ARRAS: ${self.deal_earnest_amount:,.2f}\n  - Recibido por: {received_by}\n  - Forma de pago: {method_str}")
+        if self.deal_payment_type == 'credit':
+            credit_info = []
+            if self.deal_credit_institution: credit_info.append(f"Institución: {self.deal_credit_institution}")
+            if self.deal_credit_advisor: credit_info.append(f"Asesor: {self.deal_credit_advisor}")
+            if self.deal_credit_advisor_phone: credit_info.append(f"Tel: {self.deal_credit_advisor_phone}")
+            if credit_info:
+                lines.append(f"• CRÉDITO HIPOTECARIO:\n  - " + "\n  - ".join(credit_info))
         if self.deal_observations:
-            lines.append(f"Observaciones: {self.deal_observations}")
+            lines.append(f"• OBSERVACIONES:\n  {self.deal_observations.strip()}")
         return lines
 
     @api.onchange('lead_id')
@@ -265,13 +285,15 @@ class EstateSaleWizard(models.TransientModel):
                 ord_vals = {}
                 if self.user_id:
                     ord_vals['user_id'] = self.user_id.id
+                if self.lead_id:
+                    ord_vals['lead_id'] = self.lead_id.id
                 notes = self._deal_note_lines()
                 if notes:
                     ord_vals['note'] = "\n\n".join(notes)
                 if ord_vals:
                     ord.write(ord_vals)
 
-            prop.message_post(body='<b>Datos del Negocio Cerrado y documentos actualizados exitosamente.</b>')
+            prop.message_post(body=Markup('<b>Datos del Negocio Cerrado y documentos actualizados exitosamente.</b>'))
             return {'type': 'ir.actions.act_window_close'}
 
         # 1. Datos núcleo de la propiedad + datos del Negocio Cerrado (sin sync WP)
@@ -311,7 +333,8 @@ class EstateSaleWizard(models.TransientModel):
         if self.sold_by not in ('owner', 'external'):
             order, invoice = prop._process_native_sale(
                 self.buyer_id, self.sale_price, self.commission_amount, self.commission_pct,
-                invoice_mode=self.invoice_mode, user_id=self.user_id, apply_vat=self.apply_vat)
+                invoice_mode=self.invoice_mode, user_id=self.user_id, apply_vat=self.apply_vat,
+                lead_id=self.lead_id)
         else:
             # "Propietario" y "Externo" comparten el mismo registro: una orden
             # de venta de $0 para que cuente como venta en el Dashboard, sin
@@ -362,7 +385,7 @@ class EstateSaleWizard(models.TransientModel):
                 estado = 'contabilizada' if invoice.state == 'posted' else 'en borrador'
                 msg.append(f'• Factura {estado}: <b>{invoice.name or invoice.id}</b>')
             msg.append(f'• Comisión registrada: <b>${self.commission_amount:,.2f}</b>')
-        prop.message_post(body='<br/>'.join(msg))
+        prop.message_post(body=Markup('<br/>'.join(msg)))
 
         # 6. Marcar oportunidad de CRM como ganada si está vinculada
         target_lead = self.lead_id or (order.lead_id if order and hasattr(order, 'lead_id') else False)
@@ -372,7 +395,7 @@ class EstateSaleWizard(models.TransientModel):
             except Exception:
                 pass
         if target_lead:
-            target_lead.message_post(body=f'Venta de propiedad <b>{prop.title}</b> confirmada por <b>${self.sale_price:,.2f}</b> con comisión de <b>${self.commission_amount:,.2f}</b>.')
+            target_lead.message_post(body=Markup(f'Venta de propiedad <b>{prop.title}</b> confirmada por <b>${self.sale_price:,.2f}</b> con comisión de <b>${self.commission_amount:,.2f}</b>.'))
 
         # Abrir la factura generada (o la orden si no hubo factura)
         if invoice:

@@ -1237,7 +1237,7 @@ class EstateProperty(models.Model):
             ('amount', '=', 15.0), ('company_id', '=', self.env.company.id),
         ], limit=1)
 
-    def _process_native_sale(self, buyer, price, commission_amount, commission_pct, invoice_mode='commission', user_id=False, apply_vat=False):
+    def _process_native_sale(self, buyer, price, commission_amount, commission_pct, invoice_mode='commission', user_id=False, apply_vat=False, lead_id=False):
         """Crea y confirma la orden de venta nativa (sale.order) y genera +
         contabiliza la factura (account.move) según el modo de facturación elegido:
         - 'commission': Factura los Honorarios de Corretaje (al propietario si existe, o al cliente).
@@ -1251,17 +1251,18 @@ class EstateProperty(models.Model):
 
         order = invoice = False
 
-        # Vincular lead activo del comprador si existe
-        active_lead = self.env['crm.lead'].search([
+        # Vincular lead de origen si se especificó o buscar la oportunidad relacionada
+        active_lead = lead_id or self.env['crm.lead'].search([
             ('partner_id', '=', buyer.id),
             ('target_property_id', '=', self.id),
             ('type', '=', 'opportunity'),
-            ('probability', '>', 0), ('probability', '<', 100),
         ], limit=1) or self.env['crm.lead'].search([
             ('partner_id', '=', buyer.id),
             ('type', '=', 'opportunity'),
-            ('probability', '>', 0), ('probability', '<', 100),
         ], limit=1)
+
+        if active_lead and hasattr(active_lead, 'lead_source_id') and active_lead.lead_source_id:
+            self.write({'deal_lead_origin': active_lead.lead_source_id.name})
 
         try:
             # Si facturamos solo comisión (corretaje), el cliente por defecto es el dueño/propietario del inmueble si existe

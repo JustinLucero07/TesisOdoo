@@ -148,7 +148,7 @@ class CalendarEventWhatsApp(models.Model):
             if event.start > now + timedelta(minutes=reminder_minutes):
                 continue  # aún no toca avisar esta cita
             processed += 1
-            time_str = fields.Datetime.context_timestamp(self, event.start).strftime('%H:%M')
+            time_str = event._format_local_time(event.start)
             client = event.client_id
             client_name = client.name if client else 'Sin cliente'
             property_name = event.property_id.title if event.property_id else ''
@@ -192,7 +192,7 @@ class CalendarEventWhatsApp(models.Model):
         if ICP.get_param('estate_calendar.whatsapp_active', 'False') != 'True':
             return {'sent': 0, 'detail': 'La integración de WhatsApp está desactivada en Ajustes.'}
 
-        time_str = fields.Datetime.context_timestamp(self, self.start).strftime('%H:%M')
+        time_str = self._format_local_time(self.start)
         client = self.client_id
         client_name = client.name if client else 'Sin cliente'
         property_name = self.property_id.title if self.property_id else ''

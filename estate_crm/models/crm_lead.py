@@ -79,7 +79,7 @@ class CrmLead(models.Model):
     # Catálogo editable (estate.crm.lead.source) para elegir o crear una fuente.
     lead_source_id = fields.Many2one(
         'estate.crm.lead.source', string='Fuente del Lead',
-        default=_default_lead_source_id,
+        default=False,
         required=True, tracking=True, index=True, ondelete='restrict',
         help='Canal por el que llegó este prospecto. Si no está en la lista, '
              'escribe el nombre y elige "Crear" para agregarla.')
@@ -186,8 +186,6 @@ class CrmLead(models.Model):
     contract_count = fields.Integer(string='Contratos', compute='_compute_contract_count')
 
 
-    # --- Órdenes de venta vinculadas ---
-    sale_order_count = fields.Integer(string='Órdenes de Venta', compute='_compute_sale_order_count')
 
     # --- Documentos privados (campo declarado en estate_document, aquí solo el count) ---
     estate_document_count = fields.Integer(string='Documentos', compute='_compute_estate_doc_count')
@@ -232,10 +230,17 @@ class CrmLead(models.Model):
                 domain = [('partner_id', '=', lead.partner_id.id)]
             lead.contract_count = Contract.search_count(domain) if domain else 0
 
-    def _compute_sale_order_count(self):
+    def _compute_sale_data(self):
+        super()._compute_sale_data()
         SaleOrder = self.env['sale.order']
         for lead in self:
-            lead.sale_order_count = SaleOrder.search_count([('lead_id', '=', lead.id)])
+            domain = [('lead_id', '=', lead.id), ('state', 'in', ('sale', 'done'))]
+            if lead.target_property_id:
+                domain = ['|', ('lead_id', '=', lead.id), ('property_id', '=', lead.target_property_id.id), ('state', 'in', ('sale', 'done'))]
+            orders = SaleOrder.search(domain)
+            if orders:
+                lead.sale_order_count = len(orders)
+                lead.sale_amount_total = sum(orders.mapped('amount_total'))
 
     def action_create_contract_from_lead(self):
         """Crea un contrato directamente desde el lead y lo abre en formulario."""
@@ -326,18 +331,36 @@ class CrmLead(models.Model):
 
     def action_view_lead_sale_orders(self):
         self.ensure_one()
+        domain = [('lead_id', '=', self.id)]
+        if self.target_property_id:
+            domain = ['|', ('lead_id', '=', self.id), ('property_id', '=', self.target_property_id.id)]
+        orders = self.env['sale.order'].search(domain)
+        if len(orders) == 1:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': f'Orden de Venta — {orders.name}',
+                'res_model': 'sale.order',
+                'res_id': orders.id,
+                'view_mode': 'form',
+                'views': [(False, 'form')],
+                'target': 'current',
+            }
         return {
             'type': 'ir.actions.act_window',
             'name': f'Órdenes de Venta — {self.partner_id.name or self.name}',
             'res_model': 'sale.order',
             'view_mode': 'list,form',
-            'domain': [('lead_id', '=', self.id)],
+            'domain': domain,
             'context': {
                 'default_lead_id': self.id,
-                'default_partner_id': self.partner_id.id,
+                'default_partner_id': self.partner_id.id if self.partner_id else False,
                 'default_property_id': self.target_property_id.id if self.target_property_id else False,
             },
         }
+
+    def action_view_sale_order(self):
+        """Sobrescribe la acción estándar del smart button Venta/Orders para asegurar que abra la orden."""
+        return self.action_view_lead_sale_orders()
 
     def action_create_sale_order_from_lead(self):
         """Crea una orden de venta desde el lead CRM con datos pre-llenados."""
@@ -1243,6 +1266,12 @@ class CrmLead(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('lead_source_id'):
+                # Si viene de webhook / segundo plano sin fuente especificada, usar fallback
+                def_src = self._default_lead_source_id()
+                if def_src:
+                    vals['lead_source_id'] = def_src.id
         leads = super().create(vals_list)
         # En importaciones masivas se salta la notificación: publicar un mensaje
         # y crear una actividad por cada lead multiplicaría por miles las
