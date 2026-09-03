@@ -27,11 +27,6 @@ workflows:
           cd inmobi_app
           flutter packages pub get
 
-      - name: Instalar CocoaPods
-        script: |
-          cd inmobi_app/ios
-          pod install
-
       - name: Preparar el llavero para firmar el código
         script: keychain initialize
 
