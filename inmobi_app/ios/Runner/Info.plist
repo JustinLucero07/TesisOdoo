@@ -68,5 +68,11 @@
 	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Requerido para guardar fotos de las propiedades en tu galería.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Requerido para seleccionar fotos de las propiedades desde tu galería.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Requerido para tomar fotos de las propiedades directamente desde la app.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Requerido para ubicar la propiedad en el mapa y calcular su cercanía a puntos de interés.</string>
 </dict>
 </plist>
