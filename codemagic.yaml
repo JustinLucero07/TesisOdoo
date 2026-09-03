@@ -35,8 +35,15 @@ workflows:
       # cuenta de Apple. --create le dice a Codemagic que los genere él
       # mismo con la API Key; en las próximas compilaciones simplemente
       # los reutiliza porque ya van a existir.
+      #
+      # CERTIFICATE_PRIVATE_KEY_B64 se guardó en base64 (una sola línea)
+      # para que pegarla en Codemagic no arruine los saltos de línea del
+      # PEM. Se decodifica aquí mismo, en el mismo paso, justo antes de
+      # usarla — así la variable con saltos de línea reales nunca tiene
+      # que sobrevivir un copy/paste ni pasar de un paso a otro.
       - name: Generar/obtener certificado y perfil de distribución
         script: |
+          export CERTIFICATE_PRIVATE_KEY=$(echo $CERTIFICATE_PRIVATE_KEY_B64 | base64 --decode)
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
