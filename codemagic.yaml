@@ -8,6 +8,10 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.inmobi.inmobiApp"
+        # Apple ID numérico de la app "Inmobi" en App Store Connect (no es
+        # secreto, es un identificador público) — se usa para preguntarle a
+        # Apple cuál fue el último número de build subido.
+        APP_APPLE_ID: "6808286610"
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -54,10 +58,23 @@ workflows:
       - name: Aplicar la firma al proyecto de Xcode
         script: xcode-project use-profiles
 
+      # Apple rechaza un build con el mismo número que uno ya subido
+      # antes ("the bundle version must be higher than the previously
+      # uploaded version"). En vez de subirlo a mano en pubspec.yaml antes
+      # de cada compilación, se le pregunta a Apple cuál fue el último y
+      # se usa el siguiente automáticamente.
+      - name: Calcular el próximo número de build
+        script: |
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$APP_APPLE_ID")
+          NEXT_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "El último build subido fue el $LATEST_BUILD_NUMBER, este va a ser el $NEXT_BUILD_NUMBER"
+          echo "BUILD_NUMBER=$NEXT_BUILD_NUMBER" >> $CM_ENV
+
       - name: Compilar el .ipa
         script: |
           cd inmobi_app
           flutter build ipa --release \
+            --build-number=$BUILD_NUMBER \
             --export-options-plist=/Users/builder/export_options.plist
 
     artifacts:

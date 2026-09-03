@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/select_field.dart';
 import '../auth/auth_service.dart';
 import 'contact_model.dart';
@@ -37,6 +38,10 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
   final _functionCtrl = TextEditingController();
   String _idType = 'cedula';
   String _preferredContact = 'whatsapp';
+  // Código de país para cada teléfono — separados porque un contacto
+  // puede tener, por ejemplo, celular ecuatoriano y fijo de otro país.
+  String _mobileCountry = PhoneUtils.defaultCountryCode;
+  String _phoneCountry = PhoneUtils.defaultCountryCode;
   bool _isCompany = false;
   bool _isPropertyOwner = false;
   bool _isAlliedAgency = false;
@@ -95,8 +100,17 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
       _error = null;
     });
 
-    final mobile = _mobileCtrl.text.trim();
-    final phone = _phoneCtrl.text.trim();
+    // Se normaliza con el código de país elegido en cada selector, para
+    // que quede guardado con formato internacional sin importar cómo lo
+    // haya escrito el asesor (con o sin el 0 inicial, con o sin +).
+    final mobileRaw = _mobileCtrl.text.trim();
+    final phoneRaw = _phoneCtrl.text.trim();
+    final mobile = mobileRaw.isNotEmpty
+        ? PhoneUtils.normalize(mobileRaw, countryCode: _mobileCountry)
+        : '';
+    final phone = phoneRaw.isNotEmpty
+        ? PhoneUtils.normalize(phoneRaw, countryCode: _phoneCountry)
+        : '';
     final effectivePhone = phone.isNotEmpty ? phone : mobile;
     final effectiveMobile = mobile.isNotEmpty ? mobile : phone;
 
@@ -156,16 +170,46 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                   (v == null || v.trim().isEmpty) ? 'Requerido' : null,
             ),
             const _FormSectionTitle('Contacto'),
-            TextFormField(
-              controller: _mobileCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Celular'),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: CountryCodeDropdown(
+                    value: _mobileCountry,
+                    onChanged: (v) => setState(() => _mobileCountry = v),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _mobileCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: 'Celular'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
-            TextFormField(
-              controller: _phoneCtrl,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Teléfono fijo'),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: CountryCodeDropdown(
+                    value: _phoneCountry,
+                    onChanged: (v) => setState(() => _phoneCountry = v),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextFormField(
+                    controller: _phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(labelText: 'Teléfono fijo'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 14),
             TextFormField(

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/expandable_section.dart';
 import '../../core/widgets/odoo_image.dart';
@@ -115,22 +116,15 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-  Future<void> _call(String phone) async {
-    final uri = Uri(scheme: 'tel', path: phone);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
-  }
+  Future<void> _call(String phone) => PhoneUtils.call(phone);
 
   Future<void> _whatsappAdvisor(String phone) async {
-    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final p = _property;
     final title = p != null ? (p.title.isEmpty ? p.reference : p.title) : '';
-    final text = Uri.encodeComponent(
-      'Hola, te contacto sobre la propiedad $title (Ref: ${p?.reference ?? ''}).',
+    await PhoneUtils.whatsapp(
+      phone,
+      text: 'Hola, te contacto sobre la propiedad $title (Ref: ${p?.reference ?? ''}).',
     );
-    final uri = Uri.parse('https://wa.me/$digits?text=$text');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
   }
 
   /// WhatsApp genérico para propietario/comprador/arrendatario — mismo

@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import 'property_model.dart';
 
 enum FichaActionType { open, sharePdf, shareWhatsappText }
@@ -326,10 +326,9 @@ class FichaDownloader {
     final message = buffer.toString();
 
     if (phone != null && phone.isNotEmpty) {
-      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-      final uri = Uri.parse('https://wa.me/$digits?text=${Uri.encodeComponent(message)}');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final normalized = PhoneUtils.normalize(phone);
+      if (normalized.isNotEmpty) {
+        await PhoneUtils.whatsapp(phone, text: message);
         return;
       }
     }
