@@ -1,0 +1,47 @@
+workflows:
+  ios-testflight:
+    name: Inmobi iOS - TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: codemagic_api_key
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.inmobi.inmobiApp
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      vars:
+        # Contenido de GoogleService-Info.plist codificado en base64 —
+        # se guarda como variable segura en Codemagic, nunca en el repo.
+        GOOGLE_SERVICE_INFO_PLIST: Encrypted(...)
+    scripts:
+      - name: Restaurar GoogleService-Info.plist (Firebase)
+        script: |
+          echo $GOOGLE_SERVICE_INFO_PLIST | base64 --decode > "$CM_BUILD_DIR/inmobi_app/ios/Runner/GoogleService-Info.plist"
+
+      - name: Obtener paquetes de Flutter
+        script: |
+          cd inmobi_app
+          flutter packages pub get
+
+      - name: Instalar CocoaPods
+        script: |
+          cd inmobi_app/ios
+          pod install
+
+      - name: Compilar el .ipa
+        script: |
+          cd inmobi_app
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+
+    artifacts:
+      - inmobi_app/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
