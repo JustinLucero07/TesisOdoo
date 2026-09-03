@@ -185,6 +185,7 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat("EEEE d 'de' MMMM, y", 'es_EC');
+    final colors = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(widget.isEdit ? 'Editar cita' : 'Nueva cita')),
       body: Form(
@@ -310,7 +311,7 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: AppColors.danger)),
+              Text(_error!, style: TextStyle(color: colors.danger)),
             ],
             const SizedBox(height: 24),
             ElevatedButton(

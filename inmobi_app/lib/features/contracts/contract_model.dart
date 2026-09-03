@@ -78,12 +78,12 @@ class ContractStateStyle {
     _ => 'Borrador',
   };
 
-  static Color color(String state) => switch (state) {
-    'active' => AppColors.success,
-    'suspended' || 'renewing' => AppColors.warning,
-    'expired' || 'cancelled' => AppColors.danger,
-    'renewed' => AppColors.info,
-    _ => AppColors.muted,
+  static Color color(String state, AppPalette colors) => switch (state) {
+    'active' => colors.success,
+    'suspended' || 'renewing' => colors.warning,
+    'expired' || 'cancelled' => colors.danger,
+    'renewed' => colors.info,
+    _ => colors.muted,
   };
 }
 

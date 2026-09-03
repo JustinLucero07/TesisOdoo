@@ -140,6 +140,7 @@ class _ContractFormScreenState extends State<ContractFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEdit ? 'Editar contrato' : 'Nuevo contrato'),
@@ -208,8 +209,8 @@ class _ContractFormScreenState extends State<ContractFormScreen> {
                         _dateEnd != null ? _fmtDate(_dateEnd!) : 'Sin definir',
                         style: TextStyle(
                           color: _dateEnd != null
-                              ? AppColors.ink
-                              : AppColors.mutedLight,
+                              ? colors.ink
+                              : colors.mutedLight,
                         ),
                       ),
                     ),
@@ -243,7 +244,7 @@ class _ContractFormScreenState extends State<ContractFormScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: AppColors.danger)),
+              Text(_error!, style: TextStyle(color: colors.danger)),
             ],
             const SizedBox(height: 24),
             ElevatedButton(

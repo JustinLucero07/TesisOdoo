@@ -159,10 +159,10 @@ class VisitStateStyle {
     _ => 'Programada',
   };
 
-  static Color color(String state) => switch (state) {
-    'done' => AppColors.success,
-    'cancelled' => AppColors.danger,
-    _ => AppColors.info,
+  static Color color(String state, AppPalette colors) => switch (state) {
+    'done' => colors.success,
+    'cancelled' => colors.danger,
+    _ => colors.info,
   };
 }
 
@@ -181,11 +181,11 @@ class AppointmentTypeStyle {
     _ => Icons.home_outlined,
   };
 
-  static Color color(String type) => switch (type) {
-    'meeting' => AppColors.navyLight,
-    'call' => AppColors.info,
-    'signing' => AppColors.accent,
-    _ => AppColors.navy,
+  static Color color(String type, AppPalette colors) => switch (type) {
+    'meeting' => colors.navyLight,
+    'call' => colors.info,
+    'signing' => colors.accent,
+    _ => colors.navy,
   };
 }
 
@@ -198,12 +198,12 @@ class VisitResultStyle {
     _ => '',
   };
 
-  static Color color(String r) => switch (r) {
-    'interested' => AppColors.success,
-    'offer_made' => AppColors.navy,
-    'follow_up' => AppColors.warning,
-    'not_interested' => AppColors.danger,
-    _ => AppColors.mutedLight,
+  static Color color(String r, AppPalette colors) => switch (r) {
+    'interested' => colors.success,
+    'offer_made' => colors.navy,
+    'follow_up' => colors.warning,
+    'not_interested' => colors.danger,
+    _ => colors.mutedLight,
   };
 
   static const List<(String, String)> options = [

@@ -117,15 +117,16 @@ class _OdooImageState extends State<OdooImage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     if (_loading) {
       return widget.placeholderBuilder?.call(context) ??
-          Container(color: AppColors.neutralBg);
+          Container(color: colors.neutralBg);
     }
     if (_failed || _bytes == null) {
       return widget.errorBuilder?.call(context) ??
           Container(
-            color: AppColors.navy.withValues(alpha: 0.07),
-            child: const Icon(Icons.home_outlined, color: AppColors.navy),
+            color: colors.navy.withValues(alpha: 0.07),
+            child: Icon(Icons.home_outlined, color: colors.navy),
           );
     }
     return Image.memory(
@@ -135,8 +136,8 @@ class _OdooImageState extends State<OdooImage> {
       errorBuilder: (context, error, stackTrace) =>
           widget.errorBuilder?.call(context) ??
           Container(
-            color: AppColors.navy.withValues(alpha: 0.07),
-            child: const Icon(Icons.person_outline, color: AppColors.navy),
+            color: colors.navy.withValues(alpha: 0.07),
+            child: Icon(Icons.person_outline, color: colors.navy),
           ),
     );
   }

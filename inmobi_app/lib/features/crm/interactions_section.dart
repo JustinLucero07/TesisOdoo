@@ -52,14 +52,14 @@ class Interaction {
     _ => 'Otro',
   };
 
-  static Color colorOf(String type) => switch (type) {
+  static Color colorOf(String type, AppPalette colors) => switch (type) {
     'note' => const Color(0xFFD81F26),
-    'call' => AppColors.navy,
-    'email' => AppColors.info,
-    'visit' => AppColors.success,
-    'meeting' => AppColors.navyLight,
+    'call' => colors.navy,
+    'email' => colors.info,
+    'visit' => colors.success,
+    'meeting' => colors.navyLight,
     'whatsapp' => const Color(0xFF25D366),
-    _ => AppColors.mutedLight,
+    _ => colors.mutedLight,
   };
 }
 
@@ -116,10 +116,11 @@ class _InteractionsSectionState extends State<InteractionsSection> {
   }
 
   Future<void> _addInteraction() async {
+    final colors = AppColors.of(context);
     final result = await showModalBottomSheet<({String type, String summary})>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -177,6 +178,7 @@ class _InteractionsSectionState extends State<InteractionsSection> {
   @override
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('d MMM y · HH:mm', 'es_EC');
+    final colors = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -200,11 +202,11 @@ class _InteractionsSectionState extends State<InteractionsSection> {
             child: LinearProgressIndicator(),
           )
         else if (_items.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
             child: Text(
               'Sin interacciones registradas.',
-              style: TextStyle(color: AppColors.mutedLight, fontSize: 13),
+              style: TextStyle(color: colors.mutedLight, fontSize: 13),
             ),
           )
         else
@@ -237,7 +239,8 @@ class _TimelineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = Interaction.colorOf(interaction.type);
+    final colors = AppColors.of(context);
+    final color = Interaction.colorOf(interaction.type, colors);
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,7 +261,7 @@ class _TimelineTile extends StatelessWidget {
                 ),
               ),
               if (!isLast)
-                Expanded(child: Container(width: 2, color: AppColors.line)),
+                Expanded(child: Container(width: 2, color: colors.line)),
             ],
           ),
           const SizedBox(width: 12),
@@ -282,9 +285,9 @@ class _TimelineTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           dateFmt.format(interaction.date),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 11,
-                            color: AppColors.mutedLight,
+                            color: colors.mutedLight,
                           ),
                         ),
                       ),
@@ -299,9 +302,9 @@ class _TimelineTile extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       interaction.userName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.mutedLight,
+                        color: colors.mutedLight,
                       ),
                     ),
                   ],
@@ -344,6 +347,7 @@ class _NewInteractionSheetState extends State<_NewInteractionSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,
@@ -360,7 +364,7 @@ class _NewInteractionSheetState extends State<_NewInteractionSheet> {
               width: 38,
               height: 4,
               decoration: BoxDecoration(
-                color: AppColors.line,
+                color: colors.line,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -380,15 +384,15 @@ class _NewInteractionSheetState extends State<_NewInteractionSheet> {
                 avatar: Icon(
                   Interaction.iconOf(t.$1),
                   size: 15,
-                  color: selected ? Colors.white : Interaction.colorOf(t.$1),
+                  color: selected ? Colors.white : Interaction.colorOf(t.$1, colors),
                 ),
                 label: Text(t.$2),
                 selected: selected,
                 onSelected: (_) => setState(() => _type = t.$1),
-                selectedColor: AppColors.navy,
-                backgroundColor: AppColors.neutralBg,
+                selectedColor: colors.navy,
+                backgroundColor: colors.neutralBg,
                 labelStyle: TextStyle(
-                  color: selected ? Colors.white : AppColors.ink,
+                  color: selected ? Colors.white : colors.ink,
                   fontWeight: FontWeight.w600,
                   fontSize: 12.5,
                 ),

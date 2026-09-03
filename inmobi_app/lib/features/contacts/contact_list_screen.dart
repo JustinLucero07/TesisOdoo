@@ -134,6 +134,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 74),
@@ -215,9 +216,9 @@ class _ContactListScreenState extends State<ContactListScreen> {
                 children: [
                   Text(
                     '${_contacts.length} contactos',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.mutedLight,
+                      color: colors.mutedLight,
                     ),
                   ),
                 ],
@@ -225,14 +226,14 @@ class _ContactListScreenState extends State<ContactListScreen> {
             ),
           const SizedBox(height: 6),
           Expanded(
-            child: RefreshIndicator(onRefresh: _load, child: _buildBody()),
+            child: RefreshIndicator(onRefresh: _load, child: _buildBody(colors)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppPalette colors) {
     if (_loading) return const SkeletonList();
     if (_error != null) {
       return MessageView(
@@ -261,15 +262,15 @@ class _ContactListScreenState extends State<ContactListScreen> {
               if (row.isHeader) {
                 return Container(
                   height: 34,
-                  color: AppColors.background,
+                  color: colors.background,
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   alignment: Alignment.centerLeft,
                   child: Text(
                     row.letter!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: AppColors.mutedLight,
+                      color: colors.mutedLight,
                     ),
                   ),
                 );
@@ -296,10 +297,10 @@ class _ContactListScreenState extends State<ContactListScreen> {
                         ),
                         child: Text(
                           l,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.navy,
+                            color: colors.navy,
                           ),
                         ),
                       ),
@@ -330,6 +331,7 @@ class _ContactTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final phone = contact.bestPhone;
 
     return Container(
@@ -360,7 +362,7 @@ class _ContactTile extends StatelessWidget {
                 InitialsAvatar(
                   text: contact.name,
                   size: 44,
-                  color: contact.roleColor,
+                  color: contact.roleColor(colors),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -446,7 +448,7 @@ class _ContactTile extends StatelessWidget {
                   ),
                 ],
                 if (contact.isPropertyOwner && phone.isEmpty)
-                  const AppBadge(label: 'Propietario', color: AppColors.navy),
+                  AppBadge(label: 'Propietario', color: colors.navy),
               ],
             ),
           ),

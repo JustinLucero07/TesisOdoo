@@ -140,18 +140,18 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
               message: _error!,
               onRetry: _load,
             )
-          : _buildBody(),
+          : _buildBody(AppColors.of(context)),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppPalette colors) {
     final c = _contact!;
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
         Row(
           children: [
-            InitialsAvatar(text: c.name, size: 60, color: c.roleColor),
+            InitialsAvatar(text: c.name, size: 60, color: c.roleColor(colors)),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -169,11 +169,11 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      AppBadge(label: c.roleLabel, color: c.roleColor),
+                      AppBadge(label: c.roleLabel, color: c.roleColor(colors)),
                       if (c.isAlliedAgency && !c.isPropertyOwner)
-                        const AppBadge(
+                        AppBadge(
                           label: 'Aliada',
-                          color: AppColors.warning,
+                          color: colors.warning,
                         ),
                     ],
                   ),
@@ -309,29 +309,30 @@ class _CountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       decoration: BoxDecoration(
-        color: AppColors.neutralBg,
+        color: colors.neutralBg,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         children: [
-          Icon(icon, size: 18, color: AppColors.navy),
+          Icon(icon, size: 18, color: colors.navy),
           const SizedBox(height: 6),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: AppColors.navy,
+              color: colors.navy,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: AppColors.mutedLight),
+            style: TextStyle(fontSize: 11, color: colors.mutedLight),
           ),
         ],
       ),
@@ -345,10 +346,11 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     if (rows.isEmpty) {
-      return const Text(
+      return Text(
         'Sin información registrada.',
-        style: TextStyle(color: AppColors.mutedLight, fontSize: 13),
+        style: TextStyle(color: colors.mutedLight, fontSize: 13),
       );
     }
     return Card(
@@ -365,9 +367,9 @@ class _InfoCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         rows[i].$1,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
-                          color: AppColors.mutedLight,
+                          color: colors.mutedLight,
                         ),
                       ),
                     ),

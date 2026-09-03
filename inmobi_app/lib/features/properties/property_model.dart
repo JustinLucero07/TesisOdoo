@@ -244,11 +244,11 @@ class PropertyStateLabel {
     }
   }
 
-  static Color color(String state) => switch (state) {
-    'available' => AppColors.success,
-    'reserved' => AppColors.warning,
-    'sold' || 'rented' => AppColors.navy,
-    _ => AppColors.muted,
+  static Color color(String state, AppPalette colors) => switch (state) {
+    'available' => colors.success,
+    'reserved' => colors.warning,
+    'sold' || 'rented' => colors.navy,
+    _ => colors.muted,
   };
 }
 
@@ -260,10 +260,10 @@ class PropertyAvmStyle {
     _ => 'Sin calcular',
   };
 
-  static Color color(String status) => switch (status) {
-    'fair' => AppColors.success,
-    'high' => AppColors.danger,
-    'low' => AppColors.warning,
-    _ => AppColors.mutedLight,
+  static Color color(String status, AppPalette colors) => switch (status) {
+    'fair' => colors.success,
+    'high' => colors.danger,
+    'low' => colors.warning,
+    _ => colors.mutedLight,
   };
 }

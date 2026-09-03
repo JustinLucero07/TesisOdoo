@@ -7,7 +7,7 @@ class KpiCard extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  final Color accent;
+  final Color? accent;
   final VoidCallback? onTap;
 
   const KpiCard({
@@ -15,14 +15,16 @@ class KpiCard extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.label,
-    this.accent = AppColors.navy,
+    this.accent,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final resolvedAccent = accent ?? colors.navy;
     return Material(
-      color: AppColors.surface,
+      color: colors.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
@@ -31,7 +33,7 @@ class KpiCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.line),
+            border: Border.all(color: colors.line),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,25 +42,25 @@ class KpiCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
+                  color: resolvedAccent.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: accent, size: 20),
+                child: Icon(icon, color: resolvedAccent, size: 20),
               ),
               const SizedBox(height: 14),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.ink,
+                  color: colors.ink,
                   height: 1,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: const TextStyle(fontSize: 12.5, color: AppColors.muted),
+                style: TextStyle(fontSize: 12.5, color: colors.muted),
               ),
             ],
           ),

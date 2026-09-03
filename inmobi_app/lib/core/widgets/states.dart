@@ -8,8 +8,8 @@ class LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.navy),
+    return Center(
+      child: CircularProgressIndicator(color: AppColors.of(context).navy),
     );
   }
 }
@@ -29,18 +29,19 @@ class MessageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 44, color: AppColors.mutedLight),
+            Icon(icon, size: 44, color: colors.mutedLight),
             const SizedBox(height: 14),
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.muted, fontSize: 14),
+              style: TextStyle(color: colors.muted, fontSize: 14),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 14),
@@ -60,17 +61,18 @@ class MessageView extends StatelessWidget {
 class InitialsAvatar extends StatelessWidget {
   final String text;
   final double size;
-  final Color color;
+  final Color? color;
 
   const InitialsAvatar({
     super.key,
     required this.text,
     this.size = 44,
-    this.color = AppColors.navy,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    final resolvedColor = color ?? AppColors.of(context).navy;
     final initials = text.trim().isEmpty
         ? '?'
         : text
@@ -83,14 +85,14 @@ class InitialsAvatar extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: resolvedColor.withValues(alpha: 0.12),
         shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
       child: Text(
         initials,
         style: TextStyle(
-          color: color,
+          color: resolvedColor,
           fontWeight: FontWeight.w700,
           fontSize: size * 0.36,
         ),

@@ -4,6 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
+import '../../core/widgets/glass_nav_bar.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/skeleton.dart';
 import '../auth/auth_service.dart';
@@ -155,11 +158,13 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
       decimalDigits: 0,
     );
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final activeFilters = _activeAdvancedFilterCount;
 
     return Scaffold(
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 74),
+        // Se levanta por encima del dock flotante de vidrio, no encima de él.
+        padding: const EdgeInsets.only(bottom: GlassNavBar.reservedHeight),
         child: FloatingActionButton.small(
           heroTag: null,
           onPressed: _openCreate,
@@ -180,7 +185,14 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    // El buscador arranca debajo de la barra de vidrio: el
+                    // catálogo pasa por detrás de ella al hacer scroll.
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      MediaQuery.paddingOf(context).top + 12,
+                      16,
+                      4,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -313,7 +325,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                                   color: selected
                                       ? Colors.white
-                                      : (isDark ? Colors.white70 : AppColors.ink),
+                                      : (isDark ? Colors.white70 : colors.ink),
                                 ),
                               ),
                             ),
@@ -395,10 +407,13 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                     (context, index) {
                       if (index.isOdd) return const SizedBox(height: 14);
                       final propIndex = index ~/ 2;
-                      return PropertyCard(
-                        property: _properties[propIndex],
-                        odoo: context.read<AuthService>().odoo,
-                        currency: currency,
+                      return FadeSlideIn(
+                        index: propIndex,
+                        child: PropertyCard(
+                          property: _properties[propIndex],
+                          odoo: context.read<AuthService>().odoo,
+                          currency: currency,
+                        ),
                       );
                     },
                     childCount: _properties.isEmpty ? 0 : (_properties.length * 2 - 1),
@@ -504,12 +519,14 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14112E) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
+    // La hoja llega como material: el catálogo se ve desenfocado detrás en
+    // lugar de desaparecer bajo un panel opaco, así no se pierde el contexto
+    // de lo que se está filtrando.
+    return GlassSurface(
+      level: GlassLevel.thick,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom + 20,
       ),
@@ -814,9 +831,9 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                     'Solo Propiedades Exclusivas',
                     style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
                   ),
-                  subtitle: const Text(
+                  subtitle: Text(
                     'Inmuebles con contrato de exclusividad Inmobi',
-                    style: TextStyle(fontSize: 11.5, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11.5, color: colors.muted),
                   ),
                   value: _onlyExclusive,
                   onChanged: (v) => setState(() => _onlyExclusive = v),
@@ -888,6 +905,7 @@ class _FilterChoiceChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -909,7 +927,7 @@ class _FilterChoiceChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? Colors.white : (isDark ? Colors.white70 : AppColors.ink),
+            color: selected ? Colors.white : (isDark ? Colors.white70 : colors.ink),
           ),
         ),
       ),
@@ -931,6 +949,7 @@ class _NumberOptionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -957,7 +976,7 @@ class _NumberOptionButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              color: selected ? Colors.white : (isDark ? Colors.white70 : AppColors.ink),
+              color: selected ? Colors.white : (isDark ? Colors.white70 : colors.ink),
             ),
           ),
         ),

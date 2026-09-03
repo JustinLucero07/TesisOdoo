@@ -47,6 +47,7 @@ class _StageFunnelState extends State<StageFunnel> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     if (_loading) {
       return const SizedBox(
         height: 40,
@@ -69,12 +70,12 @@ class _StageFunnelState extends State<StageFunnel> {
             label: Text(stage.name),
             selected: selected,
             onSelected: widget.busy ? null : (_) => widget.onSelect(stage),
-            selectedColor: lost ? AppColors.danger : AppColors.navy,
-            backgroundColor: AppColors.neutralBg,
+            selectedColor: lost ? colors.danger : colors.navy,
+            backgroundColor: colors.neutralBg,
             labelStyle: TextStyle(
               color: selected
                   ? Colors.white
-                  : (lost ? AppColors.danger : AppColors.ink),
+                  : (lost ? colors.danger : colors.ink),
               fontWeight: FontWeight.w600,
               fontSize: 12.5,
             ),

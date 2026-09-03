@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../visits/visit_form_screen.dart';
 import 'ficha_download.dart';
@@ -61,31 +62,36 @@ class _PropertyCardState extends State<PropertyCard> {
     final p = widget.property;
     final photoCount = p.imageIds.isEmpty ? 1 : p.imageIds.length;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final pricePerM2 = (p.area > 0 && p.displayPrice > 0)
         ? (p.displayPrice / p.area)
         : null;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.1)
-              : const Color(0xFFE2E8F0),
+    // La tarjeta entera responde al presionar, no al soltar: se hunde un
+    // poco en cuanto el dedo baja. En una tarjeta grande con foto, ese
+    // hundido se lee mejor que un ripple que queda escondido bajo la imagen.
+    return PressableScale(
+      scale: 0.985,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => PropertyDetailScreen(propertyId: p.id),
         ),
-        boxShadow: softShadow(opacity: isDark ? 0.25 : 0.04, isDark: isDark),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => PropertyDetailScreen(propertyId: p.id),
-            ),
+      onLongPress: _openQuickActions,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.1)
+                : const Color(0xFFE2E8F0),
           ),
-          onLongPress: _openQuickActions,
+          boxShadow: softShadow(opacity: isDark ? 0.25 : 0.04, isDark: isDark),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Material(
+          color: Colors.transparent,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -103,11 +109,11 @@ class _PropertyCardState extends State<PropertyCard> {
                             width: 640,
                             height: 400,
                             errorBuilder: (_) => Container(
-                              color: AppColors.navy.withValues(alpha: 0.07),
-                              child: const Icon(
+                              color: colors.navy.withValues(alpha: 0.07),
+                              child: Icon(
                                 Icons.home_work_outlined,
                                 size: 44,
-                                color: AppColors.navy,
+                                color: colors.navy,
                               ),
                             ),
                           )
@@ -124,11 +130,11 @@ class _PropertyCardState extends State<PropertyCard> {
                               width: 640,
                               height: 400,
                               errorBuilder: (_) => Container(
-                                color: AppColors.navy.withValues(alpha: 0.07),
-                                child: const Icon(
+                                color: colors.navy.withValues(alpha: 0.07),
+                                child: Icon(
                                   Icons.home_work_outlined,
                                   size: 44,
-                                  color: AppColors.navy,
+                                  color: colors.navy,
                                 ),
                               ),
                             ),
@@ -270,7 +276,7 @@ class _PropertyCardState extends State<PropertyCard> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: PropertyStateLabel.color(p.state).withValues(alpha: 0.9),
+                            color: PropertyStateLabel.color(p.state, colors).withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.white24, width: 0.8),
                           ),
@@ -304,7 +310,7 @@ class _PropertyCardState extends State<PropertyCard> {
                           widget.currency.format(p.displayPrice),
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: isDark ? AppColors.navyLight : AppColors.navy,
+                            color: isDark ? colors.navyLight : colors.navy,
                             fontSize: 20,
                             letterSpacing: -0.5,
                           ),
@@ -313,10 +319,10 @@ class _PropertyCardState extends State<PropertyCard> {
                           const SizedBox(width: 8),
                           Text(
                             '•  ${widget.currency.format(pricePerM2)}/m²',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.mutedLight,
+                              color: colors.mutedLight,
                             ),
                           ),
                         ],
@@ -336,7 +342,7 @@ class _PropertyCardState extends State<PropertyCard> {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 15.5,
-                              color: isDark ? Colors.white : AppColors.ink,
+                              color: isDark ? Colors.white : colors.ink,
                               letterSpacing: -0.2,
                             ),
                           ),
@@ -353,10 +359,10 @@ class _PropertyCardState extends State<PropertyCard> {
                     // Ubicación
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.location_on_outlined,
                           size: 14,
-                          color: AppColors.mutedLight,
+                          color: colors.mutedLight,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -367,8 +373,8 @@ class _PropertyCardState extends State<PropertyCard> {
                             ].join(', '),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.muted,
+                            style: TextStyle(
+                              color: colors.muted,
                               fontSize: 12.5,
                             ),
                           ),
@@ -624,7 +630,7 @@ class _PropertyCardState extends State<PropertyCard> {
                                 children: [
                                   Divider(
                                     height: 16,
-                                    color: isDark ? Colors.white12 : AppColors.line,
+                                    color: isDark ? Colors.white12 : colors.line,
                                   ),
                                   Text(
                                     p.description,
@@ -633,7 +639,7 @@ class _PropertyCardState extends State<PropertyCard> {
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       height: 1.4,
-                                      color: isDark ? Colors.white70 : AppColors.ink,
+                                      color: isDark ? Colors.white70 : colors.ink,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -642,7 +648,7 @@ class _PropertyCardState extends State<PropertyCard> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: isDark ? AppColors.navyLight : AppColors.navy,
+                                      color: isDark ? colors.navyLight : colors.navy,
                                     ),
                                   ),
                                 ],
@@ -669,6 +675,7 @@ class _ExpandButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     return InkWell(
       borderRadius: BorderRadius.circular(20),
       onTap: onTap,
@@ -677,7 +684,7 @@ class _ExpandButton extends StatelessWidget {
         height: 26,
         margin: const EdgeInsets.only(left: 6),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF262246) : AppColors.neutralBg,
+          color: isDark ? const Color(0xFF262246) : colors.neutralBg,
           shape: BoxShape.circle,
         ),
         child: AnimatedRotation(
@@ -687,7 +694,7 @@ class _ExpandButton extends StatelessWidget {
           child: Icon(
             Icons.add,
             size: 16,
-            color: isDark ? AppColors.navyLight : AppColors.navy,
+            color: isDark ? colors.navyLight : colors.navy,
           ),
         ),
       ),
@@ -707,6 +714,7 @@ class _SpecChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -719,7 +727,7 @@ class _SpecChip extends StatelessWidget {
           Icon(
             icon,
             size: 13.5,
-            color: isDark ? AppColors.navyLight : AppColors.navy,
+            color: isDark ? colors.navyLight : colors.navy,
           ),
           const SizedBox(width: 4),
           Text(
@@ -727,7 +735,7 @@ class _SpecChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : AppColors.ink,
+              color: isDark ? Colors.white70 : colors.ink,
             ),
           ),
         ],
@@ -780,6 +788,7 @@ class _PropertyQuickActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final p = property;
 
     return Container(
@@ -853,7 +862,7 @@ class _PropertyQuickActionSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            Divider(color: isDark ? Colors.white12 : AppColors.line),
+            Divider(color: isDark ? Colors.white12 : colors.line),
             const SizedBox(height: 6),
 
             // Acciones Rápidas
@@ -930,6 +939,7 @@ class _QuickActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return ListTile(
       dense: true,
@@ -950,10 +960,10 @@ class _QuickActionTile extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right_rounded,
         size: 18,
-        color: AppColors.mutedLight,
+        color: colors.mutedLight,
       ),
       onTap: onTap,
     );

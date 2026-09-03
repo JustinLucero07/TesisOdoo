@@ -102,12 +102,12 @@ class OfferStateStyle {
     _ => 'Borrador',
   };
 
-  static Color color(String s) => switch (s) {
-    'submitted' => AppColors.info,
-    'countered' => AppColors.warning,
-    'accepted' => AppColors.success,
-    'rejected' || 'expired' => AppColors.danger,
-    _ => AppColors.mutedLight,
+  static Color color(String s, AppPalette colors) => switch (s) {
+    'submitted' => colors.info,
+    'countered' => colors.warning,
+    'accepted' => colors.success,
+    'rejected' || 'expired' => colors.danger,
+    _ => colors.mutedLight,
   };
 }
 

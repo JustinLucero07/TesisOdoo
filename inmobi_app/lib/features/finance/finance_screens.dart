@@ -86,7 +86,7 @@ class CommissionListScreen extends StatelessWidget {
                     ),
                     AppBadge(
                       label: Commission.stateLabel(c.state),
-                      color: Commission.stateColor(c.state),
+                      color: Commission.stateColor(c.state, p),
                     ),
                   ],
                 ),
@@ -138,10 +138,10 @@ class CommissionListScreen extends StatelessWidget {
                   children: [
                     AppBadge(
                       label: Commission.typeLabel(c.type),
-                      color: AppColors.mutedLight,
+                      color: p.mutedLight,
                     ),
                     if (!onlyMine && c.userName.isNotEmpty)
-                      AppBadge(label: c.userName, color: AppColors.navyLight),
+                      AppBadge(label: c.userName, color: p.navyLight),
                   ],
                 ),
               ],
@@ -240,11 +240,11 @@ class PaymentListScreen extends StatelessWidget {
                         children: [
                           AppBadge(
                             label: Payment.stateLabel(pay.state),
-                            color: Payment.stateColor(pay.state),
+                            color: Payment.stateColor(pay.state, p),
                           ),
                           AppBadge(
                             label: Payment.methodLabel(pay.method),
-                            color: AppColors.mutedLight,
+                            color: p.mutedLight,
                           ),
                         ],
                       ),
@@ -391,7 +391,7 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         children: [
                           AppBadge(
                             label: typeLabel,
-                            color: AppColors.mutedLight,
+                            color: p.mutedLight,
                           ),
                           if (e.reimbursable)
                             AppBadge(
@@ -399,8 +399,8 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                                   ? 'Reembolsado'
                                   : 'Por reembolsar',
                               color: e.reimbursed
-                                  ? AppColors.success
-                                  : AppColors.warning,
+                                  ? p.success
+                                  : p.warning,
                             ),
                         ],
                       ),
@@ -641,7 +641,7 @@ class AppraisalListScreen extends StatelessWidget {
                     ),
                     AppBadge(
                       label: Appraisal.stateLabel(a.state),
-                      color: Appraisal.stateColor(a.state),
+                      color: Appraisal.stateColor(a.state, p),
                     ),
                   ],
                 ),
@@ -678,8 +678,8 @@ class AppraisalListScreen extends StatelessWidget {
                           label:
                               '${a.variancePct > 0 ? '+' : ''}${a.variancePct.toStringAsFixed(1)}% vs precio',
                           color: a.variancePct >= 0
-                              ? AppColors.success
-                              : AppColors.warning,
+                              ? p.success
+                              : p.warning,
                         ),
                     ],
                   ),

@@ -322,7 +322,7 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
     final p = AppColors.of(context);
     final dayFmt = DateFormat("EEEE d 'de' MMMM, y", 'es_EC');
     final timeFmt = DateFormat.Hm('es_EC');
-    final typeColor = AppointmentTypeStyle.color(v.appointmentType);
+    final typeColor = AppointmentTypeStyle.color(v.appointmentType, p);
 
     return ListView(
       padding: EdgeInsets.zero,
@@ -388,12 +388,12 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                 children: [
                   AppBadge(
                     label: VisitStateStyle.label(v.visitState),
-                    color: VisitStateStyle.color(v.visitState),
+                    color: VisitStateStyle.color(v.visitState, p),
                   ),
                   if (v.visitResult.isNotEmpty)
                     AppBadge(
                       label: VisitResultStyle.label(v.visitResult),
-                      color: VisitResultStyle.color(v.visitResult),
+                      color: VisitResultStyle.color(v.visitResult, p),
                     ),
                   if (v.visitRating.isNotEmpty)
                     AppBadge(
@@ -865,7 +865,7 @@ class _VisitResultSheetState extends State<_VisitResultSheet> {
                 label: Text(o.$2),
                 selected: selected,
                 onSelected: (_) => setState(() => _result = o.$1),
-                selectedColor: VisitResultStyle.color(o.$1),
+                selectedColor: VisitResultStyle.color(o.$1, p),
                 backgroundColor: p.neutralBg,
                 labelStyle: TextStyle(
                   color: selected ? Colors.white : p.ink,

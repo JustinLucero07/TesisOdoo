@@ -91,6 +91,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Column(
       children: [
         Expanded(
@@ -111,7 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
               alignment: Alignment.centerLeft,
               child: Text(
                 _status!,
-                style: const TextStyle(color: AppColors.muted, fontSize: 12.5),
+                style: TextStyle(color: colors.muted, fontSize: 12.5),
               ),
             ),
           ),
@@ -137,7 +138,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   onPressed: _sending ? null : _send,
                   icon: const Icon(Icons.send),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.navy,
+                    backgroundColor: colors.navy,
                     foregroundColor: Colors.white,
                   ),
                 ),
@@ -155,22 +156,23 @@ class _EmptyChatHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.smart_toy_outlined,
               size: 48,
-              color: AppColors.muted,
+              color: colors.muted,
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'El mismo agente del ERP, ahora desde el celular.\nPregunta por propiedades, leads o reportes.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.muted),
+              style: TextStyle(color: colors.muted),
             ),
           ],
         ),
@@ -185,6 +187,7 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final isUser = message.isUser;
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -195,14 +198,14 @@ class _MessageBubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         decoration: BoxDecoration(
-          color: isUser ? AppColors.navy : Colors.white,
-          border: isUser ? null : Border.all(color: AppColors.line),
+          color: isUser ? colors.navy : Colors.white,
+          border: isUser ? null : Border.all(color: colors.line),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Text(
           message.text.isEmpty && message.isStreaming ? '...' : message.text,
           style: TextStyle(
-            color: isUser ? Colors.white : AppColors.ink,
+            color: isUser ? Colors.white : colors.ink,
             fontSize: 14.5,
           ),
         ),

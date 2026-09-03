@@ -19,6 +19,7 @@ class ChoiceChipRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return SizedBox(
       height: 36,
       child: ListView.separated(
@@ -33,10 +34,10 @@ class ChoiceChipRow extends StatelessWidget {
             label: Text(label),
             selected: selected,
             onSelected: (_) => onChanged(optValue),
-            selectedColor: AppColors.navy,
-            backgroundColor: AppColors.neutralBg,
+            selectedColor: colors.navy,
+            backgroundColor: colors.neutralBg,
             labelStyle: TextStyle(
-              color: selected ? Colors.white : AppColors.ink,
+              color: selected ? Colors.white : colors.ink,
               fontWeight: FontWeight.w600,
               fontSize: 12.5,
             ),

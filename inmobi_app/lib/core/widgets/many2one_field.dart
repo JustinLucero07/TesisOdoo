@@ -63,6 +63,7 @@ class Many2oneField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     // Vista previa enriquecida para Propiedades seleccionadas
     if (value != null && model == 'estate.property') {
@@ -98,11 +99,11 @@ class Many2oneField extends StatelessWidget {
                         width: 120,
                         height: 120,
                         errorBuilder: (_) => Container(
-                          color: AppColors.navy.withValues(alpha: 0.08),
-                          child: const Icon(
+                          color: colors.navy.withValues(alpha: 0.08),
+                          child: Icon(
                             Icons.home_work_outlined,
                             size: 22,
-                            color: AppColors.navy,
+                            color: colors.navy,
                           ),
                         ),
                       ),
@@ -135,9 +136,9 @@ class Many2oneField extends StatelessWidget {
                         if (value!.subtitle != null && value!.subtitle!.isNotEmpty)
                           Text(
                             value!.subtitle!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.muted,
+                              color: colors.muted,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -218,9 +219,9 @@ class Many2oneField extends StatelessWidget {
                         if (value!.subtitle != null && value!.subtitle!.isNotEmpty)
                           Text(
                             value!.subtitle!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11,
-                              color: AppColors.muted,
+                              color: colors.muted,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -258,7 +259,7 @@ class Many2oneField extends StatelessWidget {
         child: Text(
           value?.name ?? 'Toca para elegir…',
           style: TextStyle(
-            color: value != null ? (isDark ? Colors.white : AppColors.ink) : AppColors.mutedLight,
+            color: value != null ? (isDark ? Colors.white : colors.ink) : colors.mutedLight,
             fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
           ),
           overflow: TextOverflow.ellipsis,
@@ -443,6 +444,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final isProperty = widget.model == 'estate.property';
     final isPartner = widget.model == 'res.partner';
 
@@ -508,13 +510,13 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                     ? Icons.person_search_outlined
                                     : Icons.search_off_rounded,
                             size: 48,
-                            color: AppColors.mutedLight,
+                            color: colors.mutedLight,
                           ),
                           const SizedBox(height: 10),
-                          const Text(
+                          Text(
                             'No se encontraron resultados.',
                             style: TextStyle(
-                              color: AppColors.muted,
+                              color: colors.muted,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -651,9 +653,9 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                       ],
                                     ),
                                   ),
-                                  const Icon(
+                                  Icon(
                                     Icons.chevron_right_rounded,
-                                    color: AppColors.mutedLight,
+                                    color: colors.mutedLight,
                                     size: 20,
                                   ),
                                 ],

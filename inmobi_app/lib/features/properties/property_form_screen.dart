@@ -168,6 +168,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.isEdit ? 'Editar propiedad' : 'Nueva propiedad'),
@@ -444,7 +445,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: AppColors.danger)),
+              Text(_error!, style: TextStyle(color: colors.danger)),
             ],
             const SizedBox(height: 24),
             ElevatedButton(
@@ -473,16 +474,17 @@ class _FormSectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       padding: const EdgeInsets.only(top: 18, bottom: 14),
       child: Row(
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 13,
-              color: AppColors.navy,
+              color: colors.navy,
             ),
           ),
           const SizedBox(width: 10),

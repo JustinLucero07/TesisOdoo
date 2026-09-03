@@ -6,6 +6,8 @@ import '../../core/config.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/theme_controller.dart';
+import '../../core/widgets/glass_nav_bar.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
 import '../auth/login_screen.dart';
@@ -55,82 +57,140 @@ class SettingsScreen extends StatelessWidget {
     final userName = auth.userName ?? 'Asesor Inmobi';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 110),
-      children: [
-        // ── Tarjeta de Perfil de Usuario ──
+    final sections = <Widget>[
+        // ── Cabecera del asesor: identidad de marca, no una tarjeta blanca ──
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF161330) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark ? const Color(0xFF28244E) : AppColors.line,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF28235D), Color(0xFF18143C)],
             ),
-            boxShadow: softShadow(opacity: isDark ? 0.2 : 0.05, isDark: isDark),
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF28235D).withValues(alpha: isDark ? 0.5 : 0.28),
+                blurRadius: 26,
+                offset: const Offset(0, 12),
+                spreadRadius: -8,
+              ),
+            ],
           ),
-          child: Row(
+          child: Column(
             children: [
-              InitialsAvatar(text: userName, size: 54),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              Row(
+                children: [
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        width: 2,
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(2),
+                    child: InitialsAvatar(
+                      text: userName,
+                      size: 52,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            userName,
-                            style: const TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.3,
-                            ),
+                        Text(
+                          userName,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                            color: Colors.white,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFD81F26).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'ASESOR',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFFD81F26),
-                              letterSpacing: 0.5,
+                        const SizedBox(height: 5),
+                        Row(
+                          children: [
+                            Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF34D399),
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 6),
+                            const Text(
+                              'Sesión activa',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF10B981),
-                            shape: BoxShape.circle,
-                          ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFD81F26),
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                    child: const Text(
+                      'ASESOR',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.7,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // El servidor al que está conectado vive aquí, no enterrado al
+              // final: es lo primero que se pregunta cuando algo no carga.
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.dns_outlined, size: 15, color: Colors.white70),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        AppConfig.odooServer.replaceFirst(RegExp(r'^https?://'), ''),
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
                         ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          'Conectado a Inmobi',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.muted,
-                          ),
-                        ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Text(
+                      AppConfig.odooDb,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
                     ),
                   ],
                 ),
@@ -138,7 +198,7 @@ class SettingsScreen extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 22),
 
         // ── Accesos de Creación Rápida ──
         _SectionHeader(title: 'ACCIONES RÁPIDAS'),
@@ -266,22 +326,14 @@ class SettingsScreen extends StatelessWidget {
         const _ThemeSelectorCard(),
         const SizedBox(height: 22),
 
-        // ── Sistema y Servidor ──
-        _SectionHeader(title: 'SISTEMA Y SERVIDOR'),
+        // ── Sistema ──
+        // El servidor y la base ya se ven en la cabecera; aquí queda solo lo
+        // que no cabía arriba, sin repetir el mismo dato dos veces.
+        _SectionHeader(title: 'ACERCA DE'),
         _GroupCard(
           isDark: isDark,
-          children: [
+          children: const [
             _InfoTile(
-              icon: Icons.dns_outlined,
-              label: 'Servidor Inmobi / Odoo',
-              value: AppConfig.odooServer,
-            ),
-            _InfoTile(
-              icon: Icons.storage_outlined,
-              label: 'Base de datos',
-              value: AppConfig.odooDb,
-            ),
-            const _InfoTile(
               icon: Icons.phone_android_rounded,
               label: 'Versión de Inmobi App',
               value: '1.0.0 (Edición Oficial Inmobi)',
@@ -306,7 +358,22 @@ class SettingsScreen extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
         ),
-      ],
+    ];
+
+    // Las secciones entran escalonadas, una detrás de otra, en vez de
+    // aparecer todas de golpe. El espacio de abajo deja libre la barra
+    // flotante para que la última fila no quede debajo del vidrio.
+    return ListView.builder(
+      // Arriba se suma el alto de la barra de vidrio (el contenido corre por
+      // debajo de ella); abajo, el del dock flotante.
+      padding: EdgeInsets.fromLTRB(
+        16,
+        MediaQuery.paddingOf(context).top + 12,
+        16,
+        GlassNavBar.reservedHeight + 16,
+      ),
+      itemCount: sections.length,
+      itemBuilder: (context, i) => FadeSlideIn(index: i, child: sections[i]),
     );
   }
 }
@@ -328,21 +395,22 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isDark ? const Color(0xFF161330) : Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          onTap();
-        },
-        borderRadius: BorderRadius.circular(18),
+    final colors = AppColors.of(context);
+    return PressableScale(
+      scale: 0.95,
+      haptic: true,
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF161330) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+        ),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isDark ? const Color(0xFF28244E) : AppColors.line,
+              color: isDark ? const Color(0xFF28244E) : colors.line,
             ),
           ),
           child: Column(
@@ -403,12 +471,13 @@ class _GroupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161330) : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? const Color(0xFF28244E) : AppColors.line,
+          color: isDark ? const Color(0xFF28244E) : colors.line,
         ),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
@@ -437,6 +506,7 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Column(
       children: [
@@ -475,9 +545,9 @@ class _SettingsTile extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           subtitle,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.muted,
+                            color: colors.muted,
                           ),
                         ),
                       ],
@@ -498,7 +568,7 @@ class _SettingsTile extends StatelessWidget {
             height: 1,
             indent: 58,
             endIndent: 16,
-            color: isDark ? const Color(0xFF28244E) : AppColors.line,
+            color: isDark ? const Color(0xFF28244E) : colors.line,
           ),
       ],
     );
@@ -521,6 +591,7 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Column(
       children: [
@@ -561,7 +632,7 @@ class _InfoTile extends StatelessWidget {
             height: 1,
             indent: 50,
             endIndent: 16,
-            color: isDark ? const Color(0xFF28244E) : AppColors.line,
+            color: isDark ? const Color(0xFF28244E) : colors.line,
           ),
       ],
     );
@@ -575,6 +646,7 @@ class _ThemeSelectorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ctrl = context.watch<ThemeController>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     const options = [
       (ThemeMode.system, 'Automático', Icons.brightness_auto_rounded),
       (ThemeMode.light, 'Claro', Icons.light_mode_rounded),
@@ -587,7 +659,7 @@ class _ThemeSelectorCard extends StatelessWidget {
         color: isDark ? const Color(0xFF161330) : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? const Color(0xFF28244E) : AppColors.line,
+          color: isDark ? const Color(0xFF28244E) : colors.line,
         ),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
@@ -694,13 +766,14 @@ class _NotificationsCardState extends State<_NotificationsCard> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF161330) : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? const Color(0xFF28244E) : AppColors.line,
+          color: isDark ? const Color(0xFF28244E) : colors.line,
         ),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
@@ -727,7 +800,7 @@ class _NotificationsCardState extends State<_NotificationsCard> {
                   ? '$_pending cita${_pending == 1 ? '' : 's'} programada${_pending == 1 ? '' : 's'}'
                   : 'Alertas en tiempo real activas')
               : 'Desactivado',
-          style: const TextStyle(fontSize: 12, color: AppColors.muted),
+          style: TextStyle(fontSize: 12, color: colors.muted),
         ),
         value: _enabled,
         onChanged: _toggle,

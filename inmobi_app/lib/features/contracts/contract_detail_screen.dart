@@ -77,11 +77,11 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
               message: _error!,
               onRetry: _load,
             )
-          : _buildBody(),
+          : _buildBody(AppColors.of(context)),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(AppPalette colors) {
     final c = _contract!;
     final currency = NumberFormat.currency(
       locale: 'es_EC',
@@ -107,14 +107,14 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
             ),
             AppBadge(
               label: ContractStateStyle.label(c.state),
-              color: ContractStateStyle.color(c.state),
+              color: ContractStateStyle.color(c.state, colors),
             ),
           ],
         ),
         const SizedBox(height: 6),
         Text(
           ContractTypeStyle.label(c.contractType),
-          style: const TextStyle(color: AppColors.muted, fontSize: 13.5),
+          style: TextStyle(color: colors.muted, fontSize: 13.5),
         ),
         const SizedBox(height: 18),
         Card(
@@ -186,10 +186,11 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: AppColors.navy),
+        Icon(icon, size: 18, color: colors.navy),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -197,9 +198,9 @@ class _InfoRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
-                  color: AppColors.mutedLight,
+                  color: colors.mutedLight,
                 ),
               ),
               const SizedBox(height: 2),
@@ -230,28 +231,29 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, size: 18, color: AppColors.accent),
+            Icon(icon, size: 18, color: colors.accent),
             const SizedBox(height: 8),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: AppColors.navy,
+                color: colors.navy,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
-                color: AppColors.mutedLight,
+                color: colors.mutedLight,
               ),
             ),
           ],

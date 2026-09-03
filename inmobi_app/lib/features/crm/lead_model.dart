@@ -183,11 +183,11 @@ class LeadClosingDifficultyStyle {
     _ => '',
   };
 
-  static Color color(String value) => switch (value) {
-    'easy' => AppColors.success,
-    'moderate' => AppColors.warning,
-    'hard' => AppColors.danger,
-    _ => AppColors.mutedLight,
+  static Color color(String value, AppPalette colors) => switch (value) {
+    'easy' => colors.success,
+    'moderate' => colors.warning,
+    'hard' => colors.danger,
+    _ => colors.mutedLight,
   };
 }
 
@@ -199,10 +199,10 @@ class LeadScoreStyle {
     _ => '—',
   };
 
-  static Color color(String score) => switch (score) {
-    'high' => AppColors.success,
-    'medium' => AppColors.info,
-    _ => AppColors.muted,
+  static Color color(String score, AppPalette colors) => switch (score) {
+    'high' => colors.success,
+    'medium' => colors.info,
+    _ => colors.muted,
   };
 }
 
@@ -215,11 +215,11 @@ class LeadTemperatureStyle {
     _ => '—',
   };
 
-  static Color color(String temp) => switch (temp) {
-    'boiling' => AppColors.danger,
+  static Color color(String temp, AppPalette colors) => switch (temp) {
+    'boiling' => colors.danger,
     'hot' => Colors.deepOrange,
-    'warm' => AppColors.warning,
-    _ => AppColors.info,
+    'warm' => colors.warning,
+    _ => colors.info,
   };
 
   static IconData icon(String temp) => switch (temp) {

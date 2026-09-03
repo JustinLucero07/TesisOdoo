@@ -212,7 +212,7 @@ class FichaDownloader {
     })>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.of(context).surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -340,6 +340,7 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
@@ -352,7 +353,7 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                 width: 42,
                 height: 4.5,
                 decoration: BoxDecoration(
-                  color: AppColors.line,
+                  color: colors.line,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -363,23 +364,23 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.navy.withValues(alpha: 0.1),
+                    color: colors.navy.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.share_rounded, color: AppColors.navy, size: 22),
+                  child: Icon(Icons.share_rounded, color: colors.navy, size: 22),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Ficha Comercial y Compartir',
                         style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Elige el formato y diseño para compartir',
-                        style: TextStyle(fontSize: 12.5, color: AppColors.muted),
+                        style: TextStyle(fontSize: 12.5, color: colors.muted),
                       ),
                     ],
                   ),
@@ -387,12 +388,12 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               'DISEÑO DEL PDF',
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: AppColors.mutedLight,
+                color: colors.mutedLight,
                 letterSpacing: 0.8,
               ),
             ),
@@ -410,11 +411,11 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
                     decoration: BoxDecoration(
                       color: selected
-                          ? AppColors.navy.withValues(alpha: 0.07)
-                          : AppColors.neutralBg,
+                          ? colors.navy.withValues(alpha: 0.07)
+                          : colors.neutralBg,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: selected ? AppColors.navy : Colors.transparent,
+                        color: selected ? colors.navy : Colors.transparent,
                         width: 1.5,
                       ),
                     ),
@@ -425,7 +426,7 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                               ? Icons.radio_button_checked
                               : Icons.radio_button_unchecked,
                           size: 19,
-                          color: selected ? AppColors.navy : AppColors.mutedLight,
+                          color: selected ? colors.navy : colors.mutedLight,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -437,14 +438,14 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w600,
                                   fontSize: 13.5,
-                                  color: selected ? AppColors.navy : AppColors.ink,
+                                  color: selected ? colors.navy : colors.ink,
                                 ),
                               ),
                               Text(
                                 subtitle,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 11.5,
-                                  color: AppColors.mutedLight,
+                                  color: colors.mutedLight,
                                 ),
                               ),
                             ],

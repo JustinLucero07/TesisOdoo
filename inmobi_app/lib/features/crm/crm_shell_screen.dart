@@ -27,7 +27,15 @@ class _CrmShellScreenState extends State<CrmShellScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
+          // La barra superior es de vidrio y el contenido corre por debajo:
+          // este margen arranca el contenido justo debajo de ella. El
+          // `padding.top` del body ya incluye el alto de la barra.
+          padding: EdgeInsets.fromLTRB(
+            16,
+            MediaQuery.paddingOf(context).top + 12,
+            16,
+            10,
+          ),
           child: Row(
             children: [
               Expanded(

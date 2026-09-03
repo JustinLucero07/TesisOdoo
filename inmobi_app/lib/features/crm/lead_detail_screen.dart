@@ -35,9 +35,11 @@ class LeadDetailScreen extends StatefulWidget {
   State<LeadDetailScreen> createState() => _LeadDetailScreenState();
 }
 
-class _LeadDetailScreenState extends State<LeadDetailScreen> {
+class _LeadDetailScreenState extends State<LeadDetailScreen>
+    with SingleTickerProviderStateMixin {
   late final OdooClient _odoo;
   late final CrmStageService _stageService;
+  late final TabController _tabController;
   Lead? _lead;
   bool _loading = true;
   bool _movingStage = false;
@@ -49,7 +51,14 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
     super.initState();
     _odoo = context.read<AuthService>().odoo;
     _stageService = CrmStageService(_odoo);
+    _tabController = TabController(length: 4, vsync: this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -209,6 +218,17 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             ),
           ],
         ],
+        bottom: _lead == null
+            ? null
+            : TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: 'Resumen'),
+                  Tab(text: 'Actividad'),
+                  Tab(text: 'Documentos'),
+                  Tab(text: 'Negociación'),
+                ],
+              ),
       ),
       body: _loading
           ? const LoadingView()
@@ -229,95 +249,125 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
       symbol: '\$',
       decimalDigits: 0,
     );
+    // Encabezado fijo (nombre, insignias, etapa) fuera de las pestañas: es lo
+    // que un asesor necesita ver siempre, sin importar en qué pestaña esté.
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      lead.name,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  // Prioridad en estrellas, igual que el widget `priority` de Odoo.
+                  if (lead.priority > 0)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: List.generate(
+                        lead.priority,
+                        (_) => Icon(
+                          Icons.star,
+                          size: 17,
+                          color: AppColors.of(context).warning,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (lead.isGoldenOpportunity)
+                    AppBadge(
+                      label: 'Oportunidad de Oro',
+                      color: Colors.white,
+                      background: AppColors.of(context).warning,
+                      icon: Icons.workspace_premium,
+                    ),
+                  AppBadge(
+                    label: LeadTemperatureStyle.label(lead.leadTemperature),
+                    color: LeadTemperatureStyle.color(lead.leadTemperature, AppColors.of(context)),
+                    icon: LeadTemperatureStyle.icon(lead.leadTemperature),
+                  ),
+                  AppBadge(
+                    label: LeadScoreStyle.label(lead.leadScore),
+                    color: LeadScoreStyle.color(lead.leadScore, AppColors.of(context)),
+                  ),
+                  if (lead.closingDifficulty.isNotEmpty)
+                    AppBadge(
+                      label: LeadClosingDifficultyStyle.label(lead.closingDifficulty),
+                      color: LeadClosingDifficultyStyle.color(lead.closingDifficulty, AppColors.of(context)),
+                    ),
+                  if (lead.leadSourceName.isNotEmpty)
+                    AppBadge(label: lead.leadSourceName, color: AppColors.of(context).mutedLight),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Etapa',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: AppColors.of(context).muted,
+                ),
+              ),
+              const SizedBox(height: 8),
+              StageFunnel(
+                service: _stageService,
+                currentStageId: lead.stageId,
+                busy: _movingStage,
+                onSelect: _moveStage,
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
+        Expanded(
+          child: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildResumenTab(lead, currency),
+              _buildActividadTab(lead),
+              _buildDocumentosTab(lead),
+              _buildNegociacionTab(lead),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Pestaña "Resumen": lo que un asesor necesita ver primero — contacto,
+  /// datos de la oportunidad, preferencias del cliente y métricas de avance.
+  Widget _buildResumenTab(Lead lead, NumberFormat currency) {
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Text(
-                lead.name,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            // Prioridad en estrellas, igual que el widget `priority` de Odoo.
-            if (lead.priority > 0)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(
-                  lead.priority,
-                  (_) => const Icon(
-                    Icons.star,
-                    size: 17,
-                    color: AppColors.warning,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            if (lead.isGoldenOpportunity)
-              const AppBadge(
-                label: 'Oportunidad de Oro',
-                color: Colors.white,
-                background: AppColors.warning,
-                icon: Icons.workspace_premium,
-              ),
-            AppBadge(
-              label: LeadTemperatureStyle.label(lead.leadTemperature),
-              color: LeadTemperatureStyle.color(lead.leadTemperature),
-              icon: LeadTemperatureStyle.icon(lead.leadTemperature),
-            ),
-            AppBadge(
-              label: LeadScoreStyle.label(lead.leadScore),
-              color: LeadScoreStyle.color(lead.leadScore),
-            ),
-            if (lead.closingDifficulty.isNotEmpty)
-              AppBadge(
-                label: LeadClosingDifficultyStyle.label(lead.closingDifficulty),
-                color: LeadClosingDifficultyStyle.color(lead.closingDifficulty),
-              ),
-            if (lead.leadSourceName.isNotEmpty)
-              AppBadge(label: lead.leadSourceName, color: AppColors.mutedLight),
-          ],
-        ),
-        const SizedBox(height: 18),
-        const Text(
-          'Etapa',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 13,
-            color: AppColors.muted,
-          ),
-        ),
-        const SizedBox(height: 8),
-        StageFunnel(
-          service: _stageService,
-          currentStageId: lead.stageId,
-          busy: _movingStage,
-          onSelect: _moveStage,
-        ),
-        const SizedBox(height: 18),
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Contacto',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: AppColors.muted,
+                    color: AppColors.of(context).muted,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -379,12 +429,12 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Oportunidad',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
-                    color: AppColors.muted,
+                    color: AppColors.of(context).muted,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -436,12 +486,12 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Preferencias del cliente',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: AppColors.muted,
+                      color: AppColors.of(context).muted,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -480,40 +530,116 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             ),
           ),
         ],
-        if (lead.smartNegotiationTips.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          Card(
-            color: AppColors.infoBg,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.auto_awesome, size: 16, color: AppColors.info),
-                      SizedBox(width: 6),
-                      Text(
-                        'Tips de negociación (IA)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                        ),
+        const SizedBox(height: 14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Seguimiento',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppColors.of(context).muted,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    if (lead.expectedRevenue > 0)
+                      _MetricChip(
+                        icon: Icons.trending_up,
+                        label: 'Ingreso esperado',
+                        value: currency.format(lead.expectedRevenue),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    lead.smartNegotiationTips,
-                    style: const TextStyle(fontSize: 13, height: 1.4),
-                  ),
-                ],
-              ),
+                    if (lead.expectedCommission > 0)
+                      _MetricChip(
+                        icon: Icons.percent,
+                        label: 'Comisión esperada',
+                        value: currency.format(lead.expectedCommission),
+                      ),
+                    if (lead.dateDeadline != null)
+                      _MetricChip(
+                        icon: Icons.event_outlined,
+                        label: 'Cierre previsto',
+                        value: DateFormat(
+                          'd MMM y',
+                          'es_EC',
+                        ).format(lead.dateDeadline!),
+                      ),
+                    if (lead.completedVisitsCount > 0)
+                      _MetricChip(
+                        icon: Icons.home_outlined,
+                        label: 'Visitas hechas',
+                        value: '${lead.completedVisitsCount}',
+                      ),
+                    if (lead.lastActivityDays > 0)
+                      _MetricChip(
+                        icon: Icons.history,
+                        label: 'Sin actividad',
+                        value: '${lead.lastActivityDays} d',
+                      ),
+                    if (lead.leadVelocityDays > 0)
+                      _MetricChip(
+                        icon: Icons.speed,
+                        label: 'Antigüedad',
+                        value: '${lead.leadVelocityDays} d',
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-        // ── Tipo 1: Notas de la Ficha del Lead (Pestaña "Notas" de Odoo / description) ──
-        const SizedBox(height: 14),
+        ),
+      ],
+    );
+  }
+
+  /// Pestaña "Actividad": visitas agendadas/realizadas e interacciones.
+  Widget _buildActividadTab(Lead lead) {
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        _VisitedPropertiesSection(
+          key: ValueKey('visits_${_refreshKey}_${lead.id}'),
+          odoo: _odoo,
+          lead: lead,
+          onScheduleNew: () async {
+            final saved = await Navigator.of(context).push<bool>(
+              MaterialPageRoute(
+                builder: (_) => VisitFormScreen(
+                  initialPropertyId: lead.targetPropertyId,
+                  initialPropertyName: lead.targetPropertyName,
+                  initialClientId: lead.partnerId,
+                  initialClientName: lead.partnerName,
+                ),
+              ),
+            );
+            if (saved == true && mounted) {
+              await _load();
+            }
+          },
+        ),
+        const SizedBox(height: 22),
+        InteractionsSection(
+          odoo: _odoo,
+          leadId: lead.id,
+          partnerId: lead.partnerId,
+          propertyId: lead.targetPropertyId,
+        ),
+      ],
+    );
+  }
+
+  /// Pestaña "Documentos": notas de la ficha y archivos adjuntos.
+  Widget _buildDocumentosTab(Lead lead) {
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
         Card(
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -572,20 +698,20 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       decoration: BoxDecoration(
-                        color: AppColors.neutralBg,
+                        color: AppColors.of(context).neutralBg,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: AppColors.line,
+                          color: AppColors.of(context).line,
                         ),
                       ),
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Icon(Icons.edit_note_rounded, size: 18, color: AppColors.mutedLight),
+                          Icon(Icons.edit_note_rounded, size: 18, color: AppColors.of(context).mutedLight),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Agregar una descripción o notas de requerimiento del lead...',
-                              style: TextStyle(fontSize: 12.5, color: AppColors.mutedLight),
+                              style: TextStyle(fontSize: 12.5, color: AppColors.of(context).mutedLight),
                             ),
                           ),
                         ],
@@ -596,94 +722,49 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
             ),
           ),
         ),
-        // Seguimiento comercial: cifras que Odoo ya calcula para este lead.
-        const SizedBox(height: 14),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Seguimiento',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: AppColors.muted,
+        const SizedBox(height: 22),
+        DocumentsSection(odoo: _odoo, owner: DocumentOwner.lead(lead.id)),
+      ],
+    );
+  }
+
+  /// Pestaña "Negociación": tips de IA, ofertas y el cierre de la venta.
+  Widget _buildNegociacionTab(Lead lead) {
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        if (lead.smartNegotiationTips.isNotEmpty) ...[
+          Card(
+            color: AppColors.of(context).infoBg,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.auto_awesome, size: 16, color: AppColors.of(context).info),
+                      SizedBox(width: 6),
+                      Text(
+                        'Tips de negociación (IA)',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    if (lead.expectedRevenue > 0)
-                      _MetricChip(
-                        icon: Icons.trending_up,
-                        label: 'Ingreso esperado',
-                        value: currency.format(lead.expectedRevenue),
-                      ),
-                    if (lead.expectedCommission > 0)
-                      _MetricChip(
-                        icon: Icons.percent,
-                        label: 'Comisión esperada',
-                        value: currency.format(lead.expectedCommission),
-                      ),
-                    if (lead.dateDeadline != null)
-                      _MetricChip(
-                        icon: Icons.event_outlined,
-                        label: 'Cierre previsto',
-                        value: DateFormat(
-                          'd MMM y',
-                          'es_EC',
-                        ).format(lead.dateDeadline!),
-                      ),
-                    if (lead.completedVisitsCount > 0)
-                      _MetricChip(
-                        icon: Icons.home_outlined,
-                        label: 'Visitas hechas',
-                        value: '${lead.completedVisitsCount}',
-                      ),
-                    if (lead.lastActivityDays > 0)
-                      _MetricChip(
-                        icon: Icons.history,
-                        label: 'Sin actividad',
-                        value: '${lead.lastActivityDays} d',
-                      ),
-                    if (lead.leadVelocityDays > 0)
-                      _MetricChip(
-                        icon: Icons.speed,
-                        label: 'Antigüedad',
-                        value: '${lead.leadVelocityDays} d',
-                      ),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    lead.smartNegotiationTips,
+                    style: const TextStyle(fontSize: 13, height: 1.4),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 22),
-        _VisitedPropertiesSection(
-          key: ValueKey('visits_${_refreshKey}_${lead.id}'),
-          odoo: _odoo,
-          lead: lead,
-          onScheduleNew: () async {
-            final saved = await Navigator.of(context).push<bool>(
-              MaterialPageRoute(
-                builder: (_) => VisitFormScreen(
-                  initialPropertyId: lead.targetPropertyId,
-                  initialPropertyName: lead.targetPropertyName,
-                  initialClientId: lead.partnerId,
-                  initialClientName: lead.partnerName,
-                ),
-              ),
-            );
-            if (saved == true && mounted) {
-              await _load();
-            }
-          },
-        ),
-        const SizedBox(height: 22),
+          const SizedBox(height: 22),
+        ],
         _LeadOffersSection(
           key: ValueKey('offers_${_refreshKey}_${lead.id}'),
           odoo: _odoo,
@@ -696,15 +777,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           odoo: _odoo,
           lead: lead,
         ),
-        const SizedBox(height: 22),
-        InteractionsSection(
-          odoo: _odoo,
-          leadId: lead.id,
-          partnerId: lead.partnerId,
-          propertyId: lead.targetPropertyId,
-        ),
-        const SizedBox(height: 22),
-        DocumentsSection(odoo: _odoo, owner: DocumentOwner.lead(lead.id)),
       ],
     );
   }
@@ -726,13 +798,13 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.neutralBg,
+        color: AppColors.of(context).neutralBg,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: AppColors.navy),
+          Icon(icon, size: 15, color: AppColors.of(context).navy),
           const SizedBox(width: 7),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -740,9 +812,9 @@ class _MetricChip extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
-                  color: AppColors.mutedLight,
+                  color: AppColors.of(context).mutedLight,
                 ),
               ),
               Text(
@@ -771,7 +843,7 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(icon, size: 17, color: AppColors.navy),
+          Icon(icon, size: 17, color: AppColors.of(context).navy),
           const SizedBox(width: 10),
           Expanded(child: Text(label, style: const TextStyle(fontSize: 13.5))),
         ],
@@ -802,7 +874,7 @@ class _PropertyPreviewCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.line),
+          border: Border.all(color: AppColors.of(context).line),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -834,7 +906,7 @@ class _PropertyPreviewCard extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.mutedLight),
+            Icon(Icons.chevron_right, color: AppColors.of(context).mutedLight),
           ],
         ),
       ),
@@ -952,25 +1024,25 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : AppColors.neutralBg,
+                  color: isDark ? const Color(0xFF1E1A3E) : AppColors.of(context).neutralBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isDark ? Colors.white12 : AppColors.line,
+                    color: isDark ? Colors.white12 : AppColors.of(context).line,
                   ),
                 ),
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.home_work_outlined,
                       size: 32,
-                      color: AppColors.mutedLight,
+                      color: AppColors.of(context).mutedLight,
                     ),
                     const SizedBox(height: 6),
-                    const Text(
+                    Text(
                       'No hay visitas registradas para este cliente.',
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: AppColors.muted,
+                        color: AppColors.of(context).muted,
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
@@ -998,7 +1070,7 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, i) {
                   final v = _visits[i];
-                  final stateColor = VisitStateStyle.color(v.visitState);
+                  final stateColor = VisitStateStyle.color(v.visitState, AppColors.of(context));
                   final hasProperty = v.propertyId != null;
 
                   return Container(
@@ -1006,7 +1078,7 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                       color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isDark ? Colors.white12 : AppColors.line,
+                        color: isDark ? Colors.white12 : AppColors.of(context).line,
                       ),
                     ),
                     child: Material(
@@ -1037,20 +1109,20 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                                           width: 100,
                                           height: 100,
                                           errorBuilder: (_) => Container(
-                                            color: AppColors.navy.withValues(alpha: 0.08),
-                                            child: const Icon(
+                                            color: AppColors.of(context).navy.withValues(alpha: 0.08),
+                                            child: Icon(
                                               Icons.home_work_outlined,
                                               size: 24,
-                                              color: AppColors.navy,
+                                              color: AppColors.of(context).navy,
                                             ),
                                           ),
                                         )
                                       : Container(
-                                          color: AppColors.navy.withValues(alpha: 0.08),
-                                          child: const Icon(
+                                          color: AppColors.of(context).navy.withValues(alpha: 0.08),
+                                          child: Icon(
                                             Icons.calendar_today_rounded,
                                             size: 22,
-                                            color: AppColors.navy,
+                                            color: AppColors.of(context).navy,
                                           ),
                                         ),
                                 ),
@@ -1076,17 +1148,17 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                                     const SizedBox(height: 3),
                                     Row(
                                       children: [
-                                        const Icon(
+                                        Icon(
                                           Icons.access_time_rounded,
                                           size: 13,
-                                          color: AppColors.mutedLight,
+                                          color: AppColors.of(context).mutedLight,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
                                           dateFmt.format(v.start),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 11.5,
-                                            color: AppColors.muted,
+                                            color: AppColors.of(context).muted,
                                           ),
                                         ),
                                       ],
@@ -1197,9 +1269,9 @@ class _LeadDescriptionEditSheetState extends State<_LeadDescriptionEditSheet> {
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Esta nota se guarda directamente en la pestaña "Notas" del formulario del lead en Odoo.',
-              style: TextStyle(fontSize: 12, color: AppColors.muted),
+              style: TextStyle(fontSize: 12, color: AppColors.of(context).muted),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -1371,25 +1443,25 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : AppColors.neutralBg,
+                  color: isDark ? const Color(0xFF1E1A3E) : AppColors.of(context).neutralBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: isDark ? Colors.white12 : AppColors.line,
+                    color: isDark ? Colors.white12 : AppColors.of(context).line,
                   ),
                 ),
                 child: Column(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.handshake_outlined,
                       size: 32,
-                      color: AppColors.mutedLight,
+                      color: AppColors.of(context).mutedLight,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'No hay ofertas registradas para este lead.',
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: AppColors.muted,
+                        color: AppColors.of(context).muted,
                         fontWeight: FontWeight.w600,
                       ),
                       textAlign: TextAlign.center,
@@ -1429,7 +1501,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                       color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isDark ? Colors.white12 : AppColors.line,
+                        color: isDark ? Colors.white12 : AppColors.of(context).line,
                       ),
                     ),
                     child: Material(
@@ -1452,12 +1524,12 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: OfferStateStyle.color(o.state).withValues(alpha: 0.12),
+                                  color: OfferStateStyle.color(o.state, AppColors.of(context)).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
                                   Icons.savings_outlined,
-                                  color: OfferStateStyle.color(o.state),
+                                  color: OfferStateStyle.color(o.state, AppColors.of(context)),
                                   size: 22,
                                 ),
                               ),
@@ -1476,9 +1548,9 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                                     const SizedBox(height: 2),
                                     Text(
                                       o.propertyName.isNotEmpty ? o.propertyName : 'Propiedad #${o.propertyId ?? ''}',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.muted,
+                                        color: AppColors.of(context).muted,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -1488,7 +1560,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                               ),
                               AppBadge(
                                 label: OfferStateStyle.label(o.state),
-                                color: OfferStateStyle.color(o.state),
+                                color: OfferStateStyle.color(o.state, AppColors.of(context)),
                               ),
                             ],
                           ),
@@ -1770,11 +1842,11 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Negocio Cerrado / Venta Vinculada',
                         style: TextStyle(
                           fontWeight: FontWeight.w800,
@@ -1784,7 +1856,7 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                       ),
                       Text(
                         'Detalles del cierre comercial en Odoo',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.muted),
+                        style: TextStyle(fontSize: 11.5, color: AppColors.of(context).muted),
                       ),
                     ],
                   ),
@@ -1848,11 +1920,11 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Monto Total Venta',
                                       style: TextStyle(
                                         fontSize: 11,
-                                        color: AppColors.muted,
+                                        color: AppColors.of(context).muted,
                                       ),
                                     ),
                                     Text(
@@ -2174,7 +2246,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Monto Base (Subtotal)', style: TextStyle(fontSize: 13, color: AppColors.muted)),
+                        Text('Monto Base (Subtotal)', style: TextStyle(fontSize: 13, color: AppColors.of(context).muted)),
                         Text(currency.format(untaxed), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       ],
                     ),
@@ -2183,7 +2255,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Impuestos (IVA)', style: TextStyle(fontSize: 13, color: AppColors.muted)),
+                          Text('Impuestos (IVA)', style: TextStyle(fontSize: 13, color: AppColors.of(context).muted)),
                           Text(currency.format(tax), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                         ],
                       ),

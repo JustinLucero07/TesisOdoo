@@ -59,11 +59,11 @@ class Contact {
     return 'Cliente';
   }
 
-  Color get roleColor {
-    if (isAlliedAgency) return AppColors.warning;
-    if (isPropertyOwner) return AppColors.navy;
-    if (isCompany) return AppColors.info;
-    return AppColors.muted;
+  Color roleColor(AppPalette colors) {
+    if (isAlliedAgency) return colors.warning;
+    if (isPropertyOwner) return colors.navy;
+    if (isCompany) return colors.info;
+    return colors.muted;
   }
 
   static const List<String> listFields = [

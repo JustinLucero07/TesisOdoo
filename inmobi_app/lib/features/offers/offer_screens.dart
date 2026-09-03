@@ -172,7 +172,7 @@ class _OfferCard extends StatelessWidget {
                 ),
                 AppBadge(
                   label: OfferStateStyle.label(offer.state),
-                  color: OfferStateStyle.color(offer.state),
+                  color: OfferStateStyle.color(offer.state, p),
                 ),
               ],
             ),
@@ -253,17 +253,17 @@ class _OfferCard extends StatelessWidget {
                   AppBadge(
                     label: '${offer.discountPct.toStringAsFixed(1)}% desc.',
                     color: offer.discountPct > 10
-                        ? AppColors.danger
-                        : AppColors.warning,
+                        ? p.danger
+                        : p.warning,
                   ),
                 AppBadge(
                   label: OfferFinancingStyle.label(offer.financingType),
-                  color: AppColors.mutedLight,
+                  color: p.mutedLight,
                 ),
                 if (offer.date != null)
                   AppBadge(
                     label: dateFmt.format(offer.date!),
-                    color: AppColors.mutedLight,
+                    color: p.mutedLight,
                   ),
               ],
             ),

@@ -119,6 +119,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
 
   Future<void> _download(EstateDocument doc) async {
     final messenger = ScaffoldMessenger.of(context);
+    final colors = AppColors.of(context);
     messenger.showSnackBar(
       const SnackBar(
         content: Row(
@@ -189,7 +190,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
         messenger.showSnackBar(
           SnackBar(
             content: Text('No se pudo descargar el archivo: $e'),
-            backgroundColor: AppColors.danger,
+            backgroundColor: colors.danger,
           ),
         );
       }
@@ -223,33 +224,35 @@ class _DocumentsSectionState extends State<DocumentsSection> {
 
   Future<void> _runAction(EstateDocument doc, String method, String okMsg) async {
     final messenger = ScaffoldMessenger.of(context);
+    final colors = AppColors.of(context);
     try {
       await widget.odoo.callKw(
         model: 'estate.document',
         method: method,
         args: [[doc.id]],
       );
-      messenger.showSnackBar(SnackBar(content: Text(okMsg), backgroundColor: AppColors.success));
+      messenger.showSnackBar(SnackBar(content: Text(okMsg), backgroundColor: colors.success));
       _load();
     } catch (e) {
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Odoo rechazó la acción sobre el documento.'),
-          backgroundColor: AppColors.danger,
+        SnackBar(
+          content: const Text('Odoo rechazó la acción sobre el documento.'),
+          backgroundColor: colors.danger,
         ),
       );
     }
   }
 
   void _showPendingDialog(EstateDocument doc) {
+    final colors = AppColors.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.info_outline, color: AppColors.warning),
-            SizedBox(width: 8),
-            Text('Documento Pendiente', style: TextStyle(fontSize: 17)),
+            Icon(Icons.info_outline, color: colors.warning),
+            const SizedBox(width: 8),
+            const Text('Documento Pendiente', style: TextStyle(fontSize: 17)),
           ],
         ),
         content: Text(
@@ -274,6 +277,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
   }
 
   void _showActions(EstateDocument doc) {
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -297,7 +301,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
                 child: Row(
                   children: [
-                    Icon(doc.icon, color: AppColors.navy, size: 28),
+                    Icon(doc.icon, color: colors.navy, size: 28),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -311,7 +315,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                           ),
                           Text(
                             doc.typeName.isNotEmpty ? doc.typeName : 'Documento Odoo',
-                            style: const TextStyle(color: AppColors.muted, fontSize: 12),
+                            style: TextStyle(color: colors.muted, fontSize: 12),
                           ),
                         ],
                       ),
@@ -347,7 +351,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                 ),
               ] else ...[
                 ListTile(
-                  leading: const Icon(Icons.upload_file_rounded, color: AppColors.warning),
+                  leading: Icon(Icons.upload_file_rounded, color: colors.warning),
                   title: const Text('Subir Archivo Pendiente'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -365,7 +369,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
               ),
               if (doc.state != 'verified')
                 ListTile(
-                  leading: const Icon(Icons.verified_outlined, color: AppColors.success),
+                  leading: Icon(Icons.verified_outlined, color: colors.success),
                   title: const Text('Marcar como Verificado'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -374,7 +378,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                 ),
               if (doc.state != 'rejected')
                 ListTile(
-                  leading: const Icon(Icons.cancel_outlined, color: AppColors.danger),
+                  leading: Icon(Icons.cancel_outlined, color: colors.danger),
                   title: const Text('Rechazar Documento'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -392,6 +396,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final dateFmt = DateFormat('d MMM y', 'es_EC');
 
     return Column(
@@ -427,17 +432,17 @@ class _DocumentsSectionState extends State<DocumentsSection> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1A3E) : AppColors.neutralBg,
+              color: isDark ? const Color(0xFF1E1A3E) : colors.neutralBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: isDark ? Colors.white12 : AppColors.line),
+              border: Border.all(color: isDark ? Colors.white12 : colors.line),
             ),
             child: Column(
               children: [
-                const Icon(Icons.folder_open_outlined, size: 36, color: AppColors.mutedLight),
+                Icon(Icons.folder_open_outlined, size: 36, color: colors.mutedLight),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Sin documentos cargados en esta propiedad.',
-                  style: TextStyle(fontSize: 13, color: AppColors.muted, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 13, color: colors.muted, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
@@ -457,7 +462,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
             itemBuilder: (context, i) {
               final doc = _docs[i];
               final isOpening = _openingId == doc.id;
-              final stateColor = DocumentStateStyle.color(doc.state);
+              final stateColor = DocumentStateStyle.color(doc.state, colors);
 
               return Container(
                 decoration: BoxDecoration(
@@ -465,8 +470,8 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: doc.state == 'rejected'
-                        ? AppColors.danger.withValues(alpha: 0.5)
-                        : (isDark ? Colors.white12 : AppColors.line),
+                        ? colors.danger.withValues(alpha: 0.5)
+                        : (isDark ? Colors.white12 : colors.line),
                   ),
                 ),
                 child: Material(
@@ -515,7 +520,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                                       doc.typeName.isNotEmpty
                                           ? '${doc.typeName}${doc.date != null ? " · ${dateFmt.format(doc.date!)}" : ""}'
                                           : (doc.date != null ? dateFmt.format(doc.date!) : ''),
-                                      style: const TextStyle(fontSize: 12, color: AppColors.muted),
+                                      style: TextStyle(fontSize: 12, color: colors.muted),
                                     ),
                                   ],
                                 ),
@@ -539,13 +544,13 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                                 AppBadge(
                                   icon: Icons.security_outlined,
                                   label: DocumentConfidentialityStyle.label(doc.confidentiality),
-                                  color: DocumentConfidentialityStyle.color(doc.confidentiality),
+                                  color: DocumentConfidentialityStyle.color(doc.confidentiality, colors),
                                 ),
                                 if (doc.fileSizeMb > 0) ...[
                                   const SizedBox(width: 8),
                                   Text(
                                     '${doc.fileSizeMb.toStringAsFixed(2)} MB',
-                                    style: const TextStyle(fontSize: 11.5, color: AppColors.mutedLight),
+                                    style: TextStyle(fontSize: 11.5, color: colors.mutedLight),
                                   ),
                                 ],
                               ],
@@ -556,17 +561,17 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppColors.danger.withValues(alpha: 0.08),
+                                color: colors.danger.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
                                 children: [
-                                  const Icon(Icons.error_outline, size: 15, color: AppColors.danger),
+                                  Icon(Icons.error_outline, size: 15, color: colors.danger),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       'Motivo de rechazo: ${doc.rejectionReason}',
-                                      style: const TextStyle(fontSize: 12, color: AppColors.danger),
+                                      style: TextStyle(fontSize: 12, color: colors.danger),
                                     ),
                                   ),
                                 ],

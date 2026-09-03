@@ -134,12 +134,12 @@ class DocumentStateStyle {
     _ => 'Recibido',
   };
 
-  static Color color(String state) => switch (state) {
-    'pending' => AppColors.warning,
-    'verified' => AppColors.success,
-    'rejected' => AppColors.danger,
-    'archived' => AppColors.mutedLight,
-    _ => AppColors.info,
+  static Color color(String state, AppPalette colors) => switch (state) {
+    'pending' => colors.warning,
+    'verified' => colors.success,
+    'rejected' => colors.danger,
+    'archived' => colors.mutedLight,
+    _ => colors.info,
   };
 }
 
@@ -151,10 +151,10 @@ class DocumentConfidentialityStyle {
     _ => 'Interno',
   };
 
-  static Color color(String level) => switch (level) {
-    'public' => const Color(0xFF10B981),
-    'restricted' => const Color(0xFFF59E0B),
-    'confidential' => const Color(0xFFEF4444),
-    _ => const Color(0xFF6B7280),
+  static Color color(String level, AppPalette colors) => switch (level) {
+    'public' => colors.success,
+    'restricted' => colors.warning,
+    'confidential' => colors.danger,
+    _ => colors.muted,
   };
 }

@@ -89,6 +89,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
       symbol: '\$',
       decimalDigits: 0,
     );
+    final colors = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -136,7 +137,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _load,
-              child: _buildBody(currency),
+              child: _buildBody(currency, colors),
             ),
           ),
         ],
@@ -144,7 +145,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
     );
   }
 
-  Widget _buildBody(NumberFormat currency) {
+  Widget _buildBody(NumberFormat currency, AppPalette colors) {
     if (_loading) return const SkeletonList();
     if (_error != null) {
       return MessageView(
@@ -195,7 +196,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
                       ),
                       AppBadge(
                         label: ContractStateStyle.label(c.state),
-                        color: ContractStateStyle.color(c.state),
+                        color: ContractStateStyle.color(c.state, colors),
                       ),
                     ],
                   ),
@@ -204,8 +205,8 @@ class _ContractListScreenState extends State<ContractListScreen> {
                     c.propertyName.isNotEmpty ? c.propertyName : '—',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.muted,
+                    style: TextStyle(
+                      color: colors.muted,
                       fontSize: 12.5,
                     ),
                   ),
@@ -217,18 +218,18 @@ class _ContractListScreenState extends State<ContractListScreen> {
                           ContractTypeStyle.label(c.contractType),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.mutedLight,
+                            color: colors.mutedLight,
                           ),
                         ),
                       ),
                       if (c.amount > 0)
                         Text(
                           currency.format(c.amount),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.navy,
+                            color: colors.navy,
                             fontSize: 13.5,
                           ),
                         ),

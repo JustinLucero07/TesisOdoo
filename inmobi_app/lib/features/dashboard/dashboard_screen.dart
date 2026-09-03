@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass_nav_bar.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
@@ -112,7 +114,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.only(bottom: 110),
+        // Espacio para que el dock flotante no tape la última fila.
+        padding: const EdgeInsets.only(
+          bottom: GlassNavBar.reservedHeight + 14,
+        ),
         children: [
           // ── Encabezado Ejecutivo con Saludo Dinámico ──
           _DashboardHeader(userName: userName),
@@ -122,48 +127,62 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Los bloques entran uno detrás de otro al abrir el panel:
+                // el índice creciente es lo que arma el escalonado.
                 // ── Accesos Rápidos Inmediatos ──
-                _buildQuickActions(context, isDark),
+                FadeSlideIn(index: 0, child: _buildQuickActions(context, isDark)),
                 const SizedBox(height: 18),
 
                 // ── Próxima Cita / Actividad en Vivo ──
                 if (_todayVisits.isNotEmpty) ...[
-                  _buildNextVisitCard(_todayVisits.first, timeFmt, isDark),
+                  FadeSlideIn(
+                    index: 1,
+                    child: _buildNextVisitCard(_todayVisits.first, timeFmt, isDark),
+                  ),
                   const SizedBox(height: 20),
                 ] else ...[
-                  _buildEmptyAgendaCard(isDark),
+                  FadeSlideIn(index: 1, child: _buildEmptyAgendaCard(isDark)),
                   const SizedBox(height: 20),
                 ],
 
                 // ── Panel de Rendimiento (Bento Grid) ──
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Rendimiento Operativo',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
-                        letterSpacing: -0.2,
+                FadeSlideIn(
+                  index: 2,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Rendimiento Operativo',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          letterSpacing: -0.2,
+                        ),
                       ),
-                    ),
-                    Text(
-                      'En tiempo real',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      Text(
+                        'En tiempo real',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 12),
-                _buildBentoGrid(isDark),
+                FadeSlideIn(index: 3, child: _buildBentoGrid(isDark)),
 
                 const SizedBox(height: 24),
                 // ── Sección de Agenda del Día ──
-                ..._buildTodaySection(timeFmt, isDark),
+                FadeSlideIn(
+                  index: 4,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: _buildTodaySection(timeFmt, isDark),
+                  ),
+                ),
               ],
             ),
           ),

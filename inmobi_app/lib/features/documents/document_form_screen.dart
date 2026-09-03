@@ -225,7 +225,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.isEdit ? 'Documento actualizado.' : 'Documento guardado en Odoo.'),
-            backgroundColor: AppColors.success,
+            backgroundColor: AppColors.of(context).success,
           ),
         );
         Navigator.of(context).pop(true);
@@ -242,6 +242,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
   Widget build(BuildContext context) {
     final dateFmt = DateFormat('d MMMM y', 'es_EC');
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -277,18 +278,18 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.danger.withValues(alpha: 0.12),
+                  color: colors.danger.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
+                  border: Border.all(color: colors.danger.withValues(alpha: 0.4)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.error_outline, color: AppColors.danger, size: 20),
+                    Icon(Icons.error_outline, color: colors.danger, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _error!,
-                        style: const TextStyle(color: AppColors.danger, fontSize: 13),
+                        style: TextStyle(color: colors.danger, fontSize: 13),
                       ),
                     ),
                   ],
@@ -357,7 +358,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                               ),
                               Text(
                                 '${(_selectedFile!.size / (1024 * 1024)).toStringAsFixed(2)} MB',
-                                style: const TextStyle(color: AppColors.muted, fontSize: 11.5),
+                                style: TextStyle(color: colors.muted, fontSize: 11.5),
                               ),
                             ],
                           ),
@@ -372,7 +373,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                   ] else if (widget.isEdit && widget.existing!.filename.isNotEmpty) ...[
                     Row(
                       children: [
-                        Icon(widget.existing!.icon, color: AppColors.navy),
+                        Icon(widget.existing!.icon, color: colors.navy),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -473,7 +474,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                         _expirationDate != null ? dateFmt.format(_expirationDate!) : 'Sin vencimiento',
                         style: TextStyle(
                           fontSize: 13,
-                          color: _expirationDate != null ? null : AppColors.mutedLight,
+                          color: _expirationDate != null ? null : colors.mutedLight,
                         ),
                       ),
                     ),
@@ -554,10 +555,10 @@ class _FormSectionTitle extends StatelessWidget {
       padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w800,
           fontSize: 13,
-          color: AppColors.muted,
+          color: AppColors.of(context).muted,
         ),
       ),
     );

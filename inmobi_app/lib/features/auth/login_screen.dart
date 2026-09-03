@@ -131,6 +131,7 @@ class _LoginScreenState extends State<LoginScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
@@ -555,13 +556,13 @@ class _LoginScreenState extends State<LoginScreen>
                             Container(
                               padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: AppColors.success.withValues(alpha: 0.12),
+                                color: colors.success.withValues(alpha: 0.12),
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.shield_rounded,
                                 size: 14,
-                                color: AppColors.success,
+                                color: colors.success,
                               ),
                             ),
                             const SizedBox(width: 8),

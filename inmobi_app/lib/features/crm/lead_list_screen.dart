@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_badge.dart';
+import '../../core/widgets/glass_nav_bar.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/skeleton.dart';
 import '../auth/auth_service.dart';
@@ -155,6 +157,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
   void _showSortPicker() {
     HapticFeedback.lightImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF14112E) : Colors.white,
@@ -183,7 +186,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                   return ListTile(
                     leading: Icon(
                       selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                      color: selected ? const Color(0xFF28235D) : AppColors.muted,
+                      color: selected ? const Color(0xFF28235D) : colors.muted,
                       size: 20,
                     ),
                     title: Text(
@@ -218,10 +221,12 @@ class _LeadListScreenState extends State<LeadListScreen> {
       decimalDigits: 0,
     );
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Scaffold(
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 74),
+        // Se levanta por encima del dock flotante de vidrio, no encima de él.
+        padding: const EdgeInsets.only(bottom: GlassNavBar.reservedHeight),
         child: FloatingActionButton.small(
           heroTag: null,
           onPressed: _openCreate,
@@ -367,9 +372,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                   return ChoiceChip(
                     label: Text(label),
                     selected: selected,
-                    selectedColor: AppColors.navy,
+                    selectedColor: colors.navy,
                     labelStyle: TextStyle(
-                      color: selected ? Colors.white : AppColors.ink,
+                      color: selected ? Colors.white : colors.ink,
                       fontWeight: FontWeight.w600,
                       fontSize: 12.5,
                     ),
@@ -400,10 +405,10 @@ class _LeadListScreenState extends State<LeadListScreen> {
                     return ChoiceChip(
                       label: Text(label),
                       selected: selected,
-                      selectedColor: isDark ? AppColors.navyLight : AppColors.navy,
-                      backgroundColor: isDark ? const Color(0xFF1E1A3E) : AppColors.neutralBg,
+                      selectedColor: isDark ? colors.navyLight : colors.navy,
+                      backgroundColor: isDark ? const Color(0xFF1E1A3E) : colors.neutralBg,
                       labelStyle: TextStyle(
-                        color: selected ? Colors.white : (isDark ? Colors.white70 : AppColors.ink),
+                        color: selected ? Colors.white : (isDark ? Colors.white70 : colors.ink),
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
@@ -469,7 +474,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
             itemCount: _leads.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, i) => _buildLeadCard(_leads[i], currency),
+            itemBuilder: (context, i) =>
+              FadeSlideIn(index: i, child: _buildLeadCard(_leads[i], currency)),
           );
         }
 
@@ -482,7 +488,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
             mainAxisExtent: 180,
           ),
           itemCount: _leads.length,
-          itemBuilder: (context, i) => _buildLeadCard(_leads[i], currency),
+          itemBuilder: (context, i) =>
+              FadeSlideIn(index: i, child: _buildLeadCard(_leads[i], currency)),
         );
       },
     );
@@ -490,7 +497,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
 
   Widget _buildLeadCard(Lead lead, NumberFormat currency) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tempColor = LeadTemperatureStyle.color(lead.leadTemperature);
+    final colors = AppColors.of(context);
+    final tempColor = LeadTemperatureStyle.color(lead.leadTemperature, colors);
 
     return Dismissible(
       key: ValueKey('lead_${lead.id}'),
@@ -571,7 +579,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
           color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isDark ? Colors.white12 : AppColors.line,
+            color: isDark ? Colors.white12 : colors.line,
           ),
           boxShadow: softShadow(opacity: isDark ? 0.25 : 0.04, isDark: isDark),
         ),
@@ -653,9 +661,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                               Expanded(
                                 child: Text(
                                   lead.targetPropertyName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: AppColors.ink,
+                                    color: colors.ink,
                                     fontWeight: FontWeight.w600,
                                   ),
                                   maxLines: 1,
@@ -684,22 +692,22 @@ class _LeadListScreenState extends State<LeadListScreen> {
                             if (lead.matchPercentage > 0)
                               AppBadge(
                                 label: '${lead.matchPercentage}% Match',
-                                color: AppColors.success,
-                                background: AppColors.success.withValues(
+                                color: colors.success,
+                                background: colors.success.withValues(
                                   alpha: 0.1,
                                 ),
                               ),
                             if (lead.stageName.isNotEmpty)
                               AppBadge(
                                 label: lead.stageName,
-                                color: AppColors.navy,
-                                background: AppColors.navy.withValues(alpha: 0.08),
+                                color: colors.navy,
+                                background: colors.navy.withValues(alpha: 0.08),
                               ),
                             if (lead.leadSourceName.isNotEmpty)
                               AppBadge(
                                 label: lead.leadSourceName,
-                                color: AppColors.muted,
-                                background: AppColors.neutralBg,
+                                color: colors.muted,
+                                background: colors.neutralBg,
                               ),
                           ],
                         ),
@@ -1018,6 +1026,7 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Container(
       decoration: BoxDecoration(
@@ -1100,7 +1109,7 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                     widget.isAdmin
                         ? 'Mostrar únicamente leads asignados a mi usuario'
                         : 'Fijado: como asesor solo puedes consultar tus propios leads',
-                    style: const TextStyle(fontSize: 11.5, color: AppColors.muted),
+                    style: TextStyle(fontSize: 11.5, color: colors.muted),
                   ),
                   value: widget.isAdmin ? _myLeadsOnly : true,
                   onChanged: widget.isAdmin ? (v) => setState(() => _myLeadsOnly = v) : null,

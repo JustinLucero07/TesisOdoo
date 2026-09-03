@@ -27,6 +27,7 @@ class _ExpandableSectionState extends State<ExpandableSection> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -37,7 +38,7 @@ class _ExpandableSectionState extends State<ExpandableSection> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: AppColors.neutralBg,
+              color: colors.neutralBg,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -45,10 +46,10 @@ class _ExpandableSectionState extends State<ExpandableSection> {
                 Expanded(
                   child: Text(
                     widget.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13.5,
-                      color: AppColors.ink,
+                      color: colors.ink,
                     ),
                   ),
                 ),
@@ -56,7 +57,7 @@ class _ExpandableSectionState extends State<ExpandableSection> {
                   turns: _expanded ? 0.125 : 0,
                   duration: const Duration(milliseconds: 220),
                   curve: Curves.easeOutCubic,
-                  child: const Icon(Icons.add, size: 19, color: AppColors.navy),
+                  child: Icon(Icons.add, size: 19, color: colors.navy),
                 ),
               ],
             ),

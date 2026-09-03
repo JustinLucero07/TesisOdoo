@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import 'choice_chip_row.dart';
+import 'motion.dart';
 import 'skeleton.dart';
 import 'states.dart';
 
@@ -145,7 +146,13 @@ class _RecordListScaffoldState<T> extends State<RecordListScaffold<T>> {
       ),
       itemCount: _items.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, i) => widget.itemBuilder(context, _items[i]),
+      // La lista se arma sola: cada fila entra un instante después de la
+      // anterior. Como este andamio lo usan Ofertas, Comisiones, Pagos,
+      // Gastos y Tasaciones, todas ganan el mismo comportamiento de una.
+      itemBuilder: (context, i) => FadeSlideIn(
+        index: i,
+        child: widget.itemBuilder(context, _items[i]),
+      ),
     );
   }
 }

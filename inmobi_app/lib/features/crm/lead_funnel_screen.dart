@@ -146,6 +146,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
 
   Future<void> _showAdvisorPicker() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     await showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF14112E) : Colors.white,
@@ -215,15 +216,15 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                       },
                     ),
                     if (_advisors.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         child: Text(
                           'EQUIPO COMERCIAL',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
-                            color: AppColors.muted,
+                            color: colors.muted,
                           ),
                         ),
                       ),
@@ -293,6 +294,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
     final auth = context.watch<AuthService>();
     final isAdmin = auth.isAdmin;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Scaffold(
       floatingActionButton: Padding(
@@ -407,10 +409,10 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                   const Spacer(),
                   Text(
                     '$_totalLeadsCount ${_totalLeadsCount == 1 ? 'lead' : 'leads'}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.muted,
+                      color: colors.muted,
                     ),
                   ),
                 ],
@@ -447,7 +449,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                   width: i == _currentPage ? 18 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: i == _currentPage ? AppColors.navy : AppColors.line,
+                    color: i == _currentPage ? colors.navy : colors.line,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -475,13 +477,14 @@ class _StageColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     final total = leads.fold<double>(0, (sum, l) => sum + l.clientBudget);
-    final accent = stage.isLost ? AppColors.danger : AppColors.navy;
+    final accent = stage.isLost ? colors.danger : colors.navy;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(8, 10, 8, 0),
       decoration: BoxDecoration(
-        color: AppColors.neutralBg,
+        color: colors.neutralBg,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -517,9 +520,9 @@ class _StageColumn extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           currency.format(total),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: AppColors.muted,
+                            color: colors.muted,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -550,12 +553,12 @@ class _StageColumn extends StatelessWidget {
           ),
           Expanded(
             child: leads.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'Sin oportunidades\nen esta etapa',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: AppColors.mutedLight,
+                        color: colors.mutedLight,
                         fontSize: 12.5,
                       ),
                     ),
@@ -590,8 +593,9 @@ class _FunnelCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Material(
-      color: AppColors.surface,
+      color: colors.surface,
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -623,7 +627,7 @@ class _FunnelCard extends StatelessWidget {
                   Icon(
                     LeadTemperatureStyle.icon(lead.leadTemperature),
                     size: 15,
-                    color: LeadTemperatureStyle.color(lead.leadTemperature),
+                    color: LeadTemperatureStyle.color(lead.leadTemperature, colors),
                   ),
                 ],
               ),
@@ -631,10 +635,10 @@ class _FunnelCard extends StatelessWidget {
                 const SizedBox(height: 5),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.person_outline,
                       size: 13,
-                      color: AppColors.mutedLight,
+                      color: colors.mutedLight,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -642,9 +646,9 @@ class _FunnelCard extends StatelessWidget {
                         lead.contactName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.muted,
+                          color: colors.muted,
                         ),
                       ),
                     ),
@@ -655,17 +659,17 @@ class _FunnelCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.phone_outlined,
                       size: 13,
-                      color: AppColors.mutedLight,
+                      color: colors.mutedLight,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       lead.phone,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.muted,
+                        color: colors.muted,
                       ),
                     ),
                   ],
@@ -675,10 +679,10 @@ class _FunnelCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.home_outlined,
                       size: 13,
-                      color: AppColors.mutedLight,
+                      color: colors.mutedLight,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -686,9 +690,9 @@ class _FunnelCard extends StatelessWidget {
                         lead.targetPropertyName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.muted,
+                          color: colors.muted,
                         ),
                       ),
                     ),
@@ -700,16 +704,16 @@ class _FunnelCard extends StatelessWidget {
                 children: [
                   AppBadge(
                     label: LeadScoreStyle.label(lead.leadScore),
-                    color: LeadScoreStyle.color(lead.leadScore),
+                    color: LeadScoreStyle.color(lead.leadScore, colors),
                   ),
                   const Spacer(),
                   if (lead.clientBudget > 0)
                     Text(
                       currency.format(lead.clientBudget),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 12.5,
-                        color: AppColors.navy,
+                        color: colors.navy,
                       ),
                     ),
                 ],

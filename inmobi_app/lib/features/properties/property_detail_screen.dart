@@ -331,13 +331,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   Widget _buildBottomStickyBar() {
     final p = _property!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1938) : Colors.white,
         border: Border(
           top: BorderSide(
-            color: isDark ? Colors.white12 : AppColors.line,
+            color: isDark ? Colors.white12 : colors.line,
           ),
         ),
         boxShadow: softShadow(opacity: isDark ? 0.25 : 0.08, isDark: isDark),
@@ -359,7 +360,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 side: BorderSide(
-                  color: isDark ? Colors.white24 : AppColors.line,
+                  color: isDark ? Colors.white24 : colors.line,
                 ),
               ),
               icon: const Icon(Icons.share_rounded, size: 17),
@@ -400,6 +401,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   Widget _buildBody(NumberFormat currency) {
     final p = _property!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final dateFmt = DateFormat('d MMM yyyy', 'es_EC');
     final pricePerM2 = (p.area > 0 && p.displayPrice > 0)
         ? (p.displayPrice / p.area)
@@ -433,11 +435,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   width: 900,
                   height: 560,
                   errorBuilder: (_) => Container(
-                    color: AppColors.navy.withValues(alpha: 0.08),
-                    child: const Icon(
+                    color: colors.navy.withValues(alpha: 0.08),
+                    child: Icon(
                       Icons.home_outlined,
                       size: 64,
-                      color: AppColors.navy,
+                      color: colors.navy,
                     ),
                   ),
                 ),
@@ -451,6 +453,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 color: Colors.white,
                 background: PropertyStateLabel.color(
                   p.state,
+                  colors,
                 ).withValues(alpha: 0.92),
               ),
             ),
@@ -461,7 +464,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 child: AppBadge(
                   label: 'Exclusiva',
                   color: Colors.white,
-                  background: AppColors.accent.withValues(alpha: 0.92),
+                  background: colors.accent.withValues(alpha: 0.92),
                 ),
               ),
           ],
@@ -481,16 +484,16 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.location_on_outlined,
                     size: 15,
-                    color: AppColors.muted,
+                    color: colors.muted,
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
                       [p.sector, p.city].where((s) => s.isNotEmpty).join(', '),
-                      style: const TextStyle(color: AppColors.muted),
+                      style: TextStyle(color: colors.muted),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -507,7 +510,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: isDark ? AppColors.navyLight : AppColors.navy,
+                      color: isDark ? colors.navyLight : colors.navy,
                       letterSpacing: -0.6,
                     ),
                   ),
@@ -515,10 +518,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     const SizedBox(width: 10),
                     Text(
                       '•  ${currency.format(pricePerM2)}/m²',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.mutedLight,
+                        color: colors.mutedLight,
                       ),
                     ),
                   ],
@@ -531,15 +534,15 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     AppBadge(
                       icon: Icons.insights_outlined,
                       label: 'AVM: ${PropertyAvmStyle.label(p.avmStatus)}',
-                      color: PropertyAvmStyle.color(p.avmStatus),
+                      color: PropertyAvmStyle.color(p.avmStatus, colors),
                     ),
                     if (p.avmEstimatedPrice > 0) ...[
                       const SizedBox(width: 8),
                       Text(
                         'est. ${currency.format(p.avmEstimatedPrice)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11.5,
-                          color: AppColors.mutedLight,
+                          color: colors.mutedLight,
                         ),
                       ),
                     ],
@@ -833,10 +836,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   title: 'Descripción',
                   child: Text(
                     p.description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
                       height: 1.5,
-                      color: AppColors.ink,
+                      color: colors.ink,
                     ),
                   ),
                 ),
@@ -906,10 +909,11 @@ class _InfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     if (rows.isEmpty) {
-      return const Text(
+      return Text(
         'Sin información registrada.',
-        style: TextStyle(color: AppColors.mutedLight, fontSize: 13),
+        style: TextStyle(color: colors.mutedLight, fontSize: 13),
       );
     }
     return Card(
@@ -926,9 +930,9 @@ class _InfoCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         rows[i].$1,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12.5,
-                          color: AppColors.mutedLight,
+                          color: colors.mutedLight,
                         ),
                       ),
                     ),
@@ -966,27 +970,28 @@ class _QuickAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: AppColors.neutralBg,
+          color: colors.neutralBg,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 21, color: AppColors.navy),
+            Icon(icon, size: 21, color: colors.navy),
             const SizedBox(height: 6),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w600,
-                color: AppColors.navy,
+                color: colors.navy,
               ),
             ),
           ],
@@ -1011,10 +1016,11 @@ class _AdvisorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.neutralBg,
+        color: colors.neutralBg,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -1025,9 +1031,9 @@ class _AdvisorCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Asesor responsable',
-                  style: TextStyle(fontSize: 11, color: AppColors.mutedLight),
+                  style: TextStyle(fontSize: 11, color: colors.mutedLight),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1043,7 +1049,7 @@ class _AdvisorCard extends StatelessWidget {
           if (phone != null) ...[
             _ContactIconButton(
               icon: Icons.call,
-              background: AppColors.navy,
+              background: colors.navy,
               onTap: () => onCall(phone!),
             ),
             const SizedBox(width: 8),
@@ -1091,16 +1097,17 @@ class _StatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.line),
+        border: Border.all(color: colors.line),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: AppColors.navy),
+          Icon(icon, size: 16, color: colors.navy),
           const SizedBox(width: 5),
           Text(label, style: const TextStyle(fontSize: 12.5)),
         ],
@@ -1124,6 +1131,7 @@ class _CaptureSheetSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final hasFile = property.hasCaptureSheet || property.captureSheetFilename.isNotEmpty;
     final fileName = property.captureSheetFilename.isNotEmpty
         ? property.captureSheetFilename
@@ -1157,11 +1165,11 @@ class _CaptureSheetSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Hoja de Captación',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
@@ -1172,7 +1180,7 @@ class _CaptureSheetSection extends StatelessWidget {
                       'Documento escaneado o PDF subido en Odoo',
                       style: TextStyle(
                         fontSize: 11,
-                        color: AppColors.muted,
+                        color: colors.muted,
                       ),
                     ),
                   ],
@@ -1283,20 +1291,20 @@ class _CaptureSheetSection extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isDark
                     ? const Color(0xFF28235D).withValues(alpha: 0.2)
-                    : AppColors.neutralBg,
+                    : colors.neutralBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isDark ? Colors.white12 : AppColors.line,
+                  color: isDark ? Colors.white12 : colors.line,
                 ),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, size: 18, color: AppColors.muted),
-                  SizedBox(width: 8),
+                  Icon(Icons.info_outline_rounded, size: 18, color: colors.muted),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'No hay archivo de captación adjunto en esta propiedad.',
-                      style: TextStyle(fontSize: 12, color: AppColors.muted),
+                      style: TextStyle(fontSize: 12, color: colors.muted),
                     ),
                   ),
                 ],

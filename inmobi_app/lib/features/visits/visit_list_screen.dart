@@ -10,6 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_badge.dart';
+import '../../core/widgets/glass_nav_bar.dart';
+import '../../core/widgets/motion.dart';
 import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
@@ -175,6 +177,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
 
   void _showAdvisorPicker() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -207,20 +210,20 @@ class _VisitListScreenState extends State<VisitListScreen> {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: const Icon(Icons.person_rounded, color: AppColors.navy),
+                  leading: Icon(Icons.person_rounded, color: colors.navy),
                   title: const Text('Mis citas', style: TextStyle(fontWeight: FontWeight.w700)),
                   selected: _selectedAdvisorId == 0,
-                  selectedTileColor: AppColors.navy.withValues(alpha: 0.08),
+                  selectedTileColor: colors.navy.withValues(alpha: 0.08),
                   onTap: () {
                     setState(() => _selectedAdvisorId = 0);
                     Navigator.pop(ctx);
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.groups_rounded, color: AppColors.navy),
+                  leading: Icon(Icons.groups_rounded, color: colors.navy),
                   title: const Text('Todos los asesores', style: TextStyle(fontWeight: FontWeight.w700)),
                   selected: _selectedAdvisorId == null,
-                  selectedTileColor: AppColors.navy.withValues(alpha: 0.08),
+                  selectedTileColor: colors.navy.withValues(alpha: 0.08),
                   onTap: () {
                     setState(() => _selectedAdvisorId = null);
                     Navigator.pop(ctx);
@@ -232,7 +235,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     leading: const Icon(Icons.person_outline_rounded),
                     title: Text(adv.name),
                     selected: _selectedAdvisorId == adv.id,
-                    selectedTileColor: AppColors.navy.withValues(alpha: 0.08),
+                    selectedTileColor: colors.navy.withValues(alpha: 0.08),
                     onTap: () {
                       setState(() => _selectedAdvisorId = adv.id);
                       Navigator.pop(ctx);
@@ -250,6 +253,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
 
   void _showTypePicker() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -285,16 +289,16 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   final (type, label, icon) = tf;
                   final selected = _typeFilter == type;
                   return ListTile(
-                    leading: Icon(icon, color: selected ? AppColors.navy : null),
+                    leading: Icon(icon, color: selected ? colors.navy : null),
                     title: Text(
                       label,
                       style: TextStyle(
                         fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                        color: selected ? AppColors.navy : null,
+                        color: selected ? colors.navy : null,
                       ),
                     ),
                     selected: selected,
-                    selectedTileColor: AppColors.navy.withValues(alpha: 0.08),
+                    selectedTileColor: colors.navy.withValues(alpha: 0.08),
                     onTap: () {
                       setState(() => _typeFilter = type);
                       Navigator.pop(ctx);
@@ -332,6 +336,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
@@ -411,9 +416,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
                         ),
                         Text(
                           _currentAdvisorName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.navy,
+                            color: colors.navy,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -437,17 +442,17 @@ class _VisitListScreenState extends State<VisitListScreen> {
                             fontSize: 16,
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.filter_list_rounded,
                           size: 18,
-                          color: AppColors.navy,
+                          color: colors.navy,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           _typeFilterLabel,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: AppColors.navy,
+                            color: colors.navy,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -473,7 +478,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                         child: Icon(
                           Icons.tune_rounded,
                           size: 18,
-                          color: _activeVisitFilterCount > 0 ? Colors.white : AppColors.navy,
+                          color: _activeVisitFilterCount > 0 ? Colors.white : colors.navy,
                         ),
                       ),
                       if (_activeVisitFilterCount > 0)
@@ -583,13 +588,13 @@ class _VisitListScreenState extends State<VisitListScreen> {
                 todayDecoration: const BoxDecoration(
                   color: Colors.transparent,
                 ),
-                todayTextStyle: const TextStyle(
-                  color: AppColors.navy,
+                todayTextStyle: TextStyle(
+                  color: colors.navy,
                   fontWeight: FontWeight.w900,
                   fontSize: 14,
                 ),
-                selectedDecoration: const BoxDecoration(
-                  color: AppColors.navy,
+                selectedDecoration: BoxDecoration(
+                  color: colors.navy,
                   shape: BoxShape.circle,
                 ),
                 selectedTextStyle: const TextStyle(
@@ -647,7 +652,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => _loadMonth(_focusedDay),
-              child: _buildBody(isDark),
+              child: _buildBody(isDark, colors),
             ),
           ),
         ],
@@ -820,7 +825,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
     return (title, subtitle);
   }
 
-  Widget _buildBody(bool isDark) {
+  Widget _buildBody(bool isDark, AppPalette colors) {
     if (_loading && _monthVisits.isEmpty) return const SkeletonList();
     if (_error != null) {
       return MessageView(
@@ -881,12 +886,20 @@ class _VisitListScreenState extends State<VisitListScreen> {
     final timeFmt = DateFormat.Hm('es_EC');
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        4,
+        16,
+        GlassNavBar.reservedHeight + 8,
+      ),
       itemCount: visits.length,
       itemBuilder: (context, i) {
         final v = visits[i];
         final isLast = i == visits.length - 1;
-        return _buildTimelineItem(v, timeFmt, isLast, isDark);
+        return FadeSlideIn(
+          index: i,
+          child: _buildTimelineItem(v, timeFmt, isLast, isDark, colors),
+        );
       },
     );
   }
@@ -896,6 +909,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
     DateFormat timeFmt,
     bool isLast,
     bool isDark,
+    AppPalette colors,
   ) {
     final pill = _pillBadge(v.appointmentType, isDark);
     final titles = _extractTitles(v);
@@ -1009,7 +1023,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                               if (v.visitState != 'scheduled')
                                 AppBadge(
                                   label: VisitStateStyle.label(v.visitState),
-                                  color: VisitStateStyle.color(v.visitState),
+                                  color: VisitStateStyle.color(v.visitState, colors),
                                 ),
                             ],
                           ),

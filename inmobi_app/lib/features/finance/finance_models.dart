@@ -71,11 +71,11 @@ class Commission {
     _ => 'Borrador',
   };
 
-  static Color stateColor(String s) => switch (s) {
-    'approved' => AppColors.info,
-    'paid' => AppColors.success,
-    'cancelled' => AppColors.danger,
-    _ => AppColors.mutedLight,
+  static Color stateColor(String s, AppPalette colors) => switch (s) {
+    'approved' => colors.info,
+    'paid' => colors.success,
+    'cancelled' => colors.danger,
+    _ => colors.mutedLight,
   };
 
   static String typeLabel(String t) => switch (t) {
@@ -142,10 +142,10 @@ class Payment {
     _ => 'Pendiente',
   };
 
-  static Color stateColor(String s) => switch (s) {
-    'paid' => AppColors.success,
-    'cancelled' => AppColors.danger,
-    _ => AppColors.warning,
+  static Color stateColor(String s, AppPalette colors) => switch (s) {
+    'paid' => colors.success,
+    'cancelled' => colors.danger,
+    _ => colors.warning,
   };
 
   static String methodLabel(String m) => switch (m) {
@@ -223,10 +223,10 @@ class Expense {
     notes: asOdooString(j['notes']),
   );
 
-  static Color stateColor(String s) => switch (s) {
-    'approved' || 'paid' => AppColors.success,
-    'cancelled' => AppColors.danger,
-    _ => AppColors.mutedLight,
+  static Color stateColor(String s, AppPalette colors) => switch (s) {
+    'approved' || 'paid' => colors.success,
+    'cancelled' => colors.danger,
+    _ => colors.mutedLight,
   };
 }
 
@@ -302,11 +302,11 @@ class Appraisal {
     _ => 'Borrador',
   };
 
-  static Color stateColor(String s) => switch (s) {
-    'completed' => AppColors.success,
-    'cancelled' => AppColors.danger,
-    'in_progress' || 'scheduled' => AppColors.warning,
-    _ => AppColors.mutedLight,
+  static Color stateColor(String s, AppPalette colors) => switch (s) {
+    'completed' => colors.success,
+    'cancelled' => colors.danger,
+    'in_progress' || 'scheduled' => colors.warning,
+    _ => colors.mutedLight,
   };
 }
 

@@ -271,6 +271,7 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -363,11 +364,11 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
             child: LinearProgressIndicator(),
           )
         else if (_images.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 10),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Text(
               'Sin fotos de galería todavía.',
-              style: TextStyle(color: AppColors.mutedLight, fontSize: 13),
+              style: TextStyle(color: colors.mutedLight, fontSize: 13),
             ),
           )
         else

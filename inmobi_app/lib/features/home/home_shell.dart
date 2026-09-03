@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +6,8 @@ import 'package:provider/provider.dart';
 
 import '../../core/notifications/notification_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/glass.dart';
+import '../../core/widgets/glass_nav_bar.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../auth/auth_service.dart';
 import '../auth/login_screen.dart';
@@ -63,27 +64,27 @@ class _HomeShellState extends State<HomeShell> {
   ];
 
   static const _navItems = [
-    (
+    GlassNavItem(
       icon: Icons.dashboard_outlined,
       activeIcon: Icons.dashboard_rounded,
       label: 'Inicio',
     ),
-    (
+    GlassNavItem(
       icon: Icons.home_work_outlined,
       activeIcon: Icons.home_work_rounded,
       label: 'Propiedades',
     ),
-    (
+    GlassNavItem(
       icon: Icons.people_outline_rounded,
       activeIcon: Icons.people_rounded,
       label: 'CRM',
     ),
-    (
+    GlassNavItem(
       icon: Icons.calendar_today_outlined,
       activeIcon: Icons.calendar_month_rounded,
       label: 'Agenda',
     ),
-    (
+    GlassNavItem(
       icon: Icons.grid_view_rounded,
       activeIcon: Icons.grid_view_sharp,
       label: 'Opciones',
@@ -113,12 +114,16 @@ class _HomeShellState extends State<HomeShell> {
     ];
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
     final auth = context.watch<AuthService>();
     final userName = auth.userName ?? 'Asesor';
 
     return Scaffold(
       key: _scaffoldKey,
+      // El contenido corre por debajo del vidrio, arriba y abajo: las barras
+      // flotan sobre él en vez de comerse una franja fija de la pantalla.
       extendBody: true,
+      extendBodyBehindAppBar: true,
       drawer: _InmobiExecutiveDrawer(
         currentIndex: _index,
         onNavigate: (index) {
@@ -129,20 +134,21 @@ class _HomeShellState extends State<HomeShell> {
       appBar: (_index == 0 || _index == 3)
           ? null // El dashboard y la agenda tienen sus propios encabezados avanzados
           : AppBar(
-              backgroundColor: isDark ? const Color(0xFF161330) : Colors.white,
+              backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
+              flexibleSpace: const GlassBar(),
               elevation: 0,
               leading: IconButton(
                 icon: Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: AppColors.navy.withValues(alpha: isDark ? 0.2 : 0.07),
+                    color: colors.navy.withValues(alpha: isDark ? 0.2 : 0.07),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.menu_rounded,
                     size: 20,
-                    color: AppColors.navy,
+                    color: colors.navy,
                   ),
                 ),
                 onPressed: _openDrawer,
@@ -165,10 +171,10 @@ class _HomeShellState extends State<HomeShell> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: AppColors.navy.withValues(alpha: isDark ? 0.25 : 0.08),
+                        color: colors.navy.withValues(alpha: isDark ? 0.25 : 0.08),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.navy.withValues(alpha: 0.15),
+                          color: colors.navy.withValues(alpha: 0.15),
                         ),
                       ),
                       child: Row(
@@ -179,15 +185,15 @@ class _HomeShellState extends State<HomeShell> {
                             userId: auth.odoo.userId ?? 0,
                             userName: userName,
                             radius: 12,
-                            backgroundColor: AppColors.navy,
+                            backgroundColor: colors.navy,
                           ),
                           const SizedBox(width: 6),
                           Text(
                             userName.split(' ').first,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.navy,
+                              color: colors.navy,
                             ),
                           ),
                         ],
@@ -198,11 +204,10 @@ class _HomeShellState extends State<HomeShell> {
               ],
             ),
       body: IndexedStack(index: _index, children: screens),
-      bottomNavigationBar: _CleanBottomNavBar(
+      bottomNavigationBar: GlassNavBar(
         currentIndex: _index,
         onTap: _goTo,
         items: _navItems,
-        isDark: isDark,
       ),
     );
   }
@@ -408,37 +413,10 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 children: [
-                  _DrawerSectionLabel(title: 'NAVEGACIÓN PRINCIPAL'),
-                  _DrawerTile(
-                    icon: Icons.dashboard_outlined,
-                    activeIcon: Icons.dashboard_rounded,
-                    title: 'Panel General',
-                    isSelected: currentIndex == 0,
-                    onTap: () => onNavigate(0),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.home_work_outlined,
-                    activeIcon: Icons.home_work_rounded,
-                    title: 'Catálogo de Propiedades',
-                    isSelected: currentIndex == 1,
-                    onTap: () => onNavigate(1),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.people_outline_rounded,
-                    activeIcon: Icons.people_rounded,
-                    title: 'CRM & Pipeline',
-                    isSelected: currentIndex == 2,
-                    onTap: () => onNavigate(2),
-                  ),
-                  _DrawerTile(
-                    icon: Icons.calendar_today_outlined,
-                    activeIcon: Icons.calendar_month_rounded,
-                    title: 'Agenda & Visitas',
-                    isSelected: currentIndex == 3,
-                    onTap: () => onNavigate(3),
-                  ),
-
-                  const SizedBox(height: 12),
+                  // Las 5 secciones principales (Inicio, Propiedades, CRM,
+                  // Agenda, Opciones) ya viven en la barra inferior — este
+                  // menú es solo para lo que no cabe ahí, evitando dos
+                  // navegaciones compitiendo por los mismos destinos.
                   _DrawerSectionLabel(title: 'GESTIÓN COMERCIAL'),
                   _DrawerActionTile(
                     icon: Icons.contacts_outlined,
@@ -500,16 +478,6 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                       );
                     },
                   ),
-
-                  const SizedBox(height: 12),
-                  _DrawerSectionLabel(title: 'PREFERENCIAS'),
-                  _DrawerTile(
-                    icon: Icons.tune_rounded,
-                    activeIcon: Icons.tune_rounded,
-                    title: 'Configuración & Sistema',
-                    isSelected: currentIndex == 4,
-                    onTap: () => onNavigate(4),
-                  ),
                 ],
               ),
             ),
@@ -565,84 +533,11 @@ class _DrawerSectionLabel extends StatelessWidget {
       padding: const EdgeInsets.only(left: 10, top: 8, bottom: 6),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 10.5,
           fontWeight: FontWeight.w800,
           letterSpacing: 0.9,
-          color: Color(0xFF94A3B8),
-        ),
-      ),
-    );
-  }
-}
-
-class _DrawerTile extends StatelessWidget {
-  final IconData icon;
-  final IconData activeIcon;
-  final String title;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _DrawerTile({
-    required this.icon,
-    required this.activeIcon,
-    required this.title,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Material(
-        color: isSelected
-            ? (isDark
-                ? const Color(0xFF28235D).withValues(alpha: 0.35)
-                : const Color(0xFF28235D).withValues(alpha: 0.08))
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-            child: Row(
-              children: [
-                Icon(
-                  isSelected ? activeIcon : icon,
-                  size: 21,
-                  color: isSelected
-                      ? (isDark ? const Color(0xFF8B85FF) : const Color(0xFF28235D))
-                      : const Color(0xFF64748B),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                      color: isSelected
-                          ? (isDark ? Colors.white : const Color(0xFF28235D))
-                          : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155)),
-                    ),
-                  ),
-                ),
-                if (isSelected)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFD81F26),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+          color: AppColors.of(context).mutedLight,
         ),
       ),
     );
@@ -667,6 +562,7 @@ class _DrawerActionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colors = AppColors.of(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
@@ -697,148 +593,25 @@ class _DrawerActionTile extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: colors.ink,
                         ),
                       ),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF94A3B8),
+                          color: colors.mutedLight,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
+                Icon(
                   Icons.chevron_right_rounded,
                   size: 18,
-                  color: Color(0xFF94A3B8),
+                  color: colors.mutedLight,
                 ),
               ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Barra de navegación flotante estilo Dynamic Glass Dock
-class _CleanBottomNavBar extends StatelessWidget {
-  final int currentIndex;
-  final ValueChanged<int> onTap;
-  final List<({IconData icon, IconData activeIcon, String label})> items;
-  final bool isDark;
-
-  const _CleanBottomNavBar({
-    required this.currentIndex,
-    required this.onTap,
-    required this.items,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-
-    return Container(
-      margin: EdgeInsets.fromLTRB(
-        16,
-        0,
-        16,
-        bottomInset > 0 ? bottomInset + 4 : 14,
-      ),
-      height: 64,
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF14112E).withValues(alpha: 0.94)
-            : Colors.white.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.12)
-              : const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.07),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-            child: Row(
-              children: List.generate(items.length, (i) {
-                final item = items[i];
-                final selected = i == currentIndex;
-
-                return Expanded(
-                  child: GestureDetector(
-                    onTap: () {
-                      HapticFeedback.selectionClick();
-                      onTap(i);
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutCubic,
-                      padding: const EdgeInsets.symmetric(vertical: 5),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? (isDark
-                                ? const Color(0xFF2E2863)
-                                : const Color(0xFF28235D))
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          AnimatedScale(
-                            scale: selected ? 1.08 : 1.0,
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOutBack,
-                            child: Icon(
-                              selected ? item.activeIcon : item.icon,
-                              size: 20,
-                              color: selected
-                                  ? Colors.white
-                                  : (isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B)),
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            item.label,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight:
-                                  selected ? FontWeight.w800 : FontWeight.w600,
-                              color: selected
-                                  ? Colors.white
-                                  : (isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B)),
-                              letterSpacing: -0.1,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
             ),
           ),
         ),
