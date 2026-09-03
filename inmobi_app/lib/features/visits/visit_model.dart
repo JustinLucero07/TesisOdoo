@@ -8,8 +8,8 @@ class Visit {
   final String name;
   final DateTime start;
   final DateTime? stop;
-  final String appointmentType; // visit | meeting | call | signing
-  final String visitState; // scheduled | done | cancelled
+  final String appointmentType;
+  final String visitState;
   final int? propertyId;
   final String propertyName;
   final int? clientId;
@@ -20,9 +20,8 @@ class Visit {
   final String description;
   final String location;
   final bool allDay;
-  final String
-  visitResult; // interested | not_interested | follow_up | offer_made
-  final String visitRating; // '1'..'5'
+  final String visitResult;
+  final String visitRating;
   final bool whatsappSent;
   final int reminderValue;
   final String reminderUnit;
@@ -53,7 +52,6 @@ class Visit {
     this.attendeeNames = const [],
   });
 
-  /// Duración de la cita, si Odoo trae la hora de fin.
   Duration? get duration => stop == null ? null : stop!.difference(start);
 
   static const List<String> listFields = [
@@ -67,14 +65,11 @@ class Visit {
     'visit_notes',
     'visit_result',
     'visit_rating',
-    // Necesarios para programar la notificación local con la misma
-    // anticipación que tiene configurada la cita en el ERP.
+
     'whatsapp_reminder_value',
     'whatsapp_reminder_unit',
   ];
 
-  /// Campos completos para la ficha de la cita — incluye asesor,
-  /// participantes, ubicación y el estado del recordatorio de WhatsApp.
   static const List<String> detailFields = [
     ...listFields,
     'stop',
@@ -92,7 +87,7 @@ class Visit {
     return Visit(
       id: json['id'] as int,
       name: asOdooString(json['name']),
-      // Odoo devuelve la fecha en UTC como "yyyy-MM-dd HH:mm:ss".
+
       start: parseOdoo(asOdooString(json['start'])),
       stop: json['stop'] is String ? parseOdoo(json['stop'] as String) : null,
       appointmentType: asOdooString(json['appointment_type'], 'visit'),
@@ -106,7 +101,7 @@ class Visit {
       userId: json['user_id'] is List ? json['user_id'][0] as int : null,
       userName: many2oneName(json['user_id']),
       notes: asOdooString(json['visit_notes']),
-      // `description` es Html en calendar.event: se limpia a texto plano.
+
       description: asOdooString(json['description'])
           .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
           .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n')
@@ -120,8 +115,7 @@ class Visit {
       whatsappSent: json['whatsapp_sent'] == true,
       reminderValue: asOdooInt(json['whatsapp_reminder_value']),
       reminderUnit: asOdooString(json['whatsapp_reminder_unit'], 'minutes'),
-      // partner_ids llega como lista de ids; el nombre se resuelve aparte
-      // solo en la ficha, para no encarecer el listado.
+
       attendeeNames: const [],
     );
   }

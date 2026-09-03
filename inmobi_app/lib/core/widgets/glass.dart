@@ -4,38 +4,16 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Grosor del material. Una superficie grande debe leerse más gruesa que un
-/// chip pequeño: más desenfoque y una sombra más profunda.
-enum GlassLevel {
-  /// Chips, insignias, botones flotantes pequeños.
-  thin,
+enum GlassLevel { thin, regular, thick }
 
-  /// Tarjetas y paneles.
-  regular,
-
-  /// Barras de navegación, hojas, la capa que flota sobre todo el contenido.
-  thick,
-}
-
-/// Superficie de vidrio: el contenido de abajo se ve desenfocado y con un
-/// toque más de saturación (vibrancy), encima va un tinte translúcido, y el
-/// borde superior queda más claro — como luz pegando en el canto del material.
-///
-/// Dos reglas que se respetan al usarla:
-/// * **Nunca apilar vidrio claro sobre vidrio claro** — la legibilidad se cae.
-///   Si ya estás dentro de una superficie de vidrio, usa una sólida adentro.
-/// * **El texto encima va con más peso y contraste**, no gris plano: el fondo
-///   cambia al hacer scroll y el gris se pierde.
 class GlassSurface extends StatelessWidget {
   final Widget child;
   final GlassLevel level;
   final BorderRadius borderRadius;
   final EdgeInsetsGeometry? padding;
 
-  /// Tinte propio. Por defecto usa la superficie del tema con transparencia.
   final Color? tint;
 
-  /// Si el material lleva el borde claro en el canto superior.
   final bool edgeHighlight;
 
   const GlassSurface({
@@ -48,13 +26,27 @@ class GlassSurface extends StatelessWidget {
     this.edgeHighlight = true,
   });
 
-  /// Matriz de saturación — el equivalente a `saturate(1.6)` en CSS. Levanta
-  /// el color de lo que pasa por detrás para que el vidrio no se vea lavado.
   static const ColorFilter _vibrancy = ColorFilter.matrix(<double>[
-    1.3846, -0.2765, -0.0281, 0, 0, //
-    -0.0954, 1.2035, -0.0281, 0, 0, //
-    -0.0954, -0.2765, 1.3719, 0, 0, //
-    0, 0, 0, 1, 0, //
+    1.3846,
+    -0.2765,
+    -0.0281,
+    0,
+    0,
+    -0.0954,
+    1.2035,
+    -0.0281,
+    0,
+    0,
+    -0.0954,
+    -0.2765,
+    1.3719,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
   ]);
 
   double get _blur => switch (level) {
@@ -100,15 +92,10 @@ class GlassSurface extends StatelessWidget {
     final colors = AppColors.of(context);
     final isDark = colors.isDark;
 
-    // Cuando el sistema pide más contraste, el vidrio se vuelve sólido: la
-    // translucidez es lo primero que estorba si cuesta leer.
     final solid = MediaQuery.highContrastOf(context);
 
     final fill = tint ?? colors.surface;
-    final content = Padding(
-      padding: padding ?? EdgeInsets.zero,
-      child: child,
-    );
+    final content = Padding(padding: padding ?? EdgeInsets.zero, child: child);
 
     if (solid) {
       return DecoratedBox(
@@ -146,7 +133,7 @@ class GlassSurface extends StatelessWidget {
                       width: 1,
                     )
                   : Border.all(color: colors.line.withValues(alpha: 0.6)),
-              // El canto de arriba capta la luz; el de abajo queda en sombra.
+
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
@@ -165,11 +152,6 @@ class GlassSurface extends StatelessWidget {
   }
 }
 
-/// Fondo de vidrio para la barra superior: el contenido pasa por debajo
-/// desenfocado en lugar de chocar contra una franja opaca.
-///
-/// Va en el `flexibleSpace` de un `AppBar` transparente, con
-/// `extendBodyBehindAppBar: true` en el Scaffold.
 class GlassBar extends StatelessWidget {
   const GlassBar({super.key});
 
@@ -192,9 +174,7 @@ class GlassBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.surface.withValues(alpha: 0.72),
             border: Border(
-              bottom: BorderSide(
-                color: colors.line.withValues(alpha: 0.7),
-              ),
+              bottom: BorderSide(color: colors.line.withValues(alpha: 0.7)),
             ),
           ),
         ),
@@ -203,10 +183,6 @@ class GlassBar extends StatelessWidget {
   }
 }
 
-/// Degradado que difumina el contenido justo donde pasa por debajo de una
-/// barra flotante — en vez de cortarlo con una línea dura de 1px.
-///
-/// Va como última capa de un `Stack`, alineado al borde donde flota la barra.
 class ScrollEdgeFade extends StatelessWidget {
   final double height;
   final Alignment begin;
@@ -229,10 +205,7 @@ class ScrollEdgeFade extends StatelessWidget {
             end: begin == Alignment.bottomCenter
                 ? Alignment.topCenter
                 : Alignment.bottomCenter,
-            colors: [
-              bg,
-              bg.withValues(alpha: 0.0),
-            ],
+            colors: [bg, bg.withValues(alpha: 0.0)],
           ),
         ),
       ),

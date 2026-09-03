@@ -15,7 +15,6 @@ NumberFormat get _currency =>
     NumberFormat.currency(locale: 'es_EC', symbol: '\$', decimalDigits: 0);
 DateFormat get _dateFmt => DateFormat('d MMM y', 'es_EC');
 
-/// ───────────────────────── Comisiones ─────────────────────────
 class CommissionListScreen extends StatelessWidget {
   final bool onlyMine;
   const CommissionListScreen({super.key, this.onlyMine = true});
@@ -153,7 +152,6 @@ class CommissionListScreen extends StatelessWidget {
   }
 }
 
-/// ───────────────────────── Pagos ─────────────────────────
 class PaymentListScreen extends StatelessWidget {
   final int? propertyId;
   final int? contractId;
@@ -275,7 +273,6 @@ class PaymentListScreen extends StatelessWidget {
   }
 }
 
-/// ───────────────────────── Gastos ─────────────────────────
 class ExpenseListScreen extends StatefulWidget {
   final int? propertyId;
   final String? propertyName;
@@ -389,18 +386,13 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                         spacing: 6,
                         runSpacing: 6,
                         children: [
-                          AppBadge(
-                            label: typeLabel,
-                            color: p.mutedLight,
-                          ),
+                          AppBadge(label: typeLabel, color: p.mutedLight),
                           if (e.reimbursable)
                             AppBadge(
                               label: e.reimbursed
                                   ? 'Reembolsado'
                                   : 'Por reembolsar',
-                              color: e.reimbursed
-                                  ? p.success
-                                  : p.warning,
+                              color: e.reimbursed ? p.success : p.warning,
                             ),
                         ],
                       ),
@@ -587,7 +579,6 @@ class _ExpenseSheetState extends State<_ExpenseSheet> {
   }
 }
 
-/// ───────────────────────── Tasaciones ─────────────────────────
 class AppraisalListScreen extends StatelessWidget {
   final int? propertyId;
   const AppraisalListScreen({super.key, this.propertyId});
@@ -677,9 +668,7 @@ class AppraisalListScreen extends StatelessWidget {
                         AppBadge(
                           label:
                               '${a.variancePct > 0 ? '+' : ''}${a.variancePct.toStringAsFixed(1)}% vs precio',
-                          color: a.variancePct >= 0
-                              ? p.success
-                              : p.warning,
+                          color: a.variancePct >= 0 ? p.success : p.warning,
                         ),
                     ],
                   ),

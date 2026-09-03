@@ -1,9 +1,6 @@
 import '../../core/api/odoo_client.dart';
 import 'document_model.dart';
 
-/// Relación a la que pertenecen los documentos consultados/creados — solo una
-/// debe tener valor a la vez (mismo modelo `estate.document` que usa el ERP
-/// para propiedades, leads, contratos y contactos).
 class DocumentOwner {
   final String field;
   final int id;

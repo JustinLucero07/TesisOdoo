@@ -5,9 +5,6 @@ import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../finance/finance_models.dart';
 
-/// Historial de cambios de precio de una propiedad
-/// (`estate.property.price.history`) — muestra si el precio subió o bajó y
-/// en qué proporción, que es lo que un asesor necesita para argumentar.
 class PriceHistorySection extends StatefulWidget {
   final OdooClient odoo;
   final int propertyId;
@@ -45,7 +42,6 @@ class _PriceHistorySectionState extends State<PriceHistorySection> {
       if (mounted)
         setState(() => _items = rows.map(PriceChange.fromJson).toList());
     } catch (_) {
-      // Silencioso: la sección queda vacía si falla.
     } finally {
       if (mounted) setState(() => _loading = false);
     }

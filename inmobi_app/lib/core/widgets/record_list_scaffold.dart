@@ -6,10 +6,6 @@ import 'motion.dart';
 import 'skeleton.dart';
 import 'states.dart';
 
-/// Andamio común de las pantallas de listado (ofertas, comisiones, pagos,
-/// gastos, tasaciones). Concentra el patrón que ya se repetía pantalla a
-/// pantalla: cargar, filtrar por estado, refrescar, y los tres estados de
-/// salida (cargando / error / vacío).
 class RecordListScaffold<T> extends StatefulWidget {
   final String title;
   final Future<List<T>> Function(String? filter) load;
@@ -146,18 +142,13 @@ class _RecordListScaffoldState<T> extends State<RecordListScaffold<T>> {
       ),
       itemCount: _items.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
-      // La lista se arma sola: cada fila entra un instante después de la
-      // anterior. Como este andamio lo usan Ofertas, Comisiones, Pagos,
-      // Gastos y Tasaciones, todas ganan el mismo comportamiento de una.
-      itemBuilder: (context, i) => FadeSlideIn(
-        index: i,
-        child: widget.itemBuilder(context, _items[i]),
-      ),
+
+      itemBuilder: (context, i) =>
+          FadeSlideIn(index: i, child: widget.itemBuilder(context, _items[i])),
     );
   }
 }
 
-/// Banda de totales que va sobre una lista (suma de comisiones, de pagos…).
 class TotalsBar extends StatelessWidget {
   final List<(String, String)> entries;
   const TotalsBar({super.key, required this.entries});

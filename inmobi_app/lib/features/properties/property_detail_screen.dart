@@ -39,9 +39,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   late final OdooClient _odoo;
   Property? _property;
   String? _advisorPhone;
-  // Teléfono de cada persona relacionada, por id de contacto — un mismo
-  // contacto puede ser propietario y comprador a la vez, así que se
-  // guarda por id en vez de un campo por rol.
+
   final Map<int, String> _relatedPhones = {};
   bool _loading = true;
   String? _error;
@@ -81,14 +79,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       final phone = (rows.first['mobile'] ?? rows.first['phone'] ?? '')
           .toString();
       if (mounted && phone.isNotEmpty) setState(() => _advisorPhone = phone);
-    } catch (_) {
-      // Silencioso
-    }
+    } catch (_) {}
   }
 
-  /// Trae el teléfono de propietario/comprador/arrendatario en una sola
-  /// consulta a res.partner — mismo patrón que _loadAdvisorPhone, pero
-  /// agrupado porque los tres son el mismo modelo.
   Future<void> _loadRelatedPhones(Property p) async {
     final ids = {
       if (p.ownerId != null) p.ownerId!,
@@ -111,9 +104,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           if (phone.isNotEmpty) _relatedPhones[row['id'] as int] = phone;
         }
       });
-    } catch (_) {
-      // Silencioso: si no hay teléfono simplemente no se muestran los botones.
-    }
+    } catch (_) {}
   }
 
   Future<void> _call(String phone) => PhoneUtils.call(phone);
@@ -123,15 +114,13 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     final title = p != null ? (p.title.isEmpty ? p.reference : p.title) : '';
     await PhoneUtils.whatsapp(
       phone,
-      text: 'Hola, te contacto sobre la propiedad $title (Ref: ${p?.reference ?? ''}).',
+      text:
+          'Hola, te contacto sobre la propiedad $title (Ref: ${p?.reference ?? ''}).',
     );
   }
 
-  /// WhatsApp genérico para propietario/comprador/arrendatario — mismo
-  /// mensaje que el del asesor, sin repetir la lógica de armar el link.
   Future<void> _whatsappRelated(String phone) => _whatsappAdvisor(phone);
 
-  /// Abre WhatsApp con mensaje comercial para comprar/consultar
   Future<void> _openBuyWhatsapp() async {
     if (_property == null) return;
     await FichaDownloader.shareCommercialWhatsapp(
@@ -140,7 +129,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     );
   }
 
-  /// Abre ubicación en Google Maps
   bool get _hasGpsCoords {
     final p = _property;
     if (p == null) return false;
@@ -163,21 +151,25 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     return parts.join(', ');
   }
 
-  /// Abre la ubicación en Google Maps priorizando coordenadas GPS de Odoo
   Future<void> _openInGoogleMaps() async {
     final p = _property;
     if (p == null) return;
     final String url;
     if (_hasGpsCoords) {
-      url = 'https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}';
+      url =
+          'https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}';
     } else {
       final query = _buildLocationQuery();
-      url = 'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}';
+      url =
+          'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(query)}';
     }
 
     try {
       final uri = Uri.parse(url);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
@@ -194,14 +186,14 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-  /// Abre la ubicación en Apple Maps (Maps de iOS) priorizando coordenadas GPS de Odoo
   Future<void> _openInAppleMaps() async {
     final p = _property;
     if (p == null) return;
     final String url;
     final title = p.title.isNotEmpty ? p.title : p.reference;
     if (_hasGpsCoords) {
-      url = 'https://maps.apple.com/?ll=${p.latitude},${p.longitude}&q=${Uri.encodeComponent(title)}';
+      url =
+          'https://maps.apple.com/?ll=${p.latitude},${p.longitude}&q=${Uri.encodeComponent(title)}';
     } else {
       final query = _buildLocationQuery();
       url = 'https://maps.apple.com/?q=${Uri.encodeComponent(query)}';
@@ -209,7 +201,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
     try {
       final uri = Uri.parse(url);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
@@ -226,7 +221,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-  /// Abre ruta en Waze GPS priorizando coordenadas GPS de Odoo
   Future<void> _openInWaze() async {
     final p = _property;
     if (p == null) return;
@@ -240,7 +234,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
     try {
       final uri = Uri.parse(url);
-      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched) {
         await launchUrl(uri, mode: LaunchMode.platformDefault);
       }
@@ -316,7 +313,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   value: 'captacion',
                   child: Row(
                     children: [
-                      Icon(Icons.assignment_outlined, size: 18, color: Color(0xFFD81F26)),
+                      Icon(
+                        Icons.assignment_outlined,
+                        size: 18,
+                        color: Color(0xFFD81F26),
+                      ),
                       SizedBox(width: 10),
                       Text('Hoja de Captación (PDF)'),
                     ],
@@ -326,7 +327,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   value: 'ficha',
                   child: Row(
                     children: [
-                      Icon(Icons.picture_as_pdf_outlined, size: 18, color: Color(0xFF28235D)),
+                      Icon(
+                        Icons.picture_as_pdf_outlined,
+                        size: 18,
+                        color: Color(0xFF28235D),
+                      ),
                       SizedBox(width: 10),
                       Text('Ficha Comercial (PDF)'),
                     ],
@@ -361,7 +366,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     );
   }
 
-  /// Barra inferior fija para acceso instantáneo a WhatsApp y Ficha PDF
   Widget _buildBottomStickyBar() {
     final p = _property!;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -371,9 +375,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1938) : Colors.white,
         border: Border(
-          top: BorderSide(
-            color: isDark ? Colors.white12 : colors.line,
-          ),
+          top: BorderSide(color: isDark ? Colors.white12 : colors.line),
         ),
         boxShadow: softShadow(opacity: isDark ? 0.25 : 0.08, isDark: isDark),
       ),
@@ -381,7 +383,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         top: false,
         child: Row(
           children: [
-            // Botón Compartir Ficha
             OutlinedButton.icon(
               onPressed: () => FichaDownloader.start(
                 context: context,
@@ -389,20 +390,23 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 property: p,
               ),
               style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
-                side: BorderSide(
-                  color: isDark ? Colors.white24 : colors.line,
-                ),
+                side: BorderSide(color: isDark ? Colors.white24 : colors.line),
               ),
               icon: const Icon(Icons.share_rounded, size: 17),
-              label: const Text('Ficha PDF', style: TextStyle(fontWeight: FontWeight.w700)),
+              label: const Text(
+                'Ficha PDF',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
             const SizedBox(width: 10),
 
-            // Botón WhatsApp Comprar / Consultar
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: _openBuyWhatsapp,
@@ -416,7 +420,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 ),
                 icon: const Icon(Icons.chat_bubble_rounded, size: 18),
                 label: Text(
-                  p.isForSale ? 'Comprar por WhatsApp' : 'Arrendar por WhatsApp',
+                  p.isForSale
+                      ? 'Comprar por WhatsApp'
+                      : 'Arrendar por WhatsApp',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -444,7 +450,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 36),
       children: [
-        // Foto de portada con badge interactiva y zoom
         Stack(
           children: [
             GestureDetector(
@@ -619,7 +624,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               ),
               const SizedBox(height: 18),
 
-              // Fila 1 de Acciones Rápidas
               Row(
                 children: [
                   Expanded(
@@ -671,7 +675,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               ),
               const SizedBox(height: 10),
 
-              // Fila 2 de Acciones Rápidas
               Row(
                 children: [
                   Expanded(
@@ -728,7 +731,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               ),
               const SizedBox(height: 10),
 
-              // Fila 3: Documento de Captación
               Row(
                 children: [
                   Expanded(
@@ -757,7 +759,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               ],
               const SizedBox(height: 18),
 
-              // Sección Ubicación con botones de Navegación GPS directa
               ExpandableSection(
                 title: 'Ubicación y Navegación GPS',
                 child: Column(
@@ -796,8 +797,18 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            icon: const Icon(Icons.location_on_outlined, size: 18, color: Color(0xFFEA4335)),
-                            label: const Text('Google Maps', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            icon: const Icon(
+                              Icons.location_on_outlined,
+                              size: 18,
+                              color: Color(0xFFEA4335),
+                            ),
+                            label: const Text(
+                              'Google Maps',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -810,8 +821,18 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            icon: const Icon(Icons.map_outlined, size: 18, color: Color(0xFF28235D)),
-                            label: const Text('Apple Maps', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            icon: const Icon(
+                              Icons.map_outlined,
+                              size: 18,
+                              color: Color(0xFF28235D),
+                            ),
+                            label: const Text(
+                              'Apple Maps',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -824,8 +845,18 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            icon: const Icon(Icons.navigation_rounded, size: 18, color: Color(0xFF33CCFF)),
-                            label: const Text('Waze GPS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                            icon: const Icon(
+                              Icons.navigation_rounded,
+                              size: 18,
+                              color: Color(0xFF33CCFF),
+                            ),
+                            label: const Text(
+                              'Waze GPS',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -844,21 +875,27 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                         label: 'Propietario',
                         name: p.ownerName,
                         contactId: p.ownerId,
-                        phone: p.ownerId != null ? _relatedPhones[p.ownerId] : null,
+                        phone: p.ownerId != null
+                            ? _relatedPhones[p.ownerId]
+                            : null,
                       ),
                     if (p.buyerName.isNotEmpty)
                       (
                         label: 'Comprador',
                         name: p.buyerName,
                         contactId: p.buyerId,
-                        phone: p.buyerId != null ? _relatedPhones[p.buyerId] : null,
+                        phone: p.buyerId != null
+                            ? _relatedPhones[p.buyerId]
+                            : null,
                       ),
                     if (p.tenantName.isNotEmpty)
                       (
                         label: 'Arrendatario',
                         name: p.tenantName,
                         contactId: p.tenantId,
-                        phone: p.tenantId != null ? _relatedPhones[p.tenantId] : null,
+                        phone: p.tenantId != null
+                            ? _relatedPhones[p.tenantId]
+                            : null,
                       ),
                   ],
                   onCall: _call,
@@ -922,11 +959,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               PropertyGallerySection(odoo: _odoo, propertyId: p.id),
 
               const SizedBox(height: 18),
-              _CaptureSheetSection(
-                odoo: _odoo,
-                property: p,
-                onChanged: _load,
-              ),
+              _CaptureSheetSection(odoo: _odoo, property: p, onChanged: _load),
 
               const _SectionTitle('Documentos'),
               const SizedBox(height: 8),
@@ -958,10 +991,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-/// Fila de una persona relacionada (propietario/comprador/arrendatario):
-/// misma tarjeta compacta que _InfoCard, pero el nombre lleva a la ficha
-/// completa del contacto y trae los accesos directos de llamar/WhatsApp
-/// cuando hay teléfono cargado.
 class _PeopleInfoCard extends StatelessWidget {
   final List<({String label, String name, int? contactId, String? phone})> rows;
   final ValueChanged<String> onCall;
@@ -993,9 +1022,6 @@ class _PeopleInfoCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(
                   children: [
-                    // El rol va arriba y el nombre debajo, en su propia
-                    // línea: así un nombre largo se lee completo en vez de
-                    // partirse a la mitad contra los íconos.
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1015,12 +1041,12 @@ class _PeopleInfoCard extends StatelessWidget {
                             onTap: rows[i].contactId == null
                                 ? null
                                 : () => Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => ContactDetailScreen(
-                                          contactId: rows[i].contactId!,
-                                        ),
+                                    MaterialPageRoute(
+                                      builder: (_) => ContactDetailScreen(
+                                        contactId: rows[i].contactId!,
                                       ),
                                     ),
+                                  ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
@@ -1039,9 +1065,7 @@ class _PeopleInfoCard extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                                // El chevron es la señal de "esto se toca",
-                                // en vez del subrayado: no ensucia el nombre
-                                // y es el gesto que ya usa el resto de la app.
+
                                 if (rows[i].contactId != null)
                                   Icon(
                                     Icons.chevron_right_rounded,
@@ -1079,9 +1103,6 @@ class _PeopleInfoCard extends StatelessWidget {
   }
 }
 
-/// Ícono chico de llamar/WhatsApp para filas compactas — versión reducida
-/// de _ContactIconButton, pensada para caber al lado de un nombre en vez
-/// de en una tarjeta grande con avatar.
 class _SmallContactIcon extends StatelessWidget {
   final IconData icon;
   final Color color;
@@ -1162,7 +1183,6 @@ class _InfoCard extends StatelessWidget {
   }
 }
 
-/// Botón cuadrado de acción rápida
 class _QuickAction extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -1323,7 +1343,6 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-/// Sección de Hoja de Captación con soporte para archivo subido (PDF/escaneado) y generación de plantilla
 class _CaptureSheetSection extends StatelessWidget {
   final OdooClient odoo;
   final Property property;
@@ -1339,7 +1358,8 @@ class _CaptureSheetSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
-    final hasFile = property.hasCaptureSheet || property.captureSheetFilename.isNotEmpty;
+    final hasFile =
+        property.hasCaptureSheet || property.captureSheetFilename.isNotEmpty;
     final fileName = property.captureSheetFilename.isNotEmpty
         ? property.captureSheetFilename
         : 'Hoja_Captacion_${property.id}.pdf';
@@ -1385,10 +1405,7 @@ class _CaptureSheetSection extends StatelessWidget {
                     ),
                     Text(
                       'Documento escaneado o PDF subido en Odoo',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colors.muted,
-                      ),
+                      style: TextStyle(fontSize: 11, color: colors.muted),
                     ),
                   ],
                 ),
@@ -1480,7 +1497,11 @@ class _CaptureSheetSection extends StatelessWidget {
                   odoo: odoo,
                   property: property,
                 ),
-                icon: const Icon(Icons.visibility_rounded, size: 18, color: Colors.white),
+                icon: const Icon(
+                  Icons.visibility_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
                 label: const Text(
                   'Ver Hoja de Captación',
                   style: TextStyle(
@@ -1506,7 +1527,11 @@ class _CaptureSheetSection extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline_rounded, size: 18, color: colors.muted),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 18,
+                    color: colors.muted,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1536,7 +1561,10 @@ class _CaptureSheetSection extends StatelessWidget {
                     icon: const Icon(Icons.picture_as_pdf_outlined, size: 16),
                     label: const Text(
                       'Generar PDF',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -1558,7 +1586,11 @@ class _CaptureSheetSection extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 10),
                     ),
-                    icon: const Icon(Icons.upload_file_rounded, size: 16, color: Colors.white),
+                    icon: const Icon(
+                      Icons.upload_file_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
                     label: const Text(
                       'Subir Archivo',
                       style: TextStyle(

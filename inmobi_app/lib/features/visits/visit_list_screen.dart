@@ -44,7 +44,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
   String? _visitStateFilter;
   String? _visitResultFilter;
 
-  // Filtro de Asesor: null = todos, 0 = mis citas, ID = asesor específico
   int? _selectedAdvisorId;
   List<_AdvisorItem> _advisors = [];
 
@@ -73,7 +72,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
     final currentUserName = context.read<AuthService>().userName ?? 'Asesor';
     if (_selectedAdvisorId == 0) return currentUserName;
     if (_selectedAdvisorId == null) return 'Todos los asesores';
-    final found = _advisors.where((a) => a.id == _selectedAdvisorId).firstOrNull;
+    final found = _advisors
+        .where((a) => a.id == _selectedAdvisorId)
+        .firstOrNull;
     return found?.name ?? currentUserName;
   }
 
@@ -110,7 +111,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
     super.initState();
     _odoo = context.read<AuthService>().odoo;
     _service = VisitService(_odoo);
-    _selectedAdvisorId = 0; // Por defecto: "Mis citas"
+    _selectedAdvisorId = 0;
     _loadAdvisors();
     _loadMonth(_focusedDay);
   }
@@ -129,14 +130,15 @@ class _VisitListScreenState extends State<VisitListScreen> {
       if (mounted) {
         setState(() {
           _advisors = rows
-              .map((r) => _AdvisorItem(r['id'] as int, (r['name'] ?? '').toString()))
+              .map(
+                (r) =>
+                    _AdvisorItem(r['id'] as int, (r['name'] ?? '').toString()),
+              )
               .where((a) => a.name.isNotEmpty)
               .toList();
         });
       }
-    } catch (_) {
-      // Silencioso
-    }
+    } catch (_) {}
   }
 
   Future<void> _loadMonth(DateTime month) async {
@@ -161,7 +163,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
         map.putIfAbsent(_dayKey(v.start), () => []).add(v);
       }
       if (mounted) setState(() => _monthVisits = map);
-      unawaited(VisitService.scheduleNotifications(visits, currentUserId: _odoo.userId));
+      unawaited(
+        VisitService.scheduleNotifications(visits, currentUserId: _odoo.userId),
+      );
     } catch (e) {
       if (mounted) setState(() => _error = 'No se pudo cargar la agenda.');
     } finally {
@@ -200,7 +204,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     children: [
                       const Text(
                         'Filtrar por Asesor',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close_rounded, size: 20),
@@ -212,7 +219,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
                 const Divider(height: 1),
                 ListTile(
                   leading: Icon(Icons.person_rounded, color: colors.navy),
-                  title: const Text('Mis citas', style: TextStyle(fontWeight: FontWeight.w700)),
+                  title: const Text(
+                    'Mis citas',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   selected: _selectedAdvisorId == 0,
                   selectedTileColor: colors.navy.withValues(alpha: 0.08),
                   onTap: () {
@@ -222,7 +232,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
                 ),
                 ListTile(
                   leading: Icon(Icons.groups_rounded, color: colors.navy),
-                  title: const Text('Todos los asesores', style: TextStyle(fontWeight: FontWeight.w700)),
+                  title: const Text(
+                    'Todos los asesores',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                   selected: _selectedAdvisorId == null,
                   selectedTileColor: colors.navy.withValues(alpha: 0.08),
                   onTap: () {
@@ -276,7 +289,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     children: [
                       const Text(
                         'Tipo de Actividad',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.close_rounded, size: 20),
@@ -294,7 +310,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     title: Text(
                       label,
                       style: TextStyle(
-                        fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w500,
                         color: selected ? colors.navy : null,
                       ),
                     ),
@@ -344,7 +362,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header Azul Vibrante (Idéntico a la captura) ──
           Container(
             width: double.infinity,
             padding: EdgeInsets.only(
@@ -376,7 +393,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   onPressed: _openCreate,
                   icon: const Icon(
                     Icons.add,
-                    color: Color(0xFFFFB800), // Dorado/amarillo vibrante
+                    color: Color(0xFFFFB800),
                     size: 30,
                   ),
                   tooltip: 'Nueva Cita',
@@ -385,14 +402,15 @@ class _VisitListScreenState extends State<VisitListScreen> {
             ),
           ),
 
-          // ── Sub-header: Selector de Asesor y Filtro Tipo / Estado ──
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
               border: Border(
                 bottom: BorderSide(
-                  color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : const Color(0xFFE2E8F0),
                   width: 1,
                 ),
               ),
@@ -403,7 +421,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   onTap: _showAdvisorPicker,
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 2,
+                      horizontal: 4,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -411,7 +432,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
                           'De: ',
                           style: TextStyle(
                             fontSize: 14,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -432,14 +455,19 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   onTap: _showTypePicker,
                   borderRadius: BorderRadius.circular(8),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 2,
+                      horizontal: 4,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           '| ',
                           style: TextStyle(
-                            color: isDark ? Colors.white24 : const Color(0xFFCBD5E1),
+                            color: isDark
+                                ? Colors.white24
+                                : const Color(0xFFCBD5E1),
                             fontSize: 16,
                           ),
                         ),
@@ -473,13 +501,17 @@ class _VisitListScreenState extends State<VisitListScreen> {
                         decoration: BoxDecoration(
                           color: _activeVisitFilterCount > 0
                               ? const Color(0xFF28235D)
-                              : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+                              : (isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFF1F5F9)),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           Icons.tune_rounded,
                           size: 18,
-                          color: _activeVisitFilterCount > 0 ? Colors.white : colors.navy,
+                          color: _activeVisitFilterCount > 0
+                              ? Colors.white
+                              : colors.navy,
                         ),
                       ),
                       if (_activeVisitFilterCount > 0)
@@ -510,7 +542,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
             ),
           ),
 
-          // ── Calendario Mensual Limpio en Blanco ──
           Container(
             color: isDark ? const Color(0xFF1E293B) : Colors.white,
             padding: const EdgeInsets.only(bottom: 8),
@@ -524,9 +555,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
               daysOfWeekHeight: 24,
               selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
               calendarFormat: _calendarFormat,
-              availableCalendarFormats: const {
-                CalendarFormat.month: 'Mes',
-              },
+              availableCalendarFormats: const {CalendarFormat.month: 'Mes'},
               eventLoader: (day) => _monthVisits[_dayKey(day)] ?? const [],
               onDaySelected: (selected, focused) {
                 setState(() {
@@ -541,7 +570,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
               headerStyle: HeaderStyle(
                 formatButtonVisible: false,
                 titleCentered: true,
-                headerPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                headerPadding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 16,
+                ),
                 titleTextStyle: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -586,9 +618,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   fontWeight: FontWeight.w600,
                   color: isDark ? Colors.white70 : const Color(0xFF334155),
                 ),
-                todayDecoration: const BoxDecoration(
-                  color: Colors.transparent,
-                ),
+                todayDecoration: const BoxDecoration(color: Colors.transparent),
                 todayTextStyle: TextStyle(
                   color: colors.navy,
                   fontWeight: FontWeight.w900,
@@ -614,13 +644,11 @@ class _VisitListScreenState extends State<VisitListScreen> {
             ),
           ),
 
-          // Línea divisoria
           Container(
             height: 1,
             color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
           ),
 
-          // ── Sección Tareas del Día (Cabecera estilo HOY · X CITAS) ──
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
             child: Builder(
@@ -628,7 +656,8 @@ class _VisitListScreenState extends State<VisitListScreen> {
                 final visits = _visitsOfSelectedDay;
                 final count = visits.length;
                 final now = DateTime.now();
-                final isToday = _selectedDay.year == now.year &&
+                final isToday =
+                    _selectedDay.year == now.year &&
                     _selectedDay.month == now.month &&
                     _selectedDay.day == now.day;
                 final countLabel = '$count ${count == 1 ? "CITA" : "CITAS"}';
@@ -642,14 +671,15 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.9,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                 );
               },
             ),
           ),
 
-          // Lista de Eventos en Timeline o Estado Vacío
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => _loadMonth(_focusedDay),
@@ -751,7 +781,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
     if (query.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Esta cita no tiene una dirección registrada.')),
+          const SnackBar(
+            content: Text('Esta cita no tiene una dirección registrada.'),
+          ),
         );
       }
       return;
@@ -765,31 +797,54 @@ class _VisitListScreenState extends State<VisitListScreen> {
     }
   }
 
-  static (Color bg, Color text, String label) _pillBadge(String type, bool isDark) {
+  static (Color bg, Color text, String label) _pillBadge(
+    String type,
+    bool isDark,
+  ) {
     final t = type.toLowerCase().trim();
     if (t.contains('visita') || t == 'visit') {
       return isDark
-          ? (const Color(0xFF1E3A8A).withValues(alpha: 0.45), const Color(0xFF93C5FD), 'Visita')
+          ? (
+              const Color(0xFF1E3A8A).withValues(alpha: 0.45),
+              const Color(0xFF93C5FD),
+              'Visita',
+            )
           : (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Visita');
     }
     if (t.contains('avaluo') || t.contains('avalúo') || t == 'appraisal') {
       return isDark
-          ? (const Color(0xFF78350F).withValues(alpha: 0.45), const Color(0xFFFCD34D), 'Avalúo')
+          ? (
+              const Color(0xFF78350F).withValues(alpha: 0.45),
+              const Color(0xFFFCD34D),
+              'Avalúo',
+            )
           : (const Color(0xFFFEF3C7), const Color(0xFFD97706), 'Avalúo');
     }
     if (t.contains('firma') || t == 'signing') {
       return isDark
-          ? (const Color(0xFF064E3B).withValues(alpha: 0.45), const Color(0xFF6EE7B7), 'Firma')
+          ? (
+              const Color(0xFF064E3B).withValues(alpha: 0.45),
+              const Color(0xFF6EE7B7),
+              'Firma',
+            )
           : (const Color(0xFFECFDF5), const Color(0xFF059669), 'Firma');
     }
     if (t.contains('reunion') || t.contains('reunión') || t == 'meeting') {
       return isDark
-          ? (const Color(0xFF581C87).withValues(alpha: 0.45), const Color(0xFFC4B5FD), 'Reunión')
+          ? (
+              const Color(0xFF581C87).withValues(alpha: 0.45),
+              const Color(0xFFC4B5FD),
+              'Reunión',
+            )
           : (const Color(0xFFF3E8FF), const Color(0xFF7C3AED), 'Reunión');
     }
     if (t.contains('llamada') || t == 'call') {
       return isDark
-          ? (const Color(0xFF14532D).withValues(alpha: 0.45), const Color(0xFF86EFAC), 'Llamada')
+          ? (
+              const Color(0xFF14532D).withValues(alpha: 0.45),
+              const Color(0xFF86EFAC),
+              'Llamada',
+            )
           : (const Color(0xFFF0FDF4), const Color(0xFF16A34A), 'Llamada');
     }
     return isDark
@@ -799,7 +854,8 @@ class _VisitListScreenState extends State<VisitListScreen> {
 
   static (String title, String subtitle) _extractTitles(Visit v) {
     final type = v.appointmentType.toLowerCase().trim();
-    if ((type == 'visit' || type.contains('visita')) && v.clientName.isNotEmpty) {
+    if ((type == 'visit' || type.contains('visita')) &&
+        v.clientName.isNotEmpty) {
       final title = v.clientName;
       final subtitle = v.propertyName.isNotEmpty
           ? v.propertyName
@@ -842,7 +898,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
                 Icon(
                   Icons.calendar_today_outlined,
                   size: 48,
-                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                  color: isDark
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFF94A3B8),
                 ),
                 const SizedBox(height: 14),
                 Text(
@@ -851,7 +909,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                     height: 1.4,
                   ),
                 ),
@@ -861,9 +921,8 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     Navigator.of(context)
                         .push(
                           MaterialPageRoute(
-                            builder: (_) => VisitFormScreen(
-                              initialDate: _selectedDay,
-                            ),
+                            builder: (_) =>
+                                VisitFormScreen(initialDate: _selectedDay),
                           ),
                         )
                         .then((_) => _loadMonth(_focusedDay));
@@ -914,7 +973,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Columna de Hora ──
           SizedBox(
             width: 48,
             child: Padding(
@@ -924,13 +982,14 @@ class _VisitListScreenState extends State<VisitListScreen> {
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
                   fontSize: 13.5,
-                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B),
+                  color: isDark
+                      ? const Color(0xFFCBD5E1)
+                      : const Color(0xFF1E293B),
                 ),
               ),
             ),
           ),
 
-          // ── Nodo del Timeline y Línea vertical ──
           SizedBox(
             width: 22,
             child: Column(
@@ -940,7 +999,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   width: 9,
                   height: 9,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF818CF8) : const Color(0xFF1E1B4B),
+                    color: isDark
+                        ? const Color(0xFF818CF8)
+                        : const Color(0xFF1E1B4B),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -949,7 +1010,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     child: Container(
                       width: 1.5,
                       margin: const EdgeInsets.symmetric(vertical: 4),
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFE2E8F0),
                     ),
                   ),
               ],
@@ -958,7 +1021,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
 
           const SizedBox(width: 6),
 
-          // ── Tarjeta de la Cita (Diseño de la imagen 1) ──
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 16),
@@ -967,11 +1029,15 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.035),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.25 : 0.035,
+                      ),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -993,7 +1059,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Badge Pill (Visita, Avalúo, Firma, etc.)
                           Row(
                             children: [
                               Container(
@@ -1018,26 +1083,29 @@ class _VisitListScreenState extends State<VisitListScreen> {
                               if (v.visitState != 'scheduled')
                                 AppBadge(
                                   label: VisitStateStyle.label(v.visitState),
-                                  color: VisitStateStyle.color(v.visitState, colors),
+                                  color: VisitStateStyle.color(
+                                    v.visitState,
+                                    colors,
+                                  ),
                                 ),
                             ],
                           ),
 
                           const SizedBox(height: 10),
 
-                          // Título Principal
                           Text(
                             titles.$1,
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
                               fontSize: 15.5,
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
 
-                          // Subtítulo
                           if (titles.$2.isNotEmpty) ...[
                             const SizedBox(height: 3),
                             Text(
@@ -1056,10 +1124,8 @@ class _VisitListScreenState extends State<VisitListScreen> {
 
                           const SizedBox(height: 12),
 
-                          // ── Botones de Acción Rápida (Llamada, WhatsApp, Ubicación) ──
                           Row(
                             children: [
-                              // Botón Teléfono
                               _ActionCircleButton(
                                 icon: Icons.phone_outlined,
                                 bgColor: isDark
@@ -1072,7 +1138,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
                               ),
                               const SizedBox(width: 8),
 
-                              // Botón WhatsApp (Verde)
                               _ActionCircleButton(
                                 icon: Icons.chat_bubble_rounded,
                                 bgColor: const Color(0xFF25D366),
@@ -1081,7 +1146,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
                               ),
                               const SizedBox(width: 8),
 
-                              // Botón Ubicación / Mapa
                               _ActionCircleButton(
                                 icon: Icons.location_on_outlined,
                                 bgColor: isDark
@@ -1108,7 +1172,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
   }
 }
 
-/// Botón de acción rápida circular / píldora para la tarjeta de cita
 class _ActionCircleButton extends StatelessWidget {
   final IconData icon;
   final Color bgColor;
@@ -1141,7 +1204,6 @@ class _ActionCircleButton extends StatelessWidget {
   }
 }
 
-/// Hoja modal de filtros avanzados para la Agenda de Citas
 class _VisitFilterSheet extends StatefulWidget {
   final String? visitState;
   final String? visitResult;
@@ -1202,7 +1264,6 @@ class _VisitFilterSheetState extends State<_VisitFilterSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Manija
               Center(
                 child: Container(
                   width: 40,
@@ -1215,16 +1276,12 @@ class _VisitFilterSheetState extends State<_VisitFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // Cabecera
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     'Filtros de Agenda',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   TextButton(
                     onPressed: () {
@@ -1245,7 +1302,6 @@ class _VisitFilterSheetState extends State<_VisitFilterSheet> {
               ),
               const Divider(height: 20),
 
-              // 1. Estado de la Cita
               const Text(
                 'Estado de la Cita',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -1266,7 +1322,6 @@ class _VisitFilterSheetState extends State<_VisitFilterSheet> {
               ),
               const SizedBox(height: 18),
 
-              // 2. Nivel de Interés / Resultado
               const Text(
                 'Interés / Resultado Comercial',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -1287,7 +1342,6 @@ class _VisitFilterSheetState extends State<_VisitFilterSheet> {
               ),
               const SizedBox(height: 24),
 
-              // Botón Aplicar
               SizedBox(
                 width: double.infinity,
                 height: 48,

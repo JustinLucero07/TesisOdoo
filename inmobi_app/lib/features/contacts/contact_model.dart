@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/api/odoo_json.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Espejo de `res.partner` con los campos inmobiliarios que agrega
-/// `estate_management` (propietario, agencia aliada, documento, etc.).
 class Contact {
   final int id;
   final String name;
@@ -48,10 +46,8 @@ class Contact {
     this.function = '',
   });
 
-  /// Número preferido para llamar/WhatsApp: el celular manda sobre el fijo.
   String get bestPhone => mobile.isNotEmpty ? mobile : phone;
 
-  /// Etiqueta corta del rol, para el subtítulo de la lista.
   String get roleLabel {
     if (isAlliedAgency) return 'Agencia aliada';
     if (isPropertyOwner) return 'Propietario';

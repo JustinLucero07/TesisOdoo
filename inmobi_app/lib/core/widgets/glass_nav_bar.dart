@@ -21,27 +21,11 @@ class GlassNavItem {
   });
 }
 
-/// Barra de navegación flotante de vidrio: no ocupa una franja fija del
-/// fondo, flota sobre el contenido y deja que este se vea desenfocado por
-/// debajo.
-///
-/// Dos movimientos, los dos con resorte y los dos interrumpibles:
-///
-/// * **El indicador** de la sección activa no salta: se desliza arrastrando la
-///   velocidad que traía. Si tocas otra pestaña mientras todavía se mueve,
-///   cambia de rumbo desde donde va, sin frenar en seco.
-/// * **La barra se compacta al bajar** por el contenido: las etiquetas se
-///   pliegan y quedan solo los íconos, para devolverle pantalla a lo que
-///   estás leyendo. Al subir, vuelve a crecer. Se controla desde afuera con
-///   [collapsed] para que la barra no tenga que saber quién hace scroll.
 class GlassNavBar extends StatefulWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final List<GlassNavItem> items;
 
-  /// Señal externa de "compáctate". Va como `ValueListenable` y no como un
-  /// simple `bool` para que quien hace scroll no tenga que reconstruir toda
-  /// la pantalla en cada cambio de dirección: solo se repinta esta barra.
   final ValueListenable<bool>? collapsed;
 
   const GlassNavBar({
@@ -52,9 +36,8 @@ class GlassNavBar extends StatefulWidget {
     this.collapsed,
   });
 
-  /// Alto que ocupa la barra + su margen, para que el contenido de las
-  /// pantallas reserve ese espacio al final y nada quede tapado. Se mantiene
-  /// en el tamaño expandido: si encogiera junto con la barra, el contenido
+  /// Espacio que las pantallas deben reservar al final de su scroll. Se
+  /// mantiene en el tamaño expandido: si encogiera con la barra, el contenido
   /// daría un brinco cada vez que esta se compacta.
   static const double reservedHeight = 96;
 
@@ -67,14 +50,11 @@ class GlassNavBar extends StatefulWidget {
 
 class _GlassNavBarState extends State<GlassNavBar>
     with TickerProviderStateMixin {
-  /// Posición del indicador medida en "índices" (2.4 = entre la 2 y la 3).
-  /// Va sin límites porque el resorte puede pasarse un poco del destino.
   late final AnimationController _indicator = AnimationController.unbounded(
     vsync: this,
     value: widget.currentIndex.toDouble(),
   );
 
-  /// 0 = barra completa con etiquetas · 1 = compacta, solo íconos.
   late final AnimationController _collapse = AnimationController.unbounded(
     vsync: this,
     value: 0,
@@ -102,8 +82,7 @@ class _GlassNavBarState extends State<GlassNavBar>
       _indicator.value = target;
       return;
     }
-    // Arranca desde donde está *ahora* y con la velocidad que trae: así un
-    // cambio a mitad de camino no produce un salto ni un frenazo.
+
     _indicator.animateWith(
       SpringSimulation(
         AppMotion.spring,
@@ -120,8 +99,7 @@ class _GlassNavBarState extends State<GlassNavBar>
       _collapse.value = target;
       return;
     }
-    // Igual que el indicador: sale desde el valor actual con su velocidad,
-    // así un cambio rápido de dirección del scroll no corta el movimiento.
+
     _collapse.animateWith(
       SpringSimulation(
         AppMotion.spring,
@@ -146,8 +124,6 @@ class _GlassNavBarState extends State<GlassNavBar>
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final margin = bottomInset > 0 ? bottomInset : 14.0;
 
-    // El hueco exterior se queda fijo y solo se encoge la pastilla de vidrio
-    // por dentro: así el Scaffold no rehace su layout en cada fotograma.
     return SizedBox(
       height: GlassNavBar._expandedHeight + margin,
       child: AnimatedBuilder(
@@ -163,8 +139,6 @@ class _GlassNavBarState extends State<GlassNavBar>
           return Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              // Al compactarse también se angosta un poco: el gesto completo
-              // se lee como "me hago a un lado", no solo "pierdo texto".
               padding: EdgeInsets.fromLTRB(
                 lerpDouble(14, 30, t)!,
                 0,
@@ -184,9 +158,6 @@ class _GlassNavBarState extends State<GlassNavBar>
 
                       return Stack(
                         children: [
-                          // Pastilla sólida detrás de la sección activa. Va
-                          // sólida a propósito: el color sobre vidrio se pone
-                          // en una capa opaca, nunca en el texto translúcido.
                           AnimatedBuilder(
                             animation: _indicator,
                             builder: (context, _) => Positioned(
@@ -202,7 +173,9 @@ class _GlassNavBarState extends State<GlassNavBar>
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: colors.navy.withValues(alpha: 0.32),
+                                      color: colors.navy.withValues(
+                                        alpha: 0.32,
+                                      ),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
@@ -245,7 +218,6 @@ class _NavButton extends StatelessWidget {
   final GlassNavItem item;
   final bool selected;
 
-  /// 0 = con etiqueta · 1 = solo ícono.
   final double collapse;
   final VoidCallback onTap;
 
@@ -259,13 +231,10 @@ class _NavButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    // Sobre vidrio el texto no puede ser gris plano: se pierde cuando el
-    // fondo cambia al hacer scroll. Va con más peso y más contraste.
+
     final onPill = colors.isDark ? colors.ink : Colors.white;
     final resting = colors.muted;
 
-    // La etiqueta se desvanece antes de que termine de plegarse, para que no
-    // se vea texto aplastado a la mitad del movimiento.
     final labelOpacity = (1 - collapse * 1.8).clamp(0.0, 1.0);
 
     return GestureDetector(
@@ -287,8 +256,7 @@ class _NavButton extends StatelessWidget {
               ),
             ),
           ),
-          // Se pliega hacia arriba: el ícono queda centrado en la barra
-          // compacta sin que nada salte de posición.
+
           ClipRect(
             child: Align(
               alignment: Alignment.topCenter,

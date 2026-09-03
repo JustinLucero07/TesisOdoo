@@ -16,7 +16,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
 }
 
-/// Servicio integral de Notificaciones Locales y Notificaciones Push con Firebase (FCM).
 class NotificationService {
   NotificationService._();
   static final instance = NotificationService._();
@@ -38,16 +37,12 @@ class NotificationService {
   Future<void> init() async {
     if (_ready) return;
 
-    // 1. Inicializar Timezones para alarmas locales
     try {
       tzdata.initializeTimeZones();
       final localName = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(localName.identifier));
-    } catch (_) {
-      // Sin zona horaria resuelta las alarmas usan la del sistema.
-    }
+    } catch (_) {}
 
-    // 2. Inicializar Flutter Local Notifications Plugin
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwin = DarwinInitializationSettings(
       requestAlertPermission: false,
@@ -64,9 +59,10 @@ class NotificationService {
         ),
       );
 
-      // Crear canal de notificación para Android
-      final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final androidPlugin = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (androidPlugin != null) {
         await androidPlugin.createNotificationChannel(
           const AndroidNotificationChannel(
@@ -78,17 +74,17 @@ class NotificationService {
           ),
         );
       }
-    } catch (_) {
-      // Sin notificaciones locales la app sigue funcionando igual.
-    }
+    } catch (_) {}
 
-    // 3. Inicializar Firebase y FCM (solo en Android e iOS)
-    if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
       try {
         await Firebase.initializeApp();
-        FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
 
-        // Escuchar notificaciones en primer plano y mostrarlas con LocalNotifications
         FirebaseMessaging.onMessage.listen((RemoteMessage message) {
           final notification = message.notification;
           if (notification != null) {
@@ -100,16 +96,12 @@ class NotificationService {
           }
         });
 
-        // Obtener el token FCM inicial
         _fcmToken = await FirebaseMessaging.instance.getToken();
 
-        // Escuchar cambios de token
         FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
           _fcmToken = newToken;
         });
-      } catch (_) {
-        // Sin Firebase no hay push, pero el resto de la app funciona.
-      }
+      } catch (_) {}
     }
 
     final saved = await _storage.read(key: _prefKey);
@@ -117,12 +109,13 @@ class NotificationService {
     _ready = true;
   }
 
-  /// Pide permisos al usuario tanto para notificaciones locales como FCM
   Future<bool> requestPermission() async {
     if (!_ready) await init();
 
     try {
-      if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+      if (!kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS)) {
         final settings = await FirebaseMessaging.instance.requestPermission(
           alert: true,
           badge: true,
@@ -135,25 +128,27 @@ class NotificationService {
         }
       }
 
-      final android = _plugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+      final android = _plugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
       if (android != null) {
         final granted = await android.requestNotificationsPermission();
         return granted ?? false;
       }
-    } catch (_) {
-      // Permiso denegado o no disponible en esta plataforma.
-    }
+    } catch (_) {}
     return false;
   }
 
-  /// Sincroniza el FCM Token con el backend Odoo
   Future<void> syncTokenWithOdoo({
     required OdooClient odoo,
     required int userId,
   }) async {
     try {
-      if (_fcmToken == null && !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS)) {
+      if (_fcmToken == null &&
+          !kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.android ||
+              defaultTargetPlatform == TargetPlatform.iOS)) {
         _fcmToken = await FirebaseMessaging.instance.getToken();
       }
 
@@ -164,9 +159,7 @@ class NotificationService {
           values: {'fcm_token': _fcmToken},
         );
       }
-    } catch (_) {
-      // El token se reintenta en el próximo arranque.
-    }
+    } catch (_) {}
   }
 
   Future<void> setEnabled(bool value) async {
@@ -175,7 +168,6 @@ class NotificationService {
     if (!value) await cancelAll();
   }
 
-  /// Muestra una notificación inmediata
   Future<void> showNotification({
     required int id,
     required String title,
@@ -203,7 +195,6 @@ class NotificationService {
     );
   }
 
-  /// Programa una notificación de cita local
   Future<void> scheduleVisit({
     required int visitId,
     required String title,
@@ -247,9 +238,7 @@ class NotificationService {
           notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         );
-      } catch (_) {
-        // Ni exacta ni inexacta: el aviso local no se pudo programar.
-      }
+      } catch (_) {}
     }
   }
 

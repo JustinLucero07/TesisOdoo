@@ -12,13 +12,9 @@ import '../auth/auth_service.dart';
 import 'visit_model.dart';
 import 'visit_service.dart';
 
-/// Crea o edita una cita (calendar.event) — mismo modelo que usa el
-/// calendario nativo de Odoo y la sincronización con Google Calendar; una
-/// visita creada aquí aparece igual en el ERP y se sincroniza igual.
 class VisitFormScreen extends StatefulWidget {
   final Visit? existing;
-  // Precarga al agendar desde una propiedad o desde un lead, para no
-  // obligar a volver a buscar lo que ya se sabe.
+
   final int? initialPropertyId;
   final String? initialPropertyName;
   final int? initialClientId;
@@ -159,8 +155,7 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
       if (!widget.isEdit && _odoo.userId != null) 'user_id': _odoo.userId,
       'visit_notes': _notesCtrl.text.trim(),
       'location': _locationCtrl.text.trim(),
-      // Anticipación del recordatorio de WhatsApp para ESTA cita; si se deja
-      // vacío, el ERP usa la del asesor o la general de Ajustes.
+
       'whatsapp_reminder_value':
           int.tryParse(_reminderValueCtrl.text.trim()) ?? 0,
       'whatsapp_reminder_unit': _reminderUnit,
@@ -173,7 +168,9 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
       } else {
         await _service.create(vals);
       }
-      unawaited(VisitService.scheduleAllUpcoming(_odoo, currentUserId: _odoo.userId));
+      unawaited(
+        VisitService.scheduleAllUpcoming(_odoo, currentUserId: _odoo.userId),
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       setState(() => _error = 'No se pudo guardar la cita. Intenta de nuevo.');
@@ -272,8 +269,7 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
               ),
             ),
             const SizedBox(height: 14),
-            // Recordatorio de WhatsApp propio de esta cita. Vacío = se usa
-            // el del asesor, o el general configurado en el ERP.
+
             Row(
               children: [
                 Expanded(

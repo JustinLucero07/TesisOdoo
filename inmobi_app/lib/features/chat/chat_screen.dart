@@ -163,11 +163,7 @@ class _EmptyChatHint extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.smart_toy_outlined,
-              size: 48,
-              color: colors.muted,
-            ),
+            Icon(Icons.smart_toy_outlined, size: 48, color: colors.muted),
             const SizedBox(height: 12),
             Text(
               'El mismo agente del ERP, ahora desde el celular.\nPregunta por propiedades, leads o reportes.',

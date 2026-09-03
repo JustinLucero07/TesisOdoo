@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import '../theme/app_motion.dart';
 import '../theme/app_theme.dart';
 
-/// Bloque con un brillo que recorre de lado a lado — el placeholder que se ve
-/// mientras carga una lista, en vez de un spinner suelto en medio de la
-/// pantalla. El esqueleto ya tiene la forma del contenido que viene, así que
-/// la pantalla no salta cuando los datos llegan.
 class Skeleton extends StatefulWidget {
   final double? width;
   final double height;
@@ -40,19 +36,19 @@ class _SkeletonState extends State<Skeleton>
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final base = colors.isDark ? colors.surfaceAlt : colors.neutralBg;
-    // El brillo se mantiene sutil a propósito: un destello fuerte repitiéndose
-    // cada segundo cansa la vista mientras se espera.
+
     final shine = colors.isDark
         ? Color.lerp(base, Colors.white, 0.07)!
         : Color.lerp(base, Colors.white, 0.75)!;
 
-    // Con movimiento reducido el bloque se queda quieto: sigue comunicando
-    // "esto está cargando" por la forma, sin nada oscilando en pantalla.
     if (AppMotion.reduced(context)) {
       return Container(
         width: widget.width,
         height: widget.height,
-        decoration: BoxDecoration(color: base, borderRadius: widget.borderRadius),
+        decoration: BoxDecoration(
+          color: base,
+          borderRadius: widget.borderRadius,
+        ),
       );
     }
 
@@ -78,8 +74,6 @@ class _SkeletonState extends State<Skeleton>
   }
 }
 
-/// Fila de esqueleto que imita una tarjeta de lista (foto + 3 líneas de
-/// texto) — usado mientras cargan Propiedades, Leads, Visitas y Contratos.
 class SkeletonListCard extends StatelessWidget {
   const SkeletonListCard({super.key});
 
@@ -116,9 +110,6 @@ class SkeletonListCard extends StatelessWidget {
   }
 }
 
-/// Lista completa de esqueletos. Cada tarjeta entra un instante después de la
-/// anterior, así la espera se siente como algo que se está armando y no como
-/// una pantalla congelada.
 class SkeletonList extends StatelessWidget {
   final int count;
   final EdgeInsetsGeometry padding;
@@ -136,17 +127,12 @@ class SkeletonList extends StatelessWidget {
       itemCount: count,
       physics: const NeverScrollableScrollPhysics(),
       separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _StaggeredFade(
-        index: i,
-        child: const SkeletonListCard(),
-      ),
+      itemBuilder: (_, i) =>
+          _StaggeredFade(index: i, child: const SkeletonListCard()),
     );
   }
 }
 
-/// Desvanecido escalonado propio del esqueleto — no reutiliza `FadeSlideIn`
-/// porque aquí no debe desplazarse nada: el bloque ya está en su sitio, solo
-/// aparece.
 class _StaggeredFade extends StatefulWidget {
   final Widget child;
   final int index;

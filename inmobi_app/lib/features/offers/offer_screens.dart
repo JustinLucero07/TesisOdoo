@@ -12,7 +12,6 @@ import '../auth/auth_service.dart';
 import 'offer_model.dart';
 import 'offer_service.dart';
 
-/// Lista de ofertas — general, o acotada a una propiedad / lead concreto.
 class OfferListScreen extends StatefulWidget {
   final int? propertyId;
   final String? propertyName;
@@ -203,7 +202,7 @@ class _OfferCard extends StatelessWidget {
               ),
             ],
             const SizedBox(height: AppSpace.md),
-            // Comparativa pedido / ofertado — el dato que importa de un vistazo.
+
             Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpace.md,
@@ -252,9 +251,7 @@ class _OfferCard extends StatelessWidget {
                 if (offer.discountPct != 0)
                   AppBadge(
                     label: '${offer.discountPct.toStringAsFixed(1)}% desc.',
-                    color: offer.discountPct > 10
-                        ? p.danger
-                        : p.warning,
+                    color: offer.discountPct > 10 ? p.danger : p.warning,
                   ),
                 AppBadge(
                   label: OfferFinancingStyle.label(offer.financingType),
@@ -268,7 +265,7 @@ class _OfferCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpace.md),
-            // Acciones del flujo: se ofrecen solo las válidas para el estado.
+
             Row(
               children: [
                 if (offer.state == 'draft')
@@ -378,7 +375,6 @@ class _AmountCell extends StatelessWidget {
   }
 }
 
-/// Alta y edición de una oferta.
 class OfferFormScreen extends StatefulWidget {
   final Offer? existing;
   final int? initialPropertyId;

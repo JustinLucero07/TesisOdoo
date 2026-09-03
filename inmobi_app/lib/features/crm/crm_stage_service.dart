@@ -13,9 +13,6 @@ class CrmStage {
     this.isLost = false,
   });
 
-  /// Clasificación exacta de las etapas del embudo de Postventa de Inmobi en Odoo:
-  /// Seña, Financiamiento, Minuta, Transferencia de Dominio, Pago de Impuestos,
-  /// Escritura, Registro Propiedad, Desembolso Banco, Encuesta, Comisión, etc.
   bool get isPostSale {
     final n = name.toLowerCase().trim();
     return n.contains('seña') ||
@@ -41,8 +38,6 @@ class CrmStage {
   }
 }
 
-/// Trae las etapas REALES del embudo de Odoo (`crm.stage`),
-/// separando con precisión el embudo Comercial de Ventas y el de Postventa.
 class CrmStageService {
   final OdooClient odoo;
   CrmStageService(this.odoo);
@@ -70,7 +65,6 @@ class CrmStageService {
     final saleStages = allStages.where((s) => !s.isPostSale).toList();
 
     if (isPostSale) {
-      // Si Odoo tiene etapas específicas de postventa, retornarlas; si no, retornar flujo post-cierre
       if (postStages.isNotEmpty) return postStages;
       if (allStages.length > 2) {
         return allStages.sublist(allStages.length - 2);

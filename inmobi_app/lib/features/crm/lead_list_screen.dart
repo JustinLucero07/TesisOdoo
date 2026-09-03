@@ -108,7 +108,11 @@ class _LeadListScreenState extends State<LeadListScreen> {
       );
       final stageIds = _stages.map((s) => s.id).toSet();
       if (stageIds.isNotEmpty) {
-        setState(() => _leads = result.where((l) => l.stageId != null && stageIds.contains(l.stageId)).toList());
+        setState(
+          () => _leads = result
+              .where((l) => l.stageId != null && stageIds.contains(l.stageId))
+              .toList(),
+        );
       } else {
         setState(() => _leads = result);
       }
@@ -186,19 +190,25 @@ class _LeadListScreenState extends State<LeadListScreen> {
                   final selected = _sortOrder == value;
                   return ListTile(
                     leading: Icon(
-                      selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                      selected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_off,
                       color: selected ? const Color(0xFF28235D) : colors.muted,
                       size: 20,
                     ),
                     title: Text(
                       label,
                       style: TextStyle(
-                        fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w500,
                         color: selected ? const Color(0xFF28235D) : null,
                       ),
                     ),
                     selected: selected,
-                    selectedTileColor: const Color(0xFF28235D).withValues(alpha: 0.08),
+                    selectedTileColor: const Color(
+                      0xFF28235D,
+                    ).withValues(alpha: 0.08),
                     onTap: () {
                       setState(() => _sortOrder = value);
                       Navigator.pop(ctx);
@@ -226,7 +236,6 @@ class _LeadListScreenState extends State<LeadListScreen> {
 
     return Scaffold(
       floatingActionButton: Padding(
-        // Se levanta por encima del dock flotante de vidrio, no encima de él.
         padding: const EdgeInsets.only(bottom: GlassNavBar.reservedHeight),
         child: FloatingActionButton.small(
           heroTag: null,
@@ -234,14 +243,17 @@ class _LeadListScreenState extends State<LeadListScreen> {
           elevation: 4,
           backgroundColor: const Color(0xFFD81F26),
           tooltip: 'Nuevo Lead',
-          child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 20),
+          child: const Icon(
+            Icons.person_add_alt_1_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
         ),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: Column(
           children: [
-            // Barra de búsqueda con orden y botón +
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
               child: Row(
@@ -267,11 +279,12 @@ class _LeadListScreenState extends State<LeadListScreen> {
                   ),
                   const SizedBox(width: 8),
 
-                  // Botón de Ordenamiento
                   Tooltip(
                     message: 'Ordenar',
                     child: Material(
-                      color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9),
+                      color: isDark
+                          ? const Color(0xFF1E1A3E)
+                          : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14),
@@ -282,7 +295,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
-                              color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                              color: isDark
+                                  ? Colors.white12
+                                  : const Color(0xFFE2E8F0),
                             ),
                           ),
                           child: const Icon(
@@ -296,7 +311,6 @@ class _LeadListScreenState extends State<LeadListScreen> {
                   ),
                   const SizedBox(width: 8),
 
-                  // Botón de Filtros Avanzados con Badge
                   Tooltip(
                     message: 'Filtros Avanzados',
                     child: Stack(
@@ -305,7 +319,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                         Material(
                           color: _activeLeadFilterCount > 0
                               ? const Color(0xFF28235D)
-                              : (isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9)),
+                              : (isDark
+                                    ? const Color(0xFF1E1A3E)
+                                    : const Color(0xFFF1F5F9)),
                           borderRadius: BorderRadius.circular(14),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(14),
@@ -318,7 +334,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                 border: Border.all(
                                   color: _activeLeadFilterCount > 0
                                       ? const Color(0xFF28235D)
-                                      : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                      : (isDark
+                                            ? Colors.white12
+                                            : const Color(0xFFE2E8F0)),
                                 ),
                               ),
                               child: Icon(
@@ -359,12 +377,14 @@ class _LeadListScreenState extends State<LeadListScreen> {
               ),
             ),
 
-            // Chips de Temperatura
             SizedBox(
               height: 44,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 6,
+                ),
                 itemCount: _filters.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
@@ -390,26 +410,34 @@ class _LeadListScreenState extends State<LeadListScreen> {
               ),
             ),
 
-            // Chips de Etapas
             if (_stages.isNotEmpty)
               SizedBox(
                 height: 40,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   itemCount: _stages.length + 1,
                   separatorBuilder: (_, _) => const SizedBox(width: 8),
                   itemBuilder: (context, i) {
                     final stageId = i == 0 ? null : _stages[i - 1].id;
-                    final label = i == 0 ? 'Todas las etapas' : _stages[i - 1].name;
+                    final label = i == 0
+                        ? 'Todas las etapas'
+                        : _stages[i - 1].name;
                     final selected = _stageFilter == stageId;
                     return ChoiceChip(
                       label: Text(label),
                       selected: selected,
                       selectedColor: isDark ? colors.navyLight : colors.navy,
-                      backgroundColor: isDark ? const Color(0xFF1E1A3E) : colors.neutralBg,
+                      backgroundColor: isDark
+                          ? const Color(0xFF1E1A3E)
+                          : colors.neutralBg,
                       labelStyle: TextStyle(
-                        color: selected ? Colors.white : (isDark ? Colors.white70 : colors.ink),
+                        color: selected
+                            ? Colors.white
+                            : (isDark ? Colors.white70 : colors.ink),
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
@@ -424,7 +452,6 @@ class _LeadListScreenState extends State<LeadListScreen> {
                 ),
               ),
 
-            // Contador de resultados
             if (!_loading && _error == null && _leads.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 4, 18, 4),
@@ -435,7 +462,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -475,8 +504,10 @@ class _LeadListScreenState extends State<LeadListScreen> {
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 110),
             itemCount: _leads.length,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
-            itemBuilder: (context, i) =>
-              FadeSlideIn(index: i, child: _buildLeadCard(_leads[i], currency)),
+            itemBuilder: (context, i) => FadeSlideIn(
+              index: i,
+              child: _buildLeadCard(_leads[i], currency),
+            ),
           );
         }
 
@@ -507,32 +538,41 @@ class _LeadListScreenState extends State<LeadListScreen> {
       confirmDismiss: (direction) async {
         HapticFeedback.mediumImpact();
         if (direction == DismissDirection.startToEnd) {
-          // Swipe Derecha -> Contactar por WhatsApp
           final phone = lead.phone.isNotEmpty ? lead.phone : lead.contactName;
-          final clientName = lead.contactName.isNotEmpty ? lead.contactName : 'Estimado/a';
-          final msg = 'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a tu consulta.';
+          final clientName = lead.contactName.isNotEmpty
+              ? lead.contactName
+              : 'Estimado/a';
+          final msg =
+              'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a tu consulta.';
           if (PhoneUtils.normalize(phone).isNotEmpty) {
             await PhoneUtils.whatsapp(phone, text: msg);
           } else {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No se pudo abrir WhatsApp o no hay número registrado.')),
+                const SnackBar(
+                  content: Text(
+                    'No se pudo abrir WhatsApp o no hay número registrado.',
+                  ),
+                ),
               );
             }
           }
         } else if (direction == DismissDirection.endToStart) {
-          // Swipe Izquierda -> Agendar Visita directa
           if (mounted) {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => VisitFormScreen(
-                  initialClientId: lead.partnerId,
-                  initialClientName: lead.partnerName.isNotEmpty ? lead.partnerName : lead.contactName,
-                  initialPropertyId: lead.targetPropertyId,
-                  initialPropertyName: lead.targetPropertyName,
-                ),
-              ),
-            ).then((_) => _load());
+            Navigator.of(context)
+                .push(
+                  MaterialPageRoute(
+                    builder: (_) => VisitFormScreen(
+                      initialClientId: lead.partnerId,
+                      initialClientName: lead.partnerName.isNotEmpty
+                          ? lead.partnerName
+                          : lead.contactName,
+                      initialPropertyId: lead.targetPropertyId,
+                      initialPropertyName: lead.targetPropertyName,
+                    ),
+                  ),
+                )
+                .then((_) => _load());
           }
         }
         return false;
@@ -546,11 +586,19 @@ class _LeadListScreenState extends State<LeadListScreen> {
         ),
         child: const Row(
           children: [
-            Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
+            Icon(
+              Icons.chat_bubble_outline_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
             SizedBox(width: 8),
             Text(
               'WhatsApp',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
@@ -567,7 +615,11 @@ class _LeadListScreenState extends State<LeadListScreen> {
           children: [
             Text(
               'Agendar Cita',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+              ),
             ),
             SizedBox(width: 8),
             Icon(Icons.calendar_month_outlined, color: Colors.white, size: 22),
@@ -578,20 +630,20 @@ class _LeadListScreenState extends State<LeadListScreen> {
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? Colors.white12 : colors.line,
-          ),
+          border: Border.all(color: isDark ? Colors.white12 : colors.line),
           boxShadow: softShadow(opacity: isDark ? 0.25 : 0.04, isDark: isDark),
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => LeadDetailScreen(leadId: lead.id),
-              ),
-            ).then((_) => _load()),
+            onTap: () => Navigator.of(context)
+                .push(
+                  MaterialPageRoute(
+                    builder: (_) => LeadDetailScreen(leadId: lead.id),
+                  ),
+                )
+                .then((_) => _load()),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -642,7 +694,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                           lead.name,
                           style: TextStyle(
                             fontSize: 12.5,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -713,7 +767,6 @@ class _LeadListScreenState extends State<LeadListScreen> {
                         ),
                         const SizedBox(height: 10),
 
-                        // ── Botón WhatsApp y Menú de Opciones (3 puntos) ──
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
@@ -783,8 +836,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                             initialClientId: lead.partnerId,
                                             initialClientName:
                                                 lead.partnerName.isNotEmpty
-                                                    ? lead.partnerName
-                                                    : lead.contactName,
+                                                ? lead.partnerName
+                                                : lead.contactName,
                                             initialPropertyId:
                                                 lead.targetPropertyId,
                                             initialPropertyName:
@@ -797,9 +850,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                   Navigator.of(context)
                                       .push(
                                         MaterialPageRoute(
-                                          builder: (_) => LeadDetailScreen(
-                                            leadId: lead.id,
-                                          ),
+                                          builder: (_) =>
+                                              LeadDetailScreen(leadId: lead.id),
                                         ),
                                       )
                                       .then((_) => _load());
@@ -807,9 +859,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                   Navigator.of(context)
                                       .push(
                                         MaterialPageRoute(
-                                          builder: (_) => LeadFormScreen(
-                                            existing: lead,
-                                          ),
+                                          builder: (_) =>
+                                              LeadFormScreen(existing: lead),
                                         ),
                                       )
                                       .then((_) => _load());
@@ -843,10 +894,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                   value: 'detail',
                                   child: Row(
                                     children: [
-                                      Icon(
-                                        Icons.visibility_outlined,
-                                        size: 18,
-                                      ),
+                                      Icon(Icons.visibility_outlined, size: 18),
                                       SizedBox(width: 10),
                                       Text('Ver Detalle'),
                                     ],
@@ -942,7 +990,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
     final propName = lead.targetPropertyName.isNotEmpty
         ? 'la propiedad ${lead.targetPropertyName}'
         : 'su requerimiento inmobiliario';
-    final msg = 'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName.';
+    final msg =
+        'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName.';
 
     if (phone.isNotEmpty) {
       await PhoneUtils.whatsapp(phone, text: msg);
@@ -961,7 +1010,6 @@ class _LeadListScreenState extends State<LeadListScreen> {
   }
 }
 
-/// Hoja modal de filtros avanzados para Leads y Oportunidades del CRM
 class _LeadFilterSheet extends StatefulWidget {
   final bool isAdmin;
   final bool myLeadsOnly;
@@ -999,10 +1047,14 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
     super.initState();
     _myLeadsOnly = widget.isAdmin ? widget.myLeadsOnly : true;
     _minBudgetCtrl = TextEditingController(
-      text: widget.minBudget != null ? widget.minBudget!.toInt().toString() : '',
+      text: widget.minBudget != null
+          ? widget.minBudget!.toInt().toString()
+          : '',
     );
     _maxBudgetCtrl = TextEditingController(
-      text: widget.maxBudget != null ? widget.maxBudget!.toInt().toString() : '',
+      text: widget.maxBudget != null
+          ? widget.maxBudget!.toInt().toString()
+          : '',
     );
     _priority = widget.priority;
     _stageId = widget.stageId;
@@ -1035,7 +1087,6 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Manija
               Center(
                 child: Container(
                   width: 40,
@@ -1048,16 +1099,12 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // Cabecera
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     'Filtros de Oportunidades',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   TextButton(
                     onPressed: () {
@@ -1081,10 +1128,11 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
               ),
               const Divider(height: 20),
 
-              // 1. Asesor Asignado
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                  color: isDark
+                      ? const Color(0xFF1E1A3E)
+                      : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -1095,7 +1143,10 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                   activeThumbColor: Colors.white,
                   title: const Text(
                     'Solo mis Oportunidades',
-                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   subtitle: Text(
                     widget.isAdmin
@@ -1104,12 +1155,13 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                     style: TextStyle(fontSize: 11.5, color: colors.muted),
                   ),
                   value: widget.isAdmin ? _myLeadsOnly : true,
-                  onChanged: widget.isAdmin ? (v) => setState(() => _myLeadsOnly = v) : null,
+                  onChanged: widget.isAdmin
+                      ? (v) => setState(() => _myLeadsOnly = v)
+                      : null,
                 ),
               ),
               const SizedBox(height: 16),
 
-              // 2. Rango de Presupuesto del Cliente
               const Text(
                 'Presupuesto del Cliente (\$ USD)',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -1142,7 +1194,6 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 3. Prioridad / Importancia
               const Text(
                 'Nivel de Prioridad',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -1171,7 +1222,6 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 4. Etapa del Embudo
               if (widget.stages.isNotEmpty) ...[
                 const Text(
                   'Etapa del Embudo',
@@ -1204,7 +1254,6 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                 const SizedBox(height: 22),
               ],
 
-              // Botón Aplicar
               SizedBox(
                 width: double.infinity,
                 height: 48,

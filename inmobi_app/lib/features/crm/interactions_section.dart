@@ -63,9 +63,6 @@ class Interaction {
   };
 }
 
-/// Bitácora de interacciones con el cliente (`estate.client.interaction`) —
-/// la misma que se registra en el ERP. Se muestra como línea de tiempo y
-/// permite registrar una nueva sin salir del lead.
 class InteractionsSection extends StatefulWidget {
   final OdooClient odoo;
   final int leadId;
@@ -109,7 +106,6 @@ class _InteractionsSectionState extends State<InteractionsSection> {
       if (mounted)
         setState(() => _items = rows.map(Interaction.fromJson).toList());
     } catch (_) {
-      // Silencioso: la sección queda vacía si falla.
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -142,7 +138,6 @@ class _InteractionsSectionState extends State<InteractionsSection> {
         );
       } catch (_) {}
 
-      // También postear en el Chatter oficial de Odoo (mail.message)
       try {
         final prefix = result.type == 'note'
             ? '<b>Nota de seguimiento:</b><br/>'
@@ -166,9 +161,7 @@ class _InteractionsSectionState extends State<InteractionsSection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'No se pudo registrar la nota/interacción.',
-            ),
+            content: Text('No se pudo registrar la nota/interacción.'),
           ),
         );
       }
@@ -225,7 +218,6 @@ class _InteractionsSectionState extends State<InteractionsSection> {
   }
 }
 
-/// Fila de la línea de tiempo: punto de color + línea vertical de conexión.
 class _TimelineTile extends StatelessWidget {
   final Interaction interaction;
   final bool isLast;
@@ -302,10 +294,7 @@ class _TimelineTile extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       interaction.userName,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: colors.mutedLight,
-                      ),
+                      style: TextStyle(fontSize: 11, color: colors.mutedLight),
                     ),
                   ],
                 ],
@@ -384,7 +373,9 @@ class _NewInteractionSheetState extends State<_NewInteractionSheet> {
                 avatar: Icon(
                   Interaction.iconOf(t.$1),
                   size: 15,
-                  color: selected ? Colors.white : Interaction.colorOf(t.$1, colors),
+                  color: selected
+                      ? Colors.white
+                      : Interaction.colorOf(t.$1, colors),
                 ),
                 label: Text(t.$2),
                 selected: selected,

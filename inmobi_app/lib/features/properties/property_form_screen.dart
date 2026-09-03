@@ -9,15 +9,6 @@ import '../auth/auth_service.dart';
 import 'property_model.dart';
 import 'property_service.dart';
 
-/// Crea o edita una propiedad (estate.property).
-///
-/// A propósito NO se edita el `state` (disponible/reservada/vendida/etc.)
-/// desde este formulario: marcar una propiedad como vendida en el ERP pasa
-/// por el asistente de venta, que además genera la comisión, la factura y
-/// despublica de WordPress — cambiar el estado a mano aquí dejaría esos
-/// pasos sin hacer. Ese flujo se deja para más adelante (llamar al mismo
-/// wizard desde la app), no para un campo suelto en un formulario genérico.
-/// Tampoco se edita el AVM (`avm_*`) ni `days_on_market`: son calculados.
 class PropertyFormScreen extends StatefulWidget {
   final Property? existing;
   const PropertyFormScreen({super.key, this.existing});

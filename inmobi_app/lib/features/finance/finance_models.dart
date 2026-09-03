@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/api/odoo_json.dart';
 import '../../core/theme/app_theme.dart';
 
-/// `estate.commission` — lo que el asesor gana por cada cierre.
 class Commission {
   final int id;
   final String reference;
@@ -85,7 +84,6 @@ class Commission {
   };
 }
 
-/// `estate.payment` — cuotas y pagos de un contrato.
 class Payment {
   final int id;
   final String reference;
@@ -165,7 +163,6 @@ class Payment {
   ];
 }
 
-/// `estate.property.expense` — gastos imputados a una propiedad.
 class Expense {
   final int id;
   final String name;
@@ -230,7 +227,6 @@ class Expense {
   };
 }
 
-/// `estate.appraisal` — tasaciones solicitadas sobre una propiedad.
 class Appraisal {
   final int id;
   final String reference;
@@ -310,7 +306,6 @@ class Appraisal {
   };
 }
 
-/// `estate.property.price.history` — bitácora de cambios de precio.
 class PriceChange {
   final int id;
   final DateTime? date;

@@ -7,13 +7,6 @@ import 'package:flutter/foundation.dart';
 
 import 'odoo_exception.dart';
 
-/// Cliente para el backend de Odoo, vía el mismo protocolo JSON-RPC que usa
-/// el cliente web nativo de Odoo (POST a /web/session/authenticate y
-/// /web/dataset/call_kw). No requiere ningún módulo/endpoint nuevo en Odoo:
-/// funciona contra el sistema tal como está hoy.
-///
-/// Autenticación por sesión (cookie), no por token — por eso se usa un
-/// [CookieJar] compartido entre requests.
 class OdooClient {
   OdooClient();
 
@@ -68,8 +61,6 @@ class OdooClient {
         data: {'jsonrpc': '2.0', 'method': 'call', 'params': params},
       );
       if (resp.data is! Map<String, dynamic>) {
-        // El servidor respondió algo que no es JSON (ej. una página de error
-        // de Nginx/Odoo) — con un mensaje claro en vez de un cast que revienta.
         throw OdooException(
           'El servidor respondió algo inesperado (${resp.statusCode}).',
         );
@@ -96,8 +87,6 @@ class OdooClient {
     }
   }
 
-  /// Autentica contra Odoo y guarda la sesión (cookie) para las siguientes
-  /// llamadas. [server] debe incluir el esquema, ej. https://tuservidor.com.
   Future<void> login({
     required String server,
     required String db,
@@ -121,7 +110,8 @@ class OdooClient {
     this.db = db;
     uid = result['uid'] as int;
     userName = result['name'] as String? ?? login;
-    isAdmin = result['is_admin'] == true ||
+    isAdmin =
+        result['is_admin'] == true ||
         result['is_system'] == true ||
         result['uid'] == 2 ||
         (result['name'] as String? ?? '').toLowerCase().contains('admin');
@@ -134,8 +124,6 @@ class OdooClient {
     _cookieJar.deleteAll();
   }
 
-  /// Ejecuta un método del ORM de Odoo (search_read, read, write, etc.),
-  /// igual que hace el cliente web. Respeta los permisos del usuario logueado.
   Future<dynamic> callKw({
     required String model,
     required String method,
@@ -175,8 +163,6 @@ class OdooClient {
     return (result as List).cast<Map<String, dynamic>>();
   }
 
-  /// Crea un registro nuevo — igual que hacer "Guardar" en un formulario del
-  /// ERP. Devuelve el id creado. Respeta permisos/validaciones del modelo.
   Future<int> create({
     required String model,
     required Map<String, dynamic> values,
@@ -185,8 +171,6 @@ class OdooClient {
     return result as int;
   }
 
-  /// Edita un registro existente — igual que "Guardar" tras modificar un
-  /// formulario ya abierto.
   Future<void> write({
     required String model,
     required int id,
@@ -202,8 +186,6 @@ class OdooClient {
     );
   }
 
-  /// Elimina un registro — mismo `unlink` del ORM, con sus validaciones
-  /// (si el modelo lo impide, Odoo devuelve el error y se propaga).
   Future<void> unlink({required String model, required int id}) async {
     await callKw(
       model: model,
@@ -214,10 +196,6 @@ class OdooClient {
     );
   }
 
-  /// Descarga un PDF generado por un reporte QWeb de Odoo, vía la ruta
-  /// nativa `/report/pdf/<reporte>/<ids>`. Los parámetros extra del reporte
-  /// (ej. el diseño de la ficha) viajan en `options` como JSON, para que
-  /// lleguen con su tipo real (bool/int) y no como texto.
   Future<Uint8List> downloadReportPdf({
     required String reportName,
     required int id,
@@ -233,10 +211,6 @@ class OdooClient {
     return Uint8List.fromList(resp.data ?? const []);
   }
 
-  /// Descarga el valor de un campo binario (imagen de galería, PDF de un
-  /// documento, etc.) vía el endpoint nativo `/web/content/<model>/<id>/<field>`
-  /// — mismo mecanismo que usa el cliente web para descargar adjuntos, sin
-  /// necesidad de traer el archivo en base64 dentro de un `read`/`search_read`.
   Future<Uint8List> downloadBytes({
     required String model,
     required int id,

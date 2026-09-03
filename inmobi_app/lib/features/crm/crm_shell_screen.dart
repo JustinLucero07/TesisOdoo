@@ -5,10 +5,6 @@ import '../contacts/contact_list_screen.dart';
 import 'lead_funnel_screen.dart';
 import 'lead_list_screen.dart';
 
-/// Contenedor del CRM con tres vistas ejecutivas:
-/// 1. Embudo Comercial de Ventas
-/// 2. Embudo de Postventa & Seguimiento
-/// 3. Directorio de Contactos
 class CrmShellScreen extends StatefulWidget {
   const CrmShellScreen({super.key});
 
@@ -17,7 +13,7 @@ class CrmShellScreen extends StatefulWidget {
 }
 
 class _CrmShellScreenState extends State<CrmShellScreen> {
-  int _tab = 0; // 0 = Ventas, 1 = Postventa, 2 = Contactos
+  int _tab = 0;
   bool _funnelView = true;
 
   @override
@@ -27,9 +23,6 @@ class _CrmShellScreenState extends State<CrmShellScreen> {
     return Column(
       children: [
         Padding(
-          // La barra superior es de vidrio y el contenido corre por debajo:
-          // este margen arranca el contenido justo debajo de ella. El
-          // `padding.top` del body ya incluye el alto de la barra.
           padding: EdgeInsets.fromLTRB(
             16,
             MediaQuery.paddingOf(context).top + 12,
@@ -48,14 +41,16 @@ class _CrmShellScreenState extends State<CrmShellScreen> {
                   },
                 ),
               ),
-              // Conmutador lista / embudo (aplica a Ventas y Postventa)
+
               if (_tab == 0 || _tab == 1) ...[
                 const SizedBox(width: 8),
                 _ViewModeButton(
                   icon: _funnelView
                       ? Icons.view_list_rounded
                       : Icons.view_kanban_rounded,
-                  tooltip: _funnelView ? 'Ver en listado' : 'Ver en embudo kanban',
+                  tooltip: _funnelView
+                      ? 'Ver en listado'
+                      : 'Ver en embudo kanban',
                   isDark: isDark,
                   onTap: () {
                     HapticFeedback.lightImpact();
@@ -70,15 +65,14 @@ class _CrmShellScreenState extends State<CrmShellScreen> {
           child: IndexedStack(
             index: _tab,
             children: [
-              // Pestaña 0: Ventas
               _funnelView
                   ? const LeadFunnelScreen(isPostSale: false)
                   : const LeadListScreen(isPostSale: false),
-              // Pestaña 1: Postventa
+
               _funnelView
                   ? const LeadFunnelScreen(isPostSale: true)
                   : const LeadListScreen(isPostSale: true),
-              // Pestaña 2: Contactos
+
               const ContactListScreen(),
             ],
           ),
@@ -88,7 +82,6 @@ class _CrmShellScreenState extends State<CrmShellScreen> {
   }
 }
 
-/// Selector segmentado moderno de 3 pastillas con animación suave y paleta Inmobi
 class _SegmentedToggle extends StatelessWidget {
   final List<String> options;
   final int selectedIndex;
@@ -156,10 +149,14 @@ class _SegmentedToggle extends StatelessWidget {
                           duration: const Duration(milliseconds: 180),
                           style: TextStyle(
                             fontSize: 12.5,
-                            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight: selected
+                                ? FontWeight.w800
+                                : FontWeight.w600,
                             color: selected
                                 ? Colors.white
-                                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                                : (isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B)),
                           ),
                           child: Text(options[i]),
                         ),
@@ -205,7 +202,9 @@ class _ViewModeButton extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
-                color: isDark ? const Color(0xFF28244E) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF28244E)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             child: Icon(

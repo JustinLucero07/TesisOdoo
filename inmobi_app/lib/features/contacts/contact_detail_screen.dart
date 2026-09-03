@@ -70,14 +70,18 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('¿Eliminar contacto?'),
-        content: Text('Se eliminará "${_contact?.name ?? 'este contacto'}". Esta acción no se puede deshacer.'),
+        content: Text(
+          'Se eliminará "${_contact?.name ?? 'este contacto'}". Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD81F26)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD81F26),
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Eliminar'),
           ),
@@ -97,7 +101,9 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No se pudo eliminar. El contacto puede tener documentos o registros asociados.'),
+            content: Text(
+              'No se pudo eliminar. El contacto puede tener documentos o registros asociados.',
+            ),
           ),
         );
       }
@@ -117,7 +123,10 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
               onPressed: _openEdit,
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFD81F26)),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFD81F26),
+              ),
               tooltip: 'Eliminar',
               onPressed: _deleteContact,
             ),
@@ -163,10 +172,7 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                     children: [
                       AppBadge(label: c.roleLabel, color: c.roleColor(colors)),
                       if (c.isAlliedAgency && !c.isPropertyOwner)
-                        AppBadge(
-                          label: 'Aliada',
-                          color: colors.warning,
-                        ),
+                        AppBadge(label: 'Aliada', color: colors.warning),
                     ],
                   ),
                 ],

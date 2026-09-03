@@ -14,9 +14,6 @@ import 'property_model.dart';
 
 enum FichaActionType { open, sharePdf, shareWhatsappText }
 
-/// Manejo de la Ficha PDF y Ficha Comercial de una propiedad.
-/// Permite descargar, previsualizar y compartir la ficha en formato PDF
-/// o como mensaje enriquecido para WhatsApp.
 class FichaDownloader {
   static const _reportName = 'estate_reports.report_ficha_inmobi';
 
@@ -26,7 +23,6 @@ class FichaDownloader {
     ('3', 'Portada a sangre', 'Foto de fondo a página completa'),
   ];
 
-  /// Descarga y abre la Hoja de Captación subida (archivo del cliente) o genera la plantilla oficial PDF
   static Future<void> openCaptureSheet({
     required BuildContext context,
     required OdooClient odoo,
@@ -54,7 +50,6 @@ class FichaDownloader {
     );
 
     try {
-      // 1. Primero intentar cargar el archivo subido en el campo capture_sheet de Odoo
       final rows = await odoo.searchRead(
         model: 'estate.property',
         domain: [
@@ -78,14 +73,16 @@ class FichaDownloader {
           fileName = rawFn;
         }
       } else {
-        // 2. Si no hay archivo subido, generar el reporte QWeb estándar de Odoo
         bytes = await odoo.downloadReportPdf(
           reportName: 'estate_management.report_capture_sheet_template',
           id: property.id,
         );
-        final title = property.title.isEmpty ? property.reference : property.title;
+        final title = property.title.isEmpty
+            ? property.reference
+            : property.title;
         final safeTitle = title.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
-        fileName = 'Captacion_${safeTitle.isEmpty ? property.id : safeTitle}.pdf';
+        fileName =
+            'Captacion_${safeTitle.isEmpty ? property.id : safeTitle}.pdf';
       }
 
       if (bytes.isEmpty) throw Exception('No se pudo obtener el archivo.');
@@ -107,7 +104,6 @@ class FichaDownloader {
     }
   }
 
-  /// Sube o reemplaza la Hoja de Captación desde el celular
   static Future<bool> uploadCaptureSheet({
     required BuildContext context,
     required OdooClient odoo,
@@ -122,36 +118,41 @@ class FichaDownloader {
       if (res == null || res.files.isEmpty) return false;
 
       final file = res.files.first;
-      final bytes = file.bytes ?? (file.path != null ? await File(file.path!).readAsBytes() : null);
+      final bytes =
+          file.bytes ??
+          (file.path != null ? await File(file.path!).readAsBytes() : null);
       if (bytes == null || bytes.isEmpty) throw Exception('Archivo vacío');
 
       final b64 = base64Encode(bytes);
       await odoo.write(
         model: 'estate.property',
         id: propertyId,
-        values: {
-          'capture_sheet': b64,
-          'capture_sheet_filename': file.name,
-        },
+        values: {'capture_sheet': b64, 'capture_sheet_filename': file.name},
       );
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Hoja de captación "${file.name}" subida exitosamente.')),
+          SnackBar(
+            content: Text(
+              'Hoja de captación "${file.name}" subida exitosamente.',
+            ),
+          ),
         );
       }
       return true;
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo subir el archivo: $e'), backgroundColor: Colors.red[800]),
+          SnackBar(
+            content: Text('No se pudo subir el archivo: $e'),
+            backgroundColor: Colors.red[800],
+          ),
         );
       }
       return false;
     }
   }
 
-  /// Elimina la Hoja de Captación subida en Odoo
   static Future<bool> deleteCaptureSheet({
     required BuildContext context,
     required OdooClient odoo,
@@ -161,11 +162,18 @@ class FichaDownloader {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('¿Eliminar Hoja de Captación?'),
-        content: const Text('Se quitará el archivo adjunto de la propiedad en Odoo.'),
+        content: const Text(
+          'Se quitará el archivo adjunto de la propiedad en Odoo.',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD81F26)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD81F26),
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Eliminar'),
           ),
@@ -178,10 +186,7 @@ class FichaDownloader {
       await odoo.write(
         model: 'estate.property',
         id: propertyId,
-        values: {
-          'capture_sheet': false,
-          'capture_sheet_filename': false,
-        },
+        values: {'capture_sheet': false, 'capture_sheet_filename': false},
       );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -192,32 +197,32 @@ class FichaDownloader {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo eliminar el archivo adjunto.')),
+          const SnackBar(
+            content: Text('No se pudo eliminar el archivo adjunto.'),
+          ),
         );
       }
       return false;
     }
   }
 
-  /// Abre el modal de opciones de ficha comercial
   static Future<void> start({
     required BuildContext context,
     required OdooClient odoo,
     required Property property,
   }) async {
-    final choice = await showModalBottomSheet<({
-      String design,
-      bool showContact,
-      FichaActionType action,
-    })>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.of(context).surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _FichaOptionsSheet(property: property),
-    );
+    final choice =
+        await showModalBottomSheet<
+          ({String design, bool showContact, FichaActionType action})
+        >(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: AppColors.of(context).surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          builder: (_) => _FichaOptionsSheet(property: property),
+        );
 
     if (choice == null || !context.mounted) return;
 
@@ -261,18 +266,18 @@ class FichaDownloader {
       if (bytes.isEmpty) throw Exception('PDF vacío');
 
       final dir = await getTemporaryDirectory();
-      final title = property.title.isEmpty ? property.reference : property.title;
+      final title = property.title.isEmpty
+          ? property.reference
+          : property.title;
       final safeTitle = title.replaceAll(RegExp(r'[^\w\s-]'), '').trim();
-      final fileName = 'Ficha_${safeTitle.isEmpty ? property.id : safeTitle}.pdf';
+      final fileName =
+          'Ficha_${safeTitle.isEmpty ? property.id : safeTitle}.pdf';
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
       messenger.hideCurrentSnackBar();
 
       if (choice.action == FichaActionType.sharePdf) {
-        // sharePositionOrigin es obligatorio en iPad (ancla el popover de la
-        // hoja para compartir); en iPhone no hace nada, así que es seguro
-        // pasarlo siempre en vez de solo cuando se detecta un iPad.
         final box = context.mounted
             ? context.findRenderObject() as RenderBox?
             : null;
@@ -281,7 +286,8 @@ class FichaDownloader {
             : null;
         await Share.shareXFiles(
           [XFile(file.path)],
-          text: 'Ficha Comercial: $title\nPrecio: \$${property.displayPrice.toStringAsFixed(0)}',
+          text:
+              'Ficha Comercial: $title\nPrecio: \$${property.displayPrice.toStringAsFixed(0)}',
           sharePositionOrigin: origin,
         );
       } else {
@@ -289,30 +295,37 @@ class FichaDownloader {
       }
     } catch (e) {
       messenger.hideCurrentSnackBar();
-      // Mostrar el error real (no un mensaje genérico) para poder
-      // diagnosticar la próxima vez que algo falle, en vez de adivinar.
+
       messenger.showSnackBar(
-        SnackBar(content: Text('No se pudo generar o compartir la ficha PDF: $e')),
+        SnackBar(
+          content: Text('No se pudo generar o compartir la ficha PDF: $e'),
+        ),
       );
     }
   }
 
-  /// Construye y envía un mensaje formateado por WhatsApp o selector nativo
   static Future<void> shareCommercialWhatsapp({
     required Property property,
     String? phone,
   }) async {
     final title = property.title.isEmpty ? property.reference : property.title;
-    final location = [property.sector, property.city].where((s) => s.isNotEmpty).join(', ');
+    final location = [
+      property.sector,
+      property.city,
+    ].where((s) => s.isNotEmpty).join(', ');
     final operation = property.isForSale ? 'VENTA' : 'ARRIENDO';
 
     final buffer = StringBuffer();
     buffer.writeln('✨ *OPORTUNIDAD INMOBILIARIA - $operation* ✨');
     buffer.writeln('🏢 *$title*');
     if (location.isNotEmpty) buffer.writeln('📍 *Ubicación:* $location');
-    buffer.writeln('💰 *Precio:* \$${property.displayPrice.toStringAsFixed(0)}');
+    buffer.writeln(
+      '💰 *Precio:* \$${property.displayPrice.toStringAsFixed(0)}',
+    );
     buffer.writeln('📐 *Área:* ${property.area.toStringAsFixed(0)} m²');
-    buffer.writeln('🛏️ *Habitaciones:* ${property.bedrooms} | 🚿 *Baños:* ${property.bathrooms.toStringAsFixed(0)}');
+    buffer.writeln(
+      '🛏️ *Habitaciones:* ${property.bedrooms} | 🚿 *Baños:* ${property.bathrooms.toStringAsFixed(0)}',
+    );
     if (property.parkingSpaces > 0) {
       buffer.writeln('🚗 *Parqueaderos:* ${property.parkingSpaces}');
     }
@@ -321,7 +334,9 @@ class FichaDownloader {
       buffer.writeln('\n🔗 *Ver detalles y fotos online:* ${property.wpUrl}');
     }
 
-    buffer.writeln('\n📲 *Contáctanos para más información o coordinar una visita.*');
+    buffer.writeln(
+      '\n📲 *Contáctanos para más información o coordinar una visita.*',
+    );
 
     final message = buffer.toString();
 
@@ -378,7 +393,11 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                     color: colors.navy.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(Icons.share_rounded, color: colors.navy, size: 22),
+                  child: Icon(
+                    Icons.share_rounded,
+                    color: colors.navy,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -387,7 +406,10 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                     children: [
                       const Text(
                         'Ficha Comercial y Compartir',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         'Elige el formato y diseño para compartir',
@@ -419,7 +441,10 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                   onTap: () => setState(() => _design = value),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 11,
+                    ),
                     decoration: BoxDecoration(
                       color: selected
                           ? colors.navy.withValues(alpha: 0.07)
@@ -479,7 +504,6 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
             ),
             const SizedBox(height: 12),
 
-            // Acciones principales
             Row(
               children: [
                 Expanded(

@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Fila horizontal de chips de selección única — usada como filtro rápido
-/// bajo el buscador en las listas (Propiedades, CRM, Contratos, Agenda).
-/// `null` representa "Todos".
 class ChoiceChipRow extends StatelessWidget {
-  final List<(String?, String)> options; // (valor_odoo o null, etiqueta)
+  final List<(String?, String)> options;
   final String? value;
   final ValueChanged<String?> onChanged;
 

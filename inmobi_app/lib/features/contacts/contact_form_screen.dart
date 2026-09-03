@@ -9,9 +9,6 @@ import '../auth/auth_service.dart';
 import 'contact_model.dart';
 import 'contact_service.dart';
 
-/// Crea o edita un contacto (`res.partner`) con los campos inmobiliarios
-/// que agrega el ERP. Los contadores (propiedades, contratos) no se editan:
-/// son calculados por Odoo.
 class ContactFormScreen extends StatefulWidget {
   final Contact? existing;
   const ContactFormScreen({super.key, this.existing});
@@ -38,8 +35,7 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
   final _functionCtrl = TextEditingController();
   String _idType = 'cedula';
   String _preferredContact = 'whatsapp';
-  // Código de país para cada teléfono — separados porque un contacto
-  // puede tener, por ejemplo, celular ecuatoriano y fijo de otro país.
+
   String _mobileCountry = PhoneUtils.defaultCountryCode;
   String _phoneCountry = PhoneUtils.defaultCountryCode;
   bool _isCompany = false;
@@ -100,9 +96,6 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
       _error = null;
     });
 
-    // Se normaliza con el código de país elegido en cada selector, para
-    // que quede guardado con formato internacional sin importar cómo lo
-    // haya escrito el asesor (con o sin el 0 inicial, con o sin +).
     final mobileRaw = _mobileCtrl.text.trim();
     final phoneRaw = _phoneCtrl.text.trim();
     final mobile = mobileRaw.isNotEmpty
@@ -206,7 +199,9 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                   child: TextFormField(
                     controller: _phoneCtrl,
                     keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(labelText: 'Teléfono fijo'),
+                    decoration: const InputDecoration(
+                      labelText: 'Teléfono fijo',
+                    ),
                   ),
                 ),
               ],

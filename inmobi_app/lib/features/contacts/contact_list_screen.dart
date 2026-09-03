@@ -13,9 +13,6 @@ import 'contact_form_screen.dart';
 import 'contact_model.dart';
 import 'contact_service.dart';
 
-/// Directorio de contactos con secciones por letra e índice A-Z lateral,
-/// igual que la agenda del teléfono: con miles de contactos, desplazarse a
-/// mano no es viable.
 class ContactListScreen extends StatefulWidget {
   const ContactListScreen({super.key});
 
@@ -33,8 +30,6 @@ class _ContactListScreenState extends State<ContactListScreen> {
   bool _loading = true;
   String? _error;
 
-  /// Índices dentro de la lista aplanada donde arranca cada letra, para que
-  /// el índice lateral pueda saltar directo.
   final Map<String, int> _letterOffsets = {};
   List<_ContactRow> _rows = [];
 
@@ -85,8 +80,6 @@ class _ContactListScreenState extends State<ContactListScreen> {
     }
   }
 
-  /// Aplana contactos + encabezados de letra en una sola lista, guardando
-  /// dónde empieza cada letra para el salto del índice lateral.
   void _buildRows() {
     _rows = [];
     _letterOffsets.clear();
@@ -112,8 +105,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
   void _jumpToLetter(String letter) {
     final index = _letterOffsets[letter];
     if (index == null || !_scrollController.hasClients) return;
-    // Alto aproximado: encabezado 34, fila 68. Suficiente para caer en la
-    // sección; el usuario ajusta con el dedo desde ahí.
+
     double offset = 0;
     for (int i = 0; i < index; i++) {
       offset += _rows[i].isHeader ? 34 : 68;
@@ -216,17 +208,17 @@ class _ContactListScreenState extends State<ContactListScreen> {
                 children: [
                   Text(
                     '${_contacts.length} contactos',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colors.mutedLight,
-                    ),
+                    style: TextStyle(fontSize: 12, color: colors.mutedLight),
                   ),
                 ],
               ),
             ),
           const SizedBox(height: 6),
           Expanded(
-            child: RefreshIndicator(onRefresh: _load, child: _buildBody(colors)),
+            child: RefreshIndicator(
+              onRefresh: _load,
+              child: _buildBody(colors),
+            ),
           ),
         ],
       ),
@@ -279,7 +271,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
             },
           ),
         ),
-        // Índice A-Z lateral
+
         if (letters.length > 3)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -314,7 +306,6 @@ class _ContactListScreenState extends State<ContactListScreen> {
   }
 }
 
-/// Fila de la lista aplanada: o un encabezado de letra, o un contacto.
 class _ContactRow {
   final String? letter;
   final Contact? contact;
@@ -390,7 +381,9 @@ class _ContactTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
@@ -398,7 +391,9 @@ class _ContactTile extends StatelessWidget {
                 ),
                 if (phone.isNotEmpty) ...[
                   Material(
-                    color: isDark ? const Color(0xFF28244E) : const Color(0xFFF1F5F9),
+                    color: isDark
+                        ? const Color(0xFF28244E)
+                        : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(10),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),
@@ -409,7 +404,9 @@ class _ContactTile extends StatelessWidget {
                         alignment: Alignment.center,
                         child: Icon(
                           Icons.phone_outlined,
-                          color: isDark ? Colors.white70 : const Color(0xFF334155),
+                          color: isDark
+                              ? Colors.white70
+                              : const Color(0xFF334155),
                           size: 16,
                         ),
                       ),

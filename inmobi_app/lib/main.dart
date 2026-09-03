@@ -11,10 +11,9 @@ import 'features/auth/auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Sin esto, cualquier DateFormat/NumberFormat con locale 'es_EC' revienta
-  // con LocaleDataException apenas arranca la app.
+
   await initializeDateFormatting('es_EC', null);
-  // Prepara las notificaciones locales de las citas (zona horaria + canal).
+
   await NotificationService.instance.init();
   runApp(const InmobiApp());
 }
@@ -49,4 +48,3 @@ class InmobiApp extends StatelessWidget {
     );
   }
 }
-

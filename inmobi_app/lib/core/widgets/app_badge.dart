@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Etiqueta redondeada de color (estado de propiedad, temperatura de lead,
-/// estado de visita) — mismo componente visual en toda la app.
 class AppBadge extends StatelessWidget {
   final String label;
   final Color color;

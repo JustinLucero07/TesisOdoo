@@ -7,9 +7,6 @@ import '../../core/api/odoo_client.dart';
 import '../../core/config.dart';
 import '../../core/notifications/notification_service.dart';
 
-/// Estado de sesión de la app. Se expone vía Provider para que cualquier
-/// pantalla sepa si hay un usuario logueado y pueda usar [odoo] para
-/// consultar datos reales de Inmobi.
 class AuthService extends ChangeNotifier {
   final OdooClient odoo = OdooClient();
   final _storage = const FlutterSecureStorage();
@@ -33,7 +30,6 @@ class AuthService extends ChangeNotifier {
     await _storage.write(key: _kLogin, value: login);
     await _storage.write(key: _kPassword, value: password);
 
-    // Sincroniza el token de notificaciones Push con el usuario en Odoo
     if (odoo.userId != null) {
       unawaited(
         NotificationService.instance.syncTokenWithOdoo(
@@ -46,7 +42,6 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Intenta iniciar sesión automáticamente con las credenciales guardadas.
   Future<bool> tryAutoLogin() async {
     try {
       final savedLogin = await _storage.read(key: _kLogin);
@@ -87,4 +82,3 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 }
-

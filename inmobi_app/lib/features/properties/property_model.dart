@@ -4,9 +4,6 @@ import '../../core/api/odoo_json.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Espejo de `estate.property` — cubre los campos que un asesor necesita ver
-/// y editar a diario desde el celular. No se mapean los campos de solo
-/// backend (WordPress, IA/OCR, tramos financieros del cierre, etc.).
 class Property {
   final int id;
   final String title;
@@ -14,8 +11,8 @@ class Property {
   final double price;
   final double bottomPrice;
   final double rentalPrice;
-  final String offerType; // 'sale' | 'rent'
-  final String state; // available | reserved | sold | rented | draft
+  final String offerType;
+  final String state;
   final String city;
   final String sector;
   final String street;
@@ -44,7 +41,7 @@ class Property {
   final DateTime? dateListed;
   final int daysOnMarket;
   final double avmEstimatedPrice;
-  final String avmStatus; // fair | high | low
+  final String avmStatus;
   final List<int> imageIds;
   final double latitude;
   final double longitude;
@@ -106,12 +103,9 @@ class Property {
 
   double get displayPrice => isForSale ? price : rentalPrice;
 
-  String get wpUrl => wpPostId > 0 ? '${AppConfig.wordpressSite}/?p=$wpPostId' : '';
+  String get wpUrl =>
+      wpPostId > 0 ? '${AppConfig.wordpressSite}/?p=$wpPostId' : '';
 
-  // Ojo: `image_main` NO va aquí a propósito — traerla en search_read
-  // significa que Odoo la manda como base64 embebida en el JSON del
-  // listado completo (pesado con catálogos grandes). Las fotos se cargan
-  // aparte, perezosamente y ya redimensionadas, con OdooImage.
   static const List<String> listFields = [
     'title',
     'name',
@@ -126,11 +120,9 @@ class Property {
     'bathrooms',
     'property_type_id',
     'is_exclusive',
-    // Texto liviano (no imagen) — se trae también en el listado para poder
-    // expandir la tarjeta y mostrar un resumen sin ida y vuelta al servidor.
+
     'description',
-    // One2many — Odoo devuelve solo la lista de ids (liviano), no las
-    // imágenes en sí. Con eso alcanza para armar el carrusel de la tarjeta.
+
     'image_ids',
   ];
 
@@ -193,8 +185,7 @@ class Property {
           ? json['property_type_id'][0] as int
           : null,
       propertyTypeName: many2oneName(json['property_type_id']),
-      // `description` es un campo Html en Odoo (viene con <p>/<ul>/etc.) —
-      // se limpia a texto plano para mostrarlo simple en la app.
+
       description: asOdooString(json['description'])
           .replaceAll(RegExp(r'<[^>]*>'), ' ')
           .replaceAll(RegExp(r'\s+'), ' ')
@@ -221,7 +212,9 @@ class Property {
       wpPostId: asOdooInt(json['wp_post_id']),
       wpNeedsSync: json['wp_needs_sync'] == true,
       captureSheetFilename: captureFn,
-      hasCaptureSheet: captureFn.isNotEmpty || (json['capture_sheet'] != null && json['capture_sheet'] != false),
+      hasCaptureSheet:
+          captureFn.isNotEmpty ||
+          (json['capture_sheet'] != null && json['capture_sheet'] != false),
     );
   }
 }

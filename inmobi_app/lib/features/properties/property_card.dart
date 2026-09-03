@@ -14,8 +14,6 @@ import 'property_detail_screen.dart';
 import 'property_form_screen.dart';
 import 'property_model.dart';
 
-/// Tarjeta de propiedad premium con galería de fotos inmersiva, badges frosted glass,
-/// precio destacado con cálculo por m² y botones de acción rápida comercial.
 class PropertyCard extends StatefulWidget {
   final Property property;
   final OdooClient odoo;
@@ -67,9 +65,6 @@ class _PropertyCardState extends State<PropertyCard> {
         ? (p.displayPrice / p.area)
         : null;
 
-    // La tarjeta entera responde al presionar, no al soltar: se hunde un
-    // poco en cuanto el dedo baja. En una tarjeta grande con foto, ese
-    // hundido se lee mejor que un ripple que queda escondido bajo la imagen.
     return PressableScale(
       scale: 0.985,
       onTap: () => Navigator.of(context).push(
@@ -95,7 +90,6 @@ class _PropertyCardState extends State<PropertyCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Galería de fotos e indicadores flotantes
               Stack(
                 children: [
                   AspectRatio(
@@ -141,7 +135,6 @@ class _PropertyCardState extends State<PropertyCard> {
                           ),
                   ),
 
-                  // Gradiente inferior sutil sobre la foto
                   Positioned(
                     bottom: 0,
                     left: 0,
@@ -152,16 +145,12 @@ class _PropertyCardState extends State<PropertyCard> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Color(0x66000000),
-                          ],
+                          colors: [Colors.transparent, Color(0x66000000)],
                         ),
                       ),
                     ),
                   ),
 
-                  // Píldoras de fotos & Indicador numérico
                   if (photoCount > 1) ...[
                     Positioned(
                       bottom: 12,
@@ -231,7 +220,6 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                   ],
 
-                  // Badges superiores con Glassmorphism
                   if (p.isExclusive)
                     Positioned(
                       top: 12,
@@ -241,16 +229,28 @@ class _PropertyCardState extends State<PropertyCard> {
                         child: BackdropFilter(
                           filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFD81F26).withValues(alpha: 0.9),
+                              color: const Color(
+                                0xFFD81F26,
+                              ).withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white24, width: 0.8),
+                              border: Border.all(
+                                color: Colors.white24,
+                                width: 0.8,
+                              ),
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.star_rounded, size: 12, color: Colors.white),
+                                Icon(
+                                  Icons.star_rounded,
+                                  size: 12,
+                                  color: Colors.white,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   'Exclusiva',
@@ -274,11 +274,20 @@ class _PropertyCardState extends State<PropertyCard> {
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: PropertyStateLabel.color(p.state, colors).withValues(alpha: 0.9),
+                            color: PropertyStateLabel.color(
+                              p.state,
+                              colors,
+                            ).withValues(alpha: 0.9),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white24, width: 0.8),
+                            border: Border.all(
+                              color: Colors.white24,
+                              width: 0.8,
+                            ),
                           ),
                           child: Text(
                             PropertyStateLabel.label(p.state),
@@ -295,13 +304,11 @@ class _PropertyCardState extends State<PropertyCard> {
                 ],
               ),
 
-              // Contenido descriptivo
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Fila de Precio y Métrica de m²
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
@@ -330,7 +337,6 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     const SizedBox(height: 6),
 
-                    // Título de la propiedad
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -356,7 +362,6 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     const SizedBox(height: 4),
 
-                    // Ubicación
                     Row(
                       children: [
                         Icon(
@@ -383,7 +388,6 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Chips de Especificaciones (Área, Habitaciones, Baños, Parqueos)
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -423,10 +427,8 @@ class _PropertyCardState extends State<PropertyCard> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Fila de Acciones Comerciales
                     Row(
                       children: [
-                        // Botón Ficha PDF
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () => FichaDownloader.start(
@@ -463,13 +465,12 @@ class _PropertyCardState extends State<PropertyCard> {
                         ),
                         const SizedBox(width: 8),
 
-                        // Botón WhatsApp Comercial
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () =>
                                 FichaDownloader.shareCommercialWhatsapp(
-                              property: p,
-                            ),
+                                  property: p,
+                                ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF25D366),
                               foregroundColor: Colors.white,
@@ -500,7 +501,6 @@ class _PropertyCardState extends State<PropertyCard> {
                         ),
                         const SizedBox(width: 6),
 
-                        // Menú de opciones (3 puntos)
                         PopupMenuButton<String>(
                           icon: Container(
                             width: 36,
@@ -526,9 +526,8 @@ class _PropertyCardState extends State<PropertyCard> {
                             if (val == 'detail') {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => PropertyDetailScreen(
-                                    propertyId: p.id,
-                                  ),
+                                  builder: (_) =>
+                                      PropertyDetailScreen(propertyId: p.id),
                                 ),
                               );
                             } else if (val == 'visit') {
@@ -561,9 +560,8 @@ class _PropertyCardState extends State<PropertyCard> {
                             } else if (val == 'edit') {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => PropertyFormScreen(
-                                    existing: p,
-                                  ),
+                                  builder: (_) =>
+                                      PropertyFormScreen(existing: p),
                                 ),
                               );
                             }
@@ -583,10 +581,7 @@ class _PropertyCardState extends State<PropertyCard> {
                               value: 'visit',
                               child: Row(
                                 children: [
-                                  Icon(
-                                    Icons.calendar_month_outlined,
-                                    size: 18,
-                                  ),
+                                  Icon(Icons.calendar_month_outlined, size: 18),
                                   SizedBox(width: 10),
                                   Text('Agendar Visita'),
                                 ],
@@ -617,7 +612,6 @@ class _PropertyCardState extends State<PropertyCard> {
                       ],
                     ),
 
-                    // Descripción expandible
                     AnimatedSize(
                       duration: const Duration(milliseconds: 240),
                       curve: Curves.easeOutCubic,
@@ -630,7 +624,9 @@ class _PropertyCardState extends State<PropertyCard> {
                                 children: [
                                   Divider(
                                     height: 16,
-                                    color: isDark ? Colors.white12 : colors.line,
+                                    color: isDark
+                                        ? Colors.white12
+                                        : colors.line,
                                   ),
                                   Text(
                                     p.description,
@@ -639,7 +635,9 @@ class _PropertyCardState extends State<PropertyCard> {
                                     style: TextStyle(
                                       fontSize: 12.5,
                                       height: 1.4,
-                                      color: isDark ? Colors.white70 : colors.ink,
+                                      color: isDark
+                                          ? Colors.white70
+                                          : colors.ink,
                                     ),
                                   ),
                                   const SizedBox(height: 6),
@@ -648,7 +646,9 @@ class _PropertyCardState extends State<PropertyCard> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
-                                      color: isDark ? colors.navyLight : colors.navy,
+                                      color: isDark
+                                          ? colors.navyLight
+                                          : colors.navy,
                                     ),
                                   ),
                                 ],
@@ -744,7 +744,6 @@ class _SpecChip extends StatelessWidget {
   }
 }
 
-/// Menú contextual moderno desplegado al mantener presionada una propiedad
 class _PropertyQuickActionSheet extends StatelessWidget {
   final Property property;
   final OdooClient odoo;
@@ -758,7 +757,9 @@ class _PropertyQuickActionSheet extends StatelessWidget {
 
   Future<void> _shareWhatsApp(BuildContext context) async {
     Navigator.of(context).pop();
-    final title = property.title.isNotEmpty ? property.title : property.reference;
+    final title = property.title.isNotEmpty
+        ? property.title
+        : property.reference;
     final price = currency.format(property.displayPrice);
     final msg = Uri.encodeComponent(
       'Hola, te comparto esta propiedad de Inmobi:\n'
@@ -802,7 +803,6 @@ class _PropertyQuickActionSheet extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Asa superior
             Container(
               width: 38,
               height: 4,
@@ -813,7 +813,6 @@ class _PropertyQuickActionSheet extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Encabezado de la propiedad
             Row(
               children: [
                 ClipRRect(
@@ -865,14 +864,17 @@ class _PropertyQuickActionSheet extends StatelessWidget {
             Divider(color: isDark ? Colors.white12 : colors.line),
             const SizedBox(height: 6),
 
-            // Acciones Rápidas
             _QuickActionTile(
               icon: Icons.picture_as_pdf_outlined,
               color: const Color(0xFFD81F26),
               title: 'Descargar / Compartir Ficha PDF',
               onTap: () {
                 Navigator.of(context).pop();
-                FichaDownloader.start(context: context, odoo: odoo, property: p);
+                FichaDownloader.start(
+                  context: context,
+                  odoo: odoo,
+                  property: p,
+                );
               },
             ),
             _QuickActionTile(
@@ -891,7 +893,9 @@ class _PropertyQuickActionSheet extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (_) => VisitFormScreen(
                       initialPropertyId: p.id,
-                      initialPropertyName: p.title.isNotEmpty ? p.title : p.reference,
+                      initialPropertyName: p.title.isNotEmpty
+                          ? p.title
+                          : p.reference,
                     ),
                   ),
                 );
@@ -955,10 +959,7 @@ class _QuickActionTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(
-          fontSize: 13.5,
-          fontWeight: FontWeight.w600,
-        ),
+        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
       ),
       trailing: Icon(
         Icons.chevron_right_rounded,

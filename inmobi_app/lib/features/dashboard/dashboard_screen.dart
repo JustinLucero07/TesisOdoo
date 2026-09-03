@@ -90,7 +90,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = 'No se pudieron cargar los indicadores.');
+      if (mounted)
+        setState(() => _error = 'No se pudieron cargar los indicadores.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -115,12 +116,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        // Espacio para que el dock flotante no tape la última fila.
-        padding: const EdgeInsets.only(
-          bottom: GlassNavBar.reservedHeight + 14,
-        ),
+        padding: const EdgeInsets.only(bottom: GlassNavBar.reservedHeight + 14),
         children: [
-          // ── Encabezado Ejecutivo con Saludo Dinámico ──
           _DashboardHeader(userName: userName),
 
           Padding(
@@ -128,17 +125,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Los bloques entran uno detrás de otro al abrir el panel:
-                // el índice creciente es lo que arma el escalonado.
-                // ── Accesos Rápidos Inmediatos ──
-                FadeSlideIn(index: 0, child: _buildQuickActions(context, isDark)),
+                FadeSlideIn(
+                  index: 0,
+                  child: _buildQuickActions(context, isDark),
+                ),
                 const SizedBox(height: 18),
 
-                // ── Próxima Cita / Actividad en Vivo ──
                 if (_todayVisits.isNotEmpty) ...[
                   FadeSlideIn(
                     index: 1,
-                    child: _buildNextVisitCard(_todayVisits.first, timeFmt, isDark),
+                    child: _buildNextVisitCard(
+                      _todayVisits.first,
+                      timeFmt,
+                      isDark,
+                    ),
                   ),
                   const SizedBox(height: 20),
                 ] else ...[
@@ -146,7 +146,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 20),
                 ],
 
-                // ── Panel de Rendimiento (Bento Grid) ──
                 FadeSlideIn(
                   index: 2,
                   child: Row(
@@ -157,7 +156,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -166,7 +167,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ],
@@ -176,7 +179,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 FadeSlideIn(index: 3, child: _buildBentoGrid(isDark)),
 
                 const SizedBox(height: 24),
-                // ── Sección de Agenda del Día ──
+
                 FadeSlideIn(
                   index: 4,
                   child: Column(
@@ -192,7 +195,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Barra de accesos directos rápidos
   Widget _buildQuickActions(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,9 +241,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 isDark: isDark,
                 onTap: () => Navigator.of(context)
                     .push(
-                      MaterialPageRoute(
-                        builder: (_) => const LeadFormScreen(),
-                      ),
+                      MaterialPageRoute(builder: (_) => const LeadFormScreen()),
                     )
                     .then((_) => _load()),
               ),
@@ -290,12 +290,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Tarjeta destacada de la próxima cita del día con indicador de actividad en vivo
   Widget _buildNextVisitCard(Visit next, DateFormat timeFmt, bool isDark) {
     final now = DateTime.now();
     final diffMinutes = next.start.difference(now).inMinutes;
     final isUpcomingSoon = diffMinutes >= 0 && diffMinutes <= 45;
-    final isInProgress = now.isAfter(next.start) && (next.stop == null || now.isBefore(next.stop!));
+    final isInProgress =
+        now.isAfter(next.start) &&
+        (next.stop == null || now.isBefore(next.stop!));
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -320,7 +321,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isInProgress
                       ? const Color(0xFF10B981)
@@ -331,7 +335,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isInProgress) ...[
-                      const Icon(Icons.radio_button_checked_rounded, size: 12, color: Colors.white),
+                      const Icon(
+                        Icons.radio_button_checked_rounded,
+                        size: 12,
+                        color: Colors.white,
+                      ),
                       const SizedBox(width: 5),
                       const Text(
                         'EN CURSO AHORA',
@@ -343,7 +351,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ] else if (isUpcomingSoon) ...[
-                      const Icon(Icons.bolt_rounded, size: 14, color: Colors.amberAccent),
+                      const Icon(
+                        Icons.bolt_rounded,
+                        size: 14,
+                        color: Colors.amberAccent,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         'EN $diffMinutes MIN',
@@ -355,7 +367,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                     ] else ...[
-                      const Icon(Icons.access_time_rounded, size: 13, color: Colors.white70),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 13,
+                        color: Colors.white70,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Hoy · ${timeFmt.format(next.start)}',
@@ -380,7 +396,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                     .then((_) => _load()),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
@@ -396,7 +415,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       SizedBox(width: 4),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.white),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 10,
+                        color: Colors.white,
+                      ),
                     ],
                   ),
                 ),
@@ -418,7 +441,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.person_rounded, size: 14, color: Colors.white70),
+                const Icon(
+                  Icons.person_rounded,
+                  size: 14,
+                  color: Colors.white70,
+                ),
                 const SizedBox(width: 5),
                 Text(
                   next.clientName,
@@ -433,7 +460,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
           const SizedBox(height: 14),
 
-          // Botones de acción directa en la tarjeta de cita
           Row(
             children: [
               _GlassActionButton(
@@ -458,7 +484,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Tarjeta cuando no hay citas hoy
   Widget _buildEmptyAgendaCard(bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -501,7 +526,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   'No tienes citas programadas para hoy',
                   style: TextStyle(
                     fontSize: 12,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -520,13 +547,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  /// Bento Grid de Rendimiento
   Widget _buildBentoGrid(bool isDark) {
     return Column(
       children: [
         Row(
           children: [
-            // Propiedades Disponibles
             Expanded(
               child: _MetricCard(
                 icon: Icons.home_work_rounded,
@@ -539,7 +564,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            // Leads Calientes
+
             Expanded(
               child: _MetricCard(
                 icon: Icons.local_fire_department_rounded,
@@ -556,7 +581,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 10),
         Row(
           children: [
-            // Visitas de Hoy
             Expanded(
               child: _MetricCard(
                 icon: Icons.calendar_month_rounded,
@@ -569,7 +593,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            // Contratos
+
             Expanded(
               child: _MetricCard(
                 icon: Icons.assignment_turned_in_rounded,
@@ -621,12 +645,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           child: Row(
             children: [
-              const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981)),
+              const Icon(
+                Icons.check_circle_outline_rounded,
+                color: Color(0xFF10B981),
+              ),
               const SizedBox(width: 12),
               Text(
                 'No tienes más visitas pendientes hoy.',
                 style: TextStyle(
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
                   fontSize: 13,
                 ),
               ),
@@ -734,10 +763,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       } catch (_) {}
     }
 
-    final clientName = visit.clientName.isNotEmpty ? visit.clientName : 'Estimado/a';
-    final prop = visit.propertyName.isNotEmpty ? 'la propiedad ${visit.propertyName}' : 'nuestra cita inmobiliaria';
+    final clientName = visit.clientName.isNotEmpty
+        ? visit.clientName
+        : 'Estimado/a';
+    final prop = visit.propertyName.isNotEmpty
+        ? 'la propiedad ${visit.propertyName}'
+        : 'nuestra cita inmobiliaria';
     final timeStr = DateFormat.Hm('es_EC').format(visit.start);
-    final msg = 'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $prop programada para las $timeStr.';
+    final msg =
+        'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $prop programada para las $timeStr.';
 
     if (phone.isNotEmpty) {
       await PhoneUtils.whatsapp(phone, text: msg);
@@ -751,7 +785,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _openLocationVisit(Visit visit) async {
     HapticFeedback.selectionClick();
-    final query = visit.location.isNotEmpty ? visit.location : visit.propertyName;
+    final query = visit.location.isNotEmpty
+        ? visit.location
+        : visit.propertyName;
     if (query.isEmpty) return;
 
     final uri = Uri.parse(
@@ -817,7 +853,9 @@ class _MetricCard extends StatelessWidget {
                 Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 11,
-                  color: isDark ? const Color(0xFF64748B) : const Color(0xFFCBD5E1),
+                  color: isDark
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFFCBD5E1),
                 ),
               ],
             ),
@@ -846,7 +884,9 @@ class _MetricCard extends StatelessWidget {
               subtitle,
               style: TextStyle(
                 fontSize: 11,
-                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
               ),
             ),
           ],
@@ -972,7 +1012,6 @@ class _ActionSquareButton extends StatelessWidget {
   }
 }
 
-/// Encabezado dinámico con saludo por hora y perfil del asesor
 class _DashboardHeader extends StatelessWidget {
   final String userName;
   const _DashboardHeader({required this.userName});
@@ -980,7 +1019,9 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthService>();
-    final firstName = userName.trim().isNotEmpty ? userName.split(' ').first : 'Asesor';
+    final firstName = userName.trim().isNotEmpty
+        ? userName.split(' ').first
+        : 'Asesor';
 
     final hour = DateTime.now().hour;
     final greeting = hour < 12
@@ -994,10 +1035,7 @@ class _DashboardHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF28235D),
-            Color(0xFF1E1A46),
-          ],
+          colors: [Color(0xFF28235D), Color(0xFF1E1A46)],
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
       ),
@@ -1005,7 +1043,6 @@ class _DashboardHeader extends StatelessWidget {
         bottom: false,
         child: Row(
           children: [
-            // Avatar del usuario con borde suave
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
@@ -1080,7 +1117,10 @@ class _DashboardHeader extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                DateFormat("d MMM", 'es_EC').format(DateTime.now()).toUpperCase(),
+                DateFormat(
+                  "d MMM",
+                  'es_EC',
+                ).format(DateTime.now()).toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,

@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// Campo para un `fields.Selection` de Odoo (offer_type, appointment_type,
-/// visit_state, etc.) — lista fija de opciones, sin necesidad de consultar
-/// al backend.
 class SelectField extends StatelessWidget {
   final String label;
   final String? value;
-  final List<(String, String)> options; // (valor_odoo, etiqueta_visible)
+  final List<(String, String)> options;
   final ValueChanged<String?> onChanged;
 
   const SelectField({

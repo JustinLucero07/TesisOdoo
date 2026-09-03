@@ -12,10 +12,6 @@ import 'lead_form_screen.dart';
 import 'lead_model.dart';
 import 'lead_service.dart';
 
-/// Embudo vertical: una columna por etapa del CRM (las reales de
-/// `crm.stage`), que se recorren deslizando de lado. Dentro de cada
-/// columna, las oportunidades se apilan verticalmente — el mismo kanban
-/// del ERP, adaptado a una pantalla angosta.
 class LeadFunnelScreen extends StatefulWidget {
   final bool isPostSale;
   const LeadFunnelScreen({super.key, this.isPostSale = false});
@@ -41,7 +37,6 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
   String? _error;
   int _currentPage = 0;
 
-  // null = Todos los asesores (solo Admin), 0 = Mis Leads, >0 = Asesor específico
   int? _selectedAdvisorId;
   List<_AdvisorOption> _advisors = [];
 
@@ -52,7 +47,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
     final odoo = auth.odoo;
     _leadService = LeadService(odoo);
     _stageService = CrmStageService(odoo);
-    // Si no es admin, fijar estrictamente en 0 (Mis Leads)
+
     if (!auth.isAdmin) {
       _selectedAdvisorId = 0;
     } else {
@@ -82,7 +77,12 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       if (mounted) {
         setState(() {
           _advisors = rows
-              .map((r) => _AdvisorOption(id: r['id'] as int, name: r['name'] as String))
+              .map(
+                (r) => _AdvisorOption(
+                  id: r['id'] as int,
+                  name: r['name'] as String,
+                ),
+              )
               .toList();
         });
       }
@@ -102,8 +102,8 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       final bool myLeadsOnly = (!isAdm || _selectedAdvisorId == 0);
       final int? advisorFilter =
           (isAdm && _selectedAdvisorId != null && _selectedAdvisorId! > 0)
-              ? _selectedAdvisorId
-              : null;
+          ? _selectedAdvisorId
+          : null;
 
       final leads = await _leadService.list(
         limit: 300,
@@ -173,7 +173,11 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                 padding: EdgeInsets.fromLTRB(20, 14, 20, 10),
                 child: Row(
                   children: [
-                    Icon(Icons.people_alt_rounded, size: 18, color: Color(0xFF28235D)),
+                    Icon(
+                      Icons.people_alt_rounded,
+                      size: 18,
+                      color: Color(0xFF28235D),
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Filtrar Embudo por Asesor',
@@ -190,11 +194,22 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                 child: ListView(
                   children: [
                     ListTile(
-                      leading: const Icon(Icons.public_rounded, color: Color(0xFF28235D)),
-                      title: const Text('Todos los Asesores (Toda la Inmobiliaria)',
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                      leading: const Icon(
+                        Icons.public_rounded,
+                        color: Color(0xFF28235D),
+                      ),
+                      title: const Text(
+                        'Todos los Asesores (Toda la Inmobiliaria)',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
+                      ),
                       trailing: _selectedAdvisorId == null
-                          ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD81F26))
+                          ? const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFFD81F26),
+                            )
                           : null,
                       onTap: () {
                         Navigator.pop(ctx);
@@ -203,11 +218,22 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.person_rounded, color: Color(0xFFD81F26)),
-                      title: const Text('Mis Leads Asignados',
-                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5)),
+                      leading: const Icon(
+                        Icons.person_rounded,
+                        color: Color(0xFFD81F26),
+                      ),
+                      title: const Text(
+                        'Mis Leads Asignados',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13.5,
+                        ),
+                      ),
                       trailing: _selectedAdvisorId == 0
-                          ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD81F26))
+                          ? const Icon(
+                              Icons.check_circle_rounded,
+                              color: Color(0xFFD81F26),
+                            )
                           : null,
                       onTap: () {
                         Navigator.pop(ctx);
@@ -217,7 +243,10 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                     ),
                     if (_advisors.isNotEmpty) ...[
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: Text(
                           'EQUIPO COMERCIAL',
                           style: TextStyle(
@@ -228,29 +257,41 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                           ),
                         ),
                       ),
-                      ..._advisors.map((adv) => ListTile(
-                            leading: CircleAvatar(
-                              radius: 14,
-                              backgroundColor: const Color(0xFF28235D).withValues(alpha: 0.1),
-                              child: Text(
-                                adv.name.isNotEmpty ? adv.name[0].toUpperCase() : 'A',
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF28235D),
-                                ),
+                      ..._advisors.map(
+                        (adv) => ListTile(
+                          leading: CircleAvatar(
+                            radius: 14,
+                            backgroundColor: const Color(
+                              0xFF28235D,
+                            ).withValues(alpha: 0.1),
+                            child: Text(
+                              adv.name.isNotEmpty
+                                  ? adv.name[0].toUpperCase()
+                                  : 'A',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF28235D),
                               ),
                             ),
-                            title: Text(adv.name, style: const TextStyle(fontSize: 13.5)),
-                            trailing: _selectedAdvisorId == adv.id
-                                ? const Icon(Icons.check_circle_rounded, color: Color(0xFFD81F26))
-                                : null,
-                            onTap: () {
-                              Navigator.pop(ctx);
-                              setState(() => _selectedAdvisorId = adv.id);
-                              _load();
-                            },
-                          )),
+                          ),
+                          title: Text(
+                            adv.name,
+                            style: const TextStyle(fontSize: 13.5),
+                          ),
+                          trailing: _selectedAdvisorId == adv.id
+                              ? const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Color(0xFFD81F26),
+                                )
+                              : null,
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            setState(() => _selectedAdvisorId = adv.id);
+                            _load();
+                          },
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -305,17 +346,22 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
           elevation: 4,
           backgroundColor: const Color(0xFFD81F26),
           tooltip: 'Nuevo Lead',
-          child: const Icon(Icons.person_add_alt_1_rounded, color: Colors.white, size: 20),
+          child: const Icon(
+            Icons.person_add_alt_1_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
         ),
       ),
       body: Column(
         children: [
-          // ── Barra de Filtro de Asesor (Administrador vs Asesor) ──
           if (isAdmin)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF1E1A3E)
+                    : const Color(0xFFF8FAFC),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -328,12 +374,17 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                     onTap: _showAdvisorPicker,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF0F172A) : Colors.white,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(0xFFD81F26).withValues(alpha: 0.35),
+                          color: const Color(
+                            0xFFD81F26,
+                          ).withValues(alpha: 0.35),
                           width: 1.2,
                         ),
                       ),
@@ -366,7 +417,10 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF28235D).withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
@@ -387,7 +441,9 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF1E1A3E)
+                    : const Color(0xFFF8FAFC),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -396,7 +452,11 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.person_pin_rounded, size: 15, color: Color(0xFFD81F26)),
+                  const Icon(
+                    Icons.person_pin_rounded,
+                    size: 15,
+                    color: Color(0xFFD81F26),
+                  ),
                   const SizedBox(width: 6),
                   const Text(
                     'Mis Oportunidades Asignadas',
@@ -436,7 +496,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
               },
             ),
           ),
-          // Indicador de posición dentro del embudo
+
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 4, 0, 78),
             child: Row(
@@ -489,7 +549,6 @@ class _StageColumn extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Cabecera de la columna, con la franja de color arriba
           Container(
             decoration: BoxDecoration(
               color: accent,
@@ -627,7 +686,10 @@ class _FunnelCard extends StatelessWidget {
                   Icon(
                     LeadTemperatureStyle.icon(lead.leadTemperature),
                     size: 15,
-                    color: LeadTemperatureStyle.color(lead.leadTemperature, colors),
+                    color: LeadTemperatureStyle.color(
+                      lead.leadTemperature,
+                      colors,
+                    ),
                   ),
                 ],
               ),
@@ -646,10 +708,7 @@ class _FunnelCard extends StatelessWidget {
                         lead.contactName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.muted,
-                        ),
+                        style: TextStyle(fontSize: 12, color: colors.muted),
                       ),
                     ),
                   ],
@@ -667,10 +726,7 @@ class _FunnelCard extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       lead.phone,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: colors.muted,
-                      ),
+                      style: TextStyle(fontSize: 12, color: colors.muted),
                     ),
                   ],
                 ),
@@ -690,10 +746,7 @@ class _FunnelCard extends StatelessWidget {
                         lead.targetPropertyName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colors.muted,
-                        ),
+                        style: TextStyle(fontSize: 12, color: colors.muted),
                       ),
                     ),
                   ],

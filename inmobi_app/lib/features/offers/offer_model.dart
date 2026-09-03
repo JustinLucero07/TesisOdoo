@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/api/odoo_json.dart';
 import '../../core/theme/app_theme.dart';
 
-/// Espejo de `estate.property.offer` — la negociación entre el interesado y
-/// el propietario: monto ofertado, contraoferta y precio final acordado.
 class Offer {
   final int id;
   final String reference;

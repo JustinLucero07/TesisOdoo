@@ -1,8 +1,6 @@
 import '../../core/api/odoo_client.dart';
 import 'property_model.dart';
 
-/// Consulta propiedades reales de `estate.property` vía ORM (search_read),
-/// respetando los permisos del usuario con soporte para filtros y caché offline.
 class PropertyService {
   final OdooClient odoo;
   PropertyService(this.odoo);
@@ -10,7 +8,8 @@ class PropertyService {
   static List<Property> _cachedPropertyList = [];
   static final Map<int, Property> _cachedDetails = {};
 
-  static List<Property> get cachedList => List.unmodifiable(_cachedPropertyList);
+  static List<Property> get cachedList =>
+      List.unmodifiable(_cachedPropertyList);
 
   Future<List<Property>> list({
     String? searchText,
@@ -103,22 +102,25 @@ class PropertyService {
         order: order,
       );
       final list = rows.map(Property.fromJson).toList();
-      if (offset == 0 && (searchText == null || searchText.isEmpty) && (states == null || states.isEmpty)) {
+      if (offset == 0 &&
+          (searchText == null || searchText.isEmpty) &&
+          (states == null || states.isEmpty)) {
         _cachedPropertyList = list;
       }
       return list;
     } catch (e) {
-      // Fallback offline a partir de los datos cacheados
       if (_cachedPropertyList.isNotEmpty) {
         var filtered = _cachedPropertyList;
         if (searchText != null && searchText.trim().isNotEmpty) {
           final query = searchText.trim().toLowerCase();
           filtered = filtered
-              .where((p) =>
-                  p.title.toLowerCase().contains(query) ||
-                  p.city.toLowerCase().contains(query) ||
-                  p.sector.toLowerCase().contains(query) ||
-                  p.reference.toLowerCase().contains(query))
+              .where(
+                (p) =>
+                    p.title.toLowerCase().contains(query) ||
+                    p.city.toLowerCase().contains(query) ||
+                    p.sector.toLowerCase().contains(query) ||
+                    p.reference.toLowerCase().contains(query),
+              )
               .toList();
         }
         if (states != null && states.isNotEmpty) {

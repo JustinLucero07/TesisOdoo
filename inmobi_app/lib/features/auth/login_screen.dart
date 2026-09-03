@@ -39,7 +39,6 @@ class _LoginScreenState extends State<LoginScreen>
     super.initState();
     _prefill();
 
-    // Animación de entrada general secuenciada
     _entranceCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
@@ -50,17 +49,14 @@ class _LoginScreenState extends State<LoginScreen>
       curve: const Interval(0.45, 1.0, curve: Curves.easeOut),
     );
 
-    _formSlideAnim = Tween<Offset>(
-      begin: const Offset(0, 0.15),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _entranceCtrl,
-        curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
+    _formSlideAnim =
+        Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceCtrl,
+            curve: const Interval(0.45, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
 
-    // Animación ambiental de fondo infinito
     _ambientCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 8),
@@ -134,10 +130,11 @@ class _LoginScreenState extends State<LoginScreen>
     final size = MediaQuery.sizeOf(context);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0C0A1E) : const Color(0xFFF8FAFC),
+      backgroundColor: isDark
+          ? const Color(0xFF0C0A1E)
+          : const Color(0xFFF8FAFC),
       body: Stack(
         children: [
-          // ── 1. Fondo Ambiental con Orbes Dinámicos ──
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _ambientCtrl,
@@ -148,7 +145,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                 return Stack(
                   children: [
-                    // Orbe 1: Navy Inmobi Superior
                     Positioned(
                       top: -80 + offset1,
                       right: -60 + offset2,
@@ -159,7 +155,9 @@ class _LoginScreenState extends State<LoginScreen>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              (isDark ? const Color(0xFF28235D) : const Color(0xFF28235D))
+                              (isDark
+                                      ? const Color(0xFF28235D)
+                                      : const Color(0xFF28235D))
                                   .withValues(alpha: isDark ? 0.35 : 0.12),
                               Colors.transparent,
                             ],
@@ -167,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen>
                         ),
                       ),
                     ),
-                    // Orbe 2: Acento Rojo Inmobi Lateral
+
                     Positioned(
                       bottom: size.height * 0.15 - offset2,
                       left: -80 - offset1,
@@ -178,8 +176,9 @@ class _LoginScreenState extends State<LoginScreen>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              const Color(0xFFD81F26)
-                                  .withValues(alpha: isDark ? 0.18 : 0.08),
+                              const Color(
+                                0xFFD81F26,
+                              ).withValues(alpha: isDark ? 0.18 : 0.08),
                               Colors.transparent,
                             ],
                           ),
@@ -192,23 +191,23 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
 
-          // ── 2. Contenido del Formulario ──
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 430),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // ── Logo Inmobi con Animación de Ensamblaje Geométrico ──
                       const _AssemblingInmobiLogo(),
 
                       const SizedBox(height: 18),
 
-                      // Marca y Subtítulo
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -218,7 +217,9 @@ class _LoginScreenState extends State<LoginScreen>
                               fontSize: 28,
                               fontWeight: FontWeight.w900,
                               letterSpacing: 3,
-                              color: isDark ? Colors.white : const Color(0xFF1B1740),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF1B1740),
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -239,11 +240,14 @@ class _LoginScreenState extends State<LoginScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF28235D)
-                              .withValues(alpha: isDark ? 0.25 : 0.08),
+                          color: const Color(
+                            0xFF28235D,
+                          ).withValues(alpha: isDark ? 0.25 : 0.08),
                           borderRadius: BorderRadius.circular(100),
                           border: Border.all(
-                            color: const Color(0xFF28235D).withValues(alpha: 0.15),
+                            color: const Color(
+                              0xFF28235D,
+                            ).withValues(alpha: 0.15),
                           ),
                         ),
                         child: Text(
@@ -261,7 +265,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 28),
 
-                      // ── Formulario con Slide & Fade Animado ──
                       FadeTransition(
                         opacity: _formFadeAnim,
                         child: SlideTransition(
@@ -317,7 +320,6 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   const SizedBox(height: 22),
 
-                                  // Mensaje de Error
                                   if (_error != null) ...[
                                     Container(
                                       padding: const EdgeInsets.all(12),
@@ -354,7 +356,6 @@ class _LoginScreenState extends State<LoginScreen>
                                     const SizedBox(height: 18),
                                   ],
 
-                                  // Campo Usuario
                                   TextFormField(
                                     controller: _loginCtrl,
                                     focusNode: _loginFocus,
@@ -397,13 +398,13 @@ class _LoginScreenState extends State<LoginScreen>
                                         ),
                                       ),
                                     ),
-                                    validator: (v) => (v == null || v.trim().isEmpty)
+                                    validator: (v) =>
+                                        (v == null || v.trim().isEmpty)
                                         ? 'Ingresa tu usuario de Odoo'
                                         : null,
                                   ),
                                   const SizedBox(height: 16),
 
-                                  // Campo Contraseña
                                   TextFormField(
                                     controller: _passwordCtrl,
                                     focusNode: _passwordFocus,
@@ -429,7 +430,9 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                       suffixIcon: IconButton(
                                         icon: AnimatedSwitcher(
-                                          duration: const Duration(milliseconds: 200),
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
                                           child: Icon(
                                             _obscurePassword
                                                 ? Icons.visibility_outlined
@@ -473,7 +476,6 @@ class _LoginScreenState extends State<LoginScreen>
                                   ),
                                   const SizedBox(height: 24),
 
-                                  // Botón Iniciar Sesión con Gradiente Inmobi
                                   SizedBox(
                                     height: 52,
                                     child: DecoratedBox(
@@ -489,8 +491,9 @@ class _LoginScreenState extends State<LoginScreen>
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(0xFF28235D)
-                                                .withValues(alpha: 0.35),
+                                            color: const Color(
+                                              0xFF28235D,
+                                            ).withValues(alpha: 0.35),
                                             blurRadius: 18,
                                             offset: const Offset(0, 6),
                                           ),
@@ -503,17 +506,20 @@ class _LoginScreenState extends State<LoginScreen>
                                           shadowColor: Colors.transparent,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(16),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                           ),
                                         ),
                                         child: _loading
                                             ? const SizedBox(
                                                 height: 22,
                                                 width: 22,
-                                                child: CircularProgressIndicator(
-                                                  strokeWidth: 2.4,
-                                                  color: Colors.white,
-                                                ),
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2.4,
+                                                      color: Colors.white,
+                                                    ),
                                               )
                                             : const Row(
                                                 mainAxisAlignment:
@@ -523,7 +529,8 @@ class _LoginScreenState extends State<LoginScreen>
                                                     'Ingresar al Sistema',
                                                     style: TextStyle(
                                                       fontSize: 15.5,
-                                                      fontWeight: FontWeight.w800,
+                                                      fontWeight:
+                                                          FontWeight.w800,
                                                       letterSpacing: 0.3,
                                                     ),
                                                   ),
@@ -546,7 +553,6 @@ class _LoginScreenState extends State<LoginScreen>
 
                       const SizedBox(height: 26),
 
-                      // ── Pie con Credenciales y Seguridad ──
                       FadeTransition(
                         opacity: _formFadeAnim,
                         child: Row(
@@ -590,7 +596,6 @@ class _LoginScreenState extends State<LoginScreen>
   }
 }
 
-/// Widget con animación de ensamblaje geométrico de figuras para armar el logo de Inmobi
 class _AssemblingInmobiLogo extends StatefulWidget {
   const _AssemblingInmobiLogo();
 
@@ -602,14 +607,12 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  // Animaciones de las piezas geométricas
   late final Animation<Offset> _topRoofSlide;
   late final Animation<double> _topRoofRotate;
   late final Animation<Offset> _leftPillarSlide;
   late final Animation<Offset> _rightPillarSlide;
   late final Animation<double> _coreScale;
 
-  // Animación del destello y ensamble final
   late final Animation<double> _finalBadgeScale;
   late final Animation<double> _flashAuraOpacity;
   late final Animation<double> _piecesFadeOut;
@@ -622,67 +625,53 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
       duration: const Duration(milliseconds: 1500),
     );
 
-    // 1. Techo / Chevron rojo vuela desde arriba girando
-    _topRoofSlide = Tween<Offset>(
-      begin: const Offset(0.0, -1.8),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOutBack),
-      ),
-    );
+    _topRoofSlide =
+        Tween<Offset>(begin: const Offset(0.0, -1.8), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.0, 0.55, curve: Curves.easeOutBack),
+          ),
+        );
 
-    _topRoofRotate = Tween<double>(
-      begin: -0.4,
-      end: 0.0,
-    ).animate(
+    _topRoofRotate = Tween<double>(begin: -0.4, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
       ),
     );
 
-    // 2. Columna izquierda Navy entra desde la izquierda
-    _leftPillarSlide = Tween<Offset>(
-      begin: const Offset(-2.0, 0.6),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.1, 0.60, curve: Curves.easeOutBack),
-      ),
-    );
+    _leftPillarSlide =
+        Tween<Offset>(begin: const Offset(-2.0, 0.6), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.1, 0.60, curve: Curves.easeOutBack),
+          ),
+        );
 
-    // 3. Columna derecha entra desde la derecha
-    _rightPillarSlide = Tween<Offset>(
-      begin: const Offset(2.0, 0.6),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.15, 0.65, curve: Curves.easeOutBack),
-      ),
-    );
+    _rightPillarSlide =
+        Tween<Offset>(begin: const Offset(2.0, 0.6), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.15, 0.65, curve: Curves.easeOutBack),
+          ),
+        );
 
-    // 4. Bloque central arquitectónico escala desde el centro
     _coreScale = CurvedAnimation(
       parent: _controller,
       curve: const Interval(0.2, 0.70, curve: Curves.elasticOut),
     );
 
-    // 5. Destello / Resplandor cuando encajan las piezas
-    _flashAuraOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 40),
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 60),
-    ]).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.58, 0.90, curve: Curves.easeOut),
-      ),
-    );
+    _flashAuraOpacity =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 40),
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 60),
+        ]).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.58, 0.90, curve: Curves.easeOut),
+          ),
+        );
 
-    // 6. Fusión en el logo definitivo
     _piecesFadeOut = Tween<double>(begin: 1.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -725,7 +714,6 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Resplandor de Aura tras el ensamblaje
                 Opacity(
                   opacity: _flashAuraOpacity.value,
                   child: Container(
@@ -749,7 +737,6 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                   ),
                 ),
 
-                // ── Piezas Geométricas en Movimiento (Se Desvanecen al Armarse) ──
                 if (_piecesFadeOut.value > 0)
                   Opacity(
                     opacity: _piecesFadeOut.value,
@@ -759,7 +746,6 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          // Pieza 1: Techo Rojo Triangular / Chevron
                           SlideTransition(
                             position: _topRoofSlide,
                             child: RotationTransition(
@@ -779,8 +765,9 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: const Color(0xFFD81F26)
-                                            .withValues(alpha: 0.4),
+                                        color: const Color(
+                                          0xFFD81F26,
+                                        ).withValues(alpha: 0.4),
                                         blurRadius: 12,
                                       ),
                                     ],
@@ -790,7 +777,6 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                             ),
                           ),
 
-                          // Pieza 2: Pilar Izquierdo Navy
                           SlideTransition(
                             position: _leftPillarSlide,
                             child: Align(
@@ -803,8 +789,9 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                                   borderRadius: BorderRadius.circular(10),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF28235D)
-                                          .withValues(alpha: 0.4),
+                                      color: const Color(
+                                        0xFF28235D,
+                                      ).withValues(alpha: 0.4),
                                       blurRadius: 12,
                                     ),
                                   ],
@@ -813,7 +800,6 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                             ),
                           ),
 
-                          // Pieza 3: Pilar Derecho Navy Profundo
                           SlideTransition(
                             position: _rightPillarSlide,
                             child: Align(
@@ -826,8 +812,9 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                                   borderRadius: BorderRadius.circular(10),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: const Color(0xFF1B1740)
-                                          .withValues(alpha: 0.4),
+                                      color: const Color(
+                                        0xFF1B1740,
+                                      ).withValues(alpha: 0.4),
                                       blurRadius: 12,
                                     ),
                                   ],
@@ -836,7 +823,6 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                             ),
                           ),
 
-                          // Pieza 4: Núcleo Central
                           ScaleTransition(
                             scale: _coreScale,
                             child: Align(
@@ -860,7 +846,6 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                     ),
                   ),
 
-                // ── Logo Unificado Final con Escala Grande y Halo ──
                 if (_controller.value >= 0.6)
                   ScaleTransition(
                     scale: _finalBadgeScale,
@@ -881,13 +866,17 @@ class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF28235D).withValues(alpha: 0.45),
+                            color: const Color(
+                              0xFF28235D,
+                            ).withValues(alpha: 0.45),
                             blurRadius: 32,
                             offset: const Offset(0, 12),
                             spreadRadius: 3,
                           ),
                           BoxShadow(
-                            color: const Color(0xFFD81F26).withValues(alpha: 0.3),
+                            color: const Color(
+                              0xFFD81F26,
+                            ).withValues(alpha: 0.3),
                             blurRadius: 20,
                             offset: const Offset(4, 6),
                           ),

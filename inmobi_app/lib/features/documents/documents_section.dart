@@ -14,10 +14,6 @@ import 'document_form_screen.dart';
 import 'document_model.dart';
 import 'document_service.dart';
 
-/// Sección "Documentos" reutilizable con soporte completo para:
-/// - Visualización de archivos (PDFs, imágenes, contratos, cédulas, prediales)
-/// - Creación de nuevos documentos con todos los campos de Odoo (Tipo, Confidencialidad, Fechas, Archivo)
-/// - Edición, descarga a galería/dispositivo, compartir y verificación/rechazo
 class DocumentsSection extends StatefulWidget {
   final OdooClient odoo;
   final DocumentOwner owner;
@@ -43,7 +39,8 @@ class _DocumentsSectionState extends State<DocumentsSection> {
   @override
   void didUpdateWidget(covariant DocumentsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.owner.id != widget.owner.id || oldWidget.owner.field != widget.owner.field) {
+    if (oldWidget.owner.id != widget.owner.id ||
+        oldWidget.owner.field != widget.owner.field) {
       _load();
     }
   }
@@ -63,10 +60,8 @@ class _DocumentsSectionState extends State<DocumentsSection> {
   Future<void> _openNewForm() async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => DocumentFormScreen(
-          odoo: widget.odoo,
-          initialOwner: widget.owner,
-        ),
+        builder: (_) =>
+            DocumentFormScreen(odoo: widget.odoo, initialOwner: widget.owner),
       ),
     );
     if (saved == true && mounted) {
@@ -77,10 +72,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
   Future<void> _openEditForm(EstateDocument doc) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => DocumentFormScreen(
-          odoo: widget.odoo,
-          existing: doc,
-        ),
+        builder: (_) => DocumentFormScreen(odoo: widget.odoo, existing: doc),
       ),
     );
     if (saved == true && mounted) {
@@ -102,7 +94,9 @@ class _DocumentsSectionState extends State<DocumentsSection> {
         field: 'file',
       );
       final dir = await getTemporaryDirectory();
-      final safeName = doc.filename.isNotEmpty ? doc.filename : '${doc.name}.pdf';
+      final safeName = doc.filename.isNotEmpty
+          ? doc.filename
+          : '${doc.name}.pdf';
       final file = File('${dir.path}/$safeName');
       await file.writeAsBytes(bytes);
       await OpenFile.open(file.path);
@@ -127,7 +121,10 @@ class _DocumentsSectionState extends State<DocumentsSection> {
             SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 12),
             Text('Descargando documento...'),
@@ -144,7 +141,9 @@ class _DocumentsSectionState extends State<DocumentsSection> {
         field: 'file',
       );
       final dir = await getTemporaryDirectory();
-      final safeName = doc.filename.isNotEmpty ? doc.filename : '${doc.name}.pdf';
+      final safeName = doc.filename.isNotEmpty
+          ? doc.filename
+          : '${doc.name}.pdf';
       final file = File('${dir.path}/$safeName');
       await file.writeAsBytes(bytes);
 
@@ -205,14 +204,15 @@ class _DocumentsSectionState extends State<DocumentsSection> {
         field: 'file',
       );
       final dir = await getTemporaryDirectory();
-      final safeName = doc.filename.isNotEmpty ? doc.filename : '${doc.name}.pdf';
+      final safeName = doc.filename.isNotEmpty
+          ? doc.filename
+          : '${doc.name}.pdf';
       final file = File('${dir.path}/$safeName');
       await file.writeAsBytes(bytes);
 
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Documento: ${doc.name}',
-      );
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Documento: ${doc.name}');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -222,16 +222,24 @@ class _DocumentsSectionState extends State<DocumentsSection> {
     }
   }
 
-  Future<void> _runAction(EstateDocument doc, String method, String okMsg) async {
+  Future<void> _runAction(
+    EstateDocument doc,
+    String method,
+    String okMsg,
+  ) async {
     final messenger = ScaffoldMessenger.of(context);
     final colors = AppColors.of(context);
     try {
       await widget.odoo.callKw(
         model: 'estate.document',
         method: method,
-        args: [[doc.id]],
+        args: [
+          [doc.id],
+        ],
       );
-      messenger.showSnackBar(SnackBar(content: Text(okMsg), backgroundColor: colors.success));
+      messenger.showSnackBar(
+        SnackBar(content: Text(okMsg), backgroundColor: colors.success),
+      );
       _load();
     } catch (e) {
       messenger.showSnackBar(
@@ -298,7 +306,10 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 4,
+                ),
                 child: Row(
                   children: [
                     Icon(doc.icon, color: colors.navy, size: 28),
@@ -309,12 +320,17 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                         children: [
                           Text(
                             doc.name,
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
-                            doc.typeName.isNotEmpty ? doc.typeName : 'Documento Odoo',
+                            doc.typeName.isNotEmpty
+                                ? doc.typeName
+                                : 'Documento Odoo',
                             style: TextStyle(color: colors.muted, fontSize: 12),
                           ),
                         ],
@@ -326,7 +342,10 @@ class _DocumentsSectionState extends State<DocumentsSection> {
               const Divider(height: 16),
               if (doc.filename.isNotEmpty) ...[
                 ListTile(
-                  leading: const Icon(Icons.open_in_new_rounded, color: Color(0xFF28235D)),
+                  leading: const Icon(
+                    Icons.open_in_new_rounded,
+                    color: Color(0xFF28235D),
+                  ),
                   title: const Text('Abrir y Previsualizar'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -334,7 +353,10 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.download_rounded, color: Color(0xFF10B981)),
+                  leading: const Icon(
+                    Icons.download_rounded,
+                    color: Color(0xFF10B981),
+                  ),
                   title: const Text('Descargar a Galería / Archivos'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -342,7 +364,10 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.share_rounded, color: Color(0xFF3B82F6)),
+                  leading: const Icon(
+                    Icons.share_rounded,
+                    color: Color(0xFF3B82F6),
+                  ),
                   title: const Text('Compartir'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -351,7 +376,10 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                 ),
               ] else ...[
                 ListTile(
-                  leading: Icon(Icons.upload_file_rounded, color: colors.warning),
+                  leading: Icon(
+                    Icons.upload_file_rounded,
+                    color: colors.warning,
+                  ),
                   title: const Text('Subir Archivo Pendiente'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -360,7 +388,10 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                 ),
               ],
               ListTile(
-                leading: const Icon(Icons.edit_outlined, color: Color(0xFF4B5563)),
+                leading: const Icon(
+                  Icons.edit_outlined,
+                  color: Color(0xFF4B5563),
+                ),
                 title: const Text('Editar Información del Documento'),
                 onTap: () {
                   Navigator.pop(ctx);
@@ -373,7 +404,11 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                   title: const Text('Marcar como Verificado'),
                   onTap: () {
                     Navigator.pop(ctx);
-                    _runAction(doc, 'action_verify', 'Documento verificado en Odoo.');
+                    _runAction(
+                      doc,
+                      'action_verify',
+                      'Documento verificado en Odoo.',
+                    );
                   },
                 ),
               if (doc.state != 'rejected')
@@ -411,13 +446,21 @@ class _DocumentsSectionState extends State<DocumentsSection> {
             const Spacer(),
             FilledButton.icon(
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 visualDensity: VisualDensity.compact,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: _openNewForm,
               icon: const Icon(Icons.add_rounded, size: 16),
-              label: const Text('Añadir documento', style: TextStyle(fontSize: 12.5)),
+              label: const Text(
+                'Añadir documento',
+                style: TextStyle(fontSize: 12.5),
+              ),
             ),
           ],
         ),
@@ -438,17 +481,28 @@ class _DocumentsSectionState extends State<DocumentsSection> {
             ),
             child: Column(
               children: [
-                Icon(Icons.folder_open_outlined, size: 36, color: colors.mutedLight),
+                Icon(
+                  Icons.folder_open_outlined,
+                  size: 36,
+                  color: colors.mutedLight,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'Sin documentos cargados en esta propiedad.',
-                  style: TextStyle(fontSize: 13, color: colors.muted, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colors.muted,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 OutlinedButton.icon(
                   onPressed: _openNewForm,
                   icon: const Icon(Icons.upload_file_rounded, size: 16),
-                  label: const Text('Subir Primer Documento', style: TextStyle(fontSize: 12.5)),
+                  label: const Text(
+                    'Subir Primer Documento',
+                    style: TextStyle(fontSize: 12.5),
+                  ),
                 ),
               ],
             ),
@@ -497,9 +551,16 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                                     ? SizedBox(
                                         width: 22,
                                         height: 22,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: stateColor),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: stateColor,
+                                        ),
                                       )
-                                    : Icon(doc.icon, color: stateColor, size: 22),
+                                    : Icon(
+                                        doc.icon,
+                                        color: stateColor,
+                                        size: 22,
+                                      ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -519,8 +580,13 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                                     Text(
                                       doc.typeName.isNotEmpty
                                           ? '${doc.typeName}${doc.date != null ? " · ${dateFmt.format(doc.date!)}" : ""}'
-                                          : (doc.date != null ? dateFmt.format(doc.date!) : ''),
-                                      style: TextStyle(fontSize: 12, color: colors.muted),
+                                          : (doc.date != null
+                                                ? dateFmt.format(doc.date!)
+                                                : ''),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colors.muted,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -532,46 +598,69 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                                 background: stateColor.withValues(alpha: 0.12),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.more_vert_rounded, size: 20),
+                                icon: const Icon(
+                                  Icons.more_vert_rounded,
+                                  size: 20,
+                                ),
                                 onPressed: () => _showActions(doc),
                               ),
                             ],
                           ),
-                          if (doc.confidentiality != 'internal' && doc.confidentiality.isNotEmpty) ...[
+                          if (doc.confidentiality != 'internal' &&
+                              doc.confidentiality.isNotEmpty) ...[
                             const SizedBox(height: 6),
                             Row(
                               children: [
                                 AppBadge(
                                   icon: Icons.security_outlined,
-                                  label: DocumentConfidentialityStyle.label(doc.confidentiality),
-                                  color: DocumentConfidentialityStyle.color(doc.confidentiality, colors),
+                                  label: DocumentConfidentialityStyle.label(
+                                    doc.confidentiality,
+                                  ),
+                                  color: DocumentConfidentialityStyle.color(
+                                    doc.confidentiality,
+                                    colors,
+                                  ),
                                 ),
                                 if (doc.fileSizeMb > 0) ...[
                                   const SizedBox(width: 8),
                                   Text(
                                     '${doc.fileSizeMb.toStringAsFixed(2)} MB',
-                                    style: TextStyle(fontSize: 11.5, color: colors.mutedLight),
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: colors.mutedLight,
+                                    ),
                                   ),
                                 ],
                               ],
                             ),
                           ],
-                          if (doc.rejectionReason.isNotEmpty && doc.state == 'rejected') ...[
+                          if (doc.rejectionReason.isNotEmpty &&
+                              doc.state == 'rejected') ...[
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: colors.danger.withValues(alpha: 0.08),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.error_outline, size: 15, color: colors.danger),
+                                  Icon(
+                                    Icons.error_outline,
+                                    size: 15,
+                                    color: colors.danger,
+                                  ),
                                   const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       'Motivo de rechazo: ${doc.rejectionReason}',
-                                      style: TextStyle(fontSize: 12, color: colors.danger),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: colors.danger,
+                                      ),
                                     ),
                                   ),
                                 ],

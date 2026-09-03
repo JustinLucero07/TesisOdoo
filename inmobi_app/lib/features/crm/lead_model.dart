@@ -11,8 +11,8 @@ class Lead {
   final String email;
   final double clientBudget;
   final int matchPercentage;
-  final String leadScore; // low | medium | high
-  final String leadTemperature; // cold | warm | hot | boiling
+  final String leadScore;
+  final String leadTemperature;
   final int? stageId;
   final String stageName;
   final int? targetPropertyId;
@@ -29,8 +29,8 @@ class Lead {
   final int preferredBedrooms;
   final double preferredMinArea;
   final double preferredMaxArea;
-  final String description; // "Notes" de Odoo, campo Html
-  final int priority; // 0-3 estrellas
+  final String description;
+  final int priority;
   final DateTime? dateDeadline;
   final double expectedRevenue;
   final double expectedCommission;
@@ -102,7 +102,7 @@ class Lead {
     'preferred_bedrooms',
     'preferred_min_area',
     'preferred_max_area',
-    // "Notes" del CRM nativo + seguimiento comercial
+
     'description',
     'priority',
     'date_deadline',
@@ -152,8 +152,7 @@ class Lead {
       preferredBedrooms: asOdooInt(json['preferred_bedrooms']),
       preferredMinArea: asOdooDouble(json['preferred_min_area']),
       preferredMaxArea: asOdooDouble(json['preferred_max_area']),
-      // `description` es Html en Odoo: se limpia a texto plano para leerlo
-      // cómodo en el celular (mismo criterio que la descripción de propiedad).
+
       description: asOdooString(json['description'])
           .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
           .replaceAll(RegExp(r'</p>', caseSensitive: false), '\n')

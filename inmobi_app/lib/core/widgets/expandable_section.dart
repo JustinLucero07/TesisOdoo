@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Fila plegable con un "+" que gira a "×" — el mismo patrón de secciones
-/// como "Características", "Descripción", "Observaciones" en fichas de
-/// propiedad de referencia. Colapsada por defecto para no saturar la
-/// pantalla; el contenido entra/sale con una animación suave.
 class ExpandableSection extends StatefulWidget {
   final String title;
   final Widget child;

@@ -9,10 +9,6 @@ import '../auth/auth_service.dart';
 import 'contract_model.dart';
 import 'contract_service.dart';
 
-/// Crea o edita un contrato (estate.contract). El `state` (borrador, activo,
-/// vencido, etc.) no se edita a mano aquí — avanza con las acciones propias
-/// del contrato en el ERP (activar, renovar, cancelar), igual que el estado
-/// de una propiedad no se toca desde su formulario.
 class ContractFormScreen extends StatefulWidget {
   final Contract? existing;
   final int? initialPropertyId;

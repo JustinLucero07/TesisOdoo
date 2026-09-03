@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Estado de carga centrado y consistente para cualquier pantalla.
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
 
@@ -14,7 +13,6 @@ class LoadingView extends StatelessWidget {
   }
 }
 
-/// Estado vacío/error con ícono + mensaje + acción opcional de reintentar.
 class MessageView extends StatelessWidget {
   final IconData icon;
   final String message;
@@ -57,7 +55,6 @@ class MessageView extends StatelessWidget {
   }
 }
 
-/// Círculo con inicial(es) — usado como avatar cuando no hay foto.
 class InitialsAvatar extends StatelessWidget {
   final String text;
   final double size;

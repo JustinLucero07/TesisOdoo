@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// Tarjeta de indicador para el dashboard — ícono + número grande + etiqueta.
 class KpiCard extends StatelessWidget {
   final IconData icon;
   final String value;

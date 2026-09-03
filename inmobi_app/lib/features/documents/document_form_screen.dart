@@ -92,7 +92,8 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
       if (owner.field == 'property_id') {
         _property = Many2oneValue(owner.id, 'Propiedad #${owner.id}');
         _loadOwnerName('estate.property', owner.id, (name) {
-          if (mounted) setState(() => _property = Many2oneValue(owner.id, name));
+          if (mounted)
+            setState(() => _property = Many2oneValue(owner.id, name));
         });
       } else if (owner.field == 'partner_id') {
         _partner = Many2oneValue(owner.id, 'Contacto #${owner.id}');
@@ -102,7 +103,8 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
       } else if (owner.field == 'contract_id') {
         _contract = Many2oneValue(owner.id, 'Contrato #${owner.id}');
         _loadOwnerName('estate.contract', owner.id, (name) {
-          if (mounted) setState(() => _contract = Many2oneValue(owner.id, name));
+          if (mounted)
+            setState(() => _contract = Many2oneValue(owner.id, name));
         });
       } else if (owner.field == 'lead_id') {
         _lead = Many2oneValue(owner.id, 'Lead #${owner.id}');
@@ -113,11 +115,17 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
     }
   }
 
-  Future<void> _loadOwnerName(String model, int id, Function(String) onLoaded) async {
+  Future<void> _loadOwnerName(
+    String model,
+    int id,
+    Function(String) onLoaded,
+  ) async {
     try {
       final rows = await widget.odoo.searchRead(
         model: model,
-        domain: [['id', '=', id]],
+        domain: [
+          ['id', '=', id],
+        ],
         fields: ['name', if (model == 'estate.property') 'title'],
         limit: 1,
       );
@@ -152,7 +160,9 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
   }
 
   Future<void> _selectDate({required bool isExpiration}) async {
-    final initial = isExpiration ? (_expirationDate ?? DateTime.now().add(const Duration(days: 365))) : _date;
+    final initial = isExpiration
+        ? (_expirationDate ?? DateTime.now().add(const Duration(days: 365)))
+        : _date;
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -175,7 +185,9 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
 
     if (_type == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona el tipo de documento.')),
+        const SnackBar(
+          content: Text('Por favor selecciona el tipo de documento.'),
+        ),
       );
       return;
     }
@@ -195,10 +207,22 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
         'expiration_date': DateFormat('yyyy-MM-dd').format(_expirationDate!)
       else if (widget.isEdit)
         'expiration_date': false,
-      if (_property != null) 'property_id': _property!.id else if (widget.isEdit) 'property_id': false,
-      if (_partner != null) 'partner_id': _partner!.id else if (widget.isEdit) 'partner_id': false,
-      if (_contract != null) 'contract_id': _contract!.id else if (widget.isEdit) 'contract_id': false,
-      if (_lead != null) 'lead_id': _lead!.id else if (widget.isEdit) 'lead_id': false,
+      if (_property != null)
+        'property_id': _property!.id
+      else if (widget.isEdit)
+        'property_id': false,
+      if (_partner != null)
+        'partner_id': _partner!.id
+      else if (widget.isEdit)
+        'partner_id': false,
+      if (_contract != null)
+        'contract_id': _contract!.id
+      else if (widget.isEdit)
+        'contract_id': false,
+      if (_lead != null)
+        'lead_id': _lead!.id
+      else if (widget.isEdit)
+        'lead_id': false,
     };
 
     if (_selectedFile != null && _selectedFile!.bytes != null) {
@@ -215,16 +239,17 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
           values: vals,
         );
       } else {
-        await widget.odoo.create(
-          model: 'estate.document',
-          values: vals,
-        );
+        await widget.odoo.create(model: 'estate.document', values: vals);
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.isEdit ? 'Documento actualizado.' : 'Documento guardado en Odoo.'),
+            content: Text(
+              widget.isEdit
+                  ? 'Documento actualizado.'
+                  : 'Documento guardado en Odoo.',
+            ),
             backgroundColor: AppColors.of(context).success,
           ),
         );
@@ -232,7 +257,11 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
       }
     } catch (e) {
       final msg = e.toString().replaceAll('Exception:', '').trim();
-      setState(() => _error = msg.isNotEmpty ? msg : 'No se pudo guardar el documento en Odoo.');
+      setState(
+        () => _error = msg.isNotEmpty
+            ? msg
+            : 'No se pudo guardar el documento en Odoo.',
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -255,7 +284,10 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                 child: SizedBox(
                   width: 20,
                   height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             )
@@ -280,7 +312,9 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                 decoration: BoxDecoration(
                   color: colors.danger.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: colors.danger.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: colors.danger.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -298,7 +332,6 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
               const SizedBox(height: 16),
             ],
 
-            // ── Nombre del documento ──
             TextFormField(
               controller: _nameCtrl,
               decoration: const InputDecoration(
@@ -306,11 +339,12 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                 hintText: 'Ej: Escritura Notariada, Pago Predial 2026',
                 prefixIcon: Icon(Icons.description_outlined),
               ),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresa el nombre del documento' : null,
+              validator: (v) => (v == null || v.trim().isEmpty)
+                  ? 'Ingresa el nombre del documento'
+                  : null,
             ),
             const SizedBox(height: 14),
 
-            // ── Tipo de documento (Many2one) ──
             Many2oneField(
               label: 'Tipo de Documento *',
               required: true,
@@ -321,12 +355,13 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
             ),
             const SizedBox(height: 14),
 
-            // ── Archivo Adjunto ──
             const _FormSectionTitle('Archivo Adjunto'),
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF1E1A3E)
+                    : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -340,10 +375,15 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Icon(Icons.file_present_rounded, color: Color(0xFF10B981)),
+                          child: const Icon(
+                            Icons.file_present_rounded,
+                            color: Color(0xFF10B981),
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -352,13 +392,19 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                             children: [
                               Text(
                                 _selectedFile!.name,
-                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               Text(
                                 '${(_selectedFile!.size / (1024 * 1024)).toStringAsFixed(2)} MB',
-                                style: TextStyle(color: colors.muted, fontSize: 11.5),
+                                style: TextStyle(
+                                  color: colors.muted,
+                                  fontSize: 11.5,
+                                ),
                               ),
                             ],
                           ),
@@ -370,7 +416,8 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                  ] else if (widget.isEdit && widget.existing!.filename.isNotEmpty) ...[
+                  ] else if (widget.isEdit &&
+                      widget.existing!.filename.isNotEmpty) ...[
                     Row(
                       children: [
                         Icon(widget.existing!.icon, color: colors.navy),
@@ -378,7 +425,10 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                         Expanded(
                           child: Text(
                             widget.existing!.filename,
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                       ],
@@ -391,7 +441,9 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                       onPressed: _pickFile,
                       icon: const Icon(Icons.upload_file_rounded, size: 18),
                       label: Text(
-                        _selectedFile != null || (widget.isEdit && widget.existing!.filename.isNotEmpty)
+                        _selectedFile != null ||
+                                (widget.isEdit &&
+                                    widget.existing!.filename.isNotEmpty)
                             ? 'Cambiar Archivo'
                             : 'Seleccionar Archivo (PDF, Imagen, Doc)',
                       ),
@@ -402,7 +454,6 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
             ),
             const SizedBox(height: 14),
 
-            // ── Clasificación y Estado ──
             const _FormSectionTitle('Clasificación y Estado'),
             DropdownButtonFormField<String>(
               initialValue: _confidentiality,
@@ -411,7 +462,12 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                 prefixIcon: Icon(Icons.security_outlined),
               ),
               items: _confidentialityOptions
-                  .map((opt) => DropdownMenuItem(value: opt.$1, child: Text(opt.$2, style: const TextStyle(fontSize: 13))))
+                  .map(
+                    (opt) => DropdownMenuItem(
+                      value: opt.$1,
+                      child: Text(opt.$2, style: const TextStyle(fontSize: 13)),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _confidentiality = v);
@@ -426,7 +482,12 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                 prefixIcon: Icon(Icons.rule_outlined),
               ),
               items: _stateOptions
-                  .map((opt) => DropdownMenuItem(value: opt.$1, child: Text(opt.$2, style: const TextStyle(fontSize: 13))))
+                  .map(
+                    (opt) => DropdownMenuItem(
+                      value: opt.$1,
+                      child: Text(opt.$2, style: const TextStyle(fontSize: 13)),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) {
                 if (v != null) setState(() => _state = v);
@@ -434,7 +495,6 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
             ),
             const SizedBox(height: 14),
 
-            // ── Fechas ──
             const _FormSectionTitle('Fechas'),
             Row(
               children: [
@@ -445,7 +505,10 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                     child: InputDecorator(
                       decoration: const InputDecoration(
                         labelText: 'Fecha del Documento',
-                        prefixIcon: Icon(Icons.calendar_today_outlined, size: 18),
+                        prefixIcon: Icon(
+                          Icons.calendar_today_outlined,
+                          size: 18,
+                        ),
                       ),
                       child: Text(
                         dateFmt.format(_date),
@@ -462,19 +525,27 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
                     child: InputDecorator(
                       decoration: InputDecoration(
                         labelText: 'Vencimiento (Opcional)',
-                        prefixIcon: const Icon(Icons.event_busy_outlined, size: 18),
+                        prefixIcon: const Icon(
+                          Icons.event_busy_outlined,
+                          size: 18,
+                        ),
                         suffixIcon: _expirationDate != null
                             ? IconButton(
                                 icon: const Icon(Icons.clear, size: 16),
-                                onPressed: () => setState(() => _expirationDate = null),
+                                onPressed: () =>
+                                    setState(() => _expirationDate = null),
                               )
                             : null,
                       ),
                       child: Text(
-                        _expirationDate != null ? dateFmt.format(_expirationDate!) : 'Sin vencimiento',
+                        _expirationDate != null
+                            ? dateFmt.format(_expirationDate!)
+                            : 'Sin vencimiento',
                         style: TextStyle(
                           fontSize: 13,
-                          color: _expirationDate != null ? null : colors.mutedLight,
+                          color: _expirationDate != null
+                              ? null
+                              : colors.mutedLight,
                         ),
                       ),
                     ),
@@ -484,7 +555,6 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
             ),
             const SizedBox(height: 14),
 
-            // ── Vinculación a Entidades ──
             const _FormSectionTitle('Vinculación (Odoo)'),
             Many2oneField(
               label: 'Propiedad vinculada',
@@ -523,19 +593,29 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               onPressed: _saving ? null : _save,
               icon: _saving
                   ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.save_outlined),
               label: Text(
-                widget.isEdit ? 'Actualizar Documento' : 'Guardar Documento en Odoo',
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                widget.isEdit
+                    ? 'Actualizar Documento'
+                    : 'Guardar Documento en Odoo',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
             ),
           ],

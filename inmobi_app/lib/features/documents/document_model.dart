@@ -90,11 +90,17 @@ class EstateDocument {
       expirationDate: json['expiration_date'] is String
           ? DateTime.tryParse(json['expiration_date'])
           : null,
-      propertyId: json['property_id'] is List ? json['property_id'][0] as int : null,
+      propertyId: json['property_id'] is List
+          ? json['property_id'][0] as int
+          : null,
       propertyName: many2oneName(json['property_id']),
-      partnerId: json['partner_id'] is List ? json['partner_id'][0] as int : null,
+      partnerId: json['partner_id'] is List
+          ? json['partner_id'][0] as int
+          : null,
       partnerName: many2oneName(json['partner_id']),
-      contractId: json['contract_id'] is List ? json['contract_id'][0] as int : null,
+      contractId: json['contract_id'] is List
+          ? json['contract_id'][0] as int
+          : null,
       contractName: many2oneName(json['contract_id']),
       leadId: json['lead_id'] is List ? json['lead_id'][0] as int : null,
       leadName: many2oneName(json['lead_id']),

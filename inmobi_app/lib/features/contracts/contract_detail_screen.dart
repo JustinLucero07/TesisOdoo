@@ -198,10 +198,7 @@ class _InfoRow extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: colors.mutedLight,
-                ),
+                style: TextStyle(fontSize: 11.5, color: colors.mutedLight),
               ),
               const SizedBox(height: 2),
               Text(
@@ -251,10 +248,7 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 11.5,
-                color: colors.mutedLight,
-              ),
+              style: TextStyle(fontSize: 11.5, color: colors.mutedLight),
             ),
           ],
         ),

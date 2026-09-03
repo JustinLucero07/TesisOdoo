@@ -5,8 +5,6 @@ import '../home/home_shell.dart';
 import 'auth_service.dart';
 import 'login_screen.dart';
 
-/// Decide si mostrar el [HomeShell] (si ya hay sesión activa o se autoinició con éxito)
-/// o el [LoginScreen].
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -47,9 +45,7 @@ class _AuthGateState extends State<AuthGate> {
                     fit: BoxFit.contain,
                   ),
                   SizedBox(height: 24),
-                  CircularProgressIndicator(
-                    color: Color(0xFFF97316),
-                  ),
+                  CircularProgressIndicator(color: Color(0xFFF97316)),
                 ],
               ),
             ),

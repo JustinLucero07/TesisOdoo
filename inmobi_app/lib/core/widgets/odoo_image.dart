@@ -6,15 +6,6 @@ import 'package:flutter/material.dart';
 import '../api/odoo_client.dart';
 import '../theme/app_theme.dart';
 
-/// Imagen de un registro de Odoo (ej. `estate.property.image_main`), cargada
-/// perezosamente y REDIMENSIONADA POR EL SERVIDOR vía el endpoint nativo
-/// `/web/image/<model>/<id>/<field>/<width>x<height>` — el mismo que usa el
-/// cliente web de Odoo. Así cada fila de una lista pide solo una miniatura
-/// pequeña en vez de la foto completa en base64 embebida en el JSON del
-/// listado, que es lo que colgaba la app con catálogos grandes.
-///
-/// Se cachea en memoria por (model, id, field, size) durante la sesión, para
-/// no re-descargar la misma miniatura al hacer scroll hacia arriba y abajo.
 class OdooImage extends StatefulWidget {
   final OdooClient odoo;
   final String model;
@@ -85,17 +76,15 @@ class _OdooImageState extends State<OdooImage> {
       final bytes = Uint8List.fromList(resp.data ?? const []);
       if (bytes.isEmpty) throw Exception('empty image');
 
-      // Odoo devuelve un SVG por defecto con la inicial cuando el usuario/registro
-      // no tiene una foto real cargada. Flutter Image.memory no renderiza SVG crudo,
-      // por lo que se detecta y se redirige al fallback con iniciales estilizadas.
       final ct = resp.headers.value('content-type') ?? '';
-      final isSvg = ct.contains('svg') ||
+      final isSvg =
+          ct.contains('svg') ||
           (bytes.length >= 4 &&
-              ((bytes[0] == 60 && bytes[1] == 63) || // '<?'
+              ((bytes[0] == 60 && bytes[1] == 63) ||
                   (bytes[0] == 60 &&
                       bytes[1] == 115 &&
                       bytes[2] == 118 &&
-                      bytes[3] == 103))); // '<svg'
+                      bytes[3] == 103)));
       if (isSvg) {
         throw Exception('svg default placeholder');
       }
@@ -143,8 +132,6 @@ class _OdooImageState extends State<OdooImage> {
   }
 }
 
-/// Avatar de usuario con imagen cargada desde Odoo (`res.users.avatar_128`)
-/// y fallback automático a iniciales sobre círculo de color si no tiene foto.
 class UserAvatar extends StatelessWidget {
   final OdooClient odoo;
   final int userId;
@@ -193,10 +180,7 @@ class UserAvatar extends StatelessWidget {
     return Container(
       width: radius * 2,
       height: radius * 2,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: backgroundColor, shape: BoxShape.circle),
       alignment: Alignment.center,
       child: Text(
         letter,

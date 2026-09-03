@@ -6,9 +6,6 @@ class VisitService {
   final OdooClient odoo;
   VisitService(this.odoo);
 
-  /// Programa en el teléfono el aviso de cada cita futura que siga
-  /// programada para el asesor actual o citas compartidas.
-  /// Si una cita pertenece a otro asesor o ya no está activa, se cancela su aviso.
   static Future<void> scheduleNotifications(
     List<Visit> visits, {
     int? currentUserId,
@@ -16,16 +13,19 @@ class VisitService {
     final notifier = NotificationService.instance;
     if (!notifier.enabled) return;
     for (final v in visits) {
-      // Si la cita pertenece explícitamente a otro asesor, no se programa.
-      // Si no tiene asesor asignado o es del usuario actual, se programa.
-      final isMyVisit = currentUserId == null || v.userId == null || v.userId == currentUserId;
-      if (!isMyVisit || v.visitState != 'scheduled' || !v.start.isAfter(DateTime.now())) {
+      final isMyVisit =
+          currentUserId == null ||
+          v.userId == null ||
+          v.userId == currentUserId;
+      if (!isMyVisit ||
+          v.visitState != 'scheduled' ||
+          !v.start.isAfter(DateTime.now())) {
         await notifier.cancelVisit(v.id);
         continue;
       }
       final minutes = v.reminderValue > 0
           ? v.reminderValue * _unitMultiplier(v.reminderUnit)
-          : 60; // por defecto, una hora antes
+          : 60;
       await notifier.scheduleVisit(
         visitId: v.id,
         title:
@@ -40,8 +40,6 @@ class VisitService {
     }
   }
 
-  /// Consulta todas las citas programadas futuras en Odoo y las programa en el teléfono
-  /// para que sigan sonando incluso si el usuario cierra la aplicación.
   static Future<void> scheduleAllUpcoming(
     OdooClient odoo, {
     int? currentUserId,
@@ -69,9 +67,7 @@ class VisitService {
       );
       final visits = rows.map(Visit.fromJson).toList();
       await scheduleNotifications(visits, currentUserId: currentUserId);
-    } catch (_) {
-      // Ignorar fallas silenciosas en background
-    }
+    } catch (_) {}
   }
 
   static int _unitMultiplier(String unit) => switch (unit) {
@@ -90,12 +86,9 @@ class VisitService {
     return d == 1 ? '1 día' : '$d días';
   }
 
-  /// Odoo guarda las fechas en UTC como "yyyy-MM-dd HH:mm:ss" — se usa tanto
-  /// para filtrar (listByRange) como para mandar start/stop al crear/editar.
   static String formatUtc(DateTime d) =>
       d.toUtc().toIso8601String().substring(0, 19).replaceFirst('T', ' ');
 
-  /// Trae las visitas entre [from] y [to] (inclusive), con filtros opcionales de estado, asesor y resultado.
   Future<List<Visit>> listByRange(
     DateTime from,
     DateTime to, {
@@ -145,7 +138,6 @@ class VisitService {
     return visits.length;
   }
 
-  /// Trae el historial de visitas de propiedades relacionadas con este lead o contacto
   Future<List<Visit>> listForLead({
     int? leadId,
     int? partnerId,
@@ -157,11 +149,19 @@ class VisitService {
     if (partnerId != null && propertyId != null) {
       domain.addAll([
         '|',
-        ['partner_ids', 'in', [partnerId]],
+        [
+          'partner_ids',
+          'in',
+          [partnerId],
+        ],
         ['property_id', '=', propertyId],
       ]);
     } else if (partnerId != null) {
-      domain.add(['partner_ids', 'in', [partnerId]]);
+      domain.add([
+        'partner_ids',
+        'in',
+        [partnerId],
+      ]);
     } else if (propertyId != null) {
       domain.add(['property_id', '=', propertyId]);
     }

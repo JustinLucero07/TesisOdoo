@@ -5,9 +5,6 @@ class ContactService {
   final OdooClient odoo;
   ContactService(this.odoo);
 
-  /// Lista de contactos (`res.partner`). Por defecto trae bastantes (500)
-  /// porque la pantalla los agrupa alfabéticamente y usa el índice A-Z: si
-  /// se cortara en 40, las letras del final quedarían siempre vacías.
   Future<List<Contact>> list({
     String? searchText,
     String? role,

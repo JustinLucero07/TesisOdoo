@@ -19,7 +19,6 @@ import '../offers/offer_screens.dart';
 import '../properties/property_form_screen.dart';
 import '../visits/visit_form_screen.dart';
 
-/// Pantalla y Hub de Opciones & Herramientas Ejecutivas Inmobi.
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
@@ -35,7 +34,9 @@ class SettingsScreen extends StatelessWidget {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD81F26)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD81F26),
+            ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Cerrar sesión'),
           ),
@@ -58,314 +59,310 @@ class SettingsScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final sections = <Widget>[
-        // ── Cabecera del asesor: identidad de marca, no una tarjeta blanca ──
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF28235D), Color(0xFF18143C)],
-            ),
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF28235D).withValues(alpha: isDark ? 0.5 : 0.28),
-                blurRadius: 26,
-                offset: const Offset(0, 12),
-                spreadRadius: -8,
-              ),
-            ],
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF28235D), Color(0xFF18143C)],
           ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
-                        width: 2,
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(2),
-                    child: InitialsAvatar(
-                      text: userName,
-                      size: 52,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          userName,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                            color: Colors.white,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 5),
-                        Row(
-                          children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF34D399),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'Sesión activa',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(
+                0xFF28235D,
+              ).withValues(alpha: isDark ? 0.5 : 0.28),
+              blurRadius: 26,
+              offset: const Offset(0, 12),
+              spreadRadius: -8,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      width: 2,
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 9,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD81F26),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: const Text(
-                      'ASESOR',
-                      style: TextStyle(
-                        fontSize: 9.5,
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
+                  padding: const EdgeInsets.all(2),
+                  child: InitialsAvatar(
+                    text: userName,
+                    size: 52,
+                    color: Colors.white,
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // El servidor al que está conectado vive aquí, no enterrado al
-              // final: es lo primero que se pregunta cuando algo no carga.
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.dns_outlined, size: 15, color: Colors.white70),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        AppConfig.odooServer.replaceFirst(RegExp(r'^https?://'), ''),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        userName,
                         style: const TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
                           color: Colors.white,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      AppConfig.odooDb,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.6),
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF34D399),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text(
+                            'Sesión activa',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD81F26),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: const Text(
+                    'ASESOR',
+                    style: TextStyle(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                      letterSpacing: 0.7,
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 22),
+              ],
+            ),
+            const SizedBox(height: 16),
 
-        // ── Accesos de Creación Rápida ──
-        _SectionHeader(title: 'ACCIONES RÁPIDAS'),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickActionCard(
-                icon: Icons.add_home_work_rounded,
-                label: '+ Propiedad',
-                color: const Color(0xFF28235D),
-                isDark: isDark,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const PropertyFormScreen()),
-                ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _QuickActionCard(
-                icon: Icons.person_add_alt_1_rounded,
-                label: '+ Lead / CRM',
-                color: const Color(0xFFD81F26),
-                isDark: isDark,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const LeadFormScreen()),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _QuickActionCard(
-                icon: Icons.event_available_rounded,
-                label: '+ Cita Visita',
-                color: const Color(0xFF0284C7),
-                isDark: isDark,
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const VisitFormScreen()),
-                ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.dns_outlined,
+                    size: 15,
+                    color: Colors.white70,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      AppConfig.odooServer.replaceFirst(
+                        RegExp(r'^https?://'),
+                        '',
+                      ),
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    AppConfig.odooDb,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 22),
+      ),
+      const SizedBox(height: 22),
 
-        // ── Gestión Comercial & Documental ──
-        _SectionHeader(title: 'GESTIÓN COMERCIAL'),
-        _GroupCard(
-          isDark: isDark,
-          children: [
-            _SettingsTile(
-              icon: Icons.payments_outlined,
-              iconColor: const Color(0xFF10B981),
-              title: 'Mis comisiones',
-              subtitle: 'Valores cobrados y por liquidar',
+      _SectionHeader(title: 'ACCIONES RÁPIDAS'),
+      Row(
+        children: [
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.add_home_work_rounded,
+              label: '+ Propiedad',
+              color: const Color(0xFF28235D),
+              isDark: isDark,
               onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CommissionListScreen()),
+                MaterialPageRoute(builder: (_) => const PropertyFormScreen()),
               ),
             ),
-            _SettingsTile(
-              icon: Icons.contacts_outlined,
-              iconColor: const Color(0xFF28235D),
-              title: 'Directorio de contactos',
-              subtitle: 'Propietarios, compradores y aliados',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ContactListScreen()),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.description_outlined,
-              iconColor: const Color(0xFF3F3787),
-              title: 'Contratos y expedientes',
-              subtitle: 'Arriendos, promesas de compraventa',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ContractListScreen()),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.handshake_outlined,
-              iconColor: const Color(0xFF0284C7),
-              title: 'Ofertas y propuestas',
-              subtitle: 'Negociaciones de precio activas',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const OfferListScreen()),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.receipt_long_outlined,
-              iconColor: const Color(0xFF6366F1),
-              title: 'Cobros y pagos',
-              subtitle: 'Cuotas de contratos y reservas',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PaymentListScreen()),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.request_quote_outlined,
-              iconColor: const Color(0xFFF59E0B),
-              title: 'Gastos de propiedades',
-              subtitle: 'Mantenimientos y publicidad',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ExpenseListScreen()),
-              ),
-            ),
-            _SettingsTile(
-              icon: Icons.assessment_outlined,
-              iconColor: const Color(0xFFD81F26),
-              title: 'Tasaciones y avalúos',
-              subtitle: 'Informes de valoración inmobiliaria',
-              isLast: true,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const AppraisalListScreen()),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 22),
-
-        // ── Notificaciones & Alertas ──
-        _SectionHeader(title: 'NOTIFICACIONES Y ALERTAS'),
-        const _NotificationsCard(),
-        const SizedBox(height: 22),
-
-        // ── Apariencia ──
-        _SectionHeader(title: 'APARIENCIA Y TEMA'),
-        const _ThemeSelectorCard(),
-        const SizedBox(height: 22),
-
-        // ── Sistema ──
-        // El servidor y la base ya se ven en la cabecera; aquí queda solo lo
-        // que no cabía arriba, sin repetir el mismo dato dos veces.
-        _SectionHeader(title: 'ACERCA DE'),
-        _GroupCard(
-          isDark: isDark,
-          children: const [
-            _InfoTile(
-              icon: Icons.phone_android_rounded,
-              label: 'Versión de Inmobi App',
-              value: '1.0.0 (Edición Oficial Inmobi)',
-              isLast: true,
-            ),
-          ],
-        ),
-        const SizedBox(height: 26),
-
-        // ── Botón de Cerrar Sesión ──
-        OutlinedButton.icon(
-          onPressed: () => _logout(context),
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            foregroundColor: const Color(0xFFD81F26),
-            side: const BorderSide(color: Color(0xFFD81F26), width: 1.5),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
-          icon: const Icon(Icons.logout_rounded, size: 20),
-          label: const Text(
-            'Cerrar sesión en este dispositivo',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.person_add_alt_1_rounded,
+              label: '+ Lead / CRM',
+              color: const Color(0xFFD81F26),
+              isDark: isDark,
+              onTap: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LeadFormScreen())),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _QuickActionCard(
+              icon: Icons.event_available_rounded,
+              label: '+ Cita Visita',
+              color: const Color(0xFF0284C7),
+              isDark: isDark,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const VisitFormScreen()),
+              ),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 22),
+
+      _SectionHeader(title: 'GESTIÓN COMERCIAL'),
+      _GroupCard(
+        isDark: isDark,
+        children: [
+          _SettingsTile(
+            icon: Icons.payments_outlined,
+            iconColor: const Color(0xFF10B981),
+            title: 'Mis comisiones',
+            subtitle: 'Valores cobrados y por liquidar',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CommissionListScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.contacts_outlined,
+            iconColor: const Color(0xFF28235D),
+            title: 'Directorio de contactos',
+            subtitle: 'Propietarios, compradores y aliados',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ContactListScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.description_outlined,
+            iconColor: const Color(0xFF3F3787),
+            title: 'Contratos y expedientes',
+            subtitle: 'Arriendos, promesas de compraventa',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ContractListScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.handshake_outlined,
+            iconColor: const Color(0xFF0284C7),
+            title: 'Ofertas y propuestas',
+            subtitle: 'Negociaciones de precio activas',
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const OfferListScreen())),
+          ),
+          _SettingsTile(
+            icon: Icons.receipt_long_outlined,
+            iconColor: const Color(0xFF6366F1),
+            title: 'Cobros y pagos',
+            subtitle: 'Cuotas de contratos y reservas',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PaymentListScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.request_quote_outlined,
+            iconColor: const Color(0xFFF59E0B),
+            title: 'Gastos de propiedades',
+            subtitle: 'Mantenimientos y publicidad',
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ExpenseListScreen()),
+            ),
+          ),
+          _SettingsTile(
+            icon: Icons.assessment_outlined,
+            iconColor: const Color(0xFFD81F26),
+            title: 'Tasaciones y avalúos',
+            subtitle: 'Informes de valoración inmobiliaria',
+            isLast: true,
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AppraisalListScreen()),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 22),
+
+      _SectionHeader(title: 'NOTIFICACIONES Y ALERTAS'),
+      const _NotificationsCard(),
+      const SizedBox(height: 22),
+
+      _SectionHeader(title: 'APARIENCIA Y TEMA'),
+      const _ThemeSelectorCard(),
+      const SizedBox(height: 22),
+
+      _SectionHeader(title: 'ACERCA DE'),
+      _GroupCard(
+        isDark: isDark,
+        children: const [
+          _InfoTile(
+            icon: Icons.phone_android_rounded,
+            label: 'Versión de Inmobi App',
+            value: '1.0.0 (Edición Oficial Inmobi)',
+            isLast: true,
+          ),
+        ],
+      ),
+      const SizedBox(height: 26),
+
+      OutlinedButton.icon(
+        onPressed: () => _logout(context),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          foregroundColor: const Color(0xFFD81F26),
+          side: const BorderSide(color: Color(0xFFD81F26), width: 1.5),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
+        icon: const Icon(Icons.logout_rounded, size: 20),
+        label: const Text(
+          'Cerrar sesión en este dispositivo',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+        ),
+      ),
     ];
 
-    // Las secciones entran escalonadas, una detrás de otra, en vez de
-    // aparecer todas de golpe. El espacio de abajo deja libre la barra
-    // flotante para que la última fila no quede debajo del vidrio.
     return ListView.builder(
-      // Arriba se suma el alto de la barra de vidrio (el contenido corre por
-      // debajo de ella); abajo, el del dock flotante.
       padding: EdgeInsets.fromLTRB(
         16,
         MediaQuery.paddingOf(context).top + 12,
@@ -421,7 +418,11 @@ class _QuickActionCard extends StatelessWidget {
                   color: color.withValues(alpha: isDark ? 0.25 : 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: isDark ? const Color(0xFF8B85FF) : color, size: 20),
+                child: Icon(
+                  icon,
+                  color: isDark ? const Color(0xFF8B85FF) : color,
+                  size: 20,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -528,7 +529,11 @@ class _SettingsTile extends StatelessWidget {
                       color: iconColor.withValues(alpha: isDark ? 0.22 : 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, size: 20, color: isDark ? const Color(0xFF8B85FF) : iconColor),
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: isDark ? const Color(0xFF8B85FF) : iconColor,
+                    ),
                   ),
                   const SizedBox(width: 14),
                   Expanded(
@@ -545,10 +550,7 @@ class _SettingsTile extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           subtitle,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: colors.muted,
-                          ),
+                          style: TextStyle(fontSize: 12, color: colors.muted),
                         ),
                       ],
                     ),
@@ -677,17 +679,22 @@ class _ThemeSelectorCard extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 8,
+                ),
                 decoration: BoxDecoration(
                   color: selected
                       ? (isDark
-                          ? const Color(0xFF28235D).withValues(alpha: 0.4)
-                          : const Color(0xFF28235D).withValues(alpha: 0.08))
+                            ? const Color(0xFF28235D).withValues(alpha: 0.4)
+                            : const Color(0xFF28235D).withValues(alpha: 0.08))
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: selected
-                        ? (isDark ? const Color(0xFF8B85FF) : const Color(0xFF28235D))
+                        ? (isDark
+                              ? const Color(0xFF8B85FF)
+                              : const Color(0xFF28235D))
                         : Colors.transparent,
                     width: 1.5,
                   ),
@@ -698,7 +705,9 @@ class _ThemeSelectorCard extends StatelessWidget {
                       o.$3,
                       size: 22,
                       color: selected
-                          ? (isDark ? const Color(0xFF8B85FF) : const Color(0xFF28235D))
+                          ? (isDark
+                                ? const Color(0xFF8B85FF)
+                                : const Color(0xFF28235D))
                           : const Color(0xFF64748B),
                     ),
                     const SizedBox(height: 6),
@@ -706,7 +715,9 @@ class _ThemeSelectorCard extends StatelessWidget {
                       o.$2,
                       style: TextStyle(
                         fontSize: 11.5,
-                        fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w600,
                         color: selected
                             ? (isDark ? Colors.white : const Color(0xFF28235D))
                             : const Color(0xFF64748B),
@@ -781,7 +792,9 @@ class _NotificationsCardState extends State<_NotificationsCard> {
         secondary: Container(
           padding: const EdgeInsets.all(9),
           decoration: BoxDecoration(
-            color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.22 : 0.1),
+            color: const Color(
+              0xFFF59E0B,
+            ).withValues(alpha: isDark ? 0.22 : 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -797,8 +810,8 @@ class _NotificationsCardState extends State<_NotificationsCard> {
         subtitle: Text(
           _enabled
               ? (_pending > 0
-                  ? '$_pending cita${_pending == 1 ? '' : 's'} programada${_pending == 1 ? '' : 's'}'
-                  : 'Alertas en tiempo real activas')
+                    ? '$_pending cita${_pending == 1 ? '' : 's'} programada${_pending == 1 ? '' : 's'}'
+                    : 'Alertas en tiempo real activas')
               : 'Desactivado',
           style: TextStyle(fontSize: 12, color: colors.muted),
         ),

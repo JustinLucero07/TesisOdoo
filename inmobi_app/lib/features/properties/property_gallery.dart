@@ -20,10 +20,6 @@ class _GalleryImage {
   const _GalleryImage(this.id, this.name);
 }
 
-/// Galería completa de fotos de una propiedad (`estate.property.image`) — no
-/// solo la imagen principal. Cuadrícula con miniaturas, toque para ver a
-/// pantalla completa con zoom, y botón para subir más fotos desde el
-/// dispositivo (se suben directo como nuevos registros de galería).
 class PropertyGallerySection extends StatefulWidget {
   final OdooClient odoo;
   final int propertyId;
@@ -73,7 +69,6 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
         );
       }
     } catch (_) {
-      // Silencioso: la sección queda vacía si falla.
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -121,10 +116,15 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
             const SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(width: 12),
-            Text('Descargando ${targetIds.length} ${targetIds.length == 1 ? "foto" : "fotos"}...'),
+            Text(
+              'Descargando ${targetIds.length} ${targetIds.length == 1 ? "foto" : "fotos"}...',
+            ),
           ],
         ),
         duration: const Duration(seconds: 30),
@@ -142,11 +142,12 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
         );
         final bytes = Uint8List.fromList(resp.data ?? const []);
         if (bytes.isNotEmpty) {
-          final file = File('${dir.path}/Propiedad_${widget.propertyId}_foto_$id.jpg');
+          final file = File(
+            '${dir.path}/Propiedad_${widget.propertyId}_foto_$id.jpg',
+          );
           await file.writeAsBytes(bytes);
           downloadedFiles.add(XFile(file.path));
 
-          // Guardar directamente en la galería del dispositivo (Google Photos, Galería Samsung, iOS Photos)
           try {
             await Gal.putImage(file.path, album: 'Inmobi');
           } catch (_) {
@@ -165,7 +166,10 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.photo_library_rounded, color: Colors.greenAccent),
+                  const Icon(
+                    Icons.photo_library_rounded,
+                    color: Colors.greenAccent,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -207,7 +211,15 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
       MaterialPageRoute(
         builder: (_) => PropertyFullscreenViewer(
           odoo: widget.odoo,
-          images: _images.map((img) => (model: 'estate.property.image', id: img.id, field: 'image')).toList(),
+          images: _images
+              .map(
+                (img) => (
+                  model: 'estate.property.image',
+                  id: img.id,
+                  field: 'image',
+                ),
+              )
+              .toList(),
           initialIndex: startIndex,
         ),
         fullscreenDialog: true,
@@ -242,16 +254,24 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
               ),
               const SizedBox(height: 10),
               ListTile(
-                leading: const Icon(Icons.download_for_offline_rounded, color: Color(0xFF10B981)),
+                leading: const Icon(
+                  Icons.download_for_offline_rounded,
+                  color: Color(0xFF10B981),
+                ),
                 title: Text('Descargar todas las fotos (${_images.length})'),
-                subtitle: const Text('Descarga el paquete completo de la galería'),
+                subtitle: const Text(
+                  'Descarga el paquete completo de la galería',
+                ),
                 onTap: () {
                   Navigator.pop(ctx);
                   _downloadBatch(_images.map((e) => e.id).toSet());
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.checklist_rounded, color: Color(0xFF28235D)),
+                leading: const Icon(
+                  Icons.checklist_rounded,
+                  color: Color(0xFF28235D),
+                ),
                 title: const Text('Seleccionar fotos específicas'),
                 subtitle: const Text('Elige qué fotos descargar una por una'),
                 onTap: () {
@@ -303,7 +323,9 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
                   });
                 },
                 child: Text(
-                  _selectedImageIds.length == _images.length ? 'Deseleccionar' : 'Todas',
+                  _selectedImageIds.length == _images.length
+                      ? 'Deseleccionar'
+                      : 'Todas',
                   style: const TextStyle(fontSize: 12),
                 ),
               ),
@@ -312,7 +334,10 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
                   _selectionMode = false;
                   _selectedImageIds.clear();
                 }),
-                child: const Text('Cancelar', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ),
             ] else
               TextButton.icon(
@@ -347,7 +372,10 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.download_rounded, size: 18),
               label: Text(
@@ -425,7 +453,9 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
                         right: 6,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFF10B981) : Colors.black45,
+                            color: isSelected
+                                ? const Color(0xFF10B981)
+                                : Colors.black45,
                             shape: BoxShape.circle,
                             border: Border.all(color: Colors.white, width: 1.5),
                           ),
@@ -447,7 +477,6 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
   }
 }
 
-/// Visor interactivo a pantalla completa con soporte de Zoom (Pinch-to-zoom) y navegación fluida
 class PropertyFullscreenViewer extends StatefulWidget {
   final OdooClient odoo;
   final List<({String model, int id, String field})> images;
@@ -461,7 +490,8 @@ class PropertyFullscreenViewer extends StatefulWidget {
   });
 
   @override
-  State<PropertyFullscreenViewer> createState() => _PropertyFullscreenViewerState();
+  State<PropertyFullscreenViewer> createState() =>
+      _PropertyFullscreenViewerState();
 }
 
 class _PropertyFullscreenViewerState extends State<PropertyFullscreenViewer> {
@@ -491,7 +521,10 @@ class _PropertyFullscreenViewerState extends State<PropertyFullscreenViewer> {
             SizedBox(
               width: 16,
               height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             ),
             SizedBox(width: 12),
             Text('Descargando imagen en alta calidad...'),
@@ -535,7 +568,10 @@ class _PropertyFullscreenViewerState extends State<PropertyFullscreenViewer> {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.greenAccent),
+                const Icon(
+                  Icons.check_circle_rounded,
+                  color: Colors.greenAccent,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -588,7 +624,9 @@ class _PropertyFullscreenViewerState extends State<PropertyFullscreenViewer> {
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(bytes);
 
-      await Share.shareXFiles([XFile(file.path)], text: 'Foto de propiedad Inmobi');
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], text: 'Foto de propiedad Inmobi');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -650,7 +688,10 @@ class _PropertyFullscreenViewerState extends State<PropertyFullscreenViewer> {
                   child: SizedBox(
                     width: 32,
                     height: 32,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
                   ),
                 ),
               ),

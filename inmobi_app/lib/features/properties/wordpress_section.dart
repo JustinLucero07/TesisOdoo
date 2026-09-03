@@ -6,12 +6,6 @@ import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
 import 'property_model.dart';
 
-/// Publicación en el sitio web (WordPress / Houzez).
-///
-/// Publicar dispara el MISMO flujo del ERP: sube las imágenes, crea o
-/// actualiza la entrada y escribe los metadatos de Houzez. Como ese proceso
-/// tarda (sube fotos una por una), la app avisa que puede demorar y no
-/// bloquea la pantalla más de lo necesario.
 class WordpressSection extends StatefulWidget {
   final OdooClient odoo;
   final Property property;
@@ -122,7 +116,6 @@ class _WordpressSectionState extends State<WordpressSection> {
   }
 
   Future<void> _openInSite() async {
-    // El post de WordPress se abre por su id; el sitio resuelve el permalink.
     final uri = Uri.parse(
       '${AppConfig.wordpressSite}/?p=${widget.property.wpPostId}',
     );

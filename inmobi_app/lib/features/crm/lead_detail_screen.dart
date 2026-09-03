@@ -126,9 +126,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _LeadDescriptionEditSheet(
-        initialDescription: currentDesc,
-      ),
+      builder: (_) =>
+          _LeadDescriptionEditSheet(initialDescription: currentDesc),
     );
     if (result == null) return;
     try {
@@ -149,7 +148,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo guardar la nota de la ficha.')),
+          const SnackBar(
+            content: Text('No se pudo guardar la nota de la ficha.'),
+          ),
         );
       }
     }
@@ -160,14 +161,18 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('¿Eliminar oportunidad?'),
-        content: Text('Se eliminará permanentemente "${_lead?.name ?? 'este lead'}". Esta acción no se puede deshacer.'),
+        content: Text(
+          'Se eliminará permanentemente "${_lead?.name ?? 'este lead'}". Esta acción no se puede deshacer.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD81F26)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD81F26),
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Eliminar'),
           ),
@@ -205,7 +210,10 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
               onPressed: _openEdit,
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFD81F26)),
+              icon: const Icon(
+                Icons.delete_outline_rounded,
+                color: Color(0xFFD81F26),
+              ),
               tooltip: 'Eliminar',
               onPressed: _deleteLead,
             ),
@@ -242,8 +250,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
       symbol: '\$',
       decimalDigits: 0,
     );
-    // Encabezado fijo (nombre, insignias, etapa) fuera de las pestañas: es lo
-    // que un asesor necesita ver siempre, sin importar en qué pestaña esté.
+
     return Column(
       children: [
         Padding(
@@ -263,7 +270,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                       ),
                     ),
                   ),
-                  // Prioridad en estrellas, igual que el widget `priority` de Odoo.
+
                   if (lead.priority > 0)
                     Row(
                       mainAxisSize: MainAxisSize.min,
@@ -292,20 +299,34 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                     ),
                   AppBadge(
                     label: LeadTemperatureStyle.label(lead.leadTemperature),
-                    color: LeadTemperatureStyle.color(lead.leadTemperature, AppColors.of(context)),
+                    color: LeadTemperatureStyle.color(
+                      lead.leadTemperature,
+                      AppColors.of(context),
+                    ),
                     icon: LeadTemperatureStyle.icon(lead.leadTemperature),
                   ),
                   AppBadge(
                     label: LeadScoreStyle.label(lead.leadScore),
-                    color: LeadScoreStyle.color(lead.leadScore, AppColors.of(context)),
+                    color: LeadScoreStyle.color(
+                      lead.leadScore,
+                      AppColors.of(context),
+                    ),
                   ),
                   if (lead.closingDifficulty.isNotEmpty)
                     AppBadge(
-                      label: LeadClosingDifficultyStyle.label(lead.closingDifficulty),
-                      color: LeadClosingDifficultyStyle.color(lead.closingDifficulty, AppColors.of(context)),
+                      label: LeadClosingDifficultyStyle.label(
+                        lead.closingDifficulty,
+                      ),
+                      color: LeadClosingDifficultyStyle.color(
+                        lead.closingDifficulty,
+                        AppColors.of(context),
+                      ),
                     ),
                   if (lead.leadSourceName.isNotEmpty)
-                    AppBadge(label: lead.leadSourceName, color: AppColors.of(context).mutedLight),
+                    AppBadge(
+                      label: lead.leadSourceName,
+                      color: AppColors.of(context).mutedLight,
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -343,8 +364,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     );
   }
 
-  /// Pestaña "Resumen": lo que un asesor necesita ver primero — contacto,
-  /// datos de la oportunidad, preferencias del cliente y métricas de avance.
   Widget _buildResumenTab(Lead lead, NumberFormat currency) {
     return ListView(
       padding: const EdgeInsets.all(18),
@@ -592,7 +611,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     );
   }
 
-  /// Pestaña "Actividad": visitas agendadas/realizadas e interacciones.
   Widget _buildActividadTab(Lead lead) {
     return ListView(
       padding: const EdgeInsets.all(18),
@@ -628,7 +646,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     );
   }
 
-  /// Pestaña "Documentos": notas de la ficha y archivos adjuntos.
   Widget _buildDocumentosTab(Lead lead) {
     return ListView(
       padding: const EdgeInsets.all(18),
@@ -662,7 +679,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                     TextButton.icon(
                       onPressed: () => _editDescription(lead.description),
                       icon: Icon(
-                        lead.description.isEmpty ? Icons.add_rounded : Icons.edit_outlined,
+                        lead.description.isEmpty
+                            ? Icons.add_rounded
+                            : Icons.edit_outlined,
                         size: 15,
                         color: const Color(0xFFD81F26),
                       ),
@@ -689,22 +708,30 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                     borderRadius: BorderRadius.circular(10),
                     child: Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.of(context).neutralBg,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: AppColors.of(context).line,
-                        ),
+                        border: Border.all(color: AppColors.of(context).line),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.edit_note_rounded, size: 18, color: AppColors.of(context).mutedLight),
+                          Icon(
+                            Icons.edit_note_rounded,
+                            size: 18,
+                            color: AppColors.of(context).mutedLight,
+                          ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Agregar una descripción o notas de requerimiento del lead...',
-                              style: TextStyle(fontSize: 12.5, color: AppColors.of(context).mutedLight),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: AppColors.of(context).mutedLight,
+                              ),
                             ),
                           ),
                         ],
@@ -721,7 +748,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     );
   }
 
-  /// Pestaña "Negociación": tips de IA, ofertas y el cierre de la venta.
   Widget _buildNegociacionTab(Lead lead) {
     return ListView(
       padding: const EdgeInsets.all(18),
@@ -736,7 +762,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.auto_awesome, size: 16, color: AppColors.of(context).info),
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 16,
+                        color: AppColors.of(context).info,
+                      ),
                       SizedBox(width: 6),
                       Text(
                         'Tips de negociación (IA)',
@@ -775,7 +805,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   }
 }
 
-/// Métrica compacta del bloque de seguimiento del lead.
 class _MetricChip extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -907,7 +936,6 @@ class _PropertyPreviewCard extends StatelessWidget {
   }
 }
 
-/// Sección que muestra todas las propiedades visitadas o citas del lead
 class _VisitedPropertiesSection extends StatefulWidget {
   final OdooClient odoo;
   final Lead lead;
@@ -921,7 +949,8 @@ class _VisitedPropertiesSection extends StatefulWidget {
   });
 
   @override
-  State<_VisitedPropertiesSection> createState() => _VisitedPropertiesSectionState();
+  State<_VisitedPropertiesSection> createState() =>
+      _VisitedPropertiesSectionState();
 }
 
 class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
@@ -939,7 +968,8 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
   @override
   void didUpdateWidget(covariant _VisitedPropertiesSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.lead.id != widget.lead.id || oldWidget.lead.partnerId != widget.lead.partnerId) {
+    if (oldWidget.lead.id != widget.lead.id ||
+        oldWidget.lead.partnerId != widget.lead.partnerId) {
       _loadVisits();
     }
   }
@@ -981,10 +1011,7 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                 const Expanded(
                   child: Text(
                     'Propiedades Visitadas y Citas',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                   ),
                 ),
                 IconButton(
@@ -1017,7 +1044,9 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : AppColors.of(context).neutralBg,
+                  color: isDark
+                      ? const Color(0xFF1E1A3E)
+                      : AppColors.of(context).neutralBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isDark ? Colors.white12 : AppColors.of(context).line,
@@ -1044,13 +1073,19 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                     OutlinedButton.icon(
                       onPressed: widget.onScheduleNew,
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                       icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Agendar Primera Visita', style: TextStyle(fontSize: 12)),
+                      label: const Text(
+                        'Agendar Primera Visita',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ],
                 ),
@@ -1063,7 +1098,10 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                 separatorBuilder: (_, _) => const SizedBox(height: 10),
                 itemBuilder: (context, i) {
                   final v = _visits[i];
-                  final stateColor = VisitStateStyle.color(v.visitState, AppColors.of(context));
+                  final stateColor = VisitStateStyle.color(
+                    v.visitState,
+                    AppColors.of(context),
+                  );
                   final hasProperty = v.propertyId != null;
 
                   return Container(
@@ -1071,23 +1109,27 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                       color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isDark ? Colors.white12 : AppColors.of(context).line,
+                        color: isDark
+                            ? Colors.white12
+                            : AppColors.of(context).line,
                       ),
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => VisitDetailScreen(visitId: v.id),
-                          ),
-                        ).then((_) => _loadVisits()),
+                        onTap: () => Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    VisitDetailScreen(visitId: v.id),
+                              ),
+                            )
+                            .then((_) => _loadVisits()),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
-                              // Miniatura o Icono
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
                                 child: SizedBox(
@@ -1102,7 +1144,9 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                                           width: 100,
                                           height: 100,
                                           errorBuilder: (_) => Container(
-                                            color: AppColors.of(context).navy.withValues(alpha: 0.08),
+                                            color: AppColors.of(
+                                              context,
+                                            ).navy.withValues(alpha: 0.08),
                                             child: Icon(
                                               Icons.home_work_outlined,
                                               size: 24,
@@ -1111,7 +1155,9 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                                           ),
                                         )
                                       : Container(
-                                          color: AppColors.of(context).navy.withValues(alpha: 0.08),
+                                          color: AppColors.of(
+                                            context,
+                                          ).navy.withValues(alpha: 0.08),
                                           child: Icon(
                                             Icons.calendar_today_rounded,
                                             size: 22,
@@ -1122,7 +1168,6 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                               ),
                               const SizedBox(width: 12),
 
-                              // Info
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1144,7 +1189,9 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                                         Icon(
                                           Icons.access_time_rounded,
                                           size: 13,
-                                          color: AppColors.of(context).mutedLight,
+                                          color: AppColors.of(
+                                            context,
+                                          ).mutedLight,
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
@@ -1160,7 +1207,6 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                                 ),
                               ),
 
-                              // Badge de Estado
                               AppBadge(
                                 label: VisitStateStyle.label(v.visitState),
                                 color: stateColor,
@@ -1181,13 +1227,13 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
   }
 }
 
-/// Modal para editar la descripción y notas de la ficha del Lead (pestaña Notas de Odoo)
 class _LeadDescriptionEditSheet extends StatefulWidget {
   final String initialDescription;
   const _LeadDescriptionEditSheet({required this.initialDescription});
 
   @override
-  State<_LeadDescriptionEditSheet> createState() => _LeadDescriptionEditSheetState();
+  State<_LeadDescriptionEditSheet> createState() =>
+      _LeadDescriptionEditSheetState();
 }
 
 class _LeadDescriptionEditSheetState extends State<_LeadDescriptionEditSheet> {
@@ -1264,7 +1310,10 @@ class _LeadDescriptionEditSheetState extends State<_LeadDescriptionEditSheet> {
             const SizedBox(height: 4),
             Text(
               'Esta nota se guarda directamente en la pestaña "Notas" del formulario del lead en Odoo.',
-              style: TextStyle(fontSize: 12, color: AppColors.of(context).muted),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.of(context).muted,
+              ),
             ),
             const SizedBox(height: 14),
             TextField(
@@ -1273,7 +1322,8 @@ class _LeadDescriptionEditSheetState extends State<_LeadDescriptionEditSheet> {
               autofocus: true,
               style: const TextStyle(fontSize: 14, height: 1.4),
               decoration: const InputDecoration(
-                hintText: 'Escribe aquí la descripción, acuerdos o notas del cliente...',
+                hintText:
+                    'Escribe aquí la descripción, acuerdos o notas del cliente...',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
@@ -1308,7 +1358,6 @@ class _LeadDescriptionEditSheetState extends State<_LeadDescriptionEditSheet> {
   }
 }
 
-/// Sección de Ofertas Comerciales asociadas al Lead
 class _LeadOffersSection extends StatefulWidget {
   final OdooClient odoo;
   final Lead lead;
@@ -1436,7 +1485,9 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : AppColors.of(context).neutralBg,
+                  color: isDark
+                      ? const Color(0xFF1E1A3E)
+                      : AppColors.of(context).neutralBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isDark ? Colors.white12 : AppColors.of(context).line,
@@ -1472,10 +1523,18 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                         ),
                       ),
                       onPressed: _openNewOffer,
-                      icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                      icon: const Icon(
+                        Icons.add_rounded,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                       label: const Text(
                         'Registrar Oferta',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -1494,21 +1553,25 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                       color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: isDark ? Colors.white12 : AppColors.of(context).line,
+                        color: isDark
+                            ? Colors.white12
+                            : AppColors.of(context).line,
                       ),
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => OfferFormScreen(existing: o),
-                          ),
-                        ).then((_) {
-                          _loadOffers();
-                          widget.onOfferChanged();
-                        }),
+                        onTap: () => Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (_) => OfferFormScreen(existing: o),
+                              ),
+                            )
+                            .then((_) {
+                              _loadOffers();
+                              widget.onOfferChanged();
+                            }),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Row(
@@ -1517,12 +1580,18 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: OfferStateStyle.color(o.state, AppColors.of(context)).withValues(alpha: 0.12),
+                                  color: OfferStateStyle.color(
+                                    o.state,
+                                    AppColors.of(context),
+                                  ).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
                                   Icons.savings_outlined,
-                                  color: OfferStateStyle.color(o.state, AppColors.of(context)),
+                                  color: OfferStateStyle.color(
+                                    o.state,
+                                    AppColors.of(context),
+                                  ),
                                   size: 22,
                                 ),
                               ),
@@ -1540,7 +1609,9 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      o.propertyName.isNotEmpty ? o.propertyName : 'Propiedad #${o.propertyId ?? ''}',
+                                      o.propertyName.isNotEmpty
+                                          ? o.propertyName
+                                          : 'Propiedad #${o.propertyId ?? ''}',
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: AppColors.of(context).muted,
@@ -1553,7 +1624,10 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                               ),
                               AppBadge(
                                 label: OfferStateStyle.label(o.state),
-                                color: OfferStateStyle.color(o.state, AppColors.of(context)),
+                                color: OfferStateStyle.color(
+                                  o.state,
+                                  AppColors.of(context),
+                                ),
                               ),
                             ],
                           ),
@@ -1570,16 +1644,11 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
   }
 }
 
-/// Sección que muestra la Venta / Negocio Cerrado vinculado al Lead (sale.order / estate.contract)
 class _LeadSaleSection extends StatefulWidget {
   final OdooClient odoo;
   final Lead lead;
 
-  const _LeadSaleSection({
-    super.key,
-    required this.odoo,
-    required this.lead,
-  });
+  const _LeadSaleSection({super.key, required this.odoo, required this.lead});
 
   @override
   State<_LeadSaleSection> createState() => _LeadSaleSectionState();
@@ -1607,7 +1676,6 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
   Future<void> _loadSales() async {
     setState(() => _loading = true);
     try {
-      // 1. Buscar órdenes de venta vinculadas al lead
       final List<dynamic> saleDomain = [
         '|',
         ['lead_id', '=', widget.lead.id],
@@ -1632,7 +1700,6 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
         order: 'id desc',
       );
 
-      // 2. Si no encontró por lead_id directo, buscar por partner si está presente
       if (orders.isEmpty && widget.lead.partnerId != null) {
         final List<dynamic> fallbackDomain = [
           ['partner_id', '=', widget.lead.partnerId],
@@ -1659,7 +1726,6 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
         } catch (_) {}
       }
 
-      // 3. Buscar contratos vinculados
       List<Map<String, dynamic>> contracts = [];
       try {
         final List<dynamic> contractDomain = [];
@@ -1667,7 +1733,11 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
           contractDomain.add(['partner_id', '=', widget.lead.partnerId]);
         }
         if (widget.lead.targetPropertyId != null) {
-          contractDomain.add(['property_id', '=', widget.lead.targetPropertyId]);
+          contractDomain.add([
+            'property_id',
+            '=',
+            widget.lead.targetPropertyId,
+          ]);
         }
         if (contractDomain.isNotEmpty) {
           contracts = await widget.odoo.searchRead(
@@ -1715,7 +1785,9 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
         odoo: widget.odoo,
         order: order,
         lead: widget.lead,
-        linkedContractId: _contracts.isNotEmpty ? _contracts.first['id'] as int? : null,
+        linkedContractId: _contracts.isNotEmpty
+            ? _contracts.first['id'] as int?
+            : null,
       ),
     );
   }
@@ -1849,7 +1921,10 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                       ),
                       Text(
                         'Detalles del cierre comercial en Odoo',
-                        style: TextStyle(fontSize: 11.5, color: AppColors.of(context).muted),
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.of(context).muted,
+                        ),
                       ),
                     ],
                   ),
@@ -1865,13 +1940,16 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
               itemBuilder: (context, i) {
                 final order = _saleOrders[i];
                 final orderName = (order['name'] ?? 'Venta').toString();
-                final double total = (order['amount_total'] as num?)?.toDouble() ?? 0.0;
+                final double total =
+                    (order['amount_total'] as num?)?.toDouble() ?? 0.0;
                 final state = order['state']?.toString();
                 final stateColor = _stateColor(state);
 
                 return Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF0FDF4),
+                    color: isDark
+                        ? const Color(0xFF1E1A3E)
+                        : const Color(0xFFF0FDF4),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: isDark
@@ -1902,7 +1980,9 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                                 AppBadge(
                                   label: _formatState(state),
                                   color: stateColor,
-                                  background: stateColor.withValues(alpha: 0.12),
+                                  background: stateColor.withValues(
+                                    alpha: 0.12,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1933,16 +2013,25 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                                 FilledButton.icon(
                                   style: FilledButton.styleFrom(
                                     backgroundColor: const Color(0xFF10B981),
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
                                   onPressed: () => _showSaleDetails(order),
-                                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                                  icon: const Icon(
+                                    Icons.visibility_outlined,
+                                    size: 16,
+                                  ),
                                   label: const Text(
                                     'Ver Detalles',
-                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1959,7 +2048,10 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 14,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1968,14 +2060,22 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                   final contractId = _contracts.first['id'] as int;
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => ContractDetailScreen(contractId: contractId),
+                      builder: (_) =>
+                          ContractDetailScreen(contractId: contractId),
                     ),
                   );
                 },
-                icon: const Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF28235D)),
+                icon: const Icon(
+                  Icons.assignment_outlined,
+                  size: 18,
+                  color: Color(0xFF28235D),
+                ),
                 label: Text(
                   'Ver Contrato Formal (${_contracts.first['name'] ?? ''})',
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
                 ),
               ),
             ],
@@ -1986,7 +2086,6 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
   }
 }
 
-/// Modal detallado del Negocio / Orden de Venta cerrada en Odoo
 class _SaleOrderDetailSheet extends StatefulWidget {
   final OdooClient odoo;
   final Map<String, dynamic> order;
@@ -2101,15 +2200,19 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
     final double untaxed = (order['amount_untaxed'] as num?)?.toDouble() ?? 0.0;
     final double tax = (order['amount_tax'] as num?)?.toDouble() ?? 0.0;
     final state = order['state']?.toString();
-    final partnerName = order['partner_id'] is List ? order['partner_id'][1]?.toString() ?? '' : '';
-    final advisorName = order['user_id'] is List ? order['user_id'][1]?.toString() ?? '' : '';
+    final partnerName = order['partner_id'] is List
+        ? order['partner_id'][1]?.toString() ?? ''
+        : '';
+    final advisorName = order['user_id'] is List
+        ? order['user_id'][1]?.toString() ?? ''
+        : '';
     final dateRaw = order['date_order']?.toString();
     final DateTime? date = dateRaw != null ? DateTime.tryParse(dateRaw) : null;
     final invoiceStatus = order['invoice_status']?.toString() ?? '';
 
-    // Datos del negocio cerrado en la propiedad
     final deal = _propertyDeal;
-    final double earnestAmount = (deal?['deal_earnest_amount'] as num?)?.toDouble() ?? 0.0;
+    final double earnestAmount =
+        (deal?['deal_earnest_amount'] as num?)?.toDouble() ?? 0.0;
     final earnestAgency = deal?['deal_earnest_received_by_agency'] == true;
     final earnestOwner = deal?['deal_earnest_received_by_owner'] == true;
     final earnestProxy = deal?['deal_earnest_received_by_proxy'] == true;
@@ -2117,31 +2220,35 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
     final earnestTransfer = deal?['deal_earnest_payment_transfer'] == true;
     final earnestDeposit = deal?['deal_earnest_payment_deposit'] == true;
     final earnestOtherCheck = deal?['deal_earnest_payment_other_check'] == true;
-    final earnestOtherDesc = deal?['deal_earnest_payment_other']?.toString() ?? '';
+    final earnestOtherDesc =
+        deal?['deal_earnest_payment_other']?.toString() ?? '';
 
     final paymentType = deal?['deal_payment_type']?.toString();
     final paymentDetails = deal?['deal_payment_details']?.toString() ?? '';
     final creditInst = deal?['deal_credit_institution']?.toString() ?? '';
     final creditAdvisor = deal?['deal_credit_advisor']?.toString() ?? '';
-    final creditAdvisorPhone = deal?['deal_credit_advisor_phone']?.toString() ?? '';
+    final creditAdvisorPhone =
+        deal?['deal_credit_advisor_phone']?.toString() ?? '';
     final deadlineRaw = deal?['deal_deadline']?.toString();
-    final DateTime? deadline = deadlineRaw != null ? DateTime.tryParse(deadlineRaw) : null;
+    final DateTime? deadline = deadlineRaw != null
+        ? DateTime.tryParse(deadlineRaw)
+        : null;
     final observations = deal?['deal_observations']?.toString() ?? '';
     final soldBy = deal?['sold_by']?.toString();
 
-    // Recopilar receptores de seña
     final List<String> receivers = [];
     if (earnestAgency) receivers.add('Inmobiliaria');
     if (earnestOwner) receivers.add('Propietario');
     if (earnestProxy) receivers.add('Apoderado');
 
-    // Recopilar medios de pago de seña
     final List<String> earnestMethods = [];
     if (earnestCash) earnestMethods.add('Efectivo');
     if (earnestTransfer) earnestMethods.add('Transferencia');
     if (earnestDeposit) earnestMethods.add('Depósito');
     if (earnestOtherCheck) {
-      earnestMethods.add(earnestOtherDesc.isNotEmpty ? 'Otro ($earnestOtherDesc)' : 'Otro');
+      earnestMethods.add(
+        earnestOtherDesc.isNotEmpty ? 'Otro ($earnestOtherDesc)' : 'Otro',
+      );
     }
 
     return Container(
@@ -2224,11 +2331,12 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
               ),
               const SizedBox(height: 18),
 
-              // Tarjeta de Montos Principales
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                  color: isDark
+                      ? const Color(0xFF1E1A3E)
+                      : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -2239,8 +2347,20 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Monto Base (Subtotal)', style: TextStyle(fontSize: 13, color: AppColors.of(context).muted)),
-                        Text(currency.format(untaxed), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        Text(
+                          'Monto Base (Subtotal)',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.of(context).muted,
+                          ),
+                        ),
+                        Text(
+                          currency.format(untaxed),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ],
                     ),
                     if (tax > 0) ...[
@@ -2248,8 +2368,20 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Impuestos (IVA)', style: TextStyle(fontSize: 13, color: AppColors.of(context).muted)),
-                          Text(currency.format(tax), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                          Text(
+                            'Impuestos (IVA)',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.of(context).muted,
+                            ),
+                          ),
+                          Text(
+                            currency.format(tax),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ],
                       ),
                     ],
@@ -2279,10 +2411,10 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
               ),
               const SizedBox(height: 14),
 
-              // Datos del Cliente y Asesor
               _InfoRow(
                 icon: Icons.person_outline_rounded,
-                label: 'Cliente: ${partnerName.isNotEmpty ? partnerName : lead.partnerName}',
+                label:
+                    'Cliente: ${partnerName.isNotEmpty ? partnerName : lead.partnerName}',
               ),
               if (advisorName.isNotEmpty)
                 _InfoRow(
@@ -2292,7 +2424,8 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
               if (date != null)
                 _InfoRow(
                   icon: Icons.calendar_today_outlined,
-                  label: 'Fecha de orden: ${DateFormat('d MMMM y, HH:mm', 'es_EC').format(date)}',
+                  label:
+                      'Fecha de orden: ${DateFormat('d MMMM y, HH:mm', 'es_EC').format(date)}',
                 ),
               if (invoiceStatus.isNotEmpty)
                 _InfoRow(
@@ -2300,14 +2433,17 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                   label: 'Estado de facturación: $invoiceStatus',
                 ),
 
-              // ── Bloque Seña / Arras ──
-              if (earnestAmount > 0 || receivers.isNotEmpty || earnestMethods.isNotEmpty) ...[
+              if (earnestAmount > 0 ||
+                  receivers.isNotEmpty ||
+                  earnestMethods.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFEFF6FF),
+                    color: isDark
+                        ? const Color(0xFF1E1A3E)
+                        : const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
@@ -2318,7 +2454,11 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.handshake_outlined, size: 18, color: Color(0xFF3B82F6)),
+                          Icon(
+                            Icons.handshake_outlined,
+                            size: 18,
+                            color: Color(0xFF3B82F6),
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Seña / Arras del Negocio',
@@ -2334,7 +2474,8 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                       if (earnestAmount > 0)
                         _InfoRow(
                           icon: Icons.attach_money_rounded,
-                          label: 'Monto de Seña: ${currency.format(earnestAmount)}',
+                          label:
+                              'Monto de Seña: ${currency.format(earnestAmount)}',
                         ),
                       if (receivers.isNotEmpty)
                         _InfoRow(
@@ -2351,14 +2492,17 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                 ),
               ],
 
-              // ── Bloque Forma de Pago y Crédito Hipotecario ──
-              if (paymentType != null || paymentDetails.isNotEmpty || creditInst.isNotEmpty) ...[
+              if (paymentType != null ||
+                  paymentDetails.isNotEmpty ||
+                  creditInst.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF0FDF4),
+                    color: isDark
+                        ? const Color(0xFF1E1A3E)
+                        : const Color(0xFFF0FDF4),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: const Color(0xFF10B981).withValues(alpha: 0.3),
@@ -2369,7 +2513,11 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.credit_card_outlined, size: 18, color: Color(0xFF10B981)),
+                          Icon(
+                            Icons.credit_card_outlined,
+                            size: 18,
+                            color: Color(0xFF10B981),
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Forma de Pago del Negocio',
@@ -2400,14 +2548,14 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                       if (creditAdvisor.isNotEmpty)
                         _InfoRow(
                           icon: Icons.support_agent_outlined,
-                          label: 'Asesor de crédito: $creditAdvisor ${creditAdvisorPhone.isNotEmpty ? "($creditAdvisorPhone)" : ""}',
+                          label:
+                              'Asesor de crédito: $creditAdvisor ${creditAdvisorPhone.isNotEmpty ? "($creditAdvisorPhone)" : ""}',
                         ),
                     ],
                   ),
                 ),
               ],
 
-              // ── Fechas y Cerrado Por ──
               if (deadline != null || soldBy != null) ...[
                 const SizedBox(height: 12),
                 if (soldBy != null)
@@ -2418,18 +2566,20 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                 if (deadline != null)
                   _InfoRow(
                     icon: Icons.event_busy_outlined,
-                    label: 'Fecha límite de cierre: ${DateFormat('d MMMM y', 'es_EC').format(deadline)}',
+                    label:
+                        'Fecha límite de cierre: ${DateFormat('d MMMM y', 'es_EC').format(deadline)}',
                   ),
               ],
 
-              // ── Observaciones del Negocio Cerrado ──
               if (observations.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFFFFBEB),
+                    color: isDark
+                        ? const Color(0xFF1E1A3E)
+                        : const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
                       color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
@@ -2440,7 +2590,11 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.comment_outlined, size: 17, color: Color(0xFFD97706)),
+                          Icon(
+                            Icons.comment_outlined,
+                            size: 17,
+                            color: Color(0xFFD97706),
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Observaciones del Negocio Cerrado',
@@ -2464,7 +2618,6 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
 
               const SizedBox(height: 18),
 
-              // ── Botones de acción ──
               if (widget.linkedContractId != null) ...[
                 SizedBox(
                   width: double.infinity,
@@ -2480,14 +2633,19 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                       Navigator.pop(context);
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => ContractDetailScreen(contractId: widget.linkedContractId!),
+                          builder: (_) => ContractDetailScreen(
+                            contractId: widget.linkedContractId!,
+                          ),
                         ),
                       );
                     },
                     icon: const Icon(Icons.assignment_outlined, size: 18),
                     label: const Text(
                       'Ver Contrato Formal del Cierre',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
                     ),
                   ),
                 ),
@@ -2507,14 +2665,19 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                       Navigator.pop(context);
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (_) => PropertyDetailScreen(propertyId: lead.targetPropertyId!),
+                          builder: (_) => PropertyDetailScreen(
+                            propertyId: lead.targetPropertyId!,
+                          ),
                         ),
                       );
                     },
                     icon: const Icon(Icons.home_work_outlined, size: 18),
                     label: const Text(
                       'Ver Ficha de la Propiedad',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
                     ),
                   ),
                 ),

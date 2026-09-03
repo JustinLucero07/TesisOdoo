@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-/// Preferencia de tema del usuario (sistema / claro / oscuro), persistida en
-/// el dispositivo para que se respete entre aperturas de la app.
 class ThemeController extends ChangeNotifier {
   static const _key = 'inmobi_theme_mode';
   final _storage = const FlutterSecureStorage();
@@ -20,9 +18,7 @@ class ThemeController extends ChangeNotifier {
         _ => ThemeMode.system,
       };
       notifyListeners();
-    } catch (_) {
-      // Sin almacenamiento seguro disponible se queda en "sistema".
-    }
+    } catch (_) {}
   }
 
   Future<void> setMode(ThemeMode mode) async {
@@ -37,9 +33,7 @@ class ThemeController extends ChangeNotifier {
           ThemeMode.system => 'system',
         },
       );
-    } catch (_) {
-      // La preferencia sigue aplicada en memoria aunque no se persista.
-    }
+    } catch (_) {}
   }
 
   String get label => switch (_mode) {

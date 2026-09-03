@@ -24,7 +24,6 @@ import '../settings/settings_screen.dart';
 import '../visits/visit_list_screen.dart';
 import '../visits/visit_service.dart';
 
-/// Contenedor principal con Drawer Ejecutivo Inmobi y Barra de Navegación Moderna.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -36,15 +35,8 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  /// Le avisa a la barra inferior que se compacte. Es un `ValueNotifier` y no
-  /// un campo del estado a propósito: al hacer scroll solo se repinta la
-  /// barra, no las cinco pantallas que viven en el `IndexedStack`.
   final ValueNotifier<bool> _navCollapsed = ValueNotifier(false);
 
-  /// Escucha el scroll de cualquier pantalla hija y decide si la barra se
-  /// compacta. Bajar por el contenido la encoge (deja más pantalla para
-  /// leer); subir la devuelve completa, y arriba del todo siempre vuelve
-  /// entera.
   bool _handleScroll(ScrollNotification n) {
     if (n.metrics.axis != Axis.vertical) return false;
 
@@ -59,9 +51,6 @@ class _HomeShellState extends State<HomeShell> {
       }
     }
 
-    // Al llegar al tope la barra se restituye aunque el gesto haya sido
-    // hacia abajo: en el inicio de una lista no hay nada que ganar
-    // escondiéndola.
     if (n.metrics.pixels <= n.metrics.minScrollExtent + 4) {
       _navCollapsed.value = false;
     }
@@ -79,18 +68,18 @@ class _HomeShellState extends State<HomeShell> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final odoo = context.read<AuthService>().odoo;
-      // 1. Inicializar y solicitar permisos de notificación nativos del sistema (Android 13+ / iOS)
+
       await NotificationService.instance.init();
       await NotificationService.instance.requestPermission();
 
-      // 2. Sincronizar token FCM con Odoo para notificaciones push en segundo plano
       await NotificationService.instance.syncTokenWithOdoo(
         odoo: odoo,
         userId: odoo.userId ?? 0,
       );
 
-      // 3. Programar alarmas locales de citas futuras del asesor
-      unawaited(VisitService.scheduleAllUpcoming(odoo, currentUserId: odoo.userId));
+      unawaited(
+        VisitService.scheduleAllUpcoming(odoo, currentUserId: odoo.userId),
+      );
     });
   }
 
@@ -159,19 +148,18 @@ class _HomeShellState extends State<HomeShell> {
 
     return Scaffold(
       key: _scaffoldKey,
-      // El contenido corre por debajo del vidrio, arriba y abajo: las barras
-      // flotan sobre él en vez de comerse una franja fija de la pantalla.
+
       extendBody: true,
       extendBodyBehindAppBar: true,
       drawer: _InmobiExecutiveDrawer(
         currentIndex: _index,
         onNavigate: (index) {
-          Navigator.of(context).pop(); // Cierra el drawer
+          Navigator.of(context).pop();
           _goTo(index);
         },
       ),
       appBar: (_index == 0 || _index == 3)
-          ? null // El dashboard y la agenda tienen sus propios encabezados avanzados
+          ? null
           : AppBar(
               backgroundColor: Colors.transparent,
               surfaceTintColor: Colors.transparent,
@@ -184,11 +172,7 @@ class _HomeShellState extends State<HomeShell> {
                     color: colors.navy.withValues(alpha: isDark ? 0.2 : 0.07),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    Icons.menu_rounded,
-                    size: 20,
-                    color: colors.navy,
-                  ),
+                  child: Icon(Icons.menu_rounded, size: 20, color: colors.navy),
                 ),
                 onPressed: _openDrawer,
                 tooltip: 'Menú de opciones',
@@ -208,9 +192,14 @@ class _HomeShellState extends State<HomeShell> {
                   child: Padding(
                     padding: const EdgeInsets.only(right: 16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
-                        color: colors.navy.withValues(alpha: isDark ? 0.25 : 0.08),
+                        color: colors.navy.withValues(
+                          alpha: isDark ? 0.25 : 0.08,
+                        ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: colors.navy.withValues(alpha: 0.15),
@@ -256,7 +245,6 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-/// Menú lateral ejecutivo con branding Inmobi, atajos directos a módulos y perfil
 class _InmobiExecutiveDrawer extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onNavigate;
@@ -278,7 +266,9 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFD81F26)),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD81F26),
+            ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Cerrar sesión'),
           ),
@@ -306,15 +296,11 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            // ── Cabecera Corporativa Inmobi ──
             Container(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [
-                    Color(0xFF28235D),
-                    Color(0xFF18143C),
-                  ],
+                  colors: [Color(0xFF28235D), Color(0xFF18143C)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -369,7 +355,10 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFD81F26),
                           borderRadius: BorderRadius.circular(100),
@@ -387,13 +376,15 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // Tarjeta Asesor
+
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.09),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -451,14 +442,15 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
               ),
             ),
 
-            // ── Lista de Opciones y Módulos ──
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
                 children: [
-                  // Las 5 secciones principales (Inicio, Propiedades, CRM,
-                  // Agenda, Opciones) ya viven en la barra inferior — este
-                  // menú es solo para lo que no cabe ahí, evitando dos
+                  // Este menú solo lleva lo que NO está en la barra inferior:
+                  // duplicar ahí las 5 secciones principales dejaba dos
                   // navegaciones compitiendo por los mismos destinos.
                   _DrawerSectionLabel(title: 'GESTIÓN COMERCIAL'),
                   _DrawerActionTile(
@@ -469,7 +461,9 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ContactListScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const ContactListScreen(),
+                        ),
                       );
                     },
                   ),
@@ -481,7 +475,9 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ContractListScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const ContractListScreen(),
+                        ),
                       );
                     },
                   ),
@@ -493,7 +489,9 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const OfferListScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const OfferListScreen(),
+                        ),
                       );
                     },
                   ),
@@ -505,7 +503,9 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const CommissionListScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const CommissionListScreen(),
+                        ),
                       );
                     },
                   ),
@@ -517,7 +517,9 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const PropertyFormScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const PropertyFormScreen(),
+                        ),
                       );
                     },
                   ),
@@ -525,14 +527,17 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
               ),
             ),
 
-            // ── Pie del Drawer con Cerrar Sesión ──
             Container(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF161330) : const Color(0xFFF8FAFC),
+                color: isDark
+                    ? const Color(0xFF161330)
+                    : const Color(0xFFF8FAFC),
                 border: Border(
                   top: BorderSide(
-                    color: isDark ? const Color(0xFF28244E) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF28244E)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
               ),
@@ -543,7 +548,10 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                       onPressed: () => _logout(context),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFFD81F26),
-                        side: const BorderSide(color: Color(0xFFD81F26), width: 1.2),
+                        side: const BorderSide(
+                          color: Color(0xFFD81F26),
+                          width: 1.2,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -552,7 +560,10 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                       icon: const Icon(Icons.logout_rounded, size: 18),
                       label: const Text(
                         'Cerrar Sesión',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
@@ -624,7 +635,11 @@ class _DrawerActionTile extends StatelessWidget {
                     color: color.withValues(alpha: isDark ? 0.22 : 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, size: 18, color: isDark ? const Color(0xFF8B85FF) : color),
+                  child: Icon(
+                    icon,
+                    size: 18,
+                    color: isDark ? const Color(0xFF8B85FF) : color,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

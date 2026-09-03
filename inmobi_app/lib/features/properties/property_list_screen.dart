@@ -29,7 +29,6 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
   List<String>? _stateFilter;
   String? _offerFilter;
 
-  // Filtros avanzados
   double? _minPrice;
   double? _maxPrice;
   double? _minArea;
@@ -101,7 +100,8 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
       );
       if (mounted) setState(() => _properties = result);
     } catch (e) {
-      if (mounted) setState(() => _error = 'No se pudieron cargar las propiedades.');
+      if (mounted)
+        setState(() => _error = 'No se pudieron cargar las propiedades.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -163,7 +163,6 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
 
     return Scaffold(
       floatingActionButton: Padding(
-        // Se levanta por encima del dock flotante de vidrio, no encima de él.
         padding: const EdgeInsets.only(bottom: GlassNavBar.reservedHeight),
         child: FloatingActionButton.small(
           heroTag: null,
@@ -179,14 +178,11 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 1. Buscador superior y filtros desplazables
             SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    // El buscador arranca debajo de la barra de vidrio: el
-                    // catálogo pasa por detrás de ella al hacer scroll.
                     padding: EdgeInsets.fromLTRB(
                       16,
                       MediaQuery.paddingOf(context).top + 12,
@@ -203,7 +199,10 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                               prefixIcon: const Icon(Icons.search_rounded),
                               suffixIcon: _searchCtrl.text.isNotEmpty
                                   ? IconButton(
-                                      icon: const Icon(Icons.close_rounded, size: 20),
+                                      icon: const Icon(
+                                        Icons.close_rounded,
+                                        size: 20,
+                                      ),
                                       onPressed: () {
                                         _searchCtrl.clear();
                                         _load();
@@ -219,14 +218,17 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                         ),
                         const SizedBox(width: 8),
 
-                        // Botón de Filtros Avanzados con badge contador
                         Stack(
                           clipBehavior: Clip.none,
                           children: [
                             Material(
                               color: activeFilters > 0
-                                  ? (isDark ? const Color(0xFF28235D) : const Color(0xFFEBEBF2))
-                                  : (isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9)),
+                                  ? (isDark
+                                        ? const Color(0xFF28235D)
+                                        : const Color(0xFFEBEBF2))
+                                  : (isDark
+                                        ? const Color(0xFF1E1A3E)
+                                        : const Color(0xFFF1F5F9)),
                               borderRadius: BorderRadius.circular(14),
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(14),
@@ -239,13 +241,17 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                     border: Border.all(
                                       color: activeFilters > 0
                                           ? const Color(0xFF28235D)
-                                          : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                          : (isDark
+                                                ? Colors.white12
+                                                : const Color(0xFFE2E8F0)),
                                     ),
                                   ),
                                   child: Icon(
                                     Icons.tune_rounded,
                                     size: 20,
-                                    color: isDark ? Colors.white : const Color(0xFF28235D),
+                                    color: isDark
+                                        ? Colors.white
+                                        : const Color(0xFF28235D),
                                   ),
                                 ),
                               ),
@@ -282,12 +288,14 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                     ),
                   ),
 
-                  // Barra única y elegante de Filtros Rápidos
                   SizedBox(
                     height: 42,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
                       itemCount: _quickFilters.length,
                       separatorBuilder: (_, _) => const SizedBox(width: 8),
                       itemBuilder: (context, i) {
@@ -298,23 +306,32 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                             HapticFeedback.selectionClick();
                             setState(() {
                               _quickFilterIndex = i;
-                              _stateFilter = filter.states.isEmpty ? null : filter.states;
+                              _stateFilter = filter.states.isEmpty
+                                  ? null
+                                  : filter.states;
                               _offerFilter = filter.offer;
                             });
                             _load();
                           },
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: selected
                                   ? const Color(0xFF28235D)
-                                  : (isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9)),
+                                  : (isDark
+                                        ? const Color(0xFF1E1A3E)
+                                        : const Color(0xFFF1F5F9)),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: selected
                                     ? const Color(0xFF28235D)
-                                    : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
+                                    : (isDark
+                                          ? Colors.white12
+                                          : const Color(0xFFE2E8F0)),
                               ),
                             ),
                             child: Center(
@@ -322,7 +339,9 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                 filter.label,
                                 style: TextStyle(
                                   fontSize: 12,
-                                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                                  fontWeight: selected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
                                   color: selected
                                       ? Colors.white
                                       : (isDark ? Colors.white70 : colors.ink),
@@ -335,7 +354,6 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                     ),
                   ),
 
-                  // Contador de resultados
                   if (!_loading && _error == null && _properties.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(18, 4, 18, 8),
@@ -346,7 +364,9 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w700,
-                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
                             ),
                           ),
                           const Spacer(),
@@ -379,11 +399,8 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
               ),
             ),
 
-            // 2. Contenido del catálogo
             if (_loading)
-              const SliverFillRemaining(
-                child: SkeletonList(),
-              )
+              const SliverFillRemaining(child: SkeletonList())
             else if (_error != null)
               SliverFillRemaining(
                 child: MessageView(
@@ -416,7 +433,9 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                         ),
                       );
                     },
-                    childCount: _properties.isEmpty ? 0 : (_properties.length * 2 - 1),
+                    childCount: _properties.isEmpty
+                        ? 0
+                        : (_properties.length * 2 - 1),
                   ),
                 ),
               ),
@@ -427,7 +446,6 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
   }
 }
 
-/// Hoja modal de filtros avanzados de catálogo de propiedades
 class _PropertyFilterSheet extends StatefulWidget {
   final double? minPrice;
   final double? maxPrice;
@@ -439,7 +457,19 @@ class _PropertyFilterSheet extends StatefulWidget {
   final String? sector;
   final bool onlyExclusive;
   final String sortOrder;
-  final Function(double?, double?, double?, double?, int?, double?, int?, String?, bool, String) onApply;
+  final Function(
+    double?,
+    double?,
+    double?,
+    double?,
+    int?,
+    double?,
+    int?,
+    String?,
+    bool,
+    String,
+  )
+  onApply;
 
   const _PropertyFilterSheet({
     required this.minPrice,
@@ -521,9 +551,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
 
-    // La hoja llega como material: el catálogo se ve desenfocado detrás en
-    // lugar de desaparecer bajo un panel opaco, así no se pierde el contexto
-    // de lo que se está filtrando.
     return GlassSurface(
       level: GlassLevel.thick,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -537,7 +564,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Manija superior
               Center(
                 child: Container(
                   width: 40,
@@ -550,16 +576,12 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // Cabecera
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
                     'Filtros Avanzados',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                   ),
                   TextButton(
                     onPressed: () {
@@ -588,7 +610,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const Divider(height: 20),
 
-              // 1. Ordenamiento
               const Text(
                 'Ordenar por',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -600,7 +621,8 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                   _FilterChoiceChip(
                     label: 'Más recientes',
                     selected: _sortOrder == 'create_date desc',
-                    onTap: () => setState(() => _sortOrder = 'create_date desc'),
+                    onTap: () =>
+                        setState(() => _sortOrder = 'create_date desc'),
                   ),
                   _FilterChoiceChip(
                     label: 'Menor precio',
@@ -616,7 +638,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 2. Sector / Zona
               const Text(
                 'Sector / Ubicación',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -647,7 +668,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 3. Rango de Precio
               const Text(
                 'Rango de Precio (\$ USD)',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -680,7 +700,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 4. Superficie / Área (m²)
               const Text(
                 'Área / Superficie (m²)',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -713,7 +732,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 5. Dormitorios
               const Text(
                 'Habitaciones / Dormitorios',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -747,7 +765,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 6. Baños
               const Text(
                 'Baños completos',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -781,7 +798,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 7. Parqueaderos / Garajes
               const Text(
                 'Parqueaderos / Garajes',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
@@ -815,10 +831,11 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 16),
 
-              // 8. Exclusividad
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                  color: isDark
+                      ? const Color(0xFF1E1A3E)
+                      : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -829,7 +846,10 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                   activeThumbColor: Colors.white,
                   title: const Text(
                     'Solo Propiedades Exclusivas',
-                    style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   subtitle: Text(
                     'Inmuebles con contrato de exclusividad Inmobi',
@@ -841,7 +861,6 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               ),
               const SizedBox(height: 22),
 
-              // Botón Aplicar Filtros
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -927,7 +946,9 @@ class _FilterChoiceChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-            color: selected ? Colors.white : (isDark ? Colors.white70 : colors.ink),
+            color: selected
+                ? Colors.white
+                : (isDark ? Colors.white70 : colors.ink),
           ),
         ),
       ),
@@ -976,7 +997,9 @@ class _NumberOptionButton extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              color: selected ? Colors.white : (isDark ? Colors.white70 : colors.ink),
+              color: selected
+                  ? Colors.white
+                  : (isDark ? Colors.white70 : colors.ink),
             ),
           ),
         ),

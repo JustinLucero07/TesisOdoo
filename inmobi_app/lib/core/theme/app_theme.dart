@@ -1,24 +1,15 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
-/// Paleta de marca REAL de Inmobi — navy #28235D + rojo #D81F26 del isotipo
-/// de inmobi.com.ec, los mismos de las fichas PDF que genera el ERP.
-///
-/// Los colores se exponen por rol (fondo, superficie, texto, línea) y no por
-/// valor fijo, para que la app pueda renderizarse en claro u oscuro sin
-/// tocar ni una pantalla: cada widget pide `AppColors.of(context).surface`
-/// y recibe el tono correcto según el tema activo.
 class AppPalette {
   final bool isDark;
 
-  // Marca
   final Color navy;
   final Color navyDeep;
   final Color navyLight;
   final Color accent;
   final Color accentSoft;
 
-  // Superficies y texto
   final Color background;
   final Color surface;
   final Color surfaceAlt;
@@ -27,7 +18,6 @@ class AppPalette {
   final Color mutedLight;
   final Color line;
 
-  // Semáforo
   final Color success;
   final Color successBg;
   final Color warning;
@@ -65,12 +55,12 @@ class AppPalette {
 
   static const light = AppPalette(
     isDark: false,
-    navy: Color(0xFF28235D), // Navy oficial Inmobi
+    navy: Color(0xFF28235D),
     navyDeep: Color(0xFF1B1740),
     navyLight: Color(0xFF3F3787),
-    accent: Color(0xFFD81F26), // Rojo característico Inmobi
+    accent: Color(0xFFD81F26),
     accentSoft: Color(0xFFFEE2E2),
-    background: Color(0xFFF8FAFC), // Fondo limpio y profesional
+    background: Color(0xFFF8FAFC),
     surface: Colors.white,
     surfaceAlt: Color(0xFFF1F5F9),
     ink: Color(0xFF0F172A),
@@ -88,7 +78,6 @@ class AppPalette {
     neutralBg: Color(0xFFF1F5F9),
   );
 
-  /// En oscuro el navy se ajusta para mantener contraste y elegancia
   static const dark = AppPalette(
     isDark: true,
     navy: Color(0xFF6C63FF),
@@ -115,9 +104,6 @@ class AppPalette {
   );
 }
 
-/// Acceso a la paleta desde cualquier widget: `AppColors.of(context)`.
-/// Se mantiene además el acceso estático a la paleta clara para el código
-/// que aún no recibe `context` (constantes en modelos de estilo).
 class AppColors {
   AppColors._();
 
@@ -126,7 +112,6 @@ class AppColors {
       ? AppPalette.dark
       : AppPalette.light;
 
-  // Alias estáticos (tema claro) — Navy corporativo Inmobi y Rojo Isotipo
   static const navy = Color(0xFF28235D);
   static const navyDeep = Color(0xFF1B1740);
   static const navyLight = Color(0xFF3F3787);
@@ -149,9 +134,6 @@ class AppColors {
   static const neutralBg = Color(0xFFF1F5F9);
 }
 
-/// Escala tipográfica. Jost es una geométrica de proporciones amplias: a
-/// tamaños grandes necesita tracking negativo para no leerse suelta, y a
-/// tamaños chicos un poco de aire positivo para mantenerse legible.
 class AppType {
   AppType._();
 
@@ -200,8 +182,6 @@ class AppType {
   );
 }
 
-/// Escala de espaciado: múltiplos de 4, para que el ritmo vertical sea
-/// consistente en toda la app en vez de números sueltos por pantalla.
 class AppSpace {
   AppSpace._();
   static const xs = 4.0;
@@ -258,9 +238,6 @@ class AppTheme {
             labelSmall: AppType.label.copyWith(color: p.mutedLight),
           ),
       appBarTheme: AppBarTheme(
-        // Barra sobre el fondo, no un bloque navy sólido: deja que el
-        // contenido sea el protagonista y el color de marca se reserve
-        // para las acciones.
         backgroundColor: p.background,
         foregroundColor: p.ink,
         elevation: 0,
@@ -338,8 +315,6 @@ class AppTheme {
         hintStyle: TextStyle(color: p.mutedLight, fontFamily: AppType.family),
       ),
       cardTheme: CardThemeData(
-        // Sin sombra pesada: la jerarquía la da el borde fino y el
-        // contraste de superficie, que se lee limpio en ambos temas.
         elevation: 0,
         color: p.surface,
         margin: EdgeInsets.zero,
@@ -435,10 +410,9 @@ class AppTheme {
           fontFamily: AppType.family,
         ),
       ),
-      // iOS/macOS usan el builder Cupertino: es el que trae el gesto nativo
-      // de deslizar desde el borde izquierdo para retroceder. Forzar el
-      // builder de Android ahí (como estaba antes) apaga ese gesto — hay
-      // que volver siempre por el mismo camino por el que se entró.
+
+      // iOS/macOS deben usar Cupertino: es el único builder que trae el gesto
+      // de deslizar desde el borde para retroceder.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: ZoomPageTransitionsBuilder(),
@@ -452,16 +426,16 @@ class AppTheme {
   }
 }
 
-/// Sombra suave minimalista para tarjetas elegantes estilo banca/real estate
 List<BoxShadow> softShadow({double opacity = 0.04, bool isDark = false}) => [
   BoxShadow(
-    color: Colors.black.withValues(alpha: isDark ? (opacity * 3).clamp(0.0, 0.25) : opacity),
+    color: Colors.black.withValues(
+      alpha: isDark ? (opacity * 3).clamp(0.0, 0.25) : opacity,
+    ),
     blurRadius: 10,
     offset: const Offset(0, 3),
   ),
 ];
 
-/// Sombra de ambiente moderna tipo glow/difusa
 List<BoxShadow> modernAmbientShadow({
   Color color = const Color(0xFF28235D),
   double opacity = 0.07,
@@ -476,7 +450,6 @@ List<BoxShadow> modernAmbientShadow({
   ),
 ];
 
-/// Decoración con efecto Glassmorphism y borde sutil
 class AppGlass {
   AppGlass._();
 
@@ -488,12 +461,14 @@ class AppGlass {
     Border? border,
   }) {
     return BoxDecoration(
-      color: customColor ??
+      color:
+          customColor ??
           (isDark
               ? const Color(0xFF1C1938).withValues(alpha: opacity)
               : Colors.white.withValues(alpha: opacity)),
       borderRadius: BorderRadius.circular(radius),
-      border: border ??
+      border:
+          border ??
           Border.all(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.12)
@@ -505,74 +480,52 @@ class AppGlass {
   }
 }
 
-/// Gradientes modernos de la marca Inmobi
 class AppGradients {
   AppGradients._();
 
   static const LinearGradient navyHero = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF28235D),
-      Color(0xFF1B1840),
-    ],
+    colors: [Color(0xFF28235D), Color(0xFF1B1840)],
   );
 
   static const LinearGradient accentHero = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFFE52D34),
-      Color(0xFFB8151B),
-    ],
+    colors: [Color(0xFFE52D34), Color(0xFFB8151B)],
   );
 
   static const LinearGradient cardOverlay = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [
-      Colors.transparent,
-      Color(0xCC14112E),
-    ],
+    colors: [Colors.transparent, Color(0xCC14112E)],
   );
 
   static const LinearGradient badgeGlass = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xDDFFFFFF),
-      Color(0xAAFFFFFF),
-    ],
+    colors: [Color(0xDDFFFFFF), Color(0xAAFFFFFF)],
   );
 
   static const LinearGradient badgeGlassDark = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xDD1E1A3E),
-      Color(0xAA1E1A3E),
-    ],
+    colors: [Color(0xDD1E1A3E), Color(0xAA1E1A3E)],
   );
 }
 
-/// Helpers para feedback háptico y micro-interacciones
 class AppFeedback {
   AppFeedback._();
 
   static void light() {
-    try {
-      // HapticFeedback.lightImpact();
-    } catch (_) {}
+    try {} catch (_) {}
   }
 
   static void selection() {
-    try {
-      // HapticFeedback.selectionClick();
-    } catch (_) {}
+    try {} catch (_) {}
   }
 }
 
-/// Breakpoints y utilidades de Responsiveness
 class AppBreakpoints {
   AppBreakpoints._();
 

@@ -51,8 +51,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
       );
       var visit = Visit.fromJson(rows.first);
 
-      // Participantes: `partner_ids` llega como lista de ids, se resuelven
-      // los nombres en una segunda consulta (solo en la ficha).
       final ids = rows.first['partner_ids'];
       if (ids is List && ids.isNotEmpty) {
         final partners = await _odoo.searchRead(
@@ -93,9 +91,7 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
       final phone = (rows.first['mobile'] ?? rows.first['phone'] ?? '')
           .toString();
       if (mounted && phone.isNotEmpty) setState(() => _clientPhone = phone);
-    } catch (_) {
-      // Sin teléfono, la ficha simplemente no ofrece llamar/WhatsApp.
-    }
+    } catch (_) {}
   }
 
   Future<void> _openEdit() async {
@@ -105,9 +101,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
     if (saved == true) _load();
   }
 
-  /// Envía YA el recordatorio de WhatsApp, sin esperar al cron — llama al
-  /// método del ERP, que usa la misma plantilla aprobada en Meta y avisa
-  /// tanto al asesor como al cliente.
   Future<void> _sendReminder() async {
     final messenger = ScaffoldMessenger.of(context);
     setState(() => _busy = true);
@@ -241,7 +234,7 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
     setState(() => _busy = true);
     try {
       await _odoo.unlink(model: 'calendar.event', id: widget.visitId);
-      // La cita ya no existe: se retira también su aviso del teléfono.
+
       await NotificationService.instance.cancelVisit(widget.visitId);
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -319,7 +312,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
     return ListView(
       padding: EdgeInsets.zero,
       children: [
-        // ── Cabecera con la hora en grande: es el dato que más se consulta
         Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(
@@ -419,7 +411,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                 const SizedBox(height: AppSpace.lg),
               ],
 
-              // ── Propiedad, con foto y acceso a su ficha
               if (v.propertyId != null) ...[
                 const _SectionLabel('Propiedad'),
                 const SizedBox(height: AppSpace.sm),
@@ -473,7 +464,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                 const SizedBox(height: AppSpace.lg),
               ],
 
-              // ── Cliente, con contacto directo
               if (v.clientName.isNotEmpty) ...[
                 const _SectionLabel('Cliente'),
                 const SizedBox(height: AppSpace.sm),
@@ -525,7 +515,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                 const SizedBox(height: AppSpace.lg),
               ],
 
-              // ── Datos de la cita
               const _SectionLabel('Datos de la cita'),
               const SizedBox(height: AppSpace.sm),
               Card(
@@ -554,29 +543,49 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                             children: [
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () => _openLocationMaps(v.location),
+                                  onPressed: () =>
+                                      _openLocationMaps(v.location),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  icon: const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFFEA4335)),
-                                  label: const Text('Google Maps', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 16,
+                                    color: Color(0xFFEA4335),
+                                  ),
+                                  label: const Text(
+                                    'Google Maps',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: OutlinedButton.icon(
-                                  onPressed: () => _openLocationWaze(v.location),
+                                  onPressed: () =>
+                                      _openLocationWaze(v.location),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  icon: const Icon(Icons.navigation_rounded, size: 16, color: Color(0xFF33CCFF)),
-                                  label: const Text('Waze GPS', style: TextStyle(fontSize: 12)),
+                                  icon: const Icon(
+                                    Icons.navigation_rounded,
+                                    size: 16,
+                                    color: Color(0xFF33CCFF),
+                                  ),
+                                  label: const Text(
+                                    'Waze GPS',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
                                 ),
                               ),
                             ],
@@ -609,7 +618,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                 ),
               ),
 
-              // ── Notas y descripción
               if (v.notes.isNotEmpty) ...[
                 const SizedBox(height: AppSpace.lg),
                 const _SectionLabel('Notas de la visita'),
@@ -639,7 +647,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                 ),
               ],
 
-              // ── Acciones de WhatsApp
               const SizedBox(height: AppSpace.lg),
               const _SectionLabel('WhatsApp'),
               const SizedBox(height: AppSpace.sm),
@@ -669,7 +676,6 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                   ),
                 ),
 
-              // ── Cierre de la visita
               if (v.visitState == 'scheduled') ...[
                 const SizedBox(height: AppSpace.lg),
                 Row(
@@ -801,8 +807,6 @@ class _RoundAction extends StatelessWidget {
   }
 }
 
-/// Hoja para cerrar una visita: resultado, calificación del cliente y
-/// observaciones. Es el paso que alimenta el puntaje del lead en el ERP.
 class _VisitResultSheet extends StatefulWidget {
   final String initialNotes;
   const _VisitResultSheet({required this.initialNotes});

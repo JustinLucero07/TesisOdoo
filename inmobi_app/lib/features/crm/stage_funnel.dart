@@ -3,9 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import 'crm_stage_service.dart';
 
-/// Embudo horizontal con las etapas reales del CRM (`crm.stage`) — igual que
-/// el kanban del ERP. Tocar una etapa mueve el lead ahí mismo (write
-/// stage_id), sin tener que abrir el buscador genérico de Many2one.
 class StageFunnel extends StatefulWidget {
   final CrmStageService service;
   final int? currentStageId;
@@ -39,7 +36,6 @@ class _StageFunnelState extends State<StageFunnel> {
       final stages = await widget.service.list();
       if (mounted) setState(() => _stages = stages);
     } catch (_) {
-      // Silencioso: si falla, el resto del detalle sigue funcionando.
     } finally {
       if (mounted) setState(() => _loading = false);
     }

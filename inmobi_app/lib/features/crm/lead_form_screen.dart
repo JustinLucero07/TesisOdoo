@@ -8,10 +8,6 @@ import '../auth/auth_service.dart';
 import 'lead_model.dart';
 import 'lead_service.dart';
 
-/// Crea o edita un lead/oportunidad (crm.lead). La puntuación (A/B/C) y la
-/// temperatura NO se editan aquí a propósito: Odoo las calcula solo
-/// (`_compute_lead_scoring`) a partir del presupuesto, el match y demás —
-/// se recalculan al guardar, no son un campo que el usuario llene.
 class LeadFormScreen extends StatefulWidget {
   final Lead? existing;
   final int? initialPropertyId;
@@ -99,7 +95,8 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
         widget.initialPropertyId!,
         widget.initialPropertyName ?? 'Propiedad #${widget.initialPropertyId}',
       );
-      _nameCtrl.text = 'Interesado en ${widget.initialPropertyName ?? 'Propiedad #${widget.initialPropertyId}'}';
+      _nameCtrl.text =
+          'Interesado en ${widget.initialPropertyName ?? 'Propiedad #${widget.initialPropertyId}'}';
     }
 
     if (widget.existing == null && _leadSource == null) {
@@ -147,7 +144,6 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
     if (_leadSource != null) {
       vals['lead_source_id'] = _leadSource!.id;
     } else {
-      // Fallback si no ha seleccionado aún una fuente
       try {
         final srcs = await _odoo.searchRead(
           model: 'estate.crm.lead.source',
@@ -217,7 +213,11 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       final msg = e.toString().replaceAll('Exception:', '').trim();
-      setState(() => _error = msg.isNotEmpty ? msg : 'No se pudo guardar el lead. Intenta de nuevo.');
+      setState(
+        () => _error = msg.isNotEmpty
+            ? msg
+            : 'No se pudo guardar el lead. Intenta de nuevo.',
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }

@@ -12,17 +12,9 @@ class Many2oneValue {
   final String? subtitle;
   final String? model;
 
-  const Many2oneValue(
-    this.id,
-    this.name, {
-    this.subtitle,
-    this.model,
-  });
+  const Many2oneValue(this.id, this.name, {this.subtitle, this.model});
 }
 
-/// Campo tipo "relación" (property_id, partner_id, stage_id, etc.)
-/// — al tocarlo abre un buscador enriquecido con imágenes y detalles,
-/// permitiendo reconocer visualmente propiedades, clientes y registros.
 class Many2oneField extends StatelessWidget {
   final String label;
   final OdooClient odoo;
@@ -65,7 +57,6 @@ class Many2oneField extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
 
-    // Vista previa enriquecida para Propiedades seleccionadas
     if (value != null && model == 'estate.property') {
       return Container(
         decoration: BoxDecoration(
@@ -133,13 +124,11 @@ class Many2oneField extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (value!.subtitle != null && value!.subtitle!.isNotEmpty)
+                        if (value!.subtitle != null &&
+                            value!.subtitle!.isNotEmpty)
                           Text(
                             value!.subtitle!,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colors.muted,
-                            ),
+                            style: TextStyle(fontSize: 11, color: colors.muted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -159,7 +148,6 @@ class Many2oneField extends StatelessWidget {
       );
     }
 
-    // Vista previa enriquecida para Contactos seleccionados
     if (value != null && model == 'res.partner') {
       return Container(
         decoration: BoxDecoration(
@@ -182,9 +170,13 @@ class Many2oneField extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: const Color(0xFF28235D).withValues(alpha: 0.1),
+                    backgroundColor: const Color(
+                      0xFF28235D,
+                    ).withValues(alpha: 0.1),
                     child: Text(
-                      value!.name.isNotEmpty ? value!.name[0].toUpperCase() : '?',
+                      value!.name.isNotEmpty
+                          ? value!.name[0].toUpperCase()
+                          : '?',
                       style: const TextStyle(
                         color: Color(0xFF28235D),
                         fontWeight: FontWeight.w800,
@@ -216,13 +208,11 @@ class Many2oneField extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (value!.subtitle != null && value!.subtitle!.isNotEmpty)
+                        if (value!.subtitle != null &&
+                            value!.subtitle!.isNotEmpty)
                           Text(
                             value!.subtitle!,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colors.muted,
-                            ),
+                            style: TextStyle(fontSize: 11, color: colors.muted),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -242,7 +232,6 @@ class Many2oneField extends StatelessWidget {
       );
     }
 
-    // InputDecorator estándar cuando no hay selección o es otro modelo
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () => _pick(context),
@@ -259,7 +248,9 @@ class Many2oneField extends StatelessWidget {
         child: Text(
           value?.name ?? 'Toca para elegir…',
           style: TextStyle(
-            color: value != null ? (isDark ? Colors.white : colors.ink) : colors.mutedLight,
+            color: value != null
+                ? (isDark ? Colors.white : colors.ink)
+                : colors.mutedLight,
             fontWeight: value != null ? FontWeight.w600 : FontWeight.normal,
           ),
           overflow: TextOverflow.ellipsis,
@@ -332,7 +323,14 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
 
       final fields = <String>[
         widget.searchField,
-        if (isProperty) ...['title', 'price', 'city', 'sector', 'state', 'property_type_id'],
+        if (isProperty) ...[
+          'title',
+          'price',
+          'city',
+          'sector',
+          'state',
+          'property_type_id',
+        ],
         if (isPartner) ...['phone', 'mobile', 'email', 'city'],
       ];
 
@@ -359,10 +357,15 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
           if (isProperty) {
             final title = (r['title'] ?? '').toString();
             if (title.isNotEmpty) name = title;
-            final price = r['price'] is num ? (r['price'] as num).toDouble() : 0.0;
+            final price = r['price'] is num
+                ? (r['price'] as num).toDouble()
+                : 0.0;
             final city = (r['city'] ?? '').toString();
             final sector = (r['sector'] ?? '').toString();
-            final location = [city, sector].where((s) => s.isNotEmpty).join(', ');
+            final location = [
+              city,
+              sector,
+            ].where((s) => s.isNotEmpty).join(', ');
 
             subtitle = [
               if (location.isNotEmpty) '📍 $location',
@@ -372,12 +375,20 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
             final rawPhone = r['phone'];
             final rawMobile = r['mobile'];
             final rawEmail = r['email'];
-            final phone = (rawPhone != null && rawPhone != false && rawPhone.toString() != 'false')
+            final phone =
+                (rawPhone != null &&
+                    rawPhone != false &&
+                    rawPhone.toString() != 'false')
                 ? rawPhone.toString()
-                : ((rawMobile != null && rawMobile != false && rawMobile.toString() != 'false')
-                    ? rawMobile.toString()
-                    : '');
-            final email = (rawEmail != null && rawEmail != false && rawEmail.toString() != 'false')
+                : ((rawMobile != null &&
+                          rawMobile != false &&
+                          rawMobile.toString() != 'false')
+                      ? rawMobile.toString()
+                      : '');
+            final email =
+                (rawEmail != null &&
+                    rawEmail != false &&
+                    rawEmail.toString() != 'false')
                 ? rawEmail.toString()
                 : '';
             subtitle = [
@@ -421,11 +432,16 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
           final name = (row['name'] ?? 'Nuevo Contacto').toString();
           final rawPhone = row['phone'];
           final rawMobile = row['mobile'];
-          final phone = (rawPhone != null && rawPhone != false && rawPhone.toString() != 'false')
+          final phone =
+              (rawPhone != null &&
+                  rawPhone != false &&
+                  rawPhone.toString() != 'false')
               ? rawPhone.toString()
-              : ((rawMobile != null && rawMobile != false && rawMobile.toString() != 'false')
-                  ? rawMobile.toString()
-                  : '');
+              : ((rawMobile != null &&
+                        rawMobile != false &&
+                        rawMobile.toString() != 'false')
+                    ? rawMobile.toString()
+                    : '');
           Navigator.of(context).pop(
             Many2oneValue(
               result,
@@ -455,7 +471,11 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
           if (isPartner)
             TextButton.icon(
               onPressed: _createNewContact,
-              icon: const Icon(Icons.person_add_alt_1_rounded, size: 18, color: Color(0xFFD81F26)),
+              icon: const Icon(
+                Icons.person_add_alt_1_rounded,
+                size: 18,
+                color: Color(0xFFD81F26),
+              ),
               label: const Text(
                 'Nuevo',
                 style: TextStyle(
@@ -478,8 +498,8 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                 hintText: isProperty
                     ? 'Buscar propiedad por título, sector, ciudad...'
                     : isPartner
-                        ? 'Buscar contacto por nombre, teléfono, email...'
-                        : 'Buscar ${widget.title.toLowerCase()}...',
+                    ? 'Buscar contacto por nombre, teléfono, email...'
+                    : 'Buscar ${widget.title.toLowerCase()}...',
                 prefixIcon: const Icon(Icons.search_rounded),
                 suffixIcon: _searchCtrl.text.isNotEmpty
                     ? IconButton(
@@ -507,8 +527,8 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                             isProperty
                                 ? Icons.home_work_outlined
                                 : isPartner
-                                    ? Icons.person_search_outlined
-                                    : Icons.search_off_rounded,
+                                ? Icons.person_search_outlined
+                                : Icons.search_off_rounded,
                             size: 48,
                             color: colors.mutedLight,
                           ),
@@ -530,10 +550,17 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                 ),
                               ),
                               onPressed: _createNewContact,
-                              icon: const Icon(Icons.person_add_alt_1_rounded, size: 18, color: Colors.white),
+                              icon: const Icon(
+                                Icons.person_add_alt_1_rounded,
+                                size: 18,
+                                color: Colors.white,
+                              ),
                               label: const Text(
                                 'Crear contacto rápido',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
@@ -549,10 +576,14 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                       final item = _results[i];
                       return Container(
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+                          color: isDark
+                              ? const Color(0xFF1E1A3E)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                            color: isDark
+                                ? Colors.white12
+                                : const Color(0xFFE2E8F0),
                           ),
                         ),
                         child: Material(
@@ -571,7 +602,6 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                               padding: const EdgeInsets.all(10),
                               child: Row(
                                 children: [
-                                  // Imagen miniatura para propiedades
                                   if (isProperty)
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
@@ -586,7 +616,9 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                           width: 140,
                                           height: 140,
                                           errorBuilder: (_) => Container(
-                                            color: const Color(0xFF28235D).withValues(alpha: 0.08),
+                                            color: const Color(
+                                              0xFF28235D,
+                                            ).withValues(alpha: 0.08),
                                             child: const Icon(
                                               Icons.home_work_outlined,
                                               size: 24,
@@ -599,9 +631,13 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                   else if (isPartner)
                                     CircleAvatar(
                                       radius: 22,
-                                      backgroundColor: const Color(0xFF28235D).withValues(alpha: 0.1),
+                                      backgroundColor: const Color(
+                                        0xFF28235D,
+                                      ).withValues(alpha: 0.1),
                                       child: Text(
-                                        item.name.isNotEmpty ? item.name[0].toUpperCase() : '?',
+                                        item.name.isNotEmpty
+                                            ? item.name[0].toUpperCase()
+                                            : '?',
                                         style: const TextStyle(
                                           color: Color(0xFF28235D),
                                           fontWeight: FontWeight.w800,
@@ -614,7 +650,9 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF28235D).withValues(alpha: 0.08),
+                                        color: const Color(
+                                          0xFF28235D,
+                                        ).withValues(alpha: 0.08),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: const Icon(
@@ -626,7 +664,8 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item.name,
@@ -637,13 +676,16 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                         ),
-                                        if (item.subtitle != null && item.subtitle!.isNotEmpty) ...[
+                                        if (item.subtitle != null &&
+                                            item.subtitle!.isNotEmpty) ...[
                                           const SizedBox(height: 3),
                                           Text(
                                             item.subtitle!,
                                             style: TextStyle(
                                               fontSize: 12,
-                                              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                              color: isDark
+                                                  ? const Color(0xFF94A3B8)
+                                                  : const Color(0xFF64748B),
                                               fontWeight: FontWeight.w500,
                                             ),
                                             maxLines: 1,

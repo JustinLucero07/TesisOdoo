@@ -13,9 +13,6 @@ import 'contract_form_screen.dart';
 import 'contract_model.dart';
 import 'contract_service.dart';
 
-/// Lista de contratos — si [propertyId] viene seteado, se abre ya filtrada
-/// a una sola propiedad (uso desde el "smart button" del detalle de
-/// propiedad); si no, muestra todos.
 class ContractListScreen extends StatefulWidget {
   final int? propertyId;
   final String? propertyTitle;
@@ -205,10 +202,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
                     c.propertyName.isNotEmpty ? c.propertyName : '—',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: colors.muted,
-                      fontSize: 12.5,
-                    ),
+                    style: TextStyle(color: colors.muted, fontSize: 12.5),
                   ),
                   const SizedBox(height: 8),
                   Row(

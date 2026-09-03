@@ -31,10 +31,6 @@ class OfferService {
   Future<void> update(int id, Map<String, dynamic> values) =>
       odoo.write(model: 'estate.property.offer', id: id, values: values);
 
-  /// Acciones del flujo de negociación — se llaman los MISMOS métodos del
-  /// modelo de Odoo (`action_submit`, `action_accept`, …), así que
-  /// disparan igual las validaciones, el chatter y los efectos laterales
-  /// (crear contrato, notificar) que al pulsarlos en el ERP.
   Future<void> runAction(int id, String method) => odoo.callKw(
     model: 'estate.property.offer',
     method: method,
