@@ -990,55 +990,78 @@ class _PeopleInfoCard extends StatelessWidget {
             for (int i = 0; i < rows.length; i++) ...[
               if (i > 0) const Divider(height: 1),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 child: Row(
                   children: [
+                    // El rol va arriba y el nombre debajo, en su propia
+                    // línea: así un nombre largo se lee completo en vez de
+                    // partirse a la mitad contra los íconos.
                     Expanded(
-                      child: Text(
-                        rows[i].label,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: colors.mutedLight,
-                        ),
-                      ),
-                    ),
-                    Flexible(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(6),
-                        onTap: rows[i].contactId == null
-                            ? null
-                            : () => Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => ContactDetailScreen(
-                                      contactId: rows[i].contactId!,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            rows[i].label.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6,
+                              color: colors.mutedLight,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          InkWell(
+                            borderRadius: BorderRadius.circular(6),
+                            onTap: rows[i].contactId == null
+                                ? null
+                                : () => Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ContactDetailScreen(
+                                          contactId: rows[i].contactId!,
+                                        ),
+                                      ),
+                                    ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    rows[i].name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 14.5,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.25,
+                                      color: rows[i].contactId != null
+                                          ? colors.navy
+                                          : colors.ink,
                                     ),
                                   ),
                                 ),
-                        child: Text(
-                          rows[i].name,
-                          textAlign: TextAlign.end,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: rows[i].contactId != null
-                                ? colors.navy
-                                : null,
-                            decoration: rows[i].contactId != null
-                                ? TextDecoration.underline
-                                : null,
-                            decorationColor: colors.navy.withValues(alpha: 0.35),
+                                // El chevron es la señal de "esto se toca",
+                                // en vez del subrayado: no ensucia el nombre
+                                // y es el gesto que ya usa el resto de la app.
+                                if (rows[i].contactId != null)
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 18,
+                                    color: colors.navy.withValues(alpha: 0.7),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                     if (rows[i].phone != null) ...[
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 10),
                       _SmallContactIcon(
                         icon: Icons.call,
                         color: colors.navy,
                         onTap: () => onCall(rows[i].phone!),
                       ),
-                      const SizedBox(width: 2),
+                      const SizedBox(width: 6),
                       _SmallContactIcon(
                         icon: Icons.chat,
                         color: const Color(0xFF25D366),

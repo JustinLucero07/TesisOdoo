@@ -74,5 +74,20 @@
 	<string>Requerido para tomar fotos de las propiedades directamente desde la app.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Requerido para ubicar la propiedad en el mapa y calcular su cercanía a puntos de interés.</string>
+	<!-- Sin declarar estos esquemas, iOS responde que la app NO puede abrir
+	     un tel:, un WhatsApp o un mapa — y los botones de llamar/WhatsApp
+	     quedan sin hacer nada, en silencio. -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>telprompt</string>
+		<string>sms</string>
+		<string>mailto</string>
+		<string>http</string>
+		<string>https</string>
+		<string>whatsapp</string>
+		<string>comgooglemaps</string>
+		<string>waze</string>
+	</array>
 </dict>
 </plist>

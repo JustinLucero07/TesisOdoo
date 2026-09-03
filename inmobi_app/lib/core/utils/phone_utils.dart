@@ -62,27 +62,43 @@ class PhoneUtils {
   }
 
   /// Abre el marcador del teléfono con el número ya normalizado.
-  static Future<void> call(String raw, {String countryCode = defaultCountryCode}) async {
+  static Future<bool> call(String raw, {String countryCode = defaultCountryCode}) async {
     final n = normalize(raw, countryCode: countryCode);
-    if (n.isEmpty) return;
-    final uri = Uri(scheme: 'tel', path: '+$n');
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
+    if (n.isEmpty) return false;
+    return _launch(Uri.parse('tel:+$n'));
   }
 
   /// Abre WhatsApp (con texto opcional) al número ya normalizado.
-  static Future<void> whatsapp(
+  static Future<bool> whatsapp(
     String raw, {
     String countryCode = defaultCountryCode,
     String? text,
   }) async {
     final n = normalize(raw, countryCode: countryCode);
-    if (n.isEmpty) return;
+    if (n.isEmpty) return false;
     final query = text != null && text.isNotEmpty
         ? '?text=${Uri.encodeComponent(text)}'
         : '';
-    final uri = Uri.parse('https://wa.me/$n$query');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    return _launch(
+      Uri.parse('https://wa.me/$n$query'),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  /// Lanza el enlace directamente, sin consultar antes con `canLaunchUrl`.
+  ///
+  /// En iOS `canLaunchUrl` devuelve `false` para cualquier esquema que no
+  /// esté declarado en `LSApplicationQueriesSchemes` del Info.plist — y
+  /// como el código anterior estaba condicionado a esa consulta, tocar
+  /// llamar/WhatsApp no hacía absolutamente nada, en silencio. La propia
+  /// documentación de url_launcher recomienda intentar abrir y manejar el
+  /// fallo, en vez de preguntar primero.
+  static Future<bool> _launch(Uri uri, {LaunchMode? mode}) async {
+    try {
+      return await launchUrl(uri, mode: mode ?? LaunchMode.platformDefault);
+    } catch (e) {
+      debugPrint('No se pudo abrir $uri: $e');
+      return false;
     }
   }
 }
