@@ -10,6 +10,7 @@ import '../../core/widgets/expandable_section.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
+import '../contacts/contact_detail_screen.dart';
 import '../contracts/contract_list_screen.dart';
 import '../crm/lead_form_screen.dart';
 import '../documents/document_service.dart';
@@ -842,44 +843,32 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
               ExpandableSection(
                 title: 'Personas relacionadas',
-                child: Column(
-                  children: [
+                child: _PeopleInfoCard(
+                  rows: [
                     if (p.ownerName.isNotEmpty)
-                      _AdvisorCard(
+                      (
                         label: 'Propietario',
                         name: p.ownerName,
-                        phone: p.ownerId != null
-                            ? _relatedPhones[p.ownerId]
-                            : null,
-                        onCall: _call,
-                        onWhatsapp: _whatsappRelated,
+                        contactId: p.ownerId,
+                        phone: p.ownerId != null ? _relatedPhones[p.ownerId] : null,
                       ),
-                    if (p.buyerName.isNotEmpty) ...[
-                      if (p.ownerName.isNotEmpty) const SizedBox(height: 8),
-                      _AdvisorCard(
+                    if (p.buyerName.isNotEmpty)
+                      (
                         label: 'Comprador',
                         name: p.buyerName,
-                        phone: p.buyerId != null
-                            ? _relatedPhones[p.buyerId]
-                            : null,
-                        onCall: _call,
-                        onWhatsapp: _whatsappRelated,
+                        contactId: p.buyerId,
+                        phone: p.buyerId != null ? _relatedPhones[p.buyerId] : null,
                       ),
-                    ],
-                    if (p.tenantName.isNotEmpty) ...[
-                      if (p.ownerName.isNotEmpty || p.buyerName.isNotEmpty)
-                        const SizedBox(height: 8),
-                      _AdvisorCard(
+                    if (p.tenantName.isNotEmpty)
+                      (
                         label: 'Arrendatario',
                         name: p.tenantName,
-                        phone: p.tenantId != null
-                            ? _relatedPhones[p.tenantId]
-                            : null,
-                        onCall: _call,
-                        onWhatsapp: _whatsappRelated,
+                        contactId: p.tenantId,
+                        phone: p.tenantId != null ? _relatedPhones[p.tenantId] : null,
                       ),
-                    ],
                   ],
+                  onCall: _call,
+                  onWhatsapp: _whatsappRelated,
                 ),
               ),
               const SizedBox(height: 8),
@@ -970,6 +959,133 @@ class _SectionTitle extends StatelessWidget {
       child: Text(
         title,
         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+      ),
+    );
+  }
+}
+
+/// Fila de una persona relacionada (propietario/comprador/arrendatario):
+/// misma tarjeta compacta que _InfoCard, pero el nombre lleva a la ficha
+/// completa del contacto y trae los accesos directos de llamar/WhatsApp
+/// cuando hay teléfono cargado.
+class _PeopleInfoCard extends StatelessWidget {
+  final List<({String label, String name, int? contactId, String? phone})> rows;
+  final ValueChanged<String> onCall;
+  final ValueChanged<String> onWhatsapp;
+
+  const _PeopleInfoCard({
+    required this.rows,
+    required this.onCall,
+    required this.onWhatsapp,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    if (rows.isEmpty) {
+      return Text(
+        'Sin información registrada.',
+        style: TextStyle(color: colors.mutedLight, fontSize: 13),
+      );
+    }
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Column(
+          children: [
+            for (int i = 0; i < rows.length; i++) ...[
+              if (i > 0) const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        rows[i].label,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: colors.mutedLight,
+                        ),
+                      ),
+                    ),
+                    Flexible(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(6),
+                        onTap: rows[i].contactId == null
+                            ? null
+                            : () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => ContactDetailScreen(
+                                      contactId: rows[i].contactId!,
+                                    ),
+                                  ),
+                                ),
+                        child: Text(
+                          rows[i].name,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
+                            color: rows[i].contactId != null
+                                ? colors.navy
+                                : null,
+                            decoration: rows[i].contactId != null
+                                ? TextDecoration.underline
+                                : null,
+                            decorationColor: colors.navy.withValues(alpha: 0.35),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (rows[i].phone != null) ...[
+                      const SizedBox(width: 6),
+                      _SmallContactIcon(
+                        icon: Icons.call,
+                        color: colors.navy,
+                        onTap: () => onCall(rows[i].phone!),
+                      ),
+                      const SizedBox(width: 2),
+                      _SmallContactIcon(
+                        icon: Icons.chat,
+                        color: const Color(0xFF25D366),
+                        onTap: () => onWhatsapp(rows[i].phone!),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Ícono chico de llamar/WhatsApp para filas compactas — versión reducida
+/// de _ContactIconButton, pensada para caber al lado de un nombre en vez
+/// de en una tarjeta grande con avatar.
+class _SmallContactIcon extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  const _SmallContactIcon({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: onTap,
+      child: Container(
+        width: 30,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white, size: 14),
       ),
     );
   }
