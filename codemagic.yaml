@@ -12,10 +12,12 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      vars:
-        # Contenido de GoogleService-Info.plist codificado en base64 —
-        # se guarda como variable segura en Codemagic, nunca en el repo.
-        GOOGLE_SERVICE_INFO_PLIST: Encrypted(...)
+      # Carga aquí las variables del grupo que creaste en Codemagic
+      # (Variables ambientales → grupo "ios_secrets"), entre ellas
+      # GOOGLE_SERVICE_INFO_PLIST — el contenido base64 del archivo de
+      # Firebase, que nunca vive en el repo.
+      groups:
+        - ios_secrets
     scripts:
       - name: Restaurar GoogleService-Info.plist (Firebase)
         script: |
