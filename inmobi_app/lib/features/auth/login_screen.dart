@@ -117,7 +117,6 @@ class _LoginScreenState extends State<LoginScreen>
       setState(() => _error = e.message);
     } catch (e) {
       HapticFeedback.heavyImpact();
-      debugPrint('Login error: $e');
       setState(
         () => _error = kDebugMode
             ? 'Error de conexión:\n$e'

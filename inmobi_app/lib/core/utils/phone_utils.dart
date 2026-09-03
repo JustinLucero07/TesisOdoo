@@ -97,7 +97,6 @@ class PhoneUtils {
     try {
       return await launchUrl(uri, mode: mode ?? LaunchMode.platformDefault);
     } catch (e) {
-      debugPrint('No se pudo abrir $uri: $e');
       return false;
     }
   }

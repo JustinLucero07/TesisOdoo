@@ -77,7 +77,6 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      debugPrint('No se pudo autoiniciar sesión: $e');
       return false;
     }
   }

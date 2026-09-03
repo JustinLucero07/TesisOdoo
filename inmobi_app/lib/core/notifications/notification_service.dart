@@ -14,7 +14,6 @@ import '../api/odoo_client.dart';
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-  debugPrint('Notificación FCM recibida en segundo plano: ${message.messageId}');
 }
 
 /// Servicio integral de Notificaciones Locales y Notificaciones Push con Firebase (FCM).
@@ -44,8 +43,8 @@ class NotificationService {
       tzdata.initializeTimeZones();
       final localName = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(localName.identifier));
-    } catch (e) {
-      debugPrint('Zona horaria local no resuelta: $e');
+    } catch (_) {
+      // Sin zona horaria resuelta las alarmas usan la del sistema.
     }
 
     // 2. Inicializar Flutter Local Notifications Plugin
@@ -79,8 +78,8 @@ class NotificationService {
           ),
         );
       }
-    } catch (e) {
-      debugPrint('Error al inicializar Local Notifications: $e');
+    } catch (_) {
+      // Sin notificaciones locales la app sigue funcionando igual.
     }
 
     // 3. Inicializar Firebase y FCM (solo en Android e iOS)
@@ -103,15 +102,13 @@ class NotificationService {
 
         // Obtener el token FCM inicial
         _fcmToken = await FirebaseMessaging.instance.getToken();
-        debugPrint('Firebase FCM Token obtenido: $_fcmToken');
 
         // Escuchar cambios de token
         FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
           _fcmToken = newToken;
-          debugPrint('Firebase FCM Token actualizado: $newToken');
         });
-      } catch (e) {
-        debugPrint('Firebase no disponible en este entorno: $e');
+      } catch (_) {
+        // Sin Firebase no hay push, pero el resto de la app funciona.
       }
     }
 
@@ -144,8 +141,8 @@ class NotificationService {
         final granted = await android.requestNotificationsPermission();
         return granted ?? false;
       }
-    } catch (e) {
-      debugPrint('Error al solicitar permisos de notificación: $e');
+    } catch (_) {
+      // Permiso denegado o no disponible en esta plataforma.
     }
     return false;
   }
@@ -166,10 +163,9 @@ class NotificationService {
           id: userId,
           values: {'fcm_token': _fcmToken},
         );
-        debugPrint('Token FCM registrado con éxito en Odoo para el usuario $userId');
       }
-    } catch (e) {
-      debugPrint('No se pudo sincronizar el token FCM con Odoo: $e');
+    } catch (_) {
+      // El token se reintenta en el próximo arranque.
     }
   }
 
@@ -241,9 +237,7 @@ class NotificationService {
         notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
-      debugPrint('🔔 [Cita Programada con Éxito] ID: $visitId | Fecha aviso: $when | Título: $title');
     } catch (e) {
-      debugPrint('⚠️ ExactAlarm falló ($e), intentando inexact...');
       try {
         await _plugin.zonedSchedule(
           id: visitId,
@@ -253,9 +247,8 @@ class NotificationService {
           notificationDetails: details,
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         );
-        debugPrint('🔔 [Cita Programada Inexact] ID: $visitId | Fecha aviso: $when');
-      } catch (e2) {
-        debugPrint('❌ Error fatal al programar la notificación de la cita $visitId: $e2');
+      } catch (_) {
+        // Ni exacta ni inexacta: el aviso local no se pudo programar.
       }
     }
   }
