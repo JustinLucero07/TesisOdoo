@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api/odoo_client.dart';
 import '../../core/notifications/notification_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
@@ -253,18 +254,9 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
     }
   }
 
-  Future<void> _call(String phone) async {
-    final uri = Uri(scheme: 'tel', path: phone);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
-  }
+  Future<void> _call(String phone) => PhoneUtils.call(phone);
 
-  Future<void> _whatsapp(String phone) async {
-    final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    final uri = Uri.parse('https://wa.me/$digits');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
+  Future<void> _whatsapp(String phone) => PhoneUtils.whatsapp(phone);
 
   Future<void> _openLocationMaps(String location) async {
     if (location.isEmpty) return;

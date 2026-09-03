@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/choice_chip_row.dart';
 import '../../core/widgets/skeleton.dart';
@@ -402,10 +402,7 @@ class _ContactTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),
-                      onTap: () => launchUrl(
-                        Uri.parse('tel:$phone'),
-                        mode: LaunchMode.externalApplication,
-                      ),
+                      onTap: () => PhoneUtils.call(phone),
                       child: Container(
                         width: 34,
                         height: 34,
@@ -424,16 +421,7 @@ class _ContactTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),
-                      onTap: () {
-                        final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
-                        final full = clean.startsWith('0')
-                            ? '593${clean.substring(1)}'
-                            : clean;
-                        launchUrl(
-                          Uri.parse('https://wa.me/$full'),
-                          mode: LaunchMode.externalApplication,
-                        );
-                      },
+                      onTap: () => PhoneUtils.whatsapp(phone),
                       child: Container(
                         width: 34,
                         height: 34,

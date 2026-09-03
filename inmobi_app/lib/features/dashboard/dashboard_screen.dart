@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/glass_nav_bar.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/odoo_image.dart';
@@ -736,20 +737,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final clientName = visit.clientName.isNotEmpty ? visit.clientName : 'Estimado/a';
     final prop = visit.propertyName.isNotEmpty ? 'la propiedad ${visit.propertyName}' : 'nuestra cita inmobiliaria';
     final timeStr = DateFormat.Hm('es_EC').format(visit.start);
-    final msg = Uri.encodeComponent(
-      'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $prop programada para las $timeStr.',
-    );
+    final msg = 'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $prop programada para las $timeStr.';
 
-    Uri uri;
     if (phone.isNotEmpty) {
-      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-      uri = Uri.parse('https://wa.me/$digits?text=$msg');
+      await PhoneUtils.whatsapp(phone, text: msg);
     } else {
-      uri = Uri.parse('https://wa.me/?text=$msg');
-    }
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(msg)}');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     }
   }
 

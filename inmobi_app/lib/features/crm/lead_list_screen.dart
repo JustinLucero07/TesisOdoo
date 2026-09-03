@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/glass_nav_bar.dart';
 import '../../core/widgets/motion.dart';
@@ -507,12 +508,11 @@ class _LeadListScreenState extends State<LeadListScreen> {
         HapticFeedback.mediumImpact();
         if (direction == DismissDirection.startToEnd) {
           // Swipe Derecha -> Contactar por WhatsApp
-          final phone = (lead.phone.isNotEmpty ? lead.phone : lead.contactName).replaceAll(RegExp(r'[^0-9+]'), '');
+          final phone = lead.phone.isNotEmpty ? lead.phone : lead.contactName;
           final clientName = lead.contactName.isNotEmpty ? lead.contactName : 'Estimado/a';
-          final msg = Uri.encodeComponent('Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a tu consulta.');
-          final url = Uri.parse('https://wa.me/$phone?text=$msg');
-          if (await canLaunchUrl(url)) {
-            await launchUrl(url, mode: LaunchMode.externalApplication);
+          final msg = 'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a tu consulta.';
+          if (PhoneUtils.normalize(phone).isNotEmpty) {
+            await PhoneUtils.whatsapp(phone, text: msg);
           } else {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -901,11 +901,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
     }
 
     if (phone.isNotEmpty) {
-      final uri = Uri(scheme: 'tel', path: phone);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-        return;
-      }
+      await PhoneUtils.call(phone);
+      return;
     }
 
     if (mounted) {
@@ -945,25 +942,20 @@ class _LeadListScreenState extends State<LeadListScreen> {
     final propName = lead.targetPropertyName.isNotEmpty
         ? 'la propiedad ${lead.targetPropertyName}'
         : 'su requerimiento inmobiliario';
-    final msg = Uri.encodeComponent(
-      'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName.',
-    );
+    final msg = 'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName.';
 
-    Uri uri;
     if (phone.isNotEmpty) {
-      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-      uri = Uri.parse('https://wa.me/$digits?text=$msg');
+      await PhoneUtils.whatsapp(phone, text: msg);
     } else {
-      uri = Uri.parse('https://wa.me/?text=$msg');
-    }
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
-        );
+      final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(msg)}');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+          );
+        }
       }
     }
   }

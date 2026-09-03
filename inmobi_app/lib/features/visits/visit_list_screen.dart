@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/glass_nav_bar.dart';
 import '../../core/widgets/motion.dart';
@@ -696,11 +697,8 @@ class _VisitListScreenState extends State<VisitListScreen> {
       phone = await _getPartnerPhone(v.clientId!);
     }
     if (phone != null && phone.isNotEmpty) {
-      final uri = Uri(scheme: 'tel', path: phone);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-        return;
-      }
+      await PhoneUtils.call(phone);
+      return;
     }
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -724,18 +722,15 @@ class _VisitListScreenState extends State<VisitListScreen> {
     final clientName = v.clientName.isNotEmpty ? v.clientName : 'Estimado/a';
     final propName = v.propertyName.isNotEmpty ? v.propertyName : v.name;
     final timeStr = timeFmt.format(v.start);
-    final msg = Uri.encodeComponent(
-      'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName programada para hoy a las $timeStr.',
-    );
+    final msg =
+        'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName programada para hoy a las $timeStr.';
 
-    Uri uri;
     if (phone != null && phone.isNotEmpty) {
-      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
-      uri = Uri.parse('https://wa.me/$digits?text=$msg');
-    } else {
-      uri = Uri.parse('https://wa.me/?text=$msg');
+      await PhoneUtils.whatsapp(phone, text: msg);
+      return;
     }
 
+    final uri = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(msg)}');
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
