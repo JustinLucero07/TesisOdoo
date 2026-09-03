@@ -101,6 +101,29 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       );
       _nameCtrl.text = 'Interesado en ${widget.initialPropertyName ?? 'Propiedad #${widget.initialPropertyId}'}';
     }
+
+    if (widget.existing == null && _leadSource == null) {
+      _loadDefaultSource();
+    }
+  }
+
+  Future<void> _loadDefaultSource() async {
+    try {
+      final rows = await _odoo.searchRead(
+        model: 'estate.crm.lead.source',
+        domain: [],
+        fields: ['id', 'name'],
+        limit: 1,
+      );
+      if (rows.isNotEmpty && mounted && _leadSource == null) {
+        setState(() {
+          _leadSource = Many2oneValue(
+            rows.first['id'] as int,
+            rows.first['name']?.toString() ?? '',
+          );
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _save() async {
@@ -110,33 +133,80 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       _error = null;
     });
 
-    final vals = {
+    final vals = <String, dynamic>{
       'name': _nameCtrl.text.trim(),
-      'partner_id': _partner?.id ?? false,
-      if (_partner != null) 'contact_name': _partner!.name,
-      'lead_source_id': _leadSource?.id ?? false,
+      'type': 'opportunity',
       'client_budget': double.tryParse(_budgetCtrl.text.trim()) ?? 0.0,
-      if (_stage != null) 'stage_id': _stage!.id,
-      'target_property_id': _targetProperty?.id ?? false,
-      'preferred_property_type_id': _preferredPropertyType?.id ?? false,
-      'preferred_city': _preferredCityCtrl.text.trim(),
-      'preferred_bedrooms':
-          int.tryParse(_preferredBedroomsCtrl.text.trim()) ?? 0,
-      'preferred_min_area':
-          double.tryParse(_preferredMinAreaCtrl.text.trim()) ?? 0.0,
-      'preferred_max_area':
-          double.tryParse(_preferredMaxAreaCtrl.text.trim()) ?? 0.0,
-      'client_needs': _clientNeedsCtrl.text.trim(),
-      // El campo es Html en Odoo: se envuelven los saltos de línea en <p>
-      // para que el chatter/formulario web lo muestre con el mismo formato.
-      'description': _descriptionCtrl.text.trim().isEmpty
-          ? false
-          : _descriptionCtrl.text
-                .trim()
-                .split('\n')
-                .map((line) => '<p>${line.isEmpty ? '<br>' : line}</p>')
-                .join(),
     };
+
+    if (_partner != null) {
+      vals['partner_id'] = _partner!.id;
+      vals['contact_name'] = _partner!.name;
+    }
+
+    if (_leadSource != null) {
+      vals['lead_source_id'] = _leadSource!.id;
+    } else {
+      // Fallback si no ha seleccionado aún una fuente
+      try {
+        final srcs = await _odoo.searchRead(
+          model: 'estate.crm.lead.source',
+          domain: [],
+          fields: ['id', 'name'],
+          limit: 1,
+        );
+        if (srcs.isNotEmpty) {
+          vals['lead_source_id'] = srcs.first['id'] as int;
+        }
+      } catch (_) {}
+    }
+
+    if (_odoo.userId != null && _odoo.userId! > 0) {
+      vals['user_id'] = _odoo.userId;
+    }
+
+    if (_stage != null) {
+      vals['stage_id'] = _stage!.id;
+    }
+
+    if (_targetProperty != null) {
+      vals['target_property_id'] = _targetProperty!.id;
+    }
+
+    if (_preferredPropertyType != null) {
+      vals['preferred_property_type_id'] = _preferredPropertyType!.id;
+    }
+
+    if (_preferredCityCtrl.text.trim().isNotEmpty) {
+      vals['preferred_city'] = _preferredCityCtrl.text.trim();
+    }
+
+    if (_preferredBedroomsCtrl.text.trim().isNotEmpty) {
+      vals['preferred_bedrooms'] =
+          int.tryParse(_preferredBedroomsCtrl.text.trim()) ?? 0;
+    }
+
+    if (_preferredMinAreaCtrl.text.trim().isNotEmpty) {
+      vals['preferred_min_area'] =
+          double.tryParse(_preferredMinAreaCtrl.text.trim()) ?? 0.0;
+    }
+
+    if (_preferredMaxAreaCtrl.text.trim().isNotEmpty) {
+      vals['preferred_max_area'] =
+          double.tryParse(_preferredMaxAreaCtrl.text.trim()) ?? 0.0;
+    }
+
+    if (_clientNeedsCtrl.text.trim().isNotEmpty) {
+      vals['client_needs'] = _clientNeedsCtrl.text.trim();
+    }
+
+    if (_descriptionCtrl.text.trim().isNotEmpty) {
+      vals['description'] = _descriptionCtrl.text
+          .trim()
+          .split('\n')
+          .map((line) => '<p>${line.isEmpty ? '<br>' : line}</p>')
+          .join();
+    }
 
     try {
       if (widget.isEdit) {
@@ -146,7 +216,8 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
-      setState(() => _error = 'No se pudo guardar el lead. Intenta de nuevo.');
+      final msg = e.toString().replaceAll('Exception:', '').trim();
+      setState(() => _error = msg.isNotEmpty ? msg : 'No se pudo guardar el lead. Intenta de nuevo.');
     } finally {
       if (mounted) setState(() => _saving = false);
     }

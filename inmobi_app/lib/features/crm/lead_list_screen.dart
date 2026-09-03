@@ -349,30 +349,6 @@ class _LeadListScreenState extends State<LeadListScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-
-                  // Botón de Creación Rápida
-                  Tooltip(
-                    message: 'Nuevo Lead',
-                    child: Material(
-                      color: const Color(0xFFD81F26),
-                      borderRadius: BorderRadius.circular(14),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
-                        onTap: _openCreate,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          child: const Icon(
-                            Icons.add_rounded,
-                            color: Colors.white,
-                            size: 22,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -727,6 +703,161 @@ class _LeadListScreenState extends State<LeadListScreen> {
                               ),
                           ],
                         ),
+                        const SizedBox(height: 10),
+
+                        // ── Botón WhatsApp y Menú de Opciones (3 puntos) ──
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Material(
+                              color: const Color(0xFF25D366),
+                              borderRadius: BorderRadius.circular(10),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(10),
+                                onTap: () => _openWhatsAppLead(lead),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.chat_bubble_rounded,
+                                        color: Colors.white,
+                                        size: 14,
+                                      ),
+                                      SizedBox(width: 6),
+                                      Text(
+                                        'WhatsApp',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            PopupMenuButton<String>(
+                              icon: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF28244E)
+                                      : const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  Icons.more_horiz_rounded,
+                                  size: 18,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : const Color(0xFF334155),
+                                ),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              onSelected: (val) {
+                                if (val == 'call') {
+                                  _callLead(lead);
+                                } else if (val == 'visit') {
+                                  Navigator.of(context)
+                                      .push(
+                                        MaterialPageRoute(
+                                          builder: (_) => VisitFormScreen(
+                                            initialClientId: lead.partnerId,
+                                            initialClientName:
+                                                lead.partnerName.isNotEmpty
+                                                    ? lead.partnerName
+                                                    : lead.contactName,
+                                            initialPropertyId:
+                                                lead.targetPropertyId,
+                                            initialPropertyName:
+                                                lead.targetPropertyName,
+                                          ),
+                                        ),
+                                      )
+                                      .then((_) => _load());
+                                } else if (val == 'detail') {
+                                  Navigator.of(context)
+                                      .push(
+                                        MaterialPageRoute(
+                                          builder: (_) => LeadDetailScreen(
+                                            leadId: lead.id,
+                                          ),
+                                        ),
+                                      )
+                                      .then((_) => _load());
+                                } else if (val == 'edit') {
+                                  Navigator.of(context)
+                                      .push(
+                                        MaterialPageRoute(
+                                          builder: (_) => LeadFormScreen(
+                                            existing: lead,
+                                          ),
+                                        ),
+                                      )
+                                      .then((_) => _load());
+                                }
+                              },
+                              itemBuilder: (ctx) => [
+                                const PopupMenuItem(
+                                  value: 'call',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.phone_outlined, size: 18),
+                                      SizedBox(width: 10),
+                                      Text('Llamar'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'visit',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_month_outlined,
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text('Agendar Cita'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'detail',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.visibility_outlined,
+                                        size: 18,
+                                      ),
+                                      SizedBox(width: 10),
+                                      Text('Ver Detalle'),
+                                    ],
+                                  ),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'edit',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.edit_outlined, size: 18),
+                                      SizedBox(width: 10),
+                                      Text('Editar Lead'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -737,6 +868,96 @@ class _LeadListScreenState extends State<LeadListScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _callLead(Lead lead) async {
+    HapticFeedback.selectionClick();
+    String phone = lead.phone.trim();
+    if (phone.isEmpty && lead.partnerId != null) {
+      try {
+        final odoo = context.read<AuthService>().odoo;
+        final res = await odoo.searchRead(
+          model: 'res.partner',
+          domain: [
+            ['id', '=', lead.partnerId],
+          ],
+          fields: ['phone', 'mobile'],
+          limit: 1,
+        );
+        if (res.isNotEmpty) {
+          final m = (res.first['mobile'] ?? '').toString().trim();
+          final p = (res.first['phone'] ?? '').toString().trim();
+          phone = m.isNotEmpty ? m : p;
+        }
+      } catch (_) {}
+    }
+
+    if (phone.isNotEmpty) {
+      final uri = Uri(scheme: 'tel', path: phone);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+        return;
+      }
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Este lead no tiene número de teléfono registrado.'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openWhatsAppLead(Lead lead) async {
+    HapticFeedback.selectionClick();
+    String phone = lead.phone.trim();
+    if (phone.isEmpty && lead.partnerId != null) {
+      try {
+        final odoo = context.read<AuthService>().odoo;
+        final res = await odoo.searchRead(
+          model: 'res.partner',
+          domain: [
+            ['id', '=', lead.partnerId],
+          ],
+          fields: ['phone', 'mobile'],
+          limit: 1,
+        );
+        if (res.isNotEmpty) {
+          final m = (res.first['mobile'] ?? '').toString().trim();
+          final p = (res.first['phone'] ?? '').toString().trim();
+          phone = m.isNotEmpty ? m : p;
+        }
+      } catch (_) {}
+    }
+
+    final clientName = lead.contactName.isNotEmpty
+        ? lead.contactName
+        : (lead.partnerName.isNotEmpty ? lead.partnerName : 'Estimado/a');
+    final propName = lead.targetPropertyName.isNotEmpty
+        ? 'la propiedad ${lead.targetPropertyName}'
+        : 'su requerimiento inmobiliario';
+    final msg = Uri.encodeComponent(
+      'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName.',
+    );
+
+    Uri uri;
+    if (phone.isNotEmpty) {
+      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+      uri = Uri.parse('https://wa.me/$digits?text=$msg');
+    } else {
+      uri = Uri.parse('https://wa.me/?text=$msg');
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+        );
+      }
+    }
   }
 }
 

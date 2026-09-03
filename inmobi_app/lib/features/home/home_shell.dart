@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -723,7 +724,7 @@ class _DrawerActionTile extends StatelessWidget {
   }
 }
 
-/// Barra de navegación ejecutiva y moderna con resaltado sutil tipo pill
+/// Barra de navegación flotante estilo Dynamic Glass Dock
 class _CleanBottomNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
@@ -739,111 +740,106 @@ class _CleanBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
     return Container(
+      margin: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        bottomInset > 0 ? bottomInset + 4 : 14,
+      ),
+      height: 64,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF14112E) : Colors.white,
-        border: Border(
-          top: BorderSide(
-            color: isDark ? const Color(0xFF28244E) : const Color(0xFFE5E7EB),
-            width: 1,
-          ),
+        color: isDark
+            ? const Color(0xFF14112E).withValues(alpha: 0.94)
+            : Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : const Color(0xFFE2E8F0),
+          width: 1.2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.07),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          child: Row(
-            children: List.generate(items.length, (i) {
-              final item = items[i];
-              final selected = i == currentIndex;
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+            child: Row(
+              children: List.generate(items.length, (i) {
+                final item = items[i];
+                final selected = i == currentIndex;
 
-              return Expanded(
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onTap(i);
-                  },
-                  splashColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  child: Center(
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onTap(i);
+                    },
+                    behavior: HitTestBehavior.opaque,
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: selected ? 12 : 6,
-                        vertical: 4,
-                      ),
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                      padding: const EdgeInsets.symmetric(vertical: 5),
                       decoration: BoxDecoration(
                         color: selected
                             ? (isDark
-                                ? const Color(0xFF28235D).withValues(alpha: 0.5)
-                                : const Color(0xFF28235D).withValues(alpha: 0.08))
+                                ? const Color(0xFF2E2863)
+                                : const Color(0xFF28235D))
                             : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(22),
                       ),
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
-                            selected ? item.activeIcon : item.icon,
-                            size: 22,
-                            color: selected
-                                ? (isDark
-                                    ? const Color(0xFF9E99FF)
-                                    : const Color(0xFF28235D))
-                                : (isDark
-                                    ? const Color(0xFF64748B)
-                                    : const Color(0xFF94A3B8)),
+                          AnimatedScale(
+                            scale: selected ? 1.08 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeOutBack,
+                            child: Icon(
+                              selected ? item.activeIcon : item.icon,
+                              size: 20,
+                              color: selected
+                                  ? Colors.white
+                                  : (isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B)),
+                            ),
                           ),
                           const SizedBox(height: 3),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                item.label,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: selected
-                                      ? FontWeight.w800
-                                      : FontWeight.w500,
-                                  color: selected
-                                      ? (isDark
-                                          ? Colors.white
-                                          : const Color(0xFF28235D))
-                                      : (isDark
-                                          ? const Color(0xFF64748B)
-                                          : const Color(0xFF94A3B8)),
-                                ),
-                              ),
-                              if (selected) ...[
-                                const SizedBox(width: 3),
-                                Container(
-                                  width: 4,
-                                  height: 4,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFD81F26),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                              ],
-                            ],
+                          Text(
+                            item.label,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight:
+                                  selected ? FontWeight.w800 : FontWeight.w600,
+                              color: selected
+                                  ? Colors.white
+                                  : (isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B)),
+                              letterSpacing: -0.1,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              );
-            }),
+                );
+              }),
+            ),
           ),
         ),
       ),

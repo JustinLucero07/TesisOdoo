@@ -9,9 +9,24 @@ class EstateDocument {
   final String filename;
   final bool isPdf;
   final double fileSizeMb;
+  final int? typeId;
   final String typeName;
+  final String typeCategory;
   final String state;
+  final String confidentiality;
   final DateTime? date;
+  final DateTime? expirationDate;
+  final int? propertyId;
+  final String propertyName;
+  final int? partnerId;
+  final String partnerName;
+  final int? contractId;
+  final String contractName;
+  final int? leadId;
+  final String leadName;
+  final String rejectionReason;
+  final String verifiedByName;
+  final DateTime? verifiedDate;
 
   EstateDocument({
     required this.id,
@@ -19,9 +34,24 @@ class EstateDocument {
     required this.filename,
     required this.isPdf,
     required this.fileSizeMb,
+    this.typeId,
     required this.typeName,
+    this.typeCategory = '',
     required this.state,
+    this.confidentiality = 'internal',
     this.date,
+    this.expirationDate,
+    this.propertyId,
+    this.propertyName = '',
+    this.partnerId,
+    this.partnerName = '',
+    this.contractId,
+    this.contractName = '',
+    this.leadId,
+    this.leadName = '',
+    this.rejectionReason = '',
+    this.verifiedByName = '',
+    this.verifiedDate,
   });
 
   static const List<String> listFields = [
@@ -30,8 +60,18 @@ class EstateDocument {
     'is_pdf',
     'file_size',
     'type_id',
+    'type_category',
     'state',
+    'confidentiality',
     'date',
+    'expiration_date',
+    'property_id',
+    'partner_id',
+    'contract_id',
+    'lead_id',
+    'rejection_reason',
+    'verified_by',
+    'verified_date',
   ];
 
   factory EstateDocument.fromJson(Map<String, dynamic> json) {
@@ -41,9 +81,28 @@ class EstateDocument {
       filename: asOdooString(json['filename']),
       isPdf: json['is_pdf'] == true,
       fileSizeMb: asOdooDouble(json['file_size']),
+      typeId: json['type_id'] is List ? json['type_id'][0] as int : null,
       typeName: many2oneName(json['type_id']),
+      typeCategory: asOdooString(json['type_category']),
       state: asOdooString(json['state'], 'received'),
+      confidentiality: asOdooString(json['confidentiality'], 'internal'),
       date: json['date'] is String ? DateTime.tryParse(json['date']) : null,
+      expirationDate: json['expiration_date'] is String
+          ? DateTime.tryParse(json['expiration_date'])
+          : null,
+      propertyId: json['property_id'] is List ? json['property_id'][0] as int : null,
+      propertyName: many2oneName(json['property_id']),
+      partnerId: json['partner_id'] is List ? json['partner_id'][0] as int : null,
+      partnerName: many2oneName(json['partner_id']),
+      contractId: json['contract_id'] is List ? json['contract_id'][0] as int : null,
+      contractName: many2oneName(json['contract_id']),
+      leadId: json['lead_id'] is List ? json['lead_id'][0] as int : null,
+      leadName: many2oneName(json['lead_id']),
+      rejectionReason: asOdooString(json['rejection_reason']),
+      verifiedByName: many2oneName(json['verified_by']),
+      verifiedDate: json['verified_date'] is String
+          ? DateTime.tryParse(json['verified_date'])
+          : null,
     );
   }
 
@@ -56,10 +115,12 @@ class EstateDocument {
         ext.endsWith('.webp')) {
       return Icons.image_outlined;
     }
-    if (ext.endsWith('.doc') || ext.endsWith('.docx'))
+    if (ext.endsWith('.doc') || ext.endsWith('.docx')) {
       return Icons.description_outlined;
-    if (ext.endsWith('.xls') || ext.endsWith('.xlsx'))
+    }
+    if (ext.endsWith('.xls') || ext.endsWith('.xlsx')) {
       return Icons.table_chart_outlined;
+    }
     return Icons.insert_drive_file_outlined;
   }
 }
@@ -79,5 +140,21 @@ class DocumentStateStyle {
     'rejected' => AppColors.danger,
     'archived' => AppColors.mutedLight,
     _ => AppColors.info,
+  };
+}
+
+class DocumentConfidentialityStyle {
+  static String label(String level) => switch (level) {
+    'public' => 'Público',
+    'restricted' => 'Restringido',
+    'confidential' => 'Confidencial',
+    _ => 'Interno',
+  };
+
+  static Color color(String level) => switch (level) {
+    'public' => const Color(0xFF10B981),
+    'restricted' => const Color(0xFFF59E0B),
+    'confidential' => const Color(0xFFEF4444),
+    _ => const Color(0xFF6B7280),
   };
 }

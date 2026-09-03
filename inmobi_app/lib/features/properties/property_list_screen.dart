@@ -266,30 +266,6 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                               ),
                           ],
                         ),
-                        const SizedBox(width: 8),
-
-                        // Botón de Creación Rápida
-                        Tooltip(
-                          message: 'Nueva Propiedad',
-                          child: Material(
-                            color: const Color(0xFFD81F26),
-                            borderRadius: BorderRadius.circular(14),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(14),
-                              onTap: _openCreate,
-                              child: Container(
-                                width: 44,
-                                height: 44,
-                                alignment: Alignment.center,
-                                child: const Icon(
-                                  Icons.add_home_work_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

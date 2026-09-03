@@ -23,6 +23,7 @@ class VisitFormScreen extends StatefulWidget {
   final String? initialPropertyName;
   final int? initialClientId;
   final String? initialClientName;
+  final DateTime? initialDate;
 
   const VisitFormScreen({
     super.key,
@@ -31,6 +32,7 @@ class VisitFormScreen extends StatefulWidget {
     this.initialPropertyName,
     this.initialClientId,
     this.initialClientName,
+    this.initialDate,
   });
 
   bool get isEdit => existing != null;
@@ -106,6 +108,9 @@ class _VisitFormScreenState extends State<VisitFormScreen> {
           widget.initialClientId!,
           widget.initialClientName ?? '',
         );
+      }
+      if (widget.initialDate != null) {
+        _date = widget.initialDate!;
       }
     }
   }

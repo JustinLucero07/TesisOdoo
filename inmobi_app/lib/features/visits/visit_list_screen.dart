@@ -332,7 +332,6 @@ class _VisitListScreenState extends State<VisitListScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dayLabel = DateFormat("d 'de' MMMM", 'es_EC').format(_selectedDay);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
@@ -615,20 +614,36 @@ class _VisitListScreenState extends State<VisitListScreen> {
             color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
           ),
 
-          // ── Sección Tareas del Día ──
+          // ── Sección Tareas del Día (Cabecera estilo HOY · X CITAS) ──
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
-            child: Text(
-              'Tareas del $dayLabel',
-              style: TextStyle(
-                fontSize: 15.5,
-                fontWeight: FontWeight.w800,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-              ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+            child: Builder(
+              builder: (context) {
+                final visits = _visitsOfSelectedDay;
+                final count = visits.length;
+                final now = DateTime.now();
+                final isToday = _selectedDay.year == now.year &&
+                    _selectedDay.month == now.month &&
+                    _selectedDay.day == now.day;
+                final countLabel = '$count ${count == 1 ? "CITA" : "CITAS"}';
+                final headerText = isToday
+                    ? 'HOY · $countLabel'
+                    : '${DateFormat('d \'DE\' MMMM', 'es_EC').format(_selectedDay).toUpperCase()} · $countLabel';
+
+                return Text(
+                  headerText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.9,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  ),
+                );
+              },
             ),
           ),
 
-          // Lista de Eventos o Estado Vacío
+          // Lista de Eventos en Timeline o Estado Vacío
           Expanded(
             child: RefreshIndicator(
               onRefresh: () => _loadMonth(_focusedDay),
@@ -638,6 +653,171 @@ class _VisitListScreenState extends State<VisitListScreen> {
         ],
       ),
     );
+  }
+
+  final Map<int, String> _partnerPhones = {};
+
+  Future<String?> _getPartnerPhone(int partnerId) async {
+    if (_partnerPhones.containsKey(partnerId)) {
+      return _partnerPhones[partnerId];
+    }
+    try {
+      final rows = await _odoo.searchRead(
+        model: 'res.partner',
+        domain: [
+          ['id', '=', partnerId],
+        ],
+        fields: ['phone', 'mobile'],
+        limit: 1,
+      );
+      if (rows.isNotEmpty) {
+        final r = rows.first;
+        final mobile = (r['mobile'] ?? '').toString().trim();
+        final phone = (r['phone'] ?? '').toString().trim();
+        final chosen = mobile.isNotEmpty ? mobile : phone;
+        if (chosen.isNotEmpty) {
+          _partnerPhones[partnerId] = chosen;
+          return chosen;
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<void> _callClient(Visit v) async {
+    HapticFeedback.selectionClick();
+    String? phone;
+    if (v.clientId != null) {
+      phone = await _getPartnerPhone(v.clientId!);
+    }
+    if (phone != null && phone.isNotEmpty) {
+      final uri = Uri(scheme: 'tel', path: phone);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+        return;
+      }
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            v.clientName.isNotEmpty
+                ? '${v.clientName} no tiene teléfono registrado en Odoo.'
+                : 'Esta cita no tiene un contacto con teléfono vinculado.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openWhatsApp(Visit v, DateFormat timeFmt) async {
+    HapticFeedback.selectionClick();
+    String? phone;
+    if (v.clientId != null) {
+      phone = await _getPartnerPhone(v.clientId!);
+    }
+    final clientName = v.clientName.isNotEmpty ? v.clientName : 'Estimado/a';
+    final propName = v.propertyName.isNotEmpty ? v.propertyName : v.name;
+    final timeStr = timeFmt.format(v.start);
+    final msg = Uri.encodeComponent(
+      'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName programada para hoy a las $timeStr.',
+    );
+
+    Uri uri;
+    if (phone != null && phone.isNotEmpty) {
+      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+      uri = Uri.parse('https://wa.me/$digits?text=$msg');
+    } else {
+      uri = Uri.parse('https://wa.me/?text=$msg');
+    }
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _openLocation(Visit v) async {
+    HapticFeedback.selectionClick();
+    String query = v.location.trim();
+    if (query.isEmpty && v.propertyName.isNotEmpty) {
+      query = v.propertyName;
+    }
+    if (query.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esta cita no tiene una dirección registrada.')),
+        );
+      }
+      return;
+    }
+
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('$query Ecuador')}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  static (Color bg, Color text, String label) _pillBadge(String type, bool isDark) {
+    final t = type.toLowerCase().trim();
+    if (t.contains('visita') || t == 'visit') {
+      return isDark
+          ? (const Color(0xFF1E3A8A).withValues(alpha: 0.45), const Color(0xFF93C5FD), 'Visita')
+          : (const Color(0xFFEFF6FF), const Color(0xFF2563EB), 'Visita');
+    }
+    if (t.contains('avaluo') || t.contains('avalúo') || t == 'appraisal') {
+      return isDark
+          ? (const Color(0xFF78350F).withValues(alpha: 0.45), const Color(0xFFFCD34D), 'Avalúo')
+          : (const Color(0xFFFEF3C7), const Color(0xFFD97706), 'Avalúo');
+    }
+    if (t.contains('firma') || t == 'signing') {
+      return isDark
+          ? (const Color(0xFF064E3B).withValues(alpha: 0.45), const Color(0xFF6EE7B7), 'Firma')
+          : (const Color(0xFFECFDF5), const Color(0xFF059669), 'Firma');
+    }
+    if (t.contains('reunion') || t.contains('reunión') || t == 'meeting') {
+      return isDark
+          ? (const Color(0xFF581C87).withValues(alpha: 0.45), const Color(0xFFC4B5FD), 'Reunión')
+          : (const Color(0xFFF3E8FF), const Color(0xFF7C3AED), 'Reunión');
+    }
+    if (t.contains('llamada') || t == 'call') {
+      return isDark
+          ? (const Color(0xFF14532D).withValues(alpha: 0.45), const Color(0xFF86EFAC), 'Llamada')
+          : (const Color(0xFFF0FDF4), const Color(0xFF16A34A), 'Llamada');
+    }
+    return isDark
+        ? (const Color(0xFF334155), const Color(0xFFCBD5E1), 'Cita')
+        : (const Color(0xFFF1F5F9), const Color(0xFF475569), 'Cita');
+  }
+
+  static (String title, String subtitle) _extractTitles(Visit v) {
+    final type = v.appointmentType.toLowerCase().trim();
+    if ((type == 'visit' || type.contains('visita')) && v.clientName.isNotEmpty) {
+      final title = v.clientName;
+      final subtitle = v.propertyName.isNotEmpty
+          ? v.propertyName
+          : (v.location.isNotEmpty ? v.location : v.name);
+      return (title, subtitle);
+    }
+    if (v.propertyName.isNotEmpty) {
+      final title = v.propertyName;
+      final subtitle = v.clientName.isNotEmpty
+          ? 'Con: ${v.clientName}'
+          : (v.location.isNotEmpty ? v.location : v.name);
+      return (title, subtitle);
+    }
+    final title = v.name;
+    final subtitle = v.clientName.isNotEmpty
+        ? 'Con: ${v.clientName}'
+        : (v.location.isNotEmpty ? v.location : '');
+    return (title, subtitle);
   }
 
   Widget _buildBody(bool isDark) {
@@ -675,6 +855,22 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     height: 1.4,
                   ),
                 ),
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (_) => VisitFormScreen(
+                              initialDate: _selectedDay,
+                            ),
+                          ),
+                        )
+                        .then((_) => _loadMonth(_focusedDay));
+                  },
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  label: const Text('Agendar Cita'),
+                ),
               ],
             ),
           ),
@@ -683,308 +879,253 @@ class _VisitListScreenState extends State<VisitListScreen> {
     }
 
     final timeFmt = DateFormat.Hm('es_EC');
-    final currentUid = _odoo.userId;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final cols = w >= 720 ? 2 : 1;
-
-        if (cols == 1) {
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-            itemCount: visits.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, i) => _buildVisitItem(visits[i], timeFmt, currentUid, isDark),
-          );
-        }
-
-        return GridView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            mainAxisExtent: 160,
-          ),
-          itemCount: visits.length,
-          itemBuilder: (context, i) => _buildVisitItem(visits[i], timeFmt, currentUid, isDark),
-        );
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+      itemCount: visits.length,
+      itemBuilder: (context, i) {
+        final v = visits[i];
+        final isLast = i == visits.length - 1;
+        return _buildTimelineItem(v, timeFmt, isLast, isDark);
       },
     );
   }
 
-  Widget _buildVisitItem(Visit v, DateFormat timeFmt, int? currentUid, bool isDark) {
-    final typeColor = AppointmentTypeStyle.color(v.appointmentType);
-    final isOtherAdvisor = v.userId != null && currentUid != null && v.userId != currentUid;
+  Widget _buildTimelineItem(
+    Visit v,
+    DateFormat timeFmt,
+    bool isLast,
+    bool isDark,
+  ) {
+    final pill = _pillBadge(v.appointmentType, isDark);
+    final titles = _extractTitles(v);
+    final timeStr = timeFmt.format(v.start);
 
-    return Dismissible(
-      key: ValueKey('visit_${v.id}'),
-      direction: DismissDirection.horizontal,
-      confirmDismiss: (direction) async {
-        HapticFeedback.mediumImpact();
-        if (direction == DismissDirection.startToEnd) {
-          final clientName = v.clientName.isNotEmpty ? v.clientName : 'Estimado/a';
-          final propName = v.propertyName.isNotEmpty ? v.propertyName : 'su cita';
-          final msg = Uri.encodeComponent('Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $propName agendada a las ${timeFmt.format(v.start)}.');
-          final url = Uri.parse('https://wa.me/?text=$msg');
-          if (await canLaunchUrl(url)) {
-            await launchUrl(url, mode: LaunchMode.externalApplication);
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No se pudo abrir WhatsApp.')),
-              );
-            }
-          }
-        } else if (direction == DismissDirection.endToStart) {
-          if (mounted) {
-            Navigator.of(context)
-                .push(
-                  MaterialPageRoute(
-                    builder: (_) => VisitDetailScreen(visitId: v.id),
-                  ),
-                )
-                .then((_) => _loadMonth(_focusedDay));
-          }
-        }
-        return false;
-      },
-      background: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF25D366),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
-            SizedBox(width: 8),
-            Text(
-              'WhatsApp',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // ── Columna de Hora ──
+          SizedBox(
+            width: 48,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text(
+                timeStr,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 13.5,
+                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF1E293B),
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
-      secondaryBackground: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: const Color(0xFF28235D),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Text(
-              'Ver Detalle',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 13),
-            ),
-            SizedBox(width: 8),
-            Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 18),
-          ],
-        ),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => Navigator.of(context)
-                .push(
-                  MaterialPageRoute(
-                    builder: (_) => VisitDetailScreen(visitId: v.id),
+
+          // ── Nodo del Timeline y Línea vertical ──
+          SizedBox(
+            width: 22,
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 5),
+                  width: 9,
+                  height: 9,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF818CF8) : const Color(0xFF1E1B4B),
+                    shape: BoxShape.circle,
                   ),
-                )
-                .then((_) => _loadMonth(_focusedDay)),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: 5,
-                    decoration: BoxDecoration(
-                      color: typeColor,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                      ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 1.5,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
                     ),
                   ),
-                  Expanded(
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 6),
+
+          // ── Tarjeta de la Cita (Diseño de la imagen 1) ──
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.035),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () => Navigator.of(context)
+                        .push(
+                          MaterialPageRoute(
+                            builder: (_) => VisitDetailScreen(visitId: v.id),
+                          ),
+                        )
+                        .then((_) => _loadMonth(_focusedDay)),
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // Badge Pill (Visita, Avalúo, Firma, etc.)
                           Row(
                             children: [
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 3.5,
+                                ),
                                 decoration: BoxDecoration(
-                                  color: typeColor.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: pill.$1,
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  timeFmt.format(v.start),
+                                  pill.$3,
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    color: typeColor,
+                                    color: pill.$2,
+                                    fontWeight: FontWeight.w700,
                                     fontSize: 11.5,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                AppointmentTypeStyle.label(v.appointmentType),
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: typeColor,
-                                ),
-                              ),
                               const Spacer(),
-                              AppBadge(
-                                label: VisitStateStyle.label(v.visitState),
-                                color: VisitStateStyle.color(v.visitState),
+                              if (v.visitState != 'scheduled')
+                                AppBadge(
+                                  label: VisitStateStyle.label(v.visitState),
+                                  color: VisitStateStyle.color(v.visitState),
+                                ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          // Título Principal
+                          Text(
+                            titles.$1,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15.5,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+
+                          // Subtítulo
+                          if (titles.$2.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              titles.$2,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+
+                          const SizedBox(height: 12),
+
+                          // ── Botones de Acción Rápida (Llamada, WhatsApp, Ubicación) ──
+                          Row(
+                            children: [
+                              // Botón Teléfono
+                              _ActionCircleButton(
+                                icon: Icons.phone_outlined,
+                                bgColor: isDark
+                                    ? const Color(0xFF28244E)
+                                    : const Color(0xFFF1F5F9),
+                                iconColor: isDark
+                                    ? Colors.white70
+                                    : const Color(0xFF334155),
+                                onTap: () => _callClient(v),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // Botón WhatsApp (Verde)
+                              _ActionCircleButton(
+                                icon: Icons.chat_bubble_rounded,
+                                bgColor: const Color(0xFF25D366),
+                                iconColor: Colors.white,
+                                onTap: () => _openWhatsApp(v, timeFmt),
+                              ),
+                              const SizedBox(width: 8),
+
+                              // Botón Ubicación / Mapa
+                              _ActionCircleButton(
+                                icon: Icons.location_on_outlined,
+                                bgColor: isDark
+                                    ? const Color(0xFF28244E)
+                                    : const Color(0xFFF1F5F9),
+                                iconColor: isDark
+                                    ? Colors.white70
+                                    : const Color(0xFF334155),
+                                onTap: () => _openLocation(v),
                               ),
                             ],
                           ),
-                          if (v.userName.isNotEmpty && isOtherAdvisor) ...[
-                            const SizedBox(height: 6),
-                            Text(
-                              'Asesor: ${v.userName}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.navy,
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Text(
-                            v.propertyName.isNotEmpty ? v.propertyName : v.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 14.5,
-                              height: 1.25,
-                            ),
-                          ),
-                          if (v.clientName.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 10,
-                                  backgroundColor: AppColors.navy.withValues(alpha: 0.1),
-                                  child: Text(
-                                    v.clientName[0].toUpperCase(),
-                                    style: const TextStyle(
-                                      fontSize: 9.5,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.navy,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    v.clientName,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: AppColors.muted,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (v.location.isNotEmpty) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.place_outlined,
-                                  size: 13,
-                                  color: AppColors.mutedLight,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    v.location,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 11.5,
-                                      color: AppColors.mutedLight,
-                                    ),
-                                  ),
-                                ),
-                                InkWell(
-                                  borderRadius: BorderRadius.circular(6),
-                                  onTap: () async {
-                                    final uri = Uri.parse(
-                                      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('${v.location} Ecuador')}',
-                                    );
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri, mode: LaunchMode.externalApplication);
-                                    }
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEF4444).withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(Icons.navigation_rounded, size: 9, color: Color(0xFFEF4444)),
-                                        SizedBox(width: 2),
-                                        Text(
-                                          'GPS',
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w800,
-                                            color: Color(0xFFEF4444),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
                         ],
                       ),
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Botón de acción rápida circular / píldora para la tarjeta de cita
+class _ActionCircleButton extends StatelessWidget {
+  final IconData icon;
+  final Color bgColor;
+  final Color iconColor;
+  final VoidCallback onTap;
+
+  const _ActionCircleButton({
+    required this.icon,
+    required this.bgColor,
+    required this.iconColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: bgColor,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          child: Icon(icon, color: iconColor, size: 18),
         ),
       ),
     );

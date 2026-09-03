@@ -447,14 +447,12 @@ class AppTheme {
   }
 }
 
-/// Sombra suave para las piezas que deben despegarse del fondo (encabezado
-/// del inicio, tarjetas destacadas). Se atenúa en oscuro, donde una sombra
-/// negra sobre fondo oscuro no aporta separación.
-List<BoxShadow> softShadow({double opacity = 0.06, bool isDark = false}) => [
+/// Sombra suave minimalista para tarjetas elegantes estilo banca/real estate
+List<BoxShadow> softShadow({double opacity = 0.04, bool isDark = false}) => [
   BoxShadow(
-    color: Colors.black.withValues(alpha: isDark ? opacity * 2.2 : opacity),
-    blurRadius: 18,
-    offset: const Offset(0, 6),
+    color: Colors.black.withValues(alpha: isDark ? (opacity * 3).clamp(0.0, 0.25) : opacity),
+    blurRadius: 10,
+    offset: const Offset(0, 3),
   ),
 ];
 

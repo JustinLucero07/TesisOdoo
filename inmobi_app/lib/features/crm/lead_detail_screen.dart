@@ -9,6 +9,7 @@ import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
+import '../contracts/contract_detail_screen.dart';
 import '../contracts/contract_list_screen.dart';
 import '../documents/document_service.dart';
 import '../documents/documents_section.dart';
@@ -688,6 +689,12 @@ class _LeadDetailScreenState extends State<LeadDetailScreen> {
           odoo: _odoo,
           lead: lead,
           onOfferChanged: _load,
+        ),
+        const SizedBox(height: 22),
+        _LeadSaleSection(
+          key: ValueKey('sale_${_refreshKey}_${lead.id}'),
+          odoo: _odoo,
+          lead: lead,
         ),
         const SizedBox(height: 22),
         InteractionsSection(
@@ -1498,3 +1505,959 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
   }
 }
 
+/// Sección que muestra la Venta / Negocio Cerrado vinculado al Lead (sale.order / estate.contract)
+class _LeadSaleSection extends StatefulWidget {
+  final OdooClient odoo;
+  final Lead lead;
+
+  const _LeadSaleSection({
+    super.key,
+    required this.odoo,
+    required this.lead,
+  });
+
+  @override
+  State<_LeadSaleSection> createState() => _LeadSaleSectionState();
+}
+
+class _LeadSaleSectionState extends State<_LeadSaleSection> {
+  List<Map<String, dynamic>> _saleOrders = [];
+  List<Map<String, dynamic>> _contracts = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSales();
+  }
+
+  @override
+  void didUpdateWidget(covariant _LeadSaleSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.lead.id != widget.lead.id) {
+      _loadSales();
+    }
+  }
+
+  Future<void> _loadSales() async {
+    setState(() => _loading = true);
+    try {
+      // 1. Buscar órdenes de venta vinculadas al lead
+      final List<dynamic> saleDomain = [
+        '|',
+        ['lead_id', '=', widget.lead.id],
+        ['opportunity_id', '=', widget.lead.id],
+      ];
+
+      var orders = await widget.odoo.searchRead(
+        model: 'sale.order',
+        domain: saleDomain,
+        fields: [
+          'name',
+          'amount_total',
+          'amount_untaxed',
+          'amount_tax',
+          'state',
+          'date_order',
+          'partner_id',
+          'user_id',
+          'invoice_status',
+          'client_order_ref',
+        ],
+        order: 'id desc',
+      );
+
+      // 2. Si no encontró por lead_id directo, buscar por partner si está presente
+      if (orders.isEmpty && widget.lead.partnerId != null) {
+        final List<dynamic> fallbackDomain = [
+          ['partner_id', '=', widget.lead.partnerId],
+        ];
+        try {
+          final fallback = await widget.odoo.searchRead(
+            model: 'sale.order',
+            domain: fallbackDomain,
+            fields: [
+              'name',
+              'amount_total',
+              'amount_untaxed',
+              'amount_tax',
+              'state',
+              'date_order',
+              'partner_id',
+              'user_id',
+              'invoice_status',
+              'client_order_ref',
+            ],
+            order: 'id desc',
+          );
+          orders = fallback;
+        } catch (_) {}
+      }
+
+      // 3. Buscar contratos vinculados
+      List<Map<String, dynamic>> contracts = [];
+      try {
+        final List<dynamic> contractDomain = [];
+        if (widget.lead.partnerId != null) {
+          contractDomain.add(['partner_id', '=', widget.lead.partnerId]);
+        }
+        if (widget.lead.targetPropertyId != null) {
+          contractDomain.add(['property_id', '=', widget.lead.targetPropertyId]);
+        }
+        if (contractDomain.isNotEmpty) {
+          contracts = await widget.odoo.searchRead(
+            model: 'estate.contract',
+            domain: contractDomain,
+            fields: [
+              'name',
+              'contract_type',
+              'state',
+              'amount',
+              'date_start',
+              'date_end',
+              'partner_id',
+              'property_id',
+            ],
+            order: 'id desc',
+          );
+        }
+      } catch (_) {}
+
+      if (mounted) {
+        setState(() {
+          _saleOrders = orders;
+          _contracts = contracts;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _saleOrders = [];
+          _contracts = [];
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _showSaleDetails(Map<String, dynamic> order) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _SaleOrderDetailSheet(
+        odoo: widget.odoo,
+        order: order,
+        lead: widget.lead,
+        linkedContractId: _contracts.isNotEmpty ? _contracts.first['id'] as int? : null,
+      ),
+    );
+  }
+
+  static String _formatState(String? state) {
+    switch (state) {
+      case 'sale':
+        return 'Venta Confirmada';
+      case 'done':
+        return 'Cerrado / Bloqueado';
+      case 'draft':
+        return 'Presupuesto';
+      case 'sent':
+        return 'Presupuesto Enviado';
+      case 'cancel':
+        return 'Cancelado';
+      default:
+        return state ?? 'Borrador';
+    }
+  }
+
+  static Color _stateColor(String? state) {
+    switch (state) {
+      case 'sale':
+      case 'done':
+        return const Color(0xFF10B981);
+      case 'draft':
+      case 'sent':
+        return const Color(0xFFF59E0B);
+      case 'cancel':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF6B7280);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currency = NumberFormat.currency(
+      locale: 'es_EC',
+      symbol: '\$',
+      decimalDigits: 0,
+    );
+
+    if (_loading) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.verified_rounded,
+                      color: Color(0xFF10B981),
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'Venta & Negocio Cerrado',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: LinearProgressIndicator(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_saleOrders.isEmpty && _contracts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: const Color(0xFF10B981).withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.verified_rounded,
+                    color: Color(0xFF10B981),
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Negocio Cerrado / Venta Vinculada',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                      Text(
+                        'Detalles del cierre comercial en Odoo',
+                        style: TextStyle(fontSize: 11.5, color: AppColors.muted),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _saleOrders.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
+              itemBuilder: (context, i) {
+                final order = _saleOrders[i];
+                final orderName = (order['name'] ?? 'Venta').toString();
+                final double total = (order['amount_total'] as num?)?.toDouble() ?? 0.0;
+                final state = order['state']?.toString();
+                final stateColor = _stateColor(state);
+
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isDark
+                          ? Colors.white12
+                          : const Color(0xFF10B981).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => _showSaleDetails(order),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  orderName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const Spacer(),
+                                AppBadge(
+                                  label: _formatState(state),
+                                  color: stateColor,
+                                  background: stateColor.withValues(alpha: 0.12),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Monto Total Venta',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.muted,
+                                      ),
+                                    ),
+                                    Text(
+                                      currency.format(total),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 18,
+                                        color: Color(0xFF10B981),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                FilledButton.icon(
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: const Color(0xFF10B981),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () => _showSaleDetails(order),
+                                  icon: const Icon(Icons.visibility_outlined, size: 16),
+                                  label: const Text(
+                                    'Ver Detalles',
+                                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            if (_contracts.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  final contractId = _contracts.first['id'] as int;
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ContractDetailScreen(contractId: contractId),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.assignment_outlined, size: 18, color: Color(0xFF28235D)),
+                label: Text(
+                  'Ver Contrato Formal (${_contracts.first['name'] ?? ''})',
+                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Modal detallado del Negocio / Orden de Venta cerrada en Odoo
+class _SaleOrderDetailSheet extends StatefulWidget {
+  final OdooClient odoo;
+  final Map<String, dynamic> order;
+  final Lead lead;
+  final int? linkedContractId;
+
+  const _SaleOrderDetailSheet({
+    required this.odoo,
+    required this.order,
+    required this.lead,
+    this.linkedContractId,
+  });
+
+  @override
+  State<_SaleOrderDetailSheet> createState() => _SaleOrderDetailSheetState();
+}
+
+class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
+  Map<String, dynamic>? _propertyDeal;
+  bool _loadingDeal = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPropertyDeal();
+  }
+
+  Future<void> _loadPropertyDeal() async {
+    final propId = widget.lead.targetPropertyId;
+    if (propId == null) return;
+    setState(() => _loadingDeal = true);
+    try {
+      final rows = await widget.odoo.searchRead(
+        model: 'estate.property',
+        domain: [
+          ['id', '=', propId],
+        ],
+        fields: [
+          'title',
+          'deal_deadline',
+          'deal_earnest_amount',
+          'deal_earnest_received_by_agency',
+          'deal_earnest_received_by_owner',
+          'deal_earnest_received_by_proxy',
+          'deal_earnest_payment_cash',
+          'deal_earnest_payment_transfer',
+          'deal_earnest_payment_deposit',
+          'deal_earnest_payment_other_check',
+          'deal_earnest_payment_other',
+          'deal_payment_type',
+          'deal_payment_details',
+          'deal_credit_institution',
+          'deal_credit_advisor',
+          'deal_credit_advisor_phone',
+          'deal_observations',
+          'deal_lead_origin',
+          'date_sold',
+          'sold_by',
+        ],
+        limit: 1,
+      );
+      if (rows.isNotEmpty && mounted) {
+        setState(() => _propertyDeal = rows.first);
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loadingDeal = false);
+    }
+  }
+
+  static String _paymentTypeLabel(String? type) {
+    switch (type) {
+      case 'cash':
+        return 'Contado / Efectivo';
+      case 'credit':
+        return 'Crédito Hipotecario';
+      case 'mixed':
+        return 'Mixto (Entrada + Crédito)';
+      case 'installments':
+        return 'Cuotas Directas';
+      default:
+        return type ?? 'No especificado';
+    }
+  }
+
+  static String _soldByLabel(String? s) {
+    switch (s) {
+      case 'agency':
+        return 'Agencia Inmobiliaria';
+      case 'owner':
+        return 'Trato Directo / Dueño';
+      case 'external':
+        return 'Asesor Externo';
+      default:
+        return s ?? 'Agencia';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currency = NumberFormat.currency(
+      locale: 'es_EC',
+      symbol: '\$',
+      decimalDigits: 2,
+    );
+
+    final order = widget.order;
+    final lead = widget.lead;
+    final orderName = (order['name'] ?? 'Venta').toString();
+    final double total = (order['amount_total'] as num?)?.toDouble() ?? 0.0;
+    final double untaxed = (order['amount_untaxed'] as num?)?.toDouble() ?? 0.0;
+    final double tax = (order['amount_tax'] as num?)?.toDouble() ?? 0.0;
+    final state = order['state']?.toString();
+    final partnerName = order['partner_id'] is List ? order['partner_id'][1]?.toString() ?? '' : '';
+    final advisorName = order['user_id'] is List ? order['user_id'][1]?.toString() ?? '' : '';
+    final dateRaw = order['date_order']?.toString();
+    final DateTime? date = dateRaw != null ? DateTime.tryParse(dateRaw) : null;
+    final invoiceStatus = order['invoice_status']?.toString() ?? '';
+
+    // Datos del negocio cerrado en la propiedad
+    final deal = _propertyDeal;
+    final double earnestAmount = (deal?['deal_earnest_amount'] as num?)?.toDouble() ?? 0.0;
+    final earnestAgency = deal?['deal_earnest_received_by_agency'] == true;
+    final earnestOwner = deal?['deal_earnest_received_by_owner'] == true;
+    final earnestProxy = deal?['deal_earnest_received_by_proxy'] == true;
+    final earnestCash = deal?['deal_earnest_payment_cash'] == true;
+    final earnestTransfer = deal?['deal_earnest_payment_transfer'] == true;
+    final earnestDeposit = deal?['deal_earnest_payment_deposit'] == true;
+    final earnestOtherCheck = deal?['deal_earnest_payment_other_check'] == true;
+    final earnestOtherDesc = deal?['deal_earnest_payment_other']?.toString() ?? '';
+
+    final paymentType = deal?['deal_payment_type']?.toString();
+    final paymentDetails = deal?['deal_payment_details']?.toString() ?? '';
+    final creditInst = deal?['deal_credit_institution']?.toString() ?? '';
+    final creditAdvisor = deal?['deal_credit_advisor']?.toString() ?? '';
+    final creditAdvisorPhone = deal?['deal_credit_advisor_phone']?.toString() ?? '';
+    final deadlineRaw = deal?['deal_deadline']?.toString();
+    final DateTime? deadline = deadlineRaw != null ? DateTime.tryParse(deadlineRaw) : null;
+    final observations = deal?['deal_observations']?.toString() ?? '';
+    final soldBy = deal?['sold_by']?.toString();
+
+    // Recopilar receptores de seña
+    final List<String> receivers = [];
+    if (earnestAgency) receivers.add('Inmobiliaria');
+    if (earnestOwner) receivers.add('Propietario');
+    if (earnestProxy) receivers.add('Apoderado');
+
+    // Recopilar medios de pago de seña
+    final List<String> earnestMethods = [];
+    if (earnestCash) earnestMethods.add('Efectivo');
+    if (earnestTransfer) earnestMethods.add('Transferencia');
+    if (earnestDeposit) earnestMethods.add('Depósito');
+    if (earnestOtherCheck) {
+      earnestMethods.add(earnestOtherDesc.isNotEmpty ? 'Otro ($earnestOtherDesc)' : 'Otro');
+    }
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF14112E) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        14,
+        20,
+        MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              if (_loadingDeal) ...[
+                const SizedBox(height: 8),
+                const LinearProgressIndicator(minHeight: 2),
+              ],
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.receipt_long_rounded,
+                      color: Color(0xFF10B981),
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Orden de Venta $orderName',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          _LeadSaleSectionState._formatState(state),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: _LeadSaleSectionState._stateColor(state),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // Tarjeta de Montos Principales
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Monto Base (Subtotal)', style: TextStyle(fontSize: 13, color: AppColors.muted)),
+                        Text(currency.format(untaxed), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+                    if (tax > 0) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Impuestos (IVA)', style: TextStyle(fontSize: 13, color: AppColors.muted)),
+                          Text(currency.format(tax), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    ],
+                    const Divider(height: 18),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total de la Venta',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        Text(
+                          currency.format(total),
+                          style: const TextStyle(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xFF10B981),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Datos del Cliente y Asesor
+              _InfoRow(
+                icon: Icons.person_outline_rounded,
+                label: 'Cliente: ${partnerName.isNotEmpty ? partnerName : lead.partnerName}',
+              ),
+              if (advisorName.isNotEmpty)
+                _InfoRow(
+                  icon: Icons.badge_outlined,
+                  label: 'Asesor comisionista: $advisorName',
+                ),
+              if (date != null)
+                _InfoRow(
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Fecha de orden: ${DateFormat('d MMMM y, HH:mm', 'es_EC').format(date)}',
+                ),
+              if (invoiceStatus.isNotEmpty)
+                _InfoRow(
+                  icon: Icons.payments_outlined,
+                  label: 'Estado de facturación: $invoiceStatus',
+                ),
+
+              // ── Bloque Seña / Arras ──
+              if (earnestAmount > 0 || receivers.isNotEmpty || earnestMethods.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.handshake_outlined, size: 18, color: Color(0xFF3B82F6)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Seña / Arras del Negocio',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                              color: Color(0xFF1D4ED8),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (earnestAmount > 0)
+                        _InfoRow(
+                          icon: Icons.attach_money_rounded,
+                          label: 'Monto de Seña: ${currency.format(earnestAmount)}',
+                        ),
+                      if (receivers.isNotEmpty)
+                        _InfoRow(
+                          icon: Icons.how_to_reg_outlined,
+                          label: 'Recibió: ${receivers.join(", ")}',
+                        ),
+                      if (earnestMethods.isNotEmpty)
+                        _InfoRow(
+                          icon: Icons.account_balance_wallet_outlined,
+                          label: 'Medio de Pago: ${earnestMethods.join(", ")}',
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // ── Bloque Forma de Pago y Crédito Hipotecario ──
+              if (paymentType != null || paymentDetails.isNotEmpty || creditInst.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.credit_card_outlined, size: 18, color: Color(0xFF10B981)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Forma de Pago del Negocio',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13.5,
+                              color: Color(0xFF047857),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      if (paymentType != null)
+                        _InfoRow(
+                          icon: Icons.category_outlined,
+                          label: 'Tipo: ${_paymentTypeLabel(paymentType)}',
+                        ),
+                      if (paymentDetails.isNotEmpty)
+                        _InfoRow(
+                          icon: Icons.notes_outlined,
+                          label: 'Detalles de pago: $paymentDetails',
+                        ),
+                      if (creditInst.isNotEmpty)
+                        _InfoRow(
+                          icon: Icons.account_balance_outlined,
+                          label: 'Institución de crédito: $creditInst',
+                        ),
+                      if (creditAdvisor.isNotEmpty)
+                        _InfoRow(
+                          icon: Icons.support_agent_outlined,
+                          label: 'Asesor de crédito: $creditAdvisor ${creditAdvisorPhone.isNotEmpty ? "($creditAdvisorPhone)" : ""}',
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // ── Fechas y Cerrado Por ──
+              if (deadline != null || soldBy != null) ...[
+                const SizedBox(height: 12),
+                if (soldBy != null)
+                  _InfoRow(
+                    icon: Icons.business_outlined,
+                    label: 'Cerrado por: ${_soldByLabel(soldBy)}',
+                  ),
+                if (deadline != null)
+                  _InfoRow(
+                    icon: Icons.event_busy_outlined,
+                    label: 'Fecha límite de cierre: ${DateFormat('d MMMM y', 'es_EC').format(deadline)}',
+                  ),
+              ],
+
+              // ── Observaciones del Negocio Cerrado ──
+              if (observations.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E1A3E) : const Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.comment_outlined, size: 17, color: Color(0xFFD97706)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Observaciones del Negocio Cerrado',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                              color: Color(0xFFB45309),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        observations,
+                        style: const TextStyle(fontSize: 13, height: 1.4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 18),
+
+              // ── Botones de acción ──
+              if (widget.linkedContractId != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF28235D),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ContractDetailScreen(contractId: widget.linkedContractId!),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.assignment_outlined, size: 18),
+                    label: const Text(
+                      'Ver Contrato Formal del Cierre',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+              if (lead.targetPropertyId != null) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PropertyDetailScreen(propertyId: lead.targetPropertyId!),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.home_work_outlined, size: 18),
+                    label: const Text(
+                      'Ver Ficha de la Propiedad',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

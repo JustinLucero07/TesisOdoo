@@ -68,13 +68,13 @@ class _PropertyCardState extends State<PropertyCard> {
     return Container(
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isDark
-              ? Colors.white.withValues(alpha: 0.08)
-              : AppColors.line.withValues(alpha: 0.8),
+              ? Colors.white.withValues(alpha: 0.1)
+              : const Color(0xFFE2E8F0),
         ),
-        boxShadow: softShadow(opacity: isDark ? 0.25 : 0.05, isDark: isDark),
+        boxShadow: softShadow(opacity: isDark ? 0.25 : 0.04, isDark: isDark),
       ),
       clipBehavior: Clip.antiAlias,
       child: Material(
@@ -420,7 +420,7 @@ class _PropertyCardState extends State<PropertyCard> {
                     // Fila de Acciones Comerciales
                     Row(
                       children: [
-                        // Botón Compartir Ficha
+                        // Botón Ficha PDF
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () => FichaDownloader.start(
@@ -429,14 +429,17 @@ class _PropertyCardState extends State<PropertyCard> {
                               property: p,
                             ),
                             style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 9,
+                                horizontal: 6,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               side: BorderSide(
                                 color: isDark
                                     ? Colors.white.withValues(alpha: 0.15)
-                                    : AppColors.line,
+                                    : const Color(0xFFE2E8F0),
                               ),
                             ),
                             icon: const Icon(Icons.share_outlined, size: 15),
@@ -444,36 +447,166 @@ class _PropertyCardState extends State<PropertyCard> {
                               fit: BoxFit.scaleDown,
                               child: Text(
                                 'Ficha PDF',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
+
                         // Botón WhatsApp Comercial
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () => FichaDownloader.shareCommercialWhatsapp(
+                            onPressed: () =>
+                                FichaDownloader.shareCommercialWhatsapp(
                               property: p,
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF25D366),
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 9,
+                                horizontal: 6,
+                              ),
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 15),
+                            icon: const Icon(
+                              Icons.chat_bubble_outline_rounded,
+                              size: 15,
+                            ),
                             label: const FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
                                 'WhatsApp',
-                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ),
+                        ),
+                        const SizedBox(width: 6),
+
+                        // Menú de opciones (3 puntos)
+                        PopupMenuButton<String>(
+                          icon: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF28244E)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.more_horiz_rounded,
+                              size: 18,
+                              color: isDark
+                                  ? Colors.white70
+                                  : const Color(0xFF334155),
+                            ),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          onSelected: (val) async {
+                            if (val == 'detail') {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PropertyDetailScreen(
+                                    propertyId: p.id,
+                                  ),
+                                ),
+                              );
+                            } else if (val == 'visit') {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => VisitFormScreen(
+                                    initialPropertyId: p.id,
+                                    initialPropertyName: p.title,
+                                  ),
+                                ),
+                              );
+                            } else if (val == 'maps') {
+                              final query = [
+                                if (p.street.isNotEmpty) p.street,
+                                if (p.streetNumber.isNotEmpty) p.streetNumber,
+                                if (p.sector.isNotEmpty) p.sector,
+                                if (p.city.isNotEmpty) p.city,
+                              ].join(', ');
+                              if (query.isNotEmpty) {
+                                final uri = Uri.parse(
+                                  'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('$query Ecuador')}',
+                                );
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                }
+                              }
+                            } else if (val == 'edit') {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PropertyFormScreen(
+                                    existing: p,
+                                  ),
+                                ),
+                              );
+                            }
+                          },
+                          itemBuilder: (ctx) => [
+                            const PopupMenuItem(
+                              value: 'detail',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.visibility_outlined, size: 18),
+                                  SizedBox(width: 10),
+                                  Text('Ver Detalle'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'visit',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.calendar_month_outlined,
+                                    size: 18,
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text('Agendar Visita'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'maps',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.location_on_outlined, size: 18),
+                                  SizedBox(width: 10),
+                                  Text('Ver en Mapa'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 18),
+                                  SizedBox(width: 10),
+                                  Text('Editar Propiedad'),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

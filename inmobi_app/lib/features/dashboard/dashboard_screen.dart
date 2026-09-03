@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/odoo_image.dart';
@@ -28,7 +30,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _loading = true;
   String? _error;
   int _available = 0;
-  int _sold = 0;
   int _hotLeads = 0;
   int _activeContracts = 0;
   List<Visit> _todayVisits = [];
@@ -61,19 +62,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ],
         ),
-        odoo.callKw(
-          model: 'estate.property',
-          method: 'search_count',
-          args: [
-            [
-              [
-                'state',
-                'in',
-                ['sold', 'rented'],
-              ],
-            ],
-          ],
-        ),
         leadService.countHot(),
         visitService.listByRange(
           dayStart,
@@ -93,10 +81,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) {
         setState(() {
           _available = results[0] as int;
-          _sold = results[1] as int;
-          _hotLeads = results[2] as int;
-          _todayVisits = results[3] as List<Visit>;
-          _activeContracts = results[4] as int;
+          _hotLeads = results[1] as int;
+          _todayVisits = results[2] as List<Visit>;
+          _activeContracts = results[3] as int;
         });
       }
     } catch (e) {
@@ -127,36 +114,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: ListView(
         padding: const EdgeInsets.only(bottom: 110),
         children: [
+          // ── Encabezado Ejecutivo con Saludo Dinámico ──
           _DashboardHeader(userName: userName),
+
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Barra de Accesos Rápidos
-                _buildQuickActions(context),
-                const SizedBox(height: 20),
+                // ── Accesos Rápidos Inmediatos ──
+                _buildQuickActions(context, isDark),
+                const SizedBox(height: 18),
 
-                // Próxima Cita Destacada (si hay)
+                // ── Próxima Cita / Actividad en Vivo ──
                 if (_todayVisits.isNotEmpty) ...[
                   _buildNextVisitCard(_todayVisits.first, timeFmt, isDark),
                   const SizedBox(height: 20),
+                ] else ...[
+                  _buildEmptyAgendaCard(isDark),
+                  const SizedBox(height: 20),
                 ],
 
-                // Indicadores Clave en formato Bento Grid
-                const Text(
-                  'Panel de Rendimiento',
-                  style: TextStyle(
-                    fontSize: 16.5,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                  ),
+                // ── Panel de Rendimiento (Bento Grid) ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Rendimiento Operativo',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    Text(
+                      'En tiempo real',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 _buildBentoGrid(isDark),
 
                 const SizedBox(height: 24),
-                // Sección de Visitas de Hoy
+                // ── Sección de Agenda del Día ──
                 ..._buildTodaySection(timeFmt, isDark),
               ],
             ),
@@ -167,26 +173,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Barra de accesos directos rápidos
-  Widget _buildQuickActions(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildQuickActions(BuildContext context, bool isDark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Acciones Rápidas',
+        Text(
+          'ACCIONES RÁPIDAS',
           style: TextStyle(
-            fontSize: 13.5,
-            fontWeight: FontWeight.w700,
-            color: AppColors.muted,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.8,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
           ),
         ),
         const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _ActionChipButton(
+        Row(
+          children: [
+            Expanded(
+              child: _ActionSquareButton(
                 icon: Icons.add_home_work_rounded,
+                iconColor: const Color(0xFF2563EB),
+                bgColor: isDark
+                    ? const Color(0xFF1E3A8A).withValues(alpha: 0.35)
+                    : const Color(0xFFEFF6FF),
                 label: 'Propiedad',
                 isDark: isDark,
                 onTap: () => Navigator.of(context)
@@ -197,9 +206,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                     .then((_) => _load()),
               ),
-              const SizedBox(width: 10),
-              _ActionChipButton(
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionSquareButton(
                 icon: Icons.person_add_alt_1_rounded,
+                iconColor: const Color(0xFFDC2626),
+                bgColor: isDark
+                    ? const Color(0xFF7F1D1D).withValues(alpha: 0.35)
+                    : const Color(0xFFFEF2F2),
                 label: 'Lead',
                 isDark: isDark,
                 onTap: () => Navigator.of(context)
@@ -210,10 +225,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                     .then((_) => _load()),
               ),
-              const SizedBox(width: 10),
-              _ActionChipButton(
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionSquareButton(
                 icon: Icons.calendar_month_rounded,
-                label: 'Cita / Visita',
+                iconColor: const Color(0xFFD97706),
+                bgColor: isDark
+                    ? const Color(0xFF78350F).withValues(alpha: 0.35)
+                    : const Color(0xFFFEF3C7),
+                label: 'Cita',
                 isDark: isDark,
                 onTap: () => Navigator.of(context)
                     .push(
@@ -223,9 +244,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                     .then((_) => _load()),
               ),
-              const SizedBox(width: 10),
-              _ActionChipButton(
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _ActionSquareButton(
                 icon: Icons.contact_phone_rounded,
+                iconColor: const Color(0xFF059669),
+                bgColor: isDark
+                    ? const Color(0xFF064E3B).withValues(alpha: 0.35)
+                    : const Color(0xFFECFDF5),
                 label: 'Contacto',
                 isDark: isDark,
                 onTap: () => Navigator.of(context)
@@ -236,8 +263,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     )
                     .then((_) => _load()),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -253,22 +280,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isInProgress
-              ? [const Color(0xFF16A35A), const Color(0xFF0D6837)]
-              : (isUpcomingSoon
-                  ? [const Color(0xFF28235D), const Color(0xFF563D99)]
-                  : [const Color(0xFF28235D), const Color(0xFF40398C)]),
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        color: const Color(0xFF28235D),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isInProgress ? const Color(0xFF10B981) : Colors.white12,
+          width: isInProgress ? 1.5 : 1,
         ),
-        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: (isInProgress ? const Color(0xFF16A35A) : const Color(0xFF28235D))
-                .withValues(alpha: 0.28),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF28235D).withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -280,29 +302,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
+                  color: isInProgress
+                      ? const Color(0xFF10B981)
+                      : Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(100),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     if (isInProgress) ...[
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
+                      const Icon(Icons.radio_button_checked_rounded, size: 12, color: Colors.white),
                       const SizedBox(width: 5),
                       const Text(
                         'EN CURSO AHORA',
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
                           color: Colors.white,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ] else if (isUpcomingSoon) ...[
@@ -311,19 +328,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(
                         'EN $diffMinutes MIN',
                         style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
                           color: Colors.amberAccent,
-                          letterSpacing: 0.5,
+                          letterSpacing: 0.4,
                         ),
                       ),
                     ] else ...[
-                      const Icon(Icons.access_time_rounded, size: 14, color: Colors.white),
-                      const SizedBox(width: 5),
+                      const Icon(Icons.access_time_rounded, size: 13, color: Colors.white70),
+                      const SizedBox(width: 4),
                       Text(
-                        'Cita a las ${timeFmt.format(next.start)}',
+                        'Hoy · ${timeFmt.format(next.start)}',
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
@@ -334,6 +351,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const Spacer(),
               InkWell(
+                borderRadius: BorderRadius.circular(10),
                 onTap: () => Navigator.of(context)
                     .push(
                       MaterialPageRoute(
@@ -344,13 +362,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Row(
                     children: [
                       Text(
-                        'Ver detalle',
+                        'Ver cita',
                         style: TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w700,
@@ -371,7 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 16.5,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               color: Colors.white,
             ),
@@ -381,182 +399,171 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Row(
               children: [
                 const Icon(Icons.person_rounded, size: 14, color: Colors.white70),
-                const SizedBox(width: 4),
+                const SizedBox(width: 5),
                 Text(
                   next.clientName,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: Colors.white.withValues(alpha: 0.85),
                   ),
                 ),
               ],
             ),
           ],
+          const SizedBox(height: 14),
+
+          // Botones de acción directa en la tarjeta de cita
+          Row(
+            children: [
+              _GlassActionButton(
+                icon: Icons.chat_bubble_rounded,
+                label: 'WhatsApp',
+                color: const Color(0xFF25D366),
+                onTap: () => _openWhatsAppVisit(next),
+              ),
+              if (next.location.isNotEmpty || next.propertyName.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                _GlassActionButton(
+                  icon: Icons.location_on_rounded,
+                  label: 'Ubicación',
+                  color: Colors.white,
+                  onTap: () => _openLocationVisit(next),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
   }
 
-  /// Bento Grid Modular de Métricas
-  Widget _buildBentoGrid(bool isDark) {
-    final totalInventory = _available + _sold;
-    final availableRatio = totalInventory > 0 ? (_available / totalInventory) : 0.0;
-
-    return Column(
-      children: [
-        // Tarjeta Bento Principal: Portafolio Inmobiliario (Ancho completo)
-        InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => widget.onNavigate?.call(1),
-          child: Container(
-            padding: const EdgeInsets.all(18),
+  /// Tarjeta cuando no hay citas hoy
+  Widget _buildEmptyAgendaCard(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: softShadow(opacity: isDark ? 0.2 : 0.035, isDark: isDark),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark ? Colors.white12 : AppColors.line,
-              ),
-              boxShadow: softShadow(opacity: isDark ? 0.25 : 0.05, isDark: isDark),
+              color: const Color(0xFF10B981).withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: const Icon(
+              Icons.event_available_rounded,
+              color: Color(0xFF10B981),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.info.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.home_work_rounded,
-                            size: 20,
-                            color: AppColors.info,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Text(
-                          'Portafolio Inmobiliario',
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.mutedLight),
-                  ],
+                Text(
+                  'Agenda al día',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$_available',
-                          style: TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? AppColors.navyLight : AppColors.navy,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const Text(
-                          'Disponibles',
-                          style: TextStyle(fontSize: 12, color: AppColors.muted),
-                        ),
-                      ],
-                    ),
-                    Container(height: 30, width: 1, color: isDark ? Colors.white12 : AppColors.line),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '$_sold',
-                          style: const TextStyle(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.success,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const Text(
-                          'Vendidas/Arrendadas',
-                          style: TextStyle(fontSize: 12, color: AppColors.muted),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: availableRatio,
-                    minHeight: 6,
-                    backgroundColor: AppColors.success.withValues(alpha: 0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isDark ? AppColors.navyLight : AppColors.navy,
-                    ),
+                Text(
+                  'No tienes citas programadas para hoy',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => Navigator.of(context)
+                .push(
+                  MaterialPageRoute(builder: (_) => const VisitFormScreen()),
+                )
+                .then((_) => _load()),
+            child: const Text('+ Agendar'),
+          ),
+        ],
+      ),
+    );
+  }
 
-        // Fila de Tarjetas Bento Menores
+  /// Bento Grid de Rendimiento
+  Widget _buildBentoGrid(bool isDark) {
+    return Column(
+      children: [
         Row(
           children: [
+            // Propiedades Disponibles
+            Expanded(
+              child: _MetricCard(
+                icon: Icons.home_work_rounded,
+                iconColor: const Color(0xFF2563EB),
+                value: '$_available',
+                title: 'Propiedades',
+                subtitle: 'En catálogo',
+                isDark: isDark,
+                onTap: () => widget.onNavigate?.call(1),
+              ),
+            ),
+            const SizedBox(width: 10),
             // Leads Calientes
             Expanded(
-              child: _BentoMiniCard(
+              child: _MetricCard(
                 icon: Icons.local_fire_department_rounded,
-                iconColor: const Color(0xFFD81F26),
-                title: 'Leads Calientes',
+                iconColor: const Color(0xFFDC2626),
                 value: '$_hotLeads',
+                title: 'Leads Hot',
                 subtitle: 'Alta prioridad',
                 isDark: isDark,
                 onTap: () => widget.onNavigate?.call(2),
               ),
             ),
-            const SizedBox(width: 12),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
             // Visitas de Hoy
             Expanded(
-              child: _BentoMiniCard(
+              child: _MetricCard(
                 icon: Icons.calendar_month_rounded,
-                iconColor: AppColors.navyLight,
-                title: 'Visitas Hoy',
+                iconColor: const Color(0xFFD97706),
                 value: '${_todayVisits.length}',
+                title: 'Citas Hoy',
                 subtitle: 'Programadas',
                 isDark: isDark,
                 onTap: () => widget.onNavigate?.call(3),
               ),
             ),
+            const SizedBox(width: 10),
+            // Contratos
+            Expanded(
+              child: _MetricCard(
+                icon: Icons.assignment_turned_in_rounded,
+                iconColor: const Color(0xFF059669),
+                value: '$_activeContracts',
+                title: 'Contratos',
+                subtitle: 'En gestión',
+                isDark: isDark,
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ContractListScreen()),
+                ),
+              ),
+            ),
           ],
-        ),
-        const SizedBox(height: 12),
-
-        // Contratos Activos
-        _BentoMiniCard(
-          icon: Icons.assignment_turned_in_rounded,
-          iconColor: const Color(0xFF8B5CF6),
-          title: 'Contratos Activos',
-          value: '$_activeContracts',
-          subtitle: 'Operaciones cerradas en curso',
-          isDark: isDark,
-          isWide: true,
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const ContractListScreen()),
-          ),
         ),
       ],
     );
@@ -567,32 +574,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
+          Text(
             'Agenda de Hoy',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.white : const Color(0xFF0F172A),
+            ),
           ),
           TextButton(
             onPressed: () => widget.onNavigate?.call(3),
-            child: const Text('Ver calendario completo'),
+            child: const Text('Ver calendario'),
           ),
         ],
       ),
       const SizedBox(height: 6),
       if (_todayVisits.isEmpty)
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: isDark ? Colors.white12 : AppColors.line),
+            border: Border.all(
+              color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+            ),
           ),
-          child: const Row(
+          child: Row(
             children: [
-              Icon(Icons.check_circle_outline_rounded, color: AppColors.success),
-              SizedBox(width: 12),
+              const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF10B981)),
+              const SizedBox(width: 12),
               Text(
-                'No tienes visitas pendientes hoy.',
-                style: TextStyle(color: AppColors.muted, fontSize: 13),
+                'No tienes más visitas pendientes hoy.',
+                style: TextStyle(
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  fontSize: 13,
+                ),
               ),
             ],
           ),
@@ -606,7 +622,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isDark ? Colors.white12 : AppColors.line,
+                  color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+                ),
+                boxShadow: softShadow(
+                  opacity: isDark ? 0.2 : 0.03,
+                  isDark: isDark,
                 ),
               ),
               child: Material(
@@ -622,275 +642,127 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       )
                       .then((_) => _load()),
-                leading: Container(
-                  width: 48,
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.navy.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    timeFmt.format(v.start),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.navy,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                title: Text(
-                  v.propertyName.isNotEmpty ? v.propertyName : v.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-                subtitle: v.clientName.isNotEmpty
-                    ? Text(
-                        v.clientName,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.muted,
-                        ),
-                      )
-                    : null,
-                trailing: const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 14,
-                  color: AppColors.mutedLight,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ];
-  }
-}
-
-class _BentoMiniCard extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String title;
-  final String value;
-  final String subtitle;
-  final bool isDark;
-  final bool isWide;
-  final VoidCallback onTap;
-
-  const _BentoMiniCard({
-    required this.icon,
-    required this.iconColor,
-    required this.title,
-    required this.value,
-    required this.subtitle,
-    required this.isDark,
-    this.isWide = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isDark ? Colors.white12 : AppColors.line,
-          ),
-          boxShadow: softShadow(opacity: isDark ? 0.25 : 0.05, isDark: isDark),
-        ),
-        child: isWide
-            ? Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
+                  leading: Container(
+                    width: 48,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFF28235D).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, size: 22, color: iconColor),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white70 : AppColors.muted,
-                          ),
-                        ),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: isDark ? Colors.white38 : AppColors.mutedLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.ink,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.mutedLight),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: iconColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(icon, size: 18, color: iconColor),
+                    alignment: Alignment.center,
+                    child: Text(
+                      timeFmt.format(v.start),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF28235D),
+                        fontSize: 12,
                       ),
-                      CustomPaint(
-                        size: const Size(48, 22),
-                        painter: _SparklinePainter(
-                          color: iconColor,
-                          data: const [12, 19, 15, 24, 22, 30, 28],
-                          isDark: isDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.ink,
-                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    title,
+                  title: Text(
+                    v.propertyName.isNotEmpty ? v.propertyName : v.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13,
+                    style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.ink,
+                      fontSize: 14,
                     ),
                   ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isDark ? Colors.white38 : AppColors.mutedLight,
-                    ),
+                  subtitle: v.clientName.isNotEmpty
+                      ? Text(
+                          v.clientName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                          ),
+                        )
+                      : null,
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 13,
+                    color: Color(0xFF94A3B8),
                   ),
-                ],
+                ),
               ),
-      ),
-    );
+            ),
+          ),
+        ),
+    ];
   }
-}
 
-/// Pintor personalizado para dibujar curvas de tendencia suaves (Sparklines) con gradiente
-class _SparklinePainter extends CustomPainter {
-  final Color color;
-  final List<double> data;
-  final bool isDark;
-
-  const _SparklinePainter({
-    required this.color,
-    required this.data,
-    required this.isDark,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (data.length < 2) return;
-    final path = Path();
-    final fillPath = Path();
-
-    final maxVal = data.reduce((a, b) => a > b ? a : b);
-    final minVal = data.reduce((a, b) => a < b ? a : b);
-    final range = (maxVal - minVal) == 0 ? 1.0 : (maxVal - minVal);
-    final stepX = size.width / (data.length - 1);
-
-    for (int i = 0; i < data.length; i++) {
-      final x = i * stepX;
-      final normalized = (data[i] - minVal) / range;
-      final y = size.height - (normalized * (size.height * 0.7) + size.height * 0.15);
-      if (i == 0) {
-        path.moveTo(x, y);
-        fillPath.moveTo(x, size.height);
-        fillPath.lineTo(x, y);
-      } else {
-        final prevX = (i - 1) * stepX;
-        final prevNorm = (data[i - 1] - minVal) / range;
-        final prevY = size.height - (prevNorm * (size.height * 0.7) + size.height * 0.15);
-        final midX = (prevX + x) / 2;
-        path.cubicTo(midX, prevY, midX, y, x, y);
-        fillPath.cubicTo(midX, prevY, midX, y, x, y);
-      }
+  Future<void> _openWhatsAppVisit(Visit visit) async {
+    HapticFeedback.selectionClick();
+    String phone = '';
+    if (visit.clientId != null) {
+      try {
+        final odoo = context.read<AuthService>().odoo;
+        final res = await odoo.searchRead(
+          model: 'res.partner',
+          domain: [
+            ['id', '=', visit.clientId],
+          ],
+          fields: ['phone', 'mobile'],
+          limit: 1,
+        );
+        if (res.isNotEmpty) {
+          final m = (res.first['mobile'] ?? '').toString().trim();
+          final p = (res.first['phone'] ?? '').toString().trim();
+          phone = m.isNotEmpty ? m : p;
+        }
+      } catch (_) {}
     }
 
-    fillPath.lineTo(size.width, size.height);
-    fillPath.close();
+    final clientName = visit.clientName.isNotEmpty ? visit.clientName : 'Estimado/a';
+    final prop = visit.propertyName.isNotEmpty ? 'la propiedad ${visit.propertyName}' : 'nuestra cita inmobiliaria';
+    final timeStr = DateFormat.Hm('es_EC').format(visit.start);
+    final msg = Uri.encodeComponent(
+      'Hola $clientName, te saludo de Inmobi Inmobiliaria respecto a $prop programada para las $timeStr.',
+    );
 
-    final fillPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          color.withValues(alpha: isDark ? 0.35 : 0.2),
-          color.withValues(alpha: 0.0),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height))
-      ..style = PaintingStyle.fill;
+    Uri uri;
+    if (phone.isNotEmpty) {
+      final digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
+      uri = Uri.parse('https://wa.me/$digits?text=$msg');
+    } else {
+      uri = Uri.parse('https://wa.me/?text=$msg');
+    }
 
-    final strokePaint = Paint()
-      ..color = color.withValues(alpha: 0.9)
-      ..strokeWidth = 2.0
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawPath(fillPath, fillPaint);
-    canvas.drawPath(path, strokePaint);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Future<void> _openLocationVisit(Visit visit) async {
+    HapticFeedback.selectionClick();
+    final query = visit.location.isNotEmpty ? visit.location : visit.propertyName;
+    if (query.isEmpty) return;
+
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent('$query Ecuador')}',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
 }
 
-class _ActionChipButton extends StatelessWidget {
+class _MetricCard extends StatelessWidget {
   final IconData icon;
-  final String label;
+  final Color iconColor;
+  final String value;
+  final String title;
+  final String subtitle;
   final bool isDark;
   final VoidCallback onTap;
 
-  const _ActionChipButton({
+  const _MetricCard({
     required this.icon,
-    required this.label,
+    required this.iconColor,
+    required this.value,
+    required this.title,
+    required this.subtitle,
     required this.isDark,
     required this.onTap,
   });
@@ -898,32 +770,68 @@ class _ActionChipButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF262246) : AppColors.neutralBg,
-          borderRadius: BorderRadius.circular(14),
+          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isDark ? Colors.white12 : AppColors.line.withValues(alpha: 0.7),
+            color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
           ),
+          boxShadow: softShadow(opacity: isDark ? 0.2 : 0.035, isDark: isDark),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              icon,
-              size: 17,
-              color: isDark ? AppColors.navyLight : AppColors.navy,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, size: 18, color: iconColor),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 11,
+                  color: isDark ? const Color(0xFF64748B) : const Color(0xFFCBD5E1),
+                ),
+              ],
             ),
-            const SizedBox(width: 7),
+            const SizedBox(height: 10),
             Text(
-              label,
+              value,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 1),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white : AppColors.navy,
+                color: isDark ? Colors.white : const Color(0xFF0F172A),
+              ),
+            ),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
               ),
             ),
           ],
@@ -933,7 +841,123 @@ class _ActionChipButton extends StatelessWidget {
   }
 }
 
-/// Encabezado moderno con degradado de marca y perfil del asesor
+class _GlassActionButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _GlassActionButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 14, color: color),
+                const SizedBox(width: 6),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionSquareButton extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color bgColor;
+  final String label;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _ActionSquareButton({
+    required this.icon,
+    required this.iconColor,
+    required this.bgColor,
+    required this.label,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
+        ),
+        boxShadow: softShadow(opacity: isDark ? 0.2 : 0.035, isDark: isDark),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, size: 20, color: iconColor),
+                ),
+                const SizedBox(height: 7),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Encabezado dinámico con saludo por hora y perfil del asesor
 class _DashboardHeader extends StatelessWidget {
   final String userName;
   const _DashboardHeader({required this.userName});
@@ -943,30 +967,35 @@ class _DashboardHeader extends StatelessWidget {
     final auth = context.watch<AuthService>();
     final firstName = userName.trim().isNotEmpty ? userName.split(' ').first : 'Asesor';
 
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Buenos días'
+        : (hour < 19 ? 'Buenas tardes' : 'Buenas noches');
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
             Color(0xFF28235D),
-            Color(0xFF18143C),
+            Color(0xFF1E1A46),
           ],
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
       ),
       child: SafeArea(
         bottom: false,
         child: Row(
           children: [
+            // Avatar del usuario con borde suave
             Container(
-              padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFFD81F26),
+                  color: Colors.white.withValues(alpha: 0.35),
                   width: 2,
                 ),
               ),
@@ -975,7 +1004,7 @@ class _DashboardHeader extends StatelessWidget {
                 userId: auth.odoo.userId ?? 0,
                 userName: firstName,
                 radius: 22,
-                backgroundColor: Colors.white.withValues(alpha: 0.15),
+                backgroundColor: const Color(0xFF4338CA),
               ),
             ),
             const SizedBox(width: 14),
@@ -984,53 +1013,65 @@ class _DashboardHeader extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '¡Hola, $firstName! 👋',
+                    greeting,
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.75),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    firstName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 19,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                       letterSpacing: -0.3,
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    DateFormat("EEEE d 'de' MMMM", 'es_EC').format(DateTime.now()),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'En línea · Odoo ERP',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.18),
-                ),
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.verified_rounded,
-                    size: 14,
-                    color: Color(0xFF10B981),
-                  ),
-                  SizedBox(width: 5),
-                  Text(
-                    'Inmobi Oficial',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+              child: Text(
+                DateFormat("d MMM", 'es_EC').format(DateTime.now()).toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
           ],

@@ -333,19 +333,19 @@ class _ContactTile extends StatelessWidget {
     final phone = contact.bestPhone;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDark ? Colors.white12 : AppColors.line,
+          color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
         ),
-        boxShadow: softShadow(opacity: 0.03),
+        boxShadow: softShadow(opacity: isDark ? 0.2 : 0.035, isDark: isDark),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           onTap: () => Navigator.of(context)
               .push(
                 MaterialPageRoute(
@@ -374,7 +374,7 @@ class _ContactTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 15,
+                          fontSize: 14.5,
                           letterSpacing: -0.2,
                         ),
                       ),
@@ -386,37 +386,62 @@ class _ContactTile extends StatelessWidget {
                         ].join(' · '),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.muted,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
                         ),
                       ),
                     ],
                   ),
                 ),
                 if (phone.isNotEmpty) ...[
-                  IconButton(
-                    icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                    color: const Color(0xFF25D366),
-                    tooltip: 'WhatsApp',
-                    onPressed: () {
-                      final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
-                      final full = clean.startsWith('0')
-                          ? '593${clean.substring(1)}'
-                          : clean;
-                      launchUrl(
-                        Uri.parse('https://wa.me/$full'),
+                  Material(
+                    color: isDark ? const Color(0xFF28244E) : const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () => launchUrl(
+                        Uri.parse('tel:$phone'),
                         mode: LaunchMode.externalApplication,
-                      );
-                    },
+                      ),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.phone_outlined,
+                          color: isDark ? Colors.white70 : const Color(0xFF334155),
+                          size: 16,
+                        ),
+                      ),
+                    ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.call_outlined, size: 18),
-                    color: AppColors.navy,
-                    tooltip: 'Llamar',
-                    onPressed: () => launchUrl(
-                      Uri.parse('tel:$phone'),
-                      mode: LaunchMode.externalApplication,
+                  const SizedBox(width: 6),
+                  Material(
+                    color: const Color(0xFF25D366),
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
+                        final full = clean.startsWith('0')
+                            ? '593${clean.substring(1)}'
+                            : clean;
+                        launchUrl(
+                          Uri.parse('https://wa.me/$full'),
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.chat_bubble_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
                     ),
                   ),
                 ],
