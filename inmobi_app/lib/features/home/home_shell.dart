@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -34,6 +35,44 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _index = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  /// Le avisa a la barra inferior que se compacte. Es un `ValueNotifier` y no
+  /// un campo del estado a propósito: al hacer scroll solo se repinta la
+  /// barra, no las cinco pantallas que viven en el `IndexedStack`.
+  final ValueNotifier<bool> _navCollapsed = ValueNotifier(false);
+
+  /// Escucha el scroll de cualquier pantalla hija y decide si la barra se
+  /// compacta. Bajar por el contenido la encoge (deja más pantalla para
+  /// leer); subir la devuelve completa, y arriba del todo siempre vuelve
+  /// entera.
+  bool _handleScroll(ScrollNotification n) {
+    if (n.metrics.axis != Axis.vertical) return false;
+
+    if (n is UserScrollNotification) {
+      switch (n.direction) {
+        case ScrollDirection.reverse:
+          _navCollapsed.value = true;
+        case ScrollDirection.forward:
+          _navCollapsed.value = false;
+        case ScrollDirection.idle:
+          break;
+      }
+    }
+
+    // Al llegar al tope la barra se restituye aunque el gesto haya sido
+    // hacia abajo: en el inicio de una lista no hay nada que ganar
+    // escondiéndola.
+    if (n.metrics.pixels <= n.metrics.minScrollExtent + 4) {
+      _navCollapsed.value = false;
+    }
+    return false;
+  }
+
+  @override
+  void dispose() {
+    _navCollapsed.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -203,11 +242,15 @@ class _HomeShellState extends State<HomeShell> {
                 ),
               ],
             ),
-      body: IndexedStack(index: _index, children: screens),
+      body: NotificationListener<ScrollNotification>(
+        onNotification: _handleScroll,
+        child: IndexedStack(index: _index, children: screens),
+      ),
       bottomNavigationBar: GlassNavBar(
         currentIndex: _index,
         onTap: _goTo,
         items: _navItems,
+        collapsed: _navCollapsed,
       ),
     );
   }
