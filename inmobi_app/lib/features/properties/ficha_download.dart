@@ -270,17 +270,29 @@ class FichaDownloader {
       messenger.hideCurrentSnackBar();
 
       if (choice.action == FichaActionType.sharePdf) {
+        // sharePositionOrigin es obligatorio en iPad (ancla el popover de la
+        // hoja para compartir); en iPhone no hace nada, así que es seguro
+        // pasarlo siempre en vez de solo cuando se detecta un iPad.
+        final box = context.mounted
+            ? context.findRenderObject() as RenderBox?
+            : null;
+        final origin = box != null
+            ? box.localToGlobal(Offset.zero) & box.size
+            : null;
         await Share.shareXFiles(
           [XFile(file.path)],
           text: 'Ficha Comercial: $title\nPrecio: \$${property.displayPrice.toStringAsFixed(0)}',
+          sharePositionOrigin: origin,
         );
       } else {
         await OpenFile.open(file.path);
       }
     } catch (e) {
       messenger.hideCurrentSnackBar();
+      // Mostrar el error real (no un mensaje genérico) para poder
+      // diagnosticar la próxima vez que algo falle, en vez de adivinar.
       messenger.showSnackBar(
-        const SnackBar(content: Text('No se pudo generar o compartir la ficha PDF.')),
+        SnackBar(content: Text('No se pudo generar o compartir la ficha PDF: $e')),
       );
     }
   }

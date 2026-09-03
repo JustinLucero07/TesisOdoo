@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// Paleta de marca REAL de Inmobi — navy #28235D + rojo #D81F26 del isotipo
@@ -434,12 +435,16 @@ class AppTheme {
           fontFamily: AppType.family,
         ),
       ),
+      // iOS/macOS usan el builder Cupertino: es el que trae el gesto nativo
+      // de deslizar desde el borde izquierdo para retroceder. Forzar el
+      // builder de Android ahí (como estaba antes) apaga ese gesto — hay
+      // que volver siempre por el mismo camino por el que se entró.
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
           TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           TargetPlatform.linux: ZoomPageTransitionsBuilder(),
-          TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
           TargetPlatform.windows: ZoomPageTransitionsBuilder(),
         },
       ),
