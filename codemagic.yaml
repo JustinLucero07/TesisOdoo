@@ -6,9 +6,8 @@ workflows:
     integrations:
       app_store_connect: codemagic_api_key_admin
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.inmobi.inmobiApp
+      vars:
+        BUNDLE_ID: "com.inmobi.inmobiApp"
       flutter: stable
       xcode: latest
       cocoapods: default
@@ -32,6 +31,26 @@ workflows:
         script: |
           cd inmobi_app/ios
           pod install
+
+      - name: Preparar el llavero para firmar el código
+        script: keychain initialize
+
+      # Es la primera vez que se compila esta app: todavía no existe
+      # certificado de distribución ni perfil de aprovisionamiento en la
+      # cuenta de Apple. --create le dice a Codemagic que los genere él
+      # mismo con la API Key; en las próximas compilaciones simplemente
+      # los reutiliza porque ya van a existir.
+      - name: Generar/obtener certificado y perfil de distribución
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+
+      - name: Agregar el certificado al llavero
+        script: keychain add-certificates
+
+      - name: Aplicar la firma al proyecto de Xcode
+        script: xcode-project use-profiles
 
       - name: Compilar el .ipa
         script: |
