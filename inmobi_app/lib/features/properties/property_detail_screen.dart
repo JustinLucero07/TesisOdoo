@@ -37,6 +37,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   late final OdooClient _odoo;
   Property? _property;
   String? _advisorPhone;
+  // Teléfono de cada persona relacionada, por id de contacto — un mismo
+  // contacto puede ser propietario y comprador a la vez, así que se
+  // guarda por id en vez de un campo por rol.
+  final Map<int, String> _relatedPhones = {};
   bool _loading = true;
   String? _error;
 
@@ -53,6 +57,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       final p = await service.detail(widget.propertyId);
       setState(() => _property = p);
       if (p.userId != null) _loadAdvisorPhone(p.userId!);
+      _loadRelatedPhones(p);
     } catch (e) {
       setState(() => _error = 'No se pudo cargar la propiedad.');
     } finally {
@@ -79,6 +84,36 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
+  /// Trae el teléfono de propietario/comprador/arrendatario en una sola
+  /// consulta a res.partner — mismo patrón que _loadAdvisorPhone, pero
+  /// agrupado porque los tres son el mismo modelo.
+  Future<void> _loadRelatedPhones(Property p) async {
+    final ids = {
+      if (p.ownerId != null) p.ownerId!,
+      if (p.buyerId != null) p.buyerId!,
+      if (p.tenantId != null) p.tenantId!,
+    };
+    if (ids.isEmpty) return;
+    try {
+      final rows = await _odoo.searchRead(
+        model: 'res.partner',
+        domain: [
+          ['id', 'in', ids.toList()],
+        ],
+        fields: ['id', 'phone', 'mobile'],
+      );
+      if (!mounted) return;
+      setState(() {
+        for (final row in rows) {
+          final phone = (row['mobile'] ?? row['phone'] ?? '').toString();
+          if (phone.isNotEmpty) _relatedPhones[row['id'] as int] = phone;
+        }
+      });
+    } catch (_) {
+      // Silencioso: si no hay teléfono simplemente no se muestran los botones.
+    }
+  }
+
   Future<void> _call(String phone) async {
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) await launchUrl(uri);
@@ -96,6 +131,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
+
+  /// WhatsApp genérico para propietario/comprador/arrendatario — mismo
+  /// mensaje que el del asesor, sin repetir la lógica de armar el link.
+  Future<void> _whatsappRelated(String phone) => _whatsappAdvisor(phone);
 
   /// Abre WhatsApp con mensaje comercial para comprar/consultar
   Future<void> _openBuyWhatsapp() async {
@@ -714,6 +753,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               if (p.userName.isNotEmpty) ...[
                 const SizedBox(height: 18),
                 _AdvisorCard(
+                  label: 'Asesor responsable',
                   name: p.userName,
                   phone: _advisorPhone,
                   onCall: _call,
@@ -802,11 +842,43 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
               ExpandableSection(
                 title: 'Personas relacionadas',
-                child: _InfoCard(
-                  rows: [
-                    if (p.ownerName.isNotEmpty) ('Propietario', p.ownerName),
-                    if (p.buyerName.isNotEmpty) ('Comprador', p.buyerName),
-                    if (p.tenantName.isNotEmpty) ('Arrendatario', p.tenantName),
+                child: Column(
+                  children: [
+                    if (p.ownerName.isNotEmpty)
+                      _AdvisorCard(
+                        label: 'Propietario',
+                        name: p.ownerName,
+                        phone: p.ownerId != null
+                            ? _relatedPhones[p.ownerId]
+                            : null,
+                        onCall: _call,
+                        onWhatsapp: _whatsappRelated,
+                      ),
+                    if (p.buyerName.isNotEmpty) ...[
+                      if (p.ownerName.isNotEmpty) const SizedBox(height: 8),
+                      _AdvisorCard(
+                        label: 'Comprador',
+                        name: p.buyerName,
+                        phone: p.buyerId != null
+                            ? _relatedPhones[p.buyerId]
+                            : null,
+                        onCall: _call,
+                        onWhatsapp: _whatsappRelated,
+                      ),
+                    ],
+                    if (p.tenantName.isNotEmpty) ...[
+                      if (p.ownerName.isNotEmpty || p.buyerName.isNotEmpty)
+                        const SizedBox(height: 8),
+                      _AdvisorCard(
+                        label: 'Arrendatario',
+                        name: p.tenantName,
+                        phone: p.tenantId != null
+                            ? _relatedPhones[p.tenantId]
+                            : null,
+                        onCall: _call,
+                        onWhatsapp: _whatsappRelated,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -1002,12 +1074,14 @@ class _QuickAction extends StatelessWidget {
 }
 
 class _AdvisorCard extends StatelessWidget {
+  final String label;
   final String name;
   final String? phone;
   final ValueChanged<String> onCall;
   final ValueChanged<String> onWhatsapp;
 
   const _AdvisorCard({
+    required this.label,
     required this.name,
     required this.phone,
     required this.onCall,
@@ -1032,7 +1106,7 @@ class _AdvisorCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Asesor responsable',
+                  label,
                   style: TextStyle(fontSize: 11, color: colors.mutedLight),
                 ),
                 const SizedBox(height: 2),
