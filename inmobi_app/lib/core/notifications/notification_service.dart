@@ -96,7 +96,12 @@ class NotificationService {
           }
         });
 
-        _fcmToken = await FirebaseMessaging.instance.getToken();
+        // En iOS el token de FCM no existe hasta que el usuario acepta el
+        // permiso y APNs entrega el suyo: pedirlo aquí siempre fallaba. Se
+        // obtiene en requestPermission(), ya con el permiso concedido.
+        if (defaultTargetPlatform != TargetPlatform.iOS) {
+          _fcmToken = await FirebaseMessaging.instance.getToken();
+        }
 
         FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
           _fcmToken = newToken;
@@ -124,6 +129,7 @@ class NotificationService {
         );
         if (settings.authorizationStatus == AuthorizationStatus.authorized ||
             settings.authorizationStatus == AuthorizationStatus.provisional) {
+          await _fetchTokenAfterPermission();
           return true;
         }
       }
@@ -138,6 +144,22 @@ class NotificationService {
       }
     } catch (_) {}
     return false;
+  }
+
+  /// En iOS, APNs tarda un momento en entregar su token después de que el
+  /// usuario acepta; pedir el de FCM antes devuelve error. Se reintenta unas
+  /// pocas veces en vez de rendirse al primer intento.
+  Future<void> _fetchTokenAfterPermission() async {
+    try {
+      if (defaultTargetPlatform == TargetPlatform.iOS) {
+        for (var intento = 0; intento < 5; intento++) {
+          final apns = await FirebaseMessaging.instance.getAPNSToken();
+          if (apns != null) break;
+          await Future<void>.delayed(const Duration(seconds: 1));
+        }
+      }
+      _fcmToken = await FirebaseMessaging.instance.getToken();
+    } catch (_) {}
   }
 
   Future<void> syncTokenWithOdoo({

@@ -77,6 +77,12 @@
 	<!-- Sin declarar estos esquemas, iOS responde que la app NO puede abrir
 	     un tel:, un WhatsApp o un mapa — y los botones de llamar/WhatsApp
 	     quedan sin hacer nada, en silencio. -->
+	<!-- Necesario para recibir push con la app en segundo plano. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>fetch</string>
+	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>tel</string>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Sin este entitlement iOS no deja que la app se registre en APNs y
+	     Firebase nunca obtiene el token: las push no llegan nunca. Va en
+	     'production' porque los builds de este proyecto salen por
+	     TestFlight/App Store, que usan el entorno de producción de APNs. -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>
