@@ -8,6 +8,7 @@ class ContractService {
   Future<List<Contract>> list({
     String? searchText,
     int? propertyId,
+    int? partnerId,
     String? state,
     int limit = 40,
   }) async {
@@ -17,6 +18,9 @@ class ContractService {
     }
     if (propertyId != null) {
       domain.add(['property_id', '=', propertyId]);
+    }
+    if (partnerId != null) {
+      domain.add(['partner_id', '=', partnerId]);
     }
     if (state != null) {
       domain.add(['state', '=', state]);

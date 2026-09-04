@@ -16,7 +16,15 @@ import 'contract_service.dart';
 class ContractListScreen extends StatefulWidget {
   final int? propertyId;
   final String? propertyTitle;
-  const ContractListScreen({super.key, this.propertyId, this.propertyTitle});
+  final int? partnerId;
+  final String? partnerName;
+  const ContractListScreen({
+    super.key,
+    this.propertyId,
+    this.propertyTitle,
+    this.partnerId,
+    this.partnerName,
+  });
 
   @override
   State<ContractListScreen> createState() => _ContractListScreenState();
@@ -57,6 +65,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
       final result = await _service.list(
         searchText: _searchCtrl.text,
         propertyId: widget.propertyId,
+        partnerId: widget.partnerId,
         state: _stateFilter,
       );
       setState(() => _contracts = result);
@@ -92,6 +101,8 @@ class _ContractListScreenState extends State<ContractListScreen> {
         title: Text(
           widget.propertyTitle != null
               ? 'Contratos · ${widget.propertyTitle}'
+              : widget.partnerName != null
+              ? 'Contratos · ${widget.partnerName}'
               : 'Contratos',
         ),
       ),

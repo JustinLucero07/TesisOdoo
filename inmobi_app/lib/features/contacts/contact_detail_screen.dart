@@ -9,6 +9,7 @@ import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/expandable_section.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
+import '../contracts/contract_list_screen.dart';
 import '../documents/document_service.dart';
 import '../documents/documents_section.dart';
 import 'contact_form_screen.dart';
@@ -259,6 +260,14 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                     icon: Icons.description_outlined,
                     value: '${c.contractCount}',
                     label: 'Contratos',
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ContractListScreen(
+                          partnerId: c.id,
+                          partnerName: c.name,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -299,16 +308,22 @@ class _CountCard extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
+
+  /// Un contador sin destino es un dato muerto: si hay a dónde ir, la
+  /// tarjeta se vuelve tocable y muestra el chevron.
+  final VoidCallback? onTap;
+
   const _CountCard({
     required this.icon,
     required this.value,
     required this.label,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Container(
+    final tarjeta = Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
       decoration: BoxDecoration(
         color: colors.neutralBg,
@@ -327,13 +342,33 @@ class _CountCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: colors.mutedLight),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: colors.mutedLight),
+                ),
+              ),
+              if (onTap != null)
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 14,
+                  color: colors.navy.withValues(alpha: 0.7),
+                ),
+            ],
           ),
         ],
       ),
+    );
+
+    if (onTap == null) return tarjeta;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: tarjeta,
     );
   }
 }

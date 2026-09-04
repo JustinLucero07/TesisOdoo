@@ -10,6 +10,7 @@ import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
+import '../contacts/contact_detail_screen.dart';
 import '../contracts/contract_detail_screen.dart';
 import '../contracts/contract_list_screen.dart';
 import '../documents/document_service.dart';
@@ -391,6 +392,14 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                   _InfoRow(
                     icon: Icons.badge_outlined,
                     label: 'Contacto vinculado: ${lead.partnerName}',
+                    onTap: lead.partnerId == null
+                        ? null
+                        : () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ContactDetailScreen(contactId: lead.partnerId!),
+                            ),
+                          ),
                   ),
                 if (lead.phone.isNotEmpty)
                   _InfoRow(icon: Icons.phone_outlined, label: lead.phone),
@@ -857,19 +866,50 @@ class _MetricChip extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _InfoRow({required this.icon, required this.label});
+
+  /// Cuando la fila apunta a otra ficha (un contacto, una propiedad), se le
+  /// pasa el destino: el texto se resalta y aparece el chevron de "esto se
+  /// toca", igual que en el resto de la app.
+  final VoidCallback? onTap;
+
+  const _InfoRow({required this.icon, required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    final colors = AppColors.of(context);
+    final tocable = onTap != null;
+
+    final fila = Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Icon(icon, size: 17, color: AppColors.of(context).navy),
+          Icon(icon, size: 17, color: colors.navy),
           const SizedBox(width: 10),
-          Expanded(child: Text(label, style: const TextStyle(fontSize: 13.5))),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: tocable ? FontWeight.w700 : FontWeight.normal,
+                color: tocable ? colors.navy : null,
+              ),
+            ),
+          ),
+          if (tocable)
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: colors.navy.withValues(alpha: 0.7),
+            ),
         ],
       ),
+    );
+
+    if (!tocable) return fila;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: fila,
     );
   }
 }
