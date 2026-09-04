@@ -107,15 +107,31 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     } catch (_) {}
   }
 
-  Future<void> _call(String phone) => PhoneUtils.call(phone);
+  Future<void> _call(String phone) async {
+    final ok = await PhoneUtils.call(phone);
+    if (!ok) _avisarFalloContacto('llamar', phone);
+  }
 
   Future<void> _whatsappAdvisor(String phone) async {
     final p = _property;
     final title = p != null ? (p.title.isEmpty ? p.reference : p.title) : '';
-    await PhoneUtils.whatsapp(
+    final ok = await PhoneUtils.whatsapp(
       phone,
       text:
           'Hola, te contacto sobre la propiedad $title (Ref: ${p?.reference ?? ''}).',
+    );
+    if (!ok) _avisarFalloContacto('abrir WhatsApp con', phone);
+  }
+
+  /// Un fallo al abrir el marcador o WhatsApp debe verse: antes no pasaba
+  /// nada y era imposible distinguir "no se registró el toque" de "no se
+  /// pudo abrir la app externa".
+  void _avisarFalloContacto(String accion, String phone) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('No se pudo $accion ${PhoneUtils.normalize(phone)}.'),
+      ),
     );
   }
 
@@ -1115,8 +1131,8 @@ class _SmallContactIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
         width: 30,
@@ -1304,8 +1320,10 @@ class _ContactIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(20),
+    // GestureDetector opaco en vez de InkWell: el toque se registra siempre,
+    // sin depender de que haya un Material ancestro que lo capte.
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Container(
         width: 38,
