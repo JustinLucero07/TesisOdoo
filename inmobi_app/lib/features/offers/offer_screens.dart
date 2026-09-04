@@ -9,6 +9,8 @@ import '../../core/widgets/many2one_field.dart';
 import '../../core/widgets/record_list_scaffold.dart';
 import '../../core/widgets/select_field.dart';
 import '../auth/auth_service.dart';
+import '../contacts/contact_detail_screen.dart';
+import '../properties/property_detail_screen.dart';
 import 'offer_model.dart';
 import 'offer_service.dart';
 
@@ -177,28 +179,34 @@ class _OfferCard extends StatelessWidget {
             ),
             if (offer.propertyName.isNotEmpty) ...[
               const SizedBox(height: 3),
-              Text(
-                offer.propertyName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              _EntityLink(
+                label: offer.propertyName,
                 style: AppType.bodySmall.copyWith(color: p.muted),
+                onTap: offer.propertyId == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PropertyDetailScreen(
+                            propertyId: offer.propertyId!,
+                          ),
+                        ),
+                      ),
               ),
             ],
             if (offer.partnerName.isNotEmpty) ...[
               const SizedBox(height: 2),
-              Row(
-                children: [
-                  Icon(Icons.person_outline, size: 13, color: p.mutedLight),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      offer.partnerName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppType.caption.copyWith(color: p.muted),
-                    ),
-                  ),
-                ],
+              _EntityLink(
+                label: offer.partnerName,
+                icon: Icons.person_outline,
+                style: AppType.caption.copyWith(color: p.muted),
+                onTap: offer.partnerId == null
+                    ? null
+                    : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              ContactDetailScreen(contactId: offer.partnerId!),
+                        ),
+                      ),
               ),
             ],
             const SizedBox(height: AppSpace.md),
@@ -322,6 +330,65 @@ class _OfferCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _EntityLink extends StatelessWidget {
+  final String label;
+  final TextStyle style;
+  final IconData? icon;
+  final VoidCallback? onTap;
+
+  const _EntityLink({
+    required this.label,
+    required this.style,
+    this.icon,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final tocable = onTap != null;
+
+    final fila = Row(
+      children: [
+        if (icon != null) ...[
+          Icon(
+            icon,
+            size: 13,
+            color: tocable ? colors.navy : colors.mutedLight,
+          ),
+          const SizedBox(width: 4),
+        ],
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tocable
+                ? style.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.navy,
+                  )
+                : style,
+          ),
+        ),
+        if (tocable)
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: colors.navy.withValues(alpha: 0.7),
+          ),
+      ],
+    );
+
+    if (!tocable) return fila;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: fila,
     );
   }
 }

@@ -9,6 +9,8 @@ import '../../core/widgets/many2one_field.dart';
 import '../../core/widgets/record_list_scaffold.dart';
 import '../../core/widgets/select_field.dart';
 import '../auth/auth_service.dart';
+import '../contacts/contact_detail_screen.dart';
+import '../properties/property_detail_screen.dart';
 import 'finance_models.dart';
 
 NumberFormat get _currency =>
@@ -74,13 +76,20 @@ class CommissionListScreen extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        c.propertyName.isNotEmpty
+                      child: _EntityLink(
+                        label: c.propertyName.isNotEmpty
                             ? c.propertyName
                             : c.reference,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: AppType.heading.copyWith(color: p.ink),
+                        onTap: c.propertyId == null
+                            ? null
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PropertyDetailScreen(
+                                    propertyId: c.propertyId!,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
                     AppBadge(
@@ -374,11 +383,18 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
                       ),
                       if (e.propertyName.isNotEmpty) ...[
                         const SizedBox(height: 2),
-                        Text(
-                          e.propertyName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        _EntityLink(
+                          label: e.propertyName,
                           style: AppType.caption.copyWith(color: p.muted),
+                          onTap: e.propertyId == null
+                              ? null
+                              : () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => PropertyDetailScreen(
+                                      propertyId: e.propertyId!,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ],
                       const SizedBox(height: AppSpace.sm),
@@ -419,6 +435,51 @@ class _ExpenseListScreenState extends State<ExpenseListScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+class _EntityLink extends StatelessWidget {
+  final String label;
+  final TextStyle style;
+  final VoidCallback? onTap;
+
+  const _EntityLink({required this.label, required this.style, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final tocable = onTap != null;
+
+    final fila = Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tocable
+                ? style.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: colors.navy,
+                  )
+                : style,
+          ),
+        ),
+        if (tocable)
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: colors.navy.withValues(alpha: 0.7),
+          ),
+      ],
+    );
+
+    if (!tocable) return fila;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: fila,
     );
   }
 }
@@ -621,13 +682,20 @@ class AppraisalListScreen extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        a.propertyName.isNotEmpty
+                      child: _EntityLink(
+                        label: a.propertyName.isNotEmpty
                             ? a.propertyName
                             : a.reference,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: AppType.heading.copyWith(color: p.ink),
+                        onTap: a.propertyId == null
+                            ? null
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => PropertyDetailScreen(
+                                    propertyId: a.propertyId!,
+                                  ),
+                                ),
+                              ),
                       ),
                     ),
                     AppBadge(
@@ -638,9 +706,17 @@ class AppraisalListScreen extends StatelessWidget {
                 ),
                 if (a.partnerName.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    'Solicita: ${a.partnerName}',
+                  _EntityLink(
+                    label: 'Solicita: ${a.partnerName}',
                     style: AppType.caption.copyWith(color: p.muted),
+                    onTap: a.partnerId == null
+                        ? null
+                        : () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ContactDetailScreen(contactId: a.partnerId!),
+                            ),
+                          ),
                   ),
                 ],
                 if (a.marketValue > 0) ...[

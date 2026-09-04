@@ -7,8 +7,10 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
+import '../contacts/contact_detail_screen.dart';
 import '../documents/document_service.dart';
 import '../documents/documents_section.dart';
+import '../properties/property_detail_screen.dart';
 import 'contract_form_screen.dart';
 import 'contract_model.dart';
 import 'contract_service.dart';
@@ -127,12 +129,28 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
                   icon: Icons.home_work_outlined,
                   label: 'Propiedad',
                   value: c.propertyName.isEmpty ? '—' : c.propertyName,
+                  onTap: c.propertyId == null
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                PropertyDetailScreen(propertyId: c.propertyId!),
+                          ),
+                        ),
                 ),
                 const Divider(height: 22),
                 _InfoRow(
                   icon: Icons.person_outline,
                   label: 'Cliente',
                   value: c.partnerName.isEmpty ? '—' : c.partnerName,
+                  onTap: c.partnerId == null
+                      ? null
+                      : () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ContactDetailScreen(contactId: c.partnerId!),
+                          ),
+                        ),
                 ),
                 const Divider(height: 22),
                 _InfoRow(
@@ -178,16 +196,24 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+
+  /// Cuando la fila apunta a otra ficha (la propiedad, el cliente) se le pasa
+  /// el destino: el texto se resalta y aparece el chevron de "esto se toca".
+  final VoidCallback? onTap;
+
   const _InfoRow({
     required this.icon,
     required this.label,
     required this.value,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return Row(
+    final tocable = onTap != null;
+
+    final fila = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, size: 18, color: colors.navy),
@@ -203,15 +229,29 @@ class _InfoRow extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: tocable ? FontWeight.w700 : FontWeight.w600,
+                  color: tocable ? colors.navy : null,
                 ),
               ),
             ],
           ),
         ),
+        if (tocable)
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: colors.navy.withValues(alpha: 0.7),
+          ),
       ],
+    );
+
+    if (!tocable) return fila;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: fila,
     );
   }
 }

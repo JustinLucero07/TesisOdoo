@@ -11,6 +11,7 @@ import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/odoo_image.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
+import '../contacts/contact_detail_screen.dart';
 import '../properties/property_detail_screen.dart';
 import 'visit_form_screen.dart';
 import 'visit_model.dart';
@@ -472,30 +473,60 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                     padding: const EdgeInsets.all(AppSpace.md),
                     child: Row(
                       children: [
-                        InitialsAvatar(text: v.clientName, size: 42),
-                        const SizedBox(width: AppSpace.md),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                v.clientName,
-                                style: AppType.body.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: p.ink,
-                                ),
-                              ),
-                              if (_clientPhone != null)
-                                Text(
-                                  _clientPhone!,
-                                  style: AppType.caption.copyWith(
-                                    color: p.muted,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: v.clientId == null
+                                ? null
+                                : () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ContactDetailScreen(
+                                        contactId: v.clientId!,
+                                      ),
+                                    ),
+                                  ),
+                            child: Row(
+                              children: [
+                                InitialsAvatar(text: v.clientName, size: 42),
+                                const SizedBox(width: AppSpace.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        v.clientName,
+                                        style: AppType.body.copyWith(
+                                          fontWeight: v.clientId != null
+                                              ? FontWeight.w700
+                                              : FontWeight.w600,
+                                          color: v.clientId != null
+                                              ? p.navy
+                                              : p.ink,
+                                        ),
+                                      ),
+                                      if (_clientPhone != null)
+                                        Text(
+                                          _clientPhone!,
+                                          style: AppType.caption.copyWith(
+                                            color: p.muted,
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ),
-                            ],
+                                if (v.clientId != null)
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 18,
+                                    color: p.navy.withValues(alpha: 0.7),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                         if (_clientPhone != null) ...[
+                          const SizedBox(width: AppSpace.sm),
                           _RoundAction(
                             icon: Icons.call,
                             background: p.navy,

@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 class Commission {
   final int id;
   final String reference;
+  final int? propertyId;
   final String propertyName;
   final String userName;
   final String leadName;
@@ -20,6 +21,7 @@ class Commission {
   Commission({
     required this.id,
     required this.reference,
+    this.propertyId,
     this.propertyName = '',
     this.userName = '',
     this.leadName = '',
@@ -49,6 +51,7 @@ class Commission {
   factory Commission.fromJson(Map<String, dynamic> j) => Commission(
     id: j['id'] as int,
     reference: asOdooString(j['name']),
+    propertyId: j['property_id'] is List ? j['property_id'][0] as int : null,
     propertyName: many2oneName(j['property_id']),
     userName: many2oneName(j['user_id']),
     leadName: many2oneName(j['lead_id']),
@@ -87,8 +90,11 @@ class Commission {
 class Payment {
   final int id;
   final String reference;
+  final int? contractId;
   final String contractName;
+  final int? propertyId;
   final String propertyName;
+  final int? partnerId;
   final String partnerName;
   final double amount;
   final String method;
@@ -99,8 +105,11 @@ class Payment {
   Payment({
     required this.id,
     required this.reference,
+    this.contractId,
     this.contractName = '',
+    this.propertyId,
     this.propertyName = '',
+    this.partnerId,
     this.partnerName = '',
     this.amount = 0,
     this.method = 'bank',
@@ -124,8 +133,11 @@ class Payment {
   factory Payment.fromJson(Map<String, dynamic> j) => Payment(
     id: j['id'] as int,
     reference: asOdooString(j['name']),
+    contractId: j['contract_id'] is List ? j['contract_id'][0] as int : null,
     contractName: many2oneName(j['contract_id']),
+    propertyId: j['property_id'] is List ? j['property_id'][0] as int : null,
     propertyName: many2oneName(j['property_id']),
+    partnerId: j['partner_id'] is List ? j['partner_id'][0] as int : null,
     partnerName: many2oneName(j['partner_id']),
     amount: asOdooDouble(j['amount']),
     method: asOdooString(j['payment_method'], 'bank'),
@@ -230,7 +242,9 @@ class Expense {
 class Appraisal {
   final int id;
   final String reference;
+  final int? propertyId;
   final String propertyName;
+  final int? partnerId;
   final String partnerName;
   final String userName;
   final double marketValue;
@@ -244,7 +258,9 @@ class Appraisal {
   Appraisal({
     required this.id,
     required this.reference,
+    this.propertyId,
     this.propertyName = '',
+    this.partnerId,
     this.partnerName = '',
     this.userName = '',
     this.marketValue = 0,
@@ -273,7 +289,9 @@ class Appraisal {
   factory Appraisal.fromJson(Map<String, dynamic> j) => Appraisal(
     id: j['id'] as int,
     reference: asOdooString(j['name']),
+    propertyId: j['property_id'] is List ? j['property_id'][0] as int : null,
     propertyName: many2oneName(j['property_id']),
+    partnerId: j['partner_id'] is List ? j['partner_id'][0] as int : null,
     partnerName: many2oneName(j['partner_id']),
     userName: many2oneName(j['user_id']),
     marketValue: asOdooDouble(j['market_value']),
