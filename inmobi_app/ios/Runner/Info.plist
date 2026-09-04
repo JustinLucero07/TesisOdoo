@@ -77,6 +77,11 @@
 	<!-- Sin declarar estos esquemas, iOS responde que la app NO puede abrir
 	     un tel:, un WhatsApp o un mapa — y los botones de llamar/WhatsApp
 	     quedan sin hacer nada, en silencio. -->
+	<!-- La app solo usa HTTPS estándar, exento de las regulaciones de
+	     exportación. Declararlo aquí evita tener que responder el
+	     cuestionario de cifrado a mano en cada build nuevo. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- Necesario para recibir push con la app en segundo plano. -->
 	<key>UIBackgroundModes</key>
 	<array>
