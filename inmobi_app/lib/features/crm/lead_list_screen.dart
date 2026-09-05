@@ -105,17 +105,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
         maxBudget: _maxBudget,
         priority: _priority,
         order: _sortOrder,
+        stageIds: _stages.map((s) => s.id).toList(),
       );
-      final stageIds = _stages.map((s) => s.id).toSet();
-      if (stageIds.isNotEmpty) {
-        setState(
-          () => _leads = result
-              .where((l) => l.stageId != null && stageIds.contains(l.stageId))
-              .toList(),
-        );
-      } else {
-        setState(() => _leads = result);
-      }
+      setState(() => _leads = result);
     } catch (e) {
       setState(() => _error = 'No se pudieron cargar los leads.');
     } finally {

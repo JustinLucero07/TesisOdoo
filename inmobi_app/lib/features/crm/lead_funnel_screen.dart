@@ -110,6 +110,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
         myLeadsOnly: myLeadsOnly,
         currentUserId: auth.odoo.userId,
         advisorId: advisorFilter,
+        stageIds: stages.map((s) => s.id).toList(),
       );
       final grouped = <int, List<Lead>>{};
       for (final lead in leads) {

@@ -9,6 +9,7 @@ class LeadService {
     String? searchText,
     String? temperature,
     int? stageId,
+    List<int>? stageIds,
     bool myLeadsOnly = false,
     int? currentUserId,
     int? advisorId,
@@ -35,6 +36,13 @@ class LeadService {
     }
     if (stageId != null) {
       domain.add(['stage_id', '=', stageId]);
+    }
+    // Restringir al embudo en el servidor y no después en el celular: el
+    // `limit` se aplica antes de descartar, así que filtrar acá evita que
+    // los 50 primeros se llenen con leads del otro embudo y la lista salga
+    // vacía (pasaba al elegir "Todos los asesores").
+    if (stageIds != null && stageIds.isNotEmpty) {
+      domain.add(['stage_id', 'in', stageIds]);
     }
     if (advisorId != null) {
       domain.add(['user_id', '=', advisorId]);
