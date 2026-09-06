@@ -115,6 +115,38 @@ class OdooClient {
         result['is_system'] == true ||
         result['uid'] == 2 ||
         (result['name'] as String? ?? '').toLowerCase().contains('admin');
+
+    if (!isAdmin) await _detectAdminByGroups();
+  }
+
+  /// La respuesta de login de Odoo 19 no siempre trae `is_admin`/`is_system`,
+  /// y adivinar por el nombre del usuario falla con cuentas como "Inmobi
+  /// Bienes Raices": quedaba como no-admin y el CRM le escondía los leads de
+  /// los demás asesores. Se le pregunta a Odoo por los grupos reales.
+  Future<void> _detectAdminByGroups() async {
+    const grupos = [
+      'base.group_system',
+      'base.group_erp_manager',
+      'sales_team.group_sale_manager',
+    ];
+    for (final grupo in grupos) {
+      try {
+        final res = await callKw(
+          model: 'res.users',
+          method: 'has_group',
+          args: [
+            [uid],
+            grupo,
+          ],
+        );
+        if (res == true) {
+          isAdmin = true;
+          return;
+        }
+      } catch (_) {
+        // El grupo puede no existir si el módulo no está instalado.
+      }
+    }
   }
 
   void logout() {

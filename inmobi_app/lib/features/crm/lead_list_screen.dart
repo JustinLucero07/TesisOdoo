@@ -89,8 +89,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
     });
     try {
       final auth = context.read<AuthService>();
-      final isAdm = auth.isAdmin;
-      final effectiveMyLeads = !isAdm ? true : _myLeadsOnly;
+      final effectiveMyLeads = _myLeadsOnly;
 
       if (_stages.isEmpty) {
         _stages = await _stageService.list(isPostSale: widget.isPostSale);

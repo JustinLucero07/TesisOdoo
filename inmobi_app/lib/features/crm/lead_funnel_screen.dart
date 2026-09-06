@@ -96,12 +96,15 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
     });
     try {
       final auth = context.read<AuthService>();
-      final isAdm = auth.isAdmin;
       final stages = await _stageService.list(isPostSale: widget.isPostSale);
 
-      final bool myLeadsOnly = (!isAdm || _selectedAdvisorId == 0);
+      // Se respeta lo elegido en el selector. Quién puede ver los leads de
+      // otros lo deciden las reglas de registro de Odoo en el servidor;
+      // forzar aquí "solo mis leads" dejaba el embudo vacío cuando la app
+      // no reconocía al usuario como administrador.
+      final bool myLeadsOnly = _selectedAdvisorId == 0;
       final int? advisorFilter =
-          (isAdm && _selectedAdvisorId != null && _selectedAdvisorId! > 0)
+          (_selectedAdvisorId != null && _selectedAdvisorId! > 0)
           ? _selectedAdvisorId
           : null;
 
