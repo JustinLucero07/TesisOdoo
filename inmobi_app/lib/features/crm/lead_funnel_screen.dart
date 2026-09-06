@@ -108,17 +108,24 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
           ? _selectedAdvisorId
           : null;
 
-      final leads = await _leadService.list(
-        limit: 300,
-        myLeadsOnly: myLeadsOnly,
-        currentUserId: auth.odoo.userId,
-        advisorId: advisorFilter,
-        stageIds: stages.map((s) => s.id).toList(),
+      // Cada columna pide sus propios leads. Antes se traían 300 de una sola
+      // consulta y se repartían aquí: con más leads que ese tope, las etapas
+      // con pocos registros o poco recientes quedaban vacías aunque en Odoo
+      // sí tuvieran leads.
+      final porEtapa = await Future.wait(
+        stages.map(
+          (s) => _leadService.list(
+            limit: 40,
+            myLeadsOnly: myLeadsOnly,
+            currentUserId: auth.odoo.userId,
+            advisorId: advisorFilter,
+            stageId: s.id,
+          ),
+        ),
       );
       final grouped = <int, List<Lead>>{};
-      for (final lead in leads) {
-        if (lead.stageId == null) continue;
-        grouped.putIfAbsent(lead.stageId!, () => []).add(lead);
+      for (var i = 0; i < stages.length; i++) {
+        grouped[stages[i].id] = porEtapa[i];
       }
       if (mounted) {
         setState(() {
