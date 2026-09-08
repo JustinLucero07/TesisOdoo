@@ -67,6 +67,10 @@ class ReminderService {
   // esté sin datos en ese momento.
   static const _notifBase = 900000;
 
+  /// Dos avisos por recordatorio (previo y vencimiento) dentro del cupo de
+  /// 64 notificaciones locales que permite iOS, compartido con las citas.
+  static const _maxAgendados = 15;
+
   static int _notifId(int reminderId, {required bool due}) =>
       _notifBase + reminderId * 2 + (due ? 1 : 0);
 
@@ -89,7 +93,7 @@ class ReminderService {
         domain: domain,
         fields: Reminder.fields,
         order: 'deadline asc',
-        limit: 100,
+        limit: _maxAgendados,
       );
       final items = rows.map(Reminder.fromJson).toList();
 

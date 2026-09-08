@@ -40,6 +40,11 @@ class VisitService {
     }
   }
 
+  /// iOS descarta en silencio lo que pase de 64 notificaciones locales
+  /// pendientes, así que se agendan solo las citas más próximas y se deja
+  /// sitio para las de los recordatorios.
+  static const _maxAgendadas = 24;
+
   static Future<void> scheduleAllUpcoming(
     OdooClient odoo, {
     int? currentUserId,
@@ -63,7 +68,7 @@ class VisitService {
         domain: domain,
         fields: Visit.listFields,
         order: 'start asc',
-        limit: 100,
+        limit: _maxAgendadas,
       );
       final visits = rows.map(Visit.fromJson).toList();
       await scheduleNotifications(visits, currentUserId: currentUserId);
