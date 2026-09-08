@@ -1,6 +1,6 @@
 {
     'name': 'Gestión Inmobiliaria',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Real Estate',
     'summary': 'Módulo base para gestión de propiedades inmobiliarias',
     'description': """

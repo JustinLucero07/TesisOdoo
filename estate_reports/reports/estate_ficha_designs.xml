@@ -153,6 +153,7 @@
                     <td style="width:20%; padding:13px 4px; text-align:center; border-right:1px solid #eeedf2;">
                         <div style="font-family:'Ficha Serif',Georgia,serif; font-size:26px; font-weight:600; color:#28235d;"><t t-esc="f['area']"/><span style="font-size:15px;"> m&#178;</span></div>
                         <div style="font-size:11px; letter-spacing:1.3px; text-transform:uppercase; color:#9a9aa2; margin-top:3px;">Construcci&#243;n</div>
+                        <div t-if="f['area_terreno']" style="font-size:10px; color:#9a9aa2; margin-top:1px;">Terreno <t t-esc="f['area_terreno']"/> m&#178;</div>
                     </td>
                     <td style="width:20%; padding:13px 4px; text-align:center; border-right:1px solid #eeedf2;">
                         <div style="font-family:'Ficha Serif',Georgia,serif; font-size:26px; font-weight:600; color:#28235d;"><t t-esc="doc.bedrooms or 0"/></div>
@@ -337,6 +338,7 @@
                     <td style="width:25%; padding:18px 16px; border-right:1px solid #e6e5ec; vertical-align:top;">
                         <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#9a9aa2;">Construcci&#243;n</div>
                         <div style="font-family:'Ficha Serif',Georgia,serif; font-size:27px; font-weight:600; color:#28235d; margin-top:2px;"><t t-esc="f['area']"/> m&#178;</div>
+                        <div t-if="f['area_terreno']" style="font-size:10px; color:#9a9aa2; margin-top:2px;">Terreno <t t-esc="f['area_terreno']"/> m&#178;</div>
                     </td>
                     <td style="width:25%; padding:18px 16px; border-right:1px solid #e6e5ec; vertical-align:top;">
                         <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#9a9aa2;">Dormitorios</div>
@@ -365,7 +367,7 @@
                         <td style="width:33%; vertical-align:top; padding:0 13px;">
                             <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Caracter&#237;sticas</div>
                             <t t-if="doc.property_type_id"><t t-esc="doc.property_type_id.name"/><br/></t>
-                            <t t-esc="f['area']"/> m&#178; &#183; <t t-esc="doc.bedrooms or 0"/> dorm.
+                            <t t-esc="f['area']"/> m&#178;<t t-if="f['area_terreno']"> constr. &#183; <t t-esc="f['area_terreno']"/> m&#178; terreno</t> &#183; <t t-esc="doc.bedrooms or 0"/> dorm.
                         </td>
                         <td style="width:34%; vertical-align:top; padding-left:13px;">
                             <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Detalle</div>
@@ -463,6 +465,7 @@
                     <td style="width:25%; padding:0 6px 0 0; vertical-align:top;"><div style="background:#efe7da; padding:16px 18px;">
                         <div style="font-family:'Ficha Serif',Georgia,serif; font-size:28px; font-weight:600; color:#28235d;"><t t-esc="f['area']"/> m&#178;</div>
                         <div style="font-size:11px; letter-spacing:1.1px; text-transform:uppercase; color:#8c8272; margin-top:2px;">Construcci&#243;n</div>
+                        <div t-if="f['area_terreno']" style="font-size:10px; color:#8c8272; margin-top:1px;">Terreno <t t-esc="f['area_terreno']"/> m&#178;</div>
                     </div></td>
                     <td style="width:25%; padding:0 6px 0 0; vertical-align:top;"><div style="background:#efe7da; padding:16px 18px;">
                         <div style="font-family:'Ficha Serif',Georgia,serif; font-size:28px; font-weight:600; color:#28235d;"><t t-esc="doc.bedrooms or 0"/></div>
@@ -505,7 +508,7 @@
                     <td style="width:33%; vertical-align:top; padding:0 13px;">
                         <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Caracter&#237;sticas</div>
                         <t t-if="doc.property_type_id"><t t-esc="doc.property_type_id.name"/><br/></t>
-                        <t t-esc="f['area']"/> m&#178; &#183; C&#243;d. <t t-esc="doc.name"/>
+                        <t t-esc="f['area']"/> m&#178;<t t-if="f['area_terreno']"> &#183; <t t-esc="f['area_terreno']"/> m&#178; terreno</t> &#183; C&#243;d. <t t-esc="doc.name"/>
                     </td>
                     <td style="width:34%; vertical-align:top; padding-left:13px;">
                         <div style="color:#d81f26; font-weight:600; letter-spacing:1.1px; text-transform:uppercase; font-size:10.5px; margin-bottom:6px;">Detalle</div>

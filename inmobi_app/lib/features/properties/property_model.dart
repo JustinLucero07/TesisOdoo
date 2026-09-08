@@ -20,6 +20,7 @@ class Property {
   final String zipCode;
   final String cadastralCode;
   final double area;
+  final double landArea;
   final int bedrooms;
   final double bathrooms;
   final int parkingSpaces;
@@ -69,6 +70,7 @@ class Property {
     this.latitude = 0.0,
     this.longitude = 0.0,
     required this.area,
+    this.landArea = 0.0,
     required this.bedrooms,
     required this.bathrooms,
     this.parkingSpaces = 0,
@@ -116,6 +118,7 @@ class Property {
     'city',
     'sector',
     'area',
+    'land_area',
     'bedrooms',
     'bathrooms',
     'property_type_id',
@@ -175,6 +178,7 @@ class Property {
       latitude: asOdooDouble(json['latitude']),
       longitude: asOdooDouble(json['longitude']),
       area: asOdooDouble(json['area']),
+      landArea: asOdooDouble(json['land_area']),
       bedrooms: asOdooInt(json['bedrooms']),
       bathrooms: asOdooDouble(json['bathrooms']),
       parkingSpaces: asOdooInt(json['parking_spaces']),

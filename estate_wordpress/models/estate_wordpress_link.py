@@ -27,7 +27,8 @@ class EstateWordpressLinkWizard(models.TransientModel):
     # --- Preview (datos leídos desde WP) ---
     wp_title = fields.Char(string='Título en WordPress', readonly=True)
     wp_price = fields.Float(string='Precio en WordPress', readonly=True)
-    wp_area = fields.Float(string='Área en WordPress', readonly=True)
+    wp_area = fields.Float(string='Construcción en WordPress', readonly=True)
+    wp_land_area = fields.Float(string='Terreno en WordPress', readonly=True)
     wp_bedrooms = fields.Integer(string='Habitaciones en WordPress', readonly=True)
     wp_status = fields.Char(string='Estado en WordPress', readonly=True)
     wp_preview_loaded = fields.Boolean(default=False)
@@ -35,7 +36,8 @@ class EstateWordpressLinkWizard(models.TransientModel):
     # --- Comparación ---
     odoo_title = fields.Char(string='Título en Odoo', related='property_id.title', readonly=True)
     odoo_price = fields.Float(string='Precio en Odoo', related='property_id.price', readonly=True)
-    odoo_area = fields.Float(string='Área en Odoo', related='property_id.area', readonly=True)
+    odoo_area = fields.Float(string='Construcción en Odoo', related='property_id.area', readonly=True)
+    odoo_land_area = fields.Float(string='Terreno en Odoo', related='property_id.land_area', readonly=True)
     odoo_bedrooms = fields.Integer(string='Habitaciones en Odoo', related='property_id.bedrooms', readonly=True)
 
     # --- Opciones ---
@@ -141,8 +143,8 @@ class EstateWordpressLinkWizard(models.TransientModel):
         get_meta = wizard._get_meta_getter(wp_prop, extra_meta)
 
         price = ImportWizard._safe_float(get_meta('fave_property_price'))
-        area = ImportWizard._safe_float(
-            get_meta('fave_property_size') or get_meta('fave_property_land'))
+        area = ImportWizard._safe_float(get_meta('fave_property_size'))
+        land_area = ImportWizard._safe_float(get_meta('fave_property_land'))
         bedrooms = ImportWizard._safe_int(
             get_meta('fave_property_bedrooms') or get_meta('fave_property_rooms'))
 
@@ -152,6 +154,7 @@ class EstateWordpressLinkWizard(models.TransientModel):
             'wp_title': title,
             'wp_price': price,
             'wp_area': area,
+            'wp_land_area': land_area,
             'wp_bedrooms': bedrooms,
             'wp_status': status,
             'wp_preview_loaded': True,
@@ -208,7 +211,8 @@ class EstateWordpressLinkWizard(models.TransientModel):
                     import_vals.pop('wp_published', None)
 
                     # Registrar cambios
-                    for key in ['price', 'area', 'bedrooms', 'bathrooms', 'street', 'city', 'title']:
+                    for key in ['price', 'area', 'land_area', 'bedrooms',
+                                'bathrooms', 'street', 'city', 'title']:
                         old = getattr(prop, key, None)
                         new = import_vals.get(key)
                         if new is not None and str(old) != str(new):

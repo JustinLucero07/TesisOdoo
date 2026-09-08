@@ -383,7 +383,7 @@ class EstatePropertyWordPress(models.Model):
             'fave_property_price': str(self.price or 0),
             'fave_property_size': str(self.area or 0),
             'fave_property_size_prefix': 'm²',
-            'fave_property_land': str(self.area or 0),
+            'fave_property_land': str(self.land_area or self.area or 0),
             'fave_property_land_postfix': 'm²',
             'fave_property_bedrooms': str(self.bedrooms or 0),
             'fave_property_rooms': str(self.bedrooms or 0),

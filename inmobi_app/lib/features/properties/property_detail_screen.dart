@@ -459,8 +459,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
     final dateFmt = DateFormat('d MMM yyyy', 'es_EC');
-    final pricePerM2 = (p.area > 0 && p.displayPrice > 0)
-        ? (p.displayPrice / p.area)
+    final refArea = p.area > 0 ? p.area : p.landArea;
+    final pricePerM2 = (refArea > 0 && p.displayPrice > 0)
+        ? (p.displayPrice / refArea)
         : null;
 
     return ListView(
@@ -609,10 +610,16 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 spacing: 10,
                 runSpacing: 10,
                 children: [
-                  _StatChip(
-                    icon: Icons.square_foot,
-                    label: '${p.area.toStringAsFixed(0)} m²',
-                  ),
+                  if (p.area > 0)
+                    _StatChip(
+                      icon: Icons.square_foot,
+                      label: '${p.area.toStringAsFixed(0)} m² constr.',
+                    ),
+                  if (p.landArea > 0)
+                    _StatChip(
+                      icon: Icons.crop_landscape_outlined,
+                      label: '${p.landArea.toStringAsFixed(0)} m² terreno',
+                    ),
                   _StatChip(
                     icon: Icons.bed_outlined,
                     label: '${p.bedrooms} hab.',

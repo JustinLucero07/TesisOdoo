@@ -33,6 +33,8 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
   double? _maxPrice;
   double? _minArea;
   double? _maxArea;
+  double? _minLandArea;
+  double? _maxLandArea;
   int? _bedrooms;
   double? _bathrooms;
   int? _parkingSpaces;
@@ -61,6 +63,8 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
     if (_maxPrice != null && _maxPrice! > 0) count++;
     if (_minArea != null && _minArea! > 0) count++;
     if (_maxArea != null && _maxArea! > 0) count++;
+    if (_minLandArea != null && _minLandArea! > 0) count++;
+    if (_maxLandArea != null && _maxLandArea! > 0) count++;
     if (_bedrooms != null) count++;
     if (_bathrooms != null) count++;
     if (_parkingSpaces != null) count++;
@@ -91,6 +95,8 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
         maxPrice: _maxPrice,
         minArea: _minArea,
         maxArea: _maxArea,
+        minLandArea: _minLandArea,
+        maxLandArea: _maxLandArea,
         bedrooms: _bedrooms,
         bathrooms: _bathrooms,
         parkingSpaces: _parkingSpaces,
@@ -125,27 +131,45 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
         maxPrice: _maxPrice,
         minArea: _minArea,
         maxArea: _maxArea,
+        minLandArea: _minLandArea,
+        maxLandArea: _maxLandArea,
         bedrooms: _bedrooms,
         bathrooms: _bathrooms,
         parkingSpaces: _parkingSpaces,
         sector: _sector,
         onlyExclusive: _onlyExclusive,
         sortOrder: _sortOrder,
-        onApply: (minP, maxP, minA, maxA, bed, bath, park, sec, excl, sort) {
-          setState(() {
-            _minPrice = minP;
-            _maxPrice = maxP;
-            _minArea = minA;
-            _maxArea = maxA;
-            _bedrooms = bed;
-            _bathrooms = bath;
-            _parkingSpaces = park;
-            _sector = sec;
-            _onlyExclusive = excl;
-            _sortOrder = sort;
-          });
-          _load();
-        },
+        onApply:
+            (
+              minP,
+              maxP,
+              minA,
+              maxA,
+              minL,
+              maxL,
+              bed,
+              bath,
+              park,
+              sec,
+              excl,
+              sort,
+            ) {
+              setState(() {
+                _minPrice = minP;
+                _maxPrice = maxP;
+                _minArea = minA;
+                _maxArea = maxA;
+                _minLandArea = minL;
+                _maxLandArea = maxL;
+                _bedrooms = bed;
+                _bathrooms = bath;
+                _parkingSpaces = park;
+                _sector = sec;
+                _onlyExclusive = excl;
+                _sortOrder = sort;
+              });
+              _load();
+            },
       ),
     );
   }
@@ -451,6 +475,8 @@ class _PropertyFilterSheet extends StatefulWidget {
   final double? maxPrice;
   final double? minArea;
   final double? maxArea;
+  final double? minLandArea;
+  final double? maxLandArea;
   final int? bedrooms;
   final double? bathrooms;
   final int? parkingSpaces;
@@ -458,6 +484,8 @@ class _PropertyFilterSheet extends StatefulWidget {
   final bool onlyExclusive;
   final String sortOrder;
   final Function(
+    double?,
+    double?,
     double?,
     double?,
     double?,
@@ -476,6 +504,8 @@ class _PropertyFilterSheet extends StatefulWidget {
     required this.maxPrice,
     required this.minArea,
     required this.maxArea,
+    required this.minLandArea,
+    required this.maxLandArea,
     required this.bedrooms,
     required this.bathrooms,
     required this.parkingSpaces,
@@ -494,6 +524,8 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
   late final TextEditingController _maxPriceCtrl;
   late final TextEditingController _minAreaCtrl;
   late final TextEditingController _maxAreaCtrl;
+  late final TextEditingController _minLandAreaCtrl;
+  late final TextEditingController _maxLandAreaCtrl;
   int? _bedrooms;
   double? _bathrooms;
   int? _parkingSpaces;
@@ -529,6 +561,16 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
     _maxAreaCtrl = TextEditingController(
       text: widget.maxArea != null ? widget.maxArea!.toInt().toString() : '',
     );
+    _minLandAreaCtrl = TextEditingController(
+      text: widget.minLandArea != null
+          ? widget.minLandArea!.toInt().toString()
+          : '',
+    );
+    _maxLandAreaCtrl = TextEditingController(
+      text: widget.maxLandArea != null
+          ? widget.maxLandArea!.toInt().toString()
+          : '',
+    );
     _bedrooms = widget.bedrooms;
     _bathrooms = widget.bathrooms;
     _parkingSpaces = widget.parkingSpaces;
@@ -543,6 +585,8 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
     _maxPriceCtrl.dispose();
     _minAreaCtrl.dispose();
     _maxAreaCtrl.dispose();
+    _minLandAreaCtrl.dispose();
+    _maxLandAreaCtrl.dispose();
     super.dispose();
   }
 
@@ -590,6 +634,8 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                         _maxPriceCtrl.clear();
                         _minAreaCtrl.clear();
                         _maxAreaCtrl.clear();
+                        _minLandAreaCtrl.clear();
+                        _maxLandAreaCtrl.clear();
                         _bedrooms = null;
                         _bathrooms = null;
                         _parkingSpaces = null;
@@ -701,7 +747,7 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
               const SizedBox(height: 16),
 
               const Text(
-                'Área / Superficie (m²)',
+                'Área de construcción (m²)',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
@@ -712,7 +758,7 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                       controller: _minAreaCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        hintText: 'Área mín. m²',
+                        hintText: 'Mínimo',
                         suffixText: 'm²',
                       ),
                     ),
@@ -723,7 +769,39 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                       controller: _maxAreaCtrl,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        hintText: 'Área máx. m²',
+                        hintText: 'Máximo',
+                        suffixText: 'm²',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              const Text(
+                'Área de terreno (m²)',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _minLandAreaCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        hintText: 'Mínimo',
+                        suffixText: 'm²',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextField(
+                      controller: _maxLandAreaCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        hintText: 'Máximo',
                         suffixText: 'm²',
                       ),
                     ),
@@ -877,11 +955,15 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                     final maxP = double.tryParse(_maxPriceCtrl.text.trim());
                     final minA = double.tryParse(_minAreaCtrl.text.trim());
                     final maxA = double.tryParse(_maxAreaCtrl.text.trim());
+                    final minL = double.tryParse(_minLandAreaCtrl.text.trim());
+                    final maxL = double.tryParse(_maxLandAreaCtrl.text.trim());
                     widget.onApply(
                       minP,
                       maxP,
                       minA,
                       maxA,
+                      minL,
+                      maxL,
                       _bedrooms,
                       _bathrooms,
                       _parkingSpaces,

@@ -69,7 +69,8 @@ class EstateWordpressImportLine(models.TransientModel):
     wp_post_id = fields.Integer('Post ID')
     title = fields.Char('Título')
     price = fields.Float('Precio')
-    area = fields.Float('Área m²')
+    area = fields.Float('Construcción m²')
+    land_area = fields.Float('Terreno m²')
     bedrooms = fields.Integer('Habitaciones')
     city = fields.Char('Ciudad')
     status = fields.Char('Estado WP')
@@ -490,9 +491,8 @@ class EstateWordpressImportWizard(models.TransientModel):
 
         # --- Campos numéricos (mismas llaves que _build_houzez_meta) ---
         price = self._safe_float(get_meta('fave_property_price'))
-        area = self._safe_float(
-            get_meta('fave_property_size')
-            or get_meta('fave_property_land'))
+        area = self._safe_float(get_meta('fave_property_size'))
+        land_area = self._safe_float(get_meta('fave_property_land'))
         bedrooms = self._safe_int(
             get_meta('fave_property_bedrooms')
             or get_meta('fave_property_rooms'))
@@ -520,9 +520,9 @@ class EstateWordpressImportWizard(models.TransientModel):
 
         # Log detallado de lo que se extrajo
         _logger.info(
-            "Mapeo WP→Odoo [%s]: price=%s, area=%s, beds=%s, baths=%s, "
+            "Mapeo WP→Odoo [%s]: price=%s, area=%s/%s, beds=%s, baths=%s, "
             "parking=%s, street=%s, city_tax=%s, lat=%s, lng=%s",
-            title[:40], price, area, bedrooms, bathrooms,
+            title[:40], price, area, land_area, bedrooms, bathrooms,
             parking, (street or '')[:30],
             self._get_taxonomy_term_ids(wp_prop, 'property-city'),
             lat, lng)
@@ -628,6 +628,7 @@ class EstateWordpressImportWizard(models.TransientModel):
             'description': description,
             'price': price,
             'area': area,
+            'land_area': land_area,
             'bedrooms': bedrooms,
             'bathrooms': bathrooms,
             'parking_spaces': parking,
@@ -846,6 +847,8 @@ class EstateWordpressImportWizard(models.TransientModel):
                 meta.get('fave_property_price') or acf.get('fave_property_price'))
             area = self._safe_float(
                 meta.get('fave_property_size') or acf.get('fave_property_size'))
+            land_area = self._safe_float(
+                meta.get('fave_property_land') or acf.get('fave_property_land'))
             beds = self._safe_int(
                 meta.get('fave_property_bedrooms') or acf.get('fave_property_bedrooms'))
 
@@ -873,6 +876,7 @@ class EstateWordpressImportWizard(models.TransientModel):
                 'title': title[:200],
                 'price': price,
                 'area': area,
+                'land_area': land_area,
                 'bedrooms': beds,
                 'city': city,
                 'status': status,

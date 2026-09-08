@@ -172,7 +172,8 @@
                                     <div class="row mb-3">
                                         <div class="col-6 mb-2"><i class="fa fa-bed text-muted mr-2"></i> Hab: <strong><t t-esc="property.bedrooms"/></strong></div>
                                         <div class="col-6 mb-2"><i class="fa fa-bath text-muted mr-2"></i> Baños: <strong><t t-esc="property.bathrooms"/></strong></div>
-                                        <div class="col-6 mb-2"><i class="fa fa-arrows text-muted mr-2"></i> Área: <strong><t t-esc="property.area"/> m²</strong></div>
+                                        <div class="col-6 mb-2"><i class="fa fa-arrows text-muted mr-2"></i> Construcción: <strong><t t-esc="property.area"/> m²</strong></div>
+                                        <div class="col-6 mb-2" t-if="property.land_area"><i class="fa fa-map-o text-muted mr-2"></i> Terreno: <strong><t t-esc="property.land_area"/> m²</strong></div>
                                         <div class="col-6 mb-2" t-if="property.parking_spaces"><i class="fa fa-car text-muted mr-2"></i> Parqueaderos: <strong><t t-esc="property.parking_spaces"/></strong></div>
                                         <div class="col-6 mb-2" t-else=""><i class="fa fa-car text-muted mr-2"></i> <strong>Sin Parqueo</strong></div>
                                     </div>
@@ -544,8 +545,12 @@
                                 <t t-foreach="properties" t-as="prop"><td class="text-center"><t t-esc="prop.city or '-'"/></td></t>
                             </tr>
                             <tr>
-                                <td class="fw-bold text-muted">Área (m²)</td>
+                                <td class="fw-bold text-muted">Construcción (m²)</td>
                                 <t t-foreach="properties" t-as="prop"><td class="text-center"><t t-esc="prop.area"/> m²</td></t>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">Terreno (m²)</td>
+                                <t t-foreach="properties" t-as="prop"><td class="text-center"><t t-esc="prop.land_area or 0"/> m²</td></t>
                             </tr>
                             <tr>
                                 <td class="fw-bold text-muted">Habitaciones</td>

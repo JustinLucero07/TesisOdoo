@@ -322,7 +322,16 @@ class FichaDownloader {
     buffer.writeln(
       '💰 *Precio:* \$${property.displayPrice.toStringAsFixed(0)}',
     );
-    buffer.writeln('📐 *Área:* ${property.area.toStringAsFixed(0)} m²');
+    if (property.area > 0) {
+      buffer.writeln(
+        '📐 *Construcción:* ${property.area.toStringAsFixed(0)} m²',
+      );
+    }
+    if (property.landArea > 0) {
+      buffer.writeln(
+        '🗺️ *Terreno:* ${property.landArea.toStringAsFixed(0)} m²',
+      );
+    }
     buffer.writeln(
       '🛏️ *Habitaciones:* ${property.bedrooms} | 🚿 *Baños:* ${property.bathrooms.toStringAsFixed(0)}',
     );

@@ -54,9 +54,13 @@
                             <field name="odoo_price" nolabel="1" widget="monetary"/>
                             <field name="wp_price" nolabel="1" widget="monetary"/>
 
-                            <span>Área (m²)</span>
+                            <span>Construcción (m²)</span>
                             <field name="odoo_area" nolabel="1"/>
                             <field name="wp_area" nolabel="1"/>
+
+                            <span>Terreno (m²)</span>
+                            <field name="odoo_land_area" nolabel="1"/>
+                            <field name="wp_land_area" nolabel="1"/>
 
                             <span>Habitaciones</span>
                             <field name="odoo_bedrooms" nolabel="1"/>

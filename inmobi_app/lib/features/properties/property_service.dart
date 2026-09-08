@@ -25,6 +25,8 @@ class PropertyService {
     String? sector,
     double? minArea,
     double? maxArea,
+    double? minLandArea,
+    double? maxLandArea,
     int? parkingSpaces,
     String order = 'create_date desc',
     int limit = 50,
@@ -41,7 +43,7 @@ class PropertyService {
         ['title', 'ilike', text],
         ['city', 'ilike', text],
         ['sector', 'ilike', text],
-        ['reference', 'ilike', text],
+        ['name', 'ilike', text],
       ]);
     }
     if (states != null && states.isNotEmpty) {
@@ -51,10 +53,10 @@ class PropertyService {
       domain.add(['offer_type', '=', offerType]);
     }
     if (minPrice != null && minPrice > 0) {
-      domain.add(['sale_price', '>=', minPrice]);
+      domain.add(['price', '>=', minPrice]);
     }
     if (maxPrice != null && maxPrice > 0) {
-      domain.add(['sale_price', '<=', maxPrice]);
+      domain.add(['price', '<=', maxPrice]);
     }
     if (minArea != null && minArea > 0) {
       domain.add(['area', '>=', minArea]);
@@ -62,11 +64,17 @@ class PropertyService {
     if (maxArea != null && maxArea > 0) {
       domain.add(['area', '<=', maxArea]);
     }
+    if (minLandArea != null && minLandArea > 0) {
+      domain.add(['land_area', '>=', minLandArea]);
+    }
+    if (maxLandArea != null && maxLandArea > 0) {
+      domain.add(['land_area', '<=', maxLandArea]);
+    }
     if (parkingSpaces != null && parkingSpaces > 0) {
       if (parkingSpaces >= 3) {
-        domain.add(['garage', '>=', 3]);
+        domain.add(['parking_spaces', '>=', 3]);
       } else {
-        domain.add(['garage', '=', parkingSpaces]);
+        domain.add(['parking_spaces', '=', parkingSpaces]);
       }
     }
     if (bedrooms != null && bedrooms > 0) {

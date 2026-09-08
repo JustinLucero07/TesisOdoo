@@ -122,8 +122,9 @@
                                     <td style="padding:8px 12px; border:1px solid #D8DCE5; font-weight:600; color:#555;">Precio / m&#178;</td>
                                     <t t-foreach="props" t-as="prop">
                                         <td style="padding:8px 12px; border:1px solid #D8DCE5; text-align:center;">
-                                            <t t-if="prop.area and prop.area > 0">
-                                                $<t t-esc="'{:,.0f}'.format(prop.price / prop.area)"/>
+                                            <t t-set="_m2" t-value="prop.area or prop.land_area or 0"/>
+                                            <t t-if="_m2 > 0">
+                                                $<t t-esc="'{:,.0f}'.format(prop.price / _m2)"/>
                                             </t>
                                             <t t-else=""><span style="color:#aaa;">&#8212;</span></t>
                                         </td>
@@ -147,12 +148,21 @@
                                         </td>
                                     </t>
                                 </tr>
-                                <!-- Área total -->
+                                <!-- Área de construcción -->
                                 <tr>
-                                    <td style="padding:8px 12px; border:1px solid #D8DCE5; font-weight:600; color:#555;">&#193;rea Total (m&#178;)</td>
+                                    <td style="padding:8px 12px; border:1px solid #D8DCE5; font-weight:600; color:#555;">&#193;rea de Construcci&#243;n (m&#178;)</td>
                                     <t t-foreach="props" t-as="prop">
                                         <td style="padding:8px 12px; border:1px solid #D8DCE5; text-align:center; font-weight:600;">
                                             <t t-esc="'{:,.0f}'.format(prop.area or 0)"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                                <!-- Área de terreno -->
+                                <tr>
+                                    <td style="padding:8px 12px; border:1px solid #D8DCE5; font-weight:600; color:#555;">&#193;rea de Terreno (m&#178;)</td>
+                                    <t t-foreach="props" t-as="prop">
+                                        <td style="padding:8px 12px; border:1px solid #D8DCE5; text-align:center; font-weight:600;">
+                                            <t t-esc="'{:,.0f}'.format(prop.land_area or 0)"/>
                                         </td>
                                     </t>
                                 </tr>

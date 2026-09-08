@@ -1415,7 +1415,8 @@ class CrmLead(models.Model):
                         f'*{best_match.title}*\n'
                         f'{best_match.city or "Ciudad no especificada"}\n'
                         f'${best_match.price:,.0f}\n'
-                        f'{best_match.bedrooms or 0} hab. · {best_match.area or 0} m2\n\n'
+                        f'{best_match.bedrooms or 0} hab. · '
+                        f'{best_match.area or best_match.land_area or 0} m2\n\n'
                         f'Contactanos para agendar una visita.'
                     )
                     try:

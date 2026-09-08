@@ -38,6 +38,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   final _latCtrl = TextEditingController();
   final _lngCtrl = TextEditingController();
   final _areaCtrl = TextEditingController();
+  final _landAreaCtrl = TextEditingController();
   final _bedroomsCtrl = TextEditingController();
   final _bathroomsCtrl = TextEditingController();
   final _parkingCtrl = TextEditingController();
@@ -82,6 +83,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       if (p.latitude != 0.0) _latCtrl.text = p.latitude.toString();
       if (p.longitude != 0.0) _lngCtrl.text = p.longitude.toString();
       _areaCtrl.text = p.area > 0 ? p.area.toStringAsFixed(0) : '';
+      _landAreaCtrl.text = p.landArea > 0 ? p.landArea.toStringAsFixed(0) : '';
       _bedroomsCtrl.text = p.bedrooms > 0 ? '${p.bedrooms}' : '';
       _bathroomsCtrl.text = p.bathrooms > 0
           ? p.bathrooms.toStringAsFixed(0)
@@ -127,6 +129,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       'latitude': double.tryParse(_latCtrl.text.trim()) ?? 0.0,
       'longitude': double.tryParse(_lngCtrl.text.trim()) ?? 0.0,
       'area': double.tryParse(_areaCtrl.text.trim()) ?? 0.0,
+      'land_area': double.tryParse(_landAreaCtrl.text.trim()) ?? 0.0,
       'bedrooms': int.tryParse(_bedroomsCtrl.text.trim()) ?? 0,
       'bathrooms': double.tryParse(_bathroomsCtrl.text.trim()) ?? 0.0,
       'parking_spaces': int.tryParse(_parkingCtrl.text.trim()) ?? 0,
@@ -340,10 +343,26 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                   child: TextFormField(
                     controller: _areaCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Área (m²)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Construcción (m²)',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _landAreaCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Terreno (m²)',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
                 Expanded(
                   child: TextFormField(
                     controller: _bedroomsCtrl,

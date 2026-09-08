@@ -79,7 +79,12 @@ class EstateProperty(models.Model):
     # --- Características ---
     price = fields.Float(string='Precio', tracking=True)
     bottom_price = fields.Float(string='Precio Tope (Mínimo)', tracking=True, help='El precio mínimo que el propietario está dispuesto a aceptar en una negociación.')
-    area = fields.Float(string='Área (m²)', tracking=True)
+    area = fields.Float(
+        string='Área de construcción (m²)', tracking=True,
+        help='Metros cuadrados construidos / cubiertos.')
+    land_area = fields.Float(
+        string='Área de terreno (m²)', tracking=True,
+        help='Metros cuadrados del lote o terreno.')
     bedrooms = fields.Integer(string='Habitaciones', default=0, tracking=True)
     bathrooms = fields.Float(string='Baños', default=0.0, tracking=True)
     parking_spaces = fields.Integer(string='Parqueaderos', default=0, tracking=True)
@@ -915,7 +920,7 @@ class EstateProperty(models.Model):
 
     # Campos que, cuando cambian, deben re-sincronizar la propiedad en WordPress
     _WP_SYNC_FIELDS = {
-        'title', 'description', 'price', 'area', 'bedrooms', 'bathrooms',
+        'title', 'description', 'price', 'area', 'land_area', 'bedrooms', 'bathrooms',
         'parking_spaces', 'street', 'city', 'state_id', 'country_id', 'zip_code',
         'latitude', 'longitude', 'property_type_id', 'state', 'image_main',
         'image_ids', 'year_built', 'wp_publish_location', 'sector_keywords',

@@ -13,6 +13,12 @@ _logger = logging.getLogger(__name__)
 class EstatePropertyAVM(models.Model):
     _inherit = 'estate.property'
 
+    def _avm_area(self):
+        # Superficie de referencia para el precio por m2: la construida y,
+        # si la propiedad no tiene (lotes y terrenos), la del terreno.
+        self.ensure_one()
+        return self.area or self.land_area or 0.0
+
     @api.depends('avm_comparable_count')
     def _compute_avm_confidence(self):
         for rec in self:
@@ -33,8 +39,9 @@ class EstatePropertyAVM(models.Model):
             if not prop.property_type_id or not prop.city:
                 continue
             six_months_ago = fields.Date.today() - timedelta(days=180)
-            min_area = (prop.area or 0) * 0.85
-            max_area = (prop.area or 0) * 1.15
+            ref_area = prop._avm_area()
+            min_area = ref_area * 0.85
+            max_area = ref_area * 1.15
             domain = [
                 ('state', '=', 'sold'),
                 ('property_type_id', '=', prop.property_type_id.id),
@@ -42,16 +49,18 @@ class EstatePropertyAVM(models.Model):
                 ('price', '>', 0),
                 ('date_sold', '>=', six_months_ago),
             ]
-            if prop.area and prop.area > 0:
-                domain += [('area', '>=', min_area), ('area', '<=', max_area)]
+            if ref_area > 0:
+                area_field = 'area' if prop.area else 'land_area'
+                domain += [(area_field, '>=', min_area), (area_field, '<=', max_area)]
             comparables = self.search(domain)
             if prop.id and isinstance(prop.id, int):
                 comparables = comparables.filtered(lambda c: c.id != prop.id)
             if comparables:
-                prices_per_m2 = [c.price / c.area for c in comparables if c.area and c.area > 0]
+                prices_per_m2 = [c.price / c._avm_area()
+                                 for c in comparables if c._avm_area() > 0]
                 if prices_per_m2:
                     avg_price_m2 = sum(prices_per_m2) / len(prices_per_m2)
-                    estimated = avg_price_m2 * (prop.area or 1)
+                    estimated = avg_price_m2 * (ref_area or 1)
                     # Trend: compare first vs second half
                     half = len(comparables) // 2
                     if half > 0:
@@ -207,18 +216,20 @@ class EstatePropertyAVM(models.Model):
             year_factor = max(1.0 - year_diff * 0.005, 0.70)
             weight = age_weight * year_factor
             direct_weighted_price += comp.price * weight
-            if comp.area and comp.area > 0:
+            comp_area = comp._avm_area()
+            if comp_area > 0:
                 weighted_price += comp.price * weight
-                weighted_area += comp.area * weight
+                weighted_area += comp_area * weight
             total_weight += weight
 
         if total_weight == 0:
             total_weight = len(comparables)
             direct_weighted_price = sum(c.price for c in comparables)
 
-        if weighted_area > 0 and self.area and self.area > 0:
+        own_area = self._avm_area()
+        if weighted_area > 0 and own_area > 0:
             avg_price_per_sqm = weighted_price / weighted_area
-            estimated_price = avg_price_per_sqm * self.area
+            estimated_price = avg_price_per_sqm * own_area
         else:
             estimated_price = direct_weighted_price / total_weight
             

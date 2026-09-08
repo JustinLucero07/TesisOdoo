@@ -87,9 +87,15 @@
                                                 </td>
                                             </tr>
                                             <tr>
-                                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Superficie</td>
+                                                <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">&#193;rea de construcci&#243;n</td>
                                                 <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="'{:,.0f}'.format(prop.area or 0)"/> m&#178;</td>
                                             </tr>
+                                            <t t-if="prop.land_area">
+                                                <tr>
+                                                    <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">&#193;rea de terreno</td>
+                                                    <td style="padding:5px 10px; border-bottom:1px solid #D8DCE5;"><t t-esc="'{:,.0f}'.format(prop.land_area)"/> m&#178;</td>
+                                                </tr>
+                                            </t>
                                             <t t-if="prop.bedrooms">
                                                 <tr>
                                                     <td style="background:#F8F9FB; padding:5px 10px; border-right:1px solid #D8DCE5; border-bottom:1px solid #D8DCE5; color:#555; font-weight:600;">Distribuci&#243;n</td>

@@ -275,7 +275,8 @@ class EstateReportWizard(models.TransientModel):
         # PROPIEDADES DISPONIBLES
         # ==============================
         if self.report_type == 'available_properties':
-            headers = ['Ref.', 'Título', 'Tipo', 'Ciudad', 'Precio', 'Área (m²)', 'Habitaciones']
+            headers = ['Ref.', 'Título', 'Tipo', 'Ciudad', 'Precio',
+                       'Construcción (m²)', 'Terreno (m²)', 'Habitaciones']
             col_count = len(headers)
             ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
             for col, h in enumerate(headers):
@@ -289,7 +290,8 @@ class EstateReportWizard(models.TransientModel):
                 ws.write(row, 3, rec.city or '', cell_fmt)
                 ws.write(row, 4, rec.price or 0, money_fmt)
                 ws.write(row, 5, rec.area or 0, number_fmt)
-                ws.write(row, 6, rec.bedrooms or 0, number_fmt)
+                ws.write(row, 6, rec.land_area or 0, number_fmt)
+                ws.write(row, 7, rec.bedrooms or 0, number_fmt)
                 total_price += rec.price or 0
                 row += 1
             ws.write(row, 3, 'TOTAL:', total_label_fmt)
@@ -640,7 +642,7 @@ class EstateReportWizard(models.TransientModel):
                     city_data[city] = {'count': 0, 'total_price': 0, 'total_area': 0, 'days_on_market': []}
                 city_data[city]['count'] += 1
                 city_data[city]['total_price'] += rec.price
-                city_data[city]['total_area'] += rec.area or 0
+                city_data[city]['total_area'] += rec.area or rec.land_area or 0
                 if rec.days_on_market:
                     city_data[city]['days_on_market'].append(rec.days_on_market)
                     

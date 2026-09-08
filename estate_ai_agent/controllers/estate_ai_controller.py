@@ -410,6 +410,7 @@ INSTRUCCIONES DE RESPUESTA:
                         'ciudad': p.city, 'precio': p.price,
                         'precio_fmt': f'${p.price:,.0f}' if p.price else 'Consultar',
                         'estado': p.state, 'area': p.area,
+                        'area_terreno': p.land_area,
                         'habitaciones': p.bedrooms, 'tipo': p.property_type_id.name if p.property_type_id else '',
                         'dias_mercado': p.days_on_market,
                         'avm_status': getattr(p, 'avm_status', ''),
@@ -540,6 +541,8 @@ INSTRUCCIONES DE RESPUESTA:
                 }
                 if args.get('area'):
                     vals['area'] = float(args['area'])
+                if args.get('land_area'):
+                    vals['land_area'] = float(args['land_area'])
                 if args.get('bedrooms'):
                     vals['bedrooms'] = int(args['bedrooms'])
                 if args.get('bathrooms'):
@@ -734,6 +737,8 @@ INSTRUCCIONES DE RESPUESTA:
                     vals['bathrooms'] = int(args['bathrooms'])
                 if args.get('area') is not None:
                     vals['area'] = float(args['area'])
+                if args.get('land_area') is not None:
+                    vals['land_area'] = float(args['land_area'])
                 if args.get('street'):
                     vals['street'] = args['street']
                 if args.get('city'):
@@ -1536,7 +1541,9 @@ INSTRUCCIONES DE RESPUESTA:
                     'dias_venta': c.days_on_market or 0} for c in comparables]
                 return json.dumps({
                     'propiedad': {'id': prop.id, 'titulo': prop.title, 'precio_actual': prop.price,
-                        'area': prop.area or 0, 'habitaciones': prop.bedrooms or 0,
+                        'area': prop.area or 0,
+                        'area_terreno': prop.land_area or 0,
+                        'habitaciones': prop.bedrooms or 0,
                         'ciudad': prop.city, 'tipo': prop.property_type_id.name},
                     'comparables': comp_data,
                     'instruccion': (
@@ -1711,6 +1718,7 @@ INSTRUCCIONES DE RESPUESTA:
                     'precio': prop.price,
                     'precio_fmt': f"${prop.price:,.0f}",
                     'area': prop.area,
+                    'area_terreno': prop.land_area,
                     'habitaciones': prop.bedrooms,
                     'banos': prop.bathrooms,
                     'parking': getattr(prop, 'parking_spaces', 0) or 0,

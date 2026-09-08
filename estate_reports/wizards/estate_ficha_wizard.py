@@ -150,6 +150,7 @@ class ReportFichaInmobi(models.AbstractModel):
             'tel': partner.mobile or partner.phone or self.env.company.phone or '',
             'email_asesor': partner.email or '',
             'area': '{:g}'.format(prop.area or 0),
+            'area_terreno': '{:g}'.format(prop.land_area) if prop.land_area else '',
             'banos': '{:g}'.format(prop.bathrooms or 0),
             'avm_fmt': ('{:,.0f}'.format(prop.avm_estimated_price).replace(',', '.')
                         if prop.avm_estimated_price else ''),

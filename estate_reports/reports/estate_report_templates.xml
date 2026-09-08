@@ -107,8 +107,12 @@
                 <table style="width:100%; border-collapse:collapse; border:1px solid #D8DCE5;">
                     <tr>
                         <td style="padding:7px 5px; text-align:center; background:#F8F9FB; border-right:1px solid #D8DCE5;">
-                            <div style="font-size:13px; font-weight:700; color:#004274; line-height:1;"><t t-esc="str(doc.area or 0)"/> m&#178;</div>
-                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">&#193;rea</div>
+                            <div style="font-size:13px; font-weight:700; color:#004274; line-height:1;"><t t-esc="str(doc.area or doc.land_area or 0)"/> m&#178;</div>
+                            <div style="font-size:7px; color:#999; margin-top:2px; text-transform:uppercase; letter-spacing:.5px;">
+                                <t t-if="doc.area and doc.land_area">Constr. / <t t-esc="str(doc.land_area)"/> m&#178; terreno</t>
+                                <t t-elif="doc.area">&#193;rea construida</t>
+                                <t t-else="">&#193;rea de terreno</t>
+                            </div>
                         </td>
                         <td style="padding:7px 5px; text-align:center; background:#F8F9FB; border-right:1px solid #D8DCE5;">
                             <div style="font-size:13px; font-weight:700; color:#004274; line-height:1;"><t t-esc="str(doc.bedrooms or 0)"/></div>
@@ -582,7 +586,7 @@
                             <th style="padding:7px 10px; text-align:left; font-weight:700;">Tipo</th>
                             <th style="padding:7px 10px; text-align:left; font-weight:700;">Ciudad</th>
                             <th style="padding:7px 10px; text-align:right; font-weight:700;">Precio (USD)</th>
-                            <th style="padding:7px 10px; text-align:right; font-weight:700;">&#193;rea m&#178;</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Constr. / Terreno m&#178;</th>
                             <th style="padding:7px 10px; text-align:center; font-weight:700;">Hab.</th>
                         </tr>
                     </thead>
@@ -595,7 +599,7 @@
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.property_type_id.name or '&#8212;'"/></td>
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.city or '&#8212;'"/></td>
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#004274;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
-                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;"><t t-esc="rec.area or 0"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;"><t t-esc="rec.area or 0"/><t t-if="rec.land_area"> / <t t-esc="rec.land_area"/></t></td>
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;"><t t-esc="rec.bedrooms or 0"/></td>
                                 <t t-set="total_price" t-value="total_price + (rec.price or 0)"/>
                             </tr>
@@ -859,7 +863,7 @@
                             <th style="padding:7px 10px; font-weight:700;">Ciudad</th>
                             <th style="padding:7px 10px; font-weight:700;">Tipo</th>
                             <th style="padding:7px 10px; text-align:center; font-weight:700;">D&#237;as Mercado</th>
-                            <th style="padding:7px 10px; text-align:right; font-weight:700;">&#193;rea m&#178;</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Constr. / Terreno m&#178;</th>
                             <th style="padding:7px 10px; text-align:right; font-weight:700;">Precio (USD)</th>
                         </tr>
                     </thead>
@@ -870,7 +874,7 @@
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-weight:600;"><t t-esc="rec.city or '&#8212;'"/></td>
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; color:#888;"><t t-esc="rec.property_type_id.name or '&#8212;'"/></td>
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:center;"><t t-esc="rec.days_on_market or 0"/> d&#237;as</td>
-                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;"><t t-esc="rec.area or 0"/> m&#178;</td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;"><t t-esc="rec.area or 0"/><t t-if="rec.land_area"> / <t t-esc="rec.land_area"/></t> m&#178;</td>
                                 <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700;">$<t t-esc="'{:,.0f}'.format(rec.price or 0)"/></td>
                             </tr>
                         </t>

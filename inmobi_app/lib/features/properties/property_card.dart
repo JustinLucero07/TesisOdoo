@@ -61,8 +61,9 @@ class _PropertyCardState extends State<PropertyCard> {
     final photoCount = p.imageIds.isEmpty ? 1 : p.imageIds.length;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
-    final pricePerM2 = (p.area > 0 && p.displayPrice > 0)
-        ? (p.displayPrice / p.area)
+    final refArea = p.area > 0 ? p.area : p.landArea;
+    final pricePerM2 = (refArea > 0 && p.displayPrice > 0)
+        ? (p.displayPrice / refArea)
         : null;
 
     return PressableScale(
@@ -396,6 +397,15 @@ class _PropertyCardState extends State<PropertyCard> {
                             _SpecChip(
                               icon: Icons.square_foot_rounded,
                               label: '${p.area.toStringAsFixed(0)} m²',
+                              isDark: isDark,
+                            ),
+                            const SizedBox(width: 6),
+                          ],
+                          if (p.landArea > 0) ...[
+                            _SpecChip(
+                              icon: Icons.crop_landscape_rounded,
+                              label:
+                                  '${p.landArea.toStringAsFixed(0)} m² terr.',
                               isDark: isDark,
                             ),
                             const SizedBox(width: 6),

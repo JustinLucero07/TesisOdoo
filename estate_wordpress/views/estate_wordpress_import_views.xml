@@ -84,6 +84,7 @@
                             <field name="title" readonly="1"/>
                             <field name="price" readonly="1" widget="monetary"/>
                             <field name="area" readonly="1"/>
+                            <field name="land_area" readonly="1" optional="hide"/>
                             <field name="bedrooms" readonly="1"/>
                             <field name="city" readonly="1"/>
                             <field name="already_exists" string="¿Existe?" readonly="1" widget="boolean"/>

@@ -23,7 +23,8 @@
 
                 <field name="city"/>
                 <field name="price" widget="monetary"/>
-                <field name="area"/>
+                <field name="area" optional="show"/>
+                <field name="land_area" optional="hide"/>
                 <field name="bedrooms"/>
                 <field name="days_on_market" optional="show"
                        decoration-warning="days_on_market &gt; 60"
@@ -188,7 +189,8 @@
                                    groups="estate_management.estate_group_manager"/>
                             <field name="commission_percentage" readonly="state == 'sold'"/>
                             <field name="commission_amount" widget="monetary" readonly="state == 'sold'"/>
-                            <field name="area" readonly="state == 'sold'" placeholder="m²"/>
+                            <field name="area" readonly="state == 'sold'" placeholder="m² construidos"/>
+                            <field name="land_area" readonly="state == 'sold'" placeholder="m² de terreno"/>
                             <field name="owner_id" readonly="state == 'sold'"
                                    placeholder="Buscar propietario..."/>
                             <field name="proxy_id" readonly="state == 'sold'"
@@ -629,7 +631,8 @@
                 <field name="property_type_id" type="row"/>
                 <field name="state" type="col"/>
                 <field name="price" type="measure" string="Precio Promedio"/>
-                <field name="area" type="measure" string="Área m²"/>
+                <field name="area" type="measure" string="Área construcción m²"/>
+                <field name="land_area" type="measure" string="Área terreno m²"/>
                 <field name="days_on_market" type="measure" string="Días en Mercado"/>
             </pivot>
         </field>
