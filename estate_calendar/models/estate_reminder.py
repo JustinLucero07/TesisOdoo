@@ -69,7 +69,6 @@ class EstateReminder(models.Model):
         'ir.attachment', 'estate_reminder_attachment_rel',
         'reminder_id', 'attachment_id', string='Archivos adjuntos',
         help='Sube aquí la póliza, el comprobante o cualquier respaldo suelto.')
-    attachment_count = fields.Integer(compute='_compute_attachment_count')
 
     # ── Cuándo ──────────────────────────────────────────────────────────────
     date = fields.Date(
@@ -152,11 +151,6 @@ class EstateReminder(models.Model):
                 rec.notify_datetime = rec.deadline - timedelta(minutes=rec.remind_minutes)
             else:
                 rec.notify_datetime = False
-
-    @api.depends('attachment_ids')
-    def _compute_attachment_count(self):
-        for rec in self:
-            rec.attachment_count = len(rec.attachment_ids)
 
     @api.depends('date', 'state')
     def _compute_days_left(self):

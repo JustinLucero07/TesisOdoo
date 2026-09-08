@@ -110,7 +110,6 @@
                                 mejor enl&#225;zalo en el campo <b>Documento</b>.
                             </p>
                             <field name="attachment_ids" widget="many2many_binary"/>
-                            <field name="attachment_count" invisible="1"/>
                         </page>
                     </notebook>
                 </sheet>
