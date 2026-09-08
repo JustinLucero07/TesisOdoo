@@ -307,8 +307,12 @@ class ReminderTile extends StatelessWidget {
                     [
                       if (showPartner && r.partnerName.isNotEmpty)
                         r.partnerName,
-                      if (r.date != null) dateFmt.format(r.date!),
-                      ReminderTypeStyle.label(r.reminderType),
+                      if (r.date != null)
+                        '${dateFmt.format(r.date!)} · ${r.hourLabel}',
+                      if (r.documentName.isNotEmpty)
+                        '📎 ${r.documentName}'
+                      else
+                        ReminderTypeStyle.label(r.reminderType),
                     ].join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -335,6 +339,16 @@ class ReminderTile extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (r.isPending && !r.advanceNotified) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          r.remindLabel,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: colors.mutedLight,
+                          ),
+                        ),
+                      ],
                       if (r.isPending && r.advanceNotified) ...[
                         const SizedBox(width: 6),
                         Icon(

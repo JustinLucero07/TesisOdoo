@@ -231,6 +231,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
       if (_state == 'pending') vals['state'] = 'received';
     }
 
+    int? nuevoId;
     try {
       if (widget.isEdit) {
         await widget.odoo.write(
@@ -239,7 +240,10 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
           values: vals,
         );
       } else {
-        await widget.odoo.create(model: 'estate.document', values: vals);
+        nuevoId = await widget.odoo.create(
+          model: 'estate.document',
+          values: vals,
+        );
       }
 
       if (mounted) {
@@ -253,7 +257,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
             backgroundColor: AppColors.of(context).success,
           ),
         );
-        Navigator.of(context).pop(true);
+        Navigator.of(context).pop(nuevoId ?? true);
       }
     } catch (e) {
       final msg = e.toString().replaceAll('Exception:', '').trim();

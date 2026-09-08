@@ -20,16 +20,17 @@ class ReminderService {
       domain.add(['user_id', '=', odoo.userId]);
     }
 
-    final hoy = _today();
+    // Odoo guarda los datetime en UTC, así que los filtros van en UTC.
+    final ahora = _nowUtc();
     switch (filter) {
       case 'pending':
         domain.add(['state', '=', 'pending']);
       case 'soon':
         domain.add(['state', '=', 'pending']);
-        domain.add(['notify_date', '<=', hoy]);
+        domain.add(['notify_datetime', '<=', ahora]);
       case 'overdue':
         domain.add(['state', '=', 'pending']);
-        domain.add(['date', '<', hoy]);
+        domain.add(['deadline', '<', ahora]);
       case 'done':
         domain.add(['state', '=', 'done']);
     }
@@ -38,7 +39,7 @@ class ReminderService {
       model: 'estate.reminder',
       domain: domain,
       fields: Reminder.fields,
-      order: 'date asc',
+      order: 'deadline asc',
       limit: limit,
     );
     return rows.map(Reminder.fromJson).toList();
@@ -77,11 +78,12 @@ class ReminderService {
 
   Future<void> delete(int id) => odoo.unlink(model: 'estate.reminder', id: id);
 
-  static String _today() {
-    final n = DateTime.now();
-    return '${n.year.toString().padLeft(4, '0')}-'
-        '${n.month.toString().padLeft(2, '0')}-'
-        '${n.day.toString().padLeft(2, '0')}';
+  static String _nowUtc() {
+    final n = DateTime.now().toUtc();
+    return '${formatDate(n)} '
+        '${n.hour.toString().padLeft(2, '0')}:'
+        '${n.minute.toString().padLeft(2, '0')}:'
+        '${n.second.toString().padLeft(2, '0')}';
   }
 
   static String formatDate(DateTime d) =>

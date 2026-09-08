@@ -1,6 +1,6 @@
 {
     'name': 'Agenda Inmobiliaria',
-    'version': '19.0.1.0.3',
+    'version': '19.0.1.0.4',
     'category': 'Real Estate',
     'summary': 'Agenda de citas integrada en el calendario estándar de Odoo',
     'description': """
@@ -14,7 +14,7 @@
     """,
     'author': 'Inmobi Community',
     'license': 'LGPL-3',
-    'depends': ['estate_management', 'estate_crm', 'crm', 'calendar'],
+    'depends': ['estate_management', 'estate_crm', 'estate_document', 'crm', 'calendar'],
     'data': [
         'security/ir.model.access.csv',
         'security/estate_calendar_security.xml',

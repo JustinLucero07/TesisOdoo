@@ -58,13 +58,13 @@ class _DocumentsSectionState extends State<DocumentsSection> {
   }
 
   Future<void> _openNewForm() async {
-    final saved = await Navigator.of(context).push<bool>(
+    final saved = await Navigator.of(context).push<Object>(
       MaterialPageRoute(
         builder: (_) =>
             DocumentFormScreen(odoo: widget.odoo, initialOwner: widget.owner),
       ),
     );
-    if (saved == true && mounted) {
+    if (saved != null && mounted) {
       _load();
     }
   }

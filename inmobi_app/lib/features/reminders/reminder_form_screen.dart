@@ -7,6 +7,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/many2one_field.dart';
 import '../../core/widgets/select_field.dart';
 import '../auth/auth_service.dart';
+import '../documents/document_form_screen.dart';
+import '../documents/document_service.dart';
 import 'reminder_model.dart';
 import 'reminder_service.dart';
 
@@ -42,21 +44,23 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
 
   Many2oneValue? _partner;
   Many2oneValue? _property;
+  Many2oneValue? _document;
   String _type = 'policy';
   DateTime _date = DateTime.now().add(const Duration(days: 30));
-  int _daysBefore = 7;
+  TimeOfDay _time = const TimeOfDay(hour: 9, minute: 0);
+  int _remindValue = 7;
+  String _remindUnit = 'days';
   bool _notifyPush = true;
 
   bool _saving = false;
   String? _error;
 
-  static const _defaultDaysOptions = [0, 1, 3, 7, 15, 30, 60, 90];
-
-  // Si el recordatorio traía una anticipación fuera de la lista, se añade
-  // para que el chip aparezca seleccionado en vez de perderse.
-  List<int> get _daysOptions => _defaultDaysOptions.contains(_daysBefore)
-      ? _defaultDaysOptions
-      : ([..._defaultDaysOptions, _daysBefore]..sort());
+  // Atajos por unidad: lo que se pide de verdad en cada escala.
+  static const _quickValues = {
+    'minutes': [10, 15, 30, 45],
+    'hours': [1, 2, 6, 12],
+    'days': [1, 3, 7, 15, 30],
+  };
 
   @override
   void initState() {
@@ -69,9 +73,17 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
       _nameCtrl.text = e.name;
       _noteCtrl.text = e.note;
       _type = e.reminderType;
-      _daysBefore = e.daysBefore;
+      _remindValue = e.remindValue;
+      _remindUnit = e.remindUnit;
       _notifyPush = e.notifyPush;
       if (e.date != null) _date = e.date!;
+      _time = TimeOfDay(
+        hour: e.hour.floor().clamp(0, 23),
+        minute: ((e.hour - e.hour.floor()) * 60).round().clamp(0, 59),
+      );
+      if (e.documentId != null) {
+        _document = Many2oneValue(e.documentId!, e.documentName);
+      }
       if (e.partnerId != null) {
         _partner = Many2oneValue(e.partnerId!, e.partnerName);
       }
@@ -101,7 +113,17 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
     super.dispose();
   }
 
-  DateTime get _notifyOn => _date.subtract(Duration(days: _daysBefore));
+  int get _remindMinutes => switch (_remindUnit) {
+    'hours' => _remindValue * 60,
+    'days' => _remindValue * 1440,
+    _ => _remindValue,
+  };
+
+  DateTime get _deadline =>
+      DateTime(_date.year, _date.month, _date.day, _time.hour, _time.minute);
+
+  DateTime get _notifyOn =>
+      _deadline.subtract(Duration(minutes: _remindMinutes));
 
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
@@ -111,6 +133,50 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
       lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
     );
     if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _pickTime() async {
+    final picked = await showTimePicker(context: context, initialTime: _time);
+    if (picked != null) setState(() => _time = picked);
+  }
+
+  /// Sube un documento nuevo desde aquí y lo deja enlazado al recordatorio.
+  Future<void> _uploadDocument() async {
+    if (_partner == null) {
+      setState(() => _error = 'Elige primero el cliente del documento.');
+      return;
+    }
+    final result = await Navigator.of(context).push<Object>(
+      MaterialPageRoute(
+        builder: (_) => DocumentFormScreen(
+          odoo: _odoo,
+          initialOwner: DocumentOwner.partner(_partner!.id),
+        ),
+      ),
+    );
+    if (result is int && mounted) {
+      final rows = await _odoo.searchRead(
+        model: 'estate.document',
+        domain: [
+          ['id', '=', result],
+        ],
+        fields: ['name', 'expiration_date'],
+        limit: 1,
+      );
+      if (!mounted || rows.isEmpty) return;
+      final row = rows.first;
+      final vence = row['expiration_date'];
+      setState(() {
+        _document = Many2oneValue(result, (row['name'] ?? '').toString());
+        if (vence is String) {
+          _date = DateTime.tryParse(vence) ?? _date;
+        }
+        if (_nameCtrl.text.trim().isEmpty) {
+          _nameCtrl.text = 'Vence: ${row['name'] ?? ''}';
+        }
+        _error = null;
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -130,7 +196,10 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
       'partner_id': _partner!.id,
       'property_id': _property?.id ?? false,
       'date': ReminderService.formatDate(_date),
-      'days_before': _daysBefore,
+      'hour': _time.hour + _time.minute / 60.0,
+      'remind_value': _remindValue,
+      'remind_unit': _remindUnit,
+      'document_id': _document?.id ?? false,
       'notify_push': _notifyPush,
       'note': _noteCtrl.text.trim(),
       if (!widget.isEdit && _odoo.userId != null) 'user_id': _odoo.userId,
@@ -203,8 +272,34 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
               value: _property,
               onChanged: (v) => setState(() => _property = v),
             ),
+            const SizedBox(height: 14),
+            Many2oneField(
+              label: 'Documento',
+              odoo: _odoo,
+              model: 'estate.document',
+              searchField: 'name',
+              value: _document,
+              domain: _partner == null
+                  ? const []
+                  : [
+                      ['partner_id', '=', _partner!.id],
+                    ],
+              onChanged: (v) => setState(() => _document = v),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _uploadDocument,
+                icon: const Icon(Icons.upload_file_outlined, size: 17),
+                label: const Text(
+                  'Subir un documento nuevo',
+                  style: TextStyle(fontSize: 12.5),
+                ),
+              ),
+            ),
 
-            const SizedBox(height: 22),
+            const SizedBox(height: 14),
             Text(
               '¿CUÁNDO AVISAR?',
               style: TextStyle(
@@ -215,19 +310,41 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            InkWell(
-              onTap: _pickDate,
-              borderRadius: BorderRadius.circular(12),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Fecha del vencimiento',
-                  prefixIcon: Icon(Icons.event_outlined),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: InkWell(
+                    onTap: _pickDate,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Vence el',
+                        prefixIcon: Icon(Icons.event_outlined),
+                      ),
+                      child: Text(
+                        dateFmt.format(_date),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
                 ),
-                child: Text(
-                  dateFmt.format(_date),
-                  overflow: TextOverflow.ellipsis,
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: InkWell(
+                    onTap: _pickTime,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InputDecorator(
+                      decoration: const InputDecoration(
+                        labelText: 'Hora',
+                        prefixIcon: Icon(Icons.schedule_outlined),
+                      ),
+                      child: Text(_time.format(context)),
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
             const SizedBox(height: 14),
             Text(
@@ -239,17 +356,58 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
               ),
             ),
             const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 92,
+                  child: TextFormField(
+                    key: ValueKey('remind-$_remindUnit'),
+                    initialValue: '$_remindValue',
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Cantidad'),
+                    onChanged: (v) => setState(
+                      () => _remindValue = int.tryParse(v.trim()) ?? 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SelectField(
+                    label: 'Unidad',
+                    value: _remindUnit,
+                    options: ReminderUnitStyle.options,
+                    onChanged: (v) => setState(() {
+                      _remindUnit = v ?? 'days';
+                      final atajos = _quickValues[_remindUnit]!;
+                      if (!atajos.contains(_remindValue)) {
+                        _remindValue = atajos[atajos.length ~/ 2];
+                      }
+                    }),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: _daysOptions.map((d) {
-                final selected = _daysBefore == d;
-                return ChoiceChip(
-                  label: Text(d == 0 ? 'El mismo día' : '$d días antes'),
-                  selected: selected,
-                  onSelected: (_) => setState(() => _daysBefore = d),
-                );
-              }).toList(),
+              children: [
+                ChoiceChip(
+                  label: const Text('Solo al vencer'),
+                  selected: _remindValue == 0,
+                  onSelected: (_) => setState(() => _remindValue = 0),
+                ),
+                ..._quickValues[_remindUnit]!.map(
+                  (v) => ChoiceChip(
+                    label: Text(
+                      '$v ${ReminderUnitStyle.label(_remindUnit).toLowerCase()}',
+                    ),
+                    selected: _remindValue == v,
+                    onSelected: (_) => setState(() => _remindValue = v),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             Container(
@@ -268,10 +426,12 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      _daysBefore == 0
-                          ? 'Recibirás el aviso el mismo ${shortFmt.format(_date)}.'
+                      _remindValue <= 0
+                          ? 'Recibirás el aviso al vencer, '
+                                '${shortFmt.format(_date)} a las ${_time.format(context)}.'
                           : 'Recibirás el aviso el ${shortFmt.format(_notifyOn)} '
-                                'y otro el día del vencimiento.',
+                                'a las ${TimeOfDay.fromDateTime(_notifyOn).format(context)} '
+                                'y otro al vencer.',
                       style: TextStyle(fontSize: 12.5, color: colors.info),
                     ),
                   ),

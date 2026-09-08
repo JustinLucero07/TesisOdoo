@@ -14,8 +14,11 @@
                 <field name="partner_id"/>
                 <field name="reminder_type"/>
                 <field name="property_id" optional="hide"/>
-                <field name="days_before" optional="hide"/>
-                <field name="notify_date" optional="show" string="Avisa el"/>
+                <field name="hour" widget="float_time" optional="hide"/>
+                <field name="remind_value" optional="hide"/>
+                <field name="remind_unit" optional="hide"/>
+                <field name="notify_datetime" optional="show" string="Avisa el"/>
+                <field name="document_id" optional="hide"/>
                 <field name="days_left" string="Días" optional="show"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
                 <field name="advance_notified" optional="hide" widget="boolean"/>
@@ -46,6 +49,8 @@
                             invisible="state != 'pending'"/>
                     <button name="action_reset" string="Reabrir" type="object"
                             invisible="state == 'pending'"/>
+                    <button name="action_open_document" string="Ver documento" type="object"
+                            icon="fa-file-o" invisible="not document_id"/>
                     <field name="state" widget="statusbar" statusbar_visible="pending,done"/>
                 </header>
                 <sheet>
@@ -63,11 +68,23 @@
                             <field name="reminder_type"/>
                             <field name="property_id" placeholder="Opcional"/>
                             <field name="lead_id" placeholder="Opcional"/>
+                            <field name="document_id" placeholder="Buscar en el expediente..."
+                                   context="{'default_partner_id': partner_id}"/>
                         </group>
                         <group string="¿Cuándo avisar?">
-                            <field name="date"/>
-                            <field name="days_before"/>
-                            <field name="notify_date" readonly="1"/>
+                            <label for="date" string="Vence el"/>
+                            <div class="o_row">
+                                <field name="date" nolabel="1"/>
+                                <span class="mx-2">a las</span>
+                                <field name="hour" widget="float_time" nolabel="1"/>
+                            </div>
+                            <label for="remind_value" string="Avisarme"/>
+                            <div class="o_row">
+                                <field name="remind_value" nolabel="1"/>
+                                <field name="remind_unit" nolabel="1"/>
+                                <span class="ms-2 text-muted">antes</span>
+                            </div>
+                            <field name="notify_datetime" readonly="1"/>
                             <field name="days_left" readonly="1"/>
                             <field name="urgency" invisible="1"/>
                         </group>
@@ -85,6 +102,15 @@
                     <notebook>
                         <page string="Notas">
                             <field name="note" placeholder="Detalles, número de póliza, contacto de la aseguradora..."/>
+                        </page>
+                        <page string="Archivos">
+                            <p class="text-muted">
+                                Sube aquí la p&#243;liza, el comprobante o cualquier respaldo.
+                                Si el documento ya est&#225; en el expediente del cliente,
+                                mejor enl&#225;zalo en el campo <b>Documento</b>.
+                            </p>
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                            <field name="attachment_count" invisible="1"/>
                         </page>
                     </notebook>
                 </sheet>
@@ -115,15 +141,16 @@
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="property_id"/>
+                <field name="document_id"/>
                 <filter name="filter_mine" string="Míos"
                         domain="[('user_id', '=', uid)]"/>
                 <separator/>
                 <filter name="filter_pending" string="Pendientes"
                         domain="[('state', '=', 'pending')]"/>
                 <filter name="filter_overdue" string="Vencidos"
-                        domain="[('state', '=', 'pending'), ('date', '&lt;', context_today().strftime('%Y-%m-%d'))]"/>
+                        domain="[('state', '=', 'pending'), ('deadline', '&lt;', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <filter name="filter_soon" string="Por avisar"
-                        domain="[('state', '=', 'pending'), ('notify_date', '&lt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                        domain="[('state', '=', 'pending'), ('notify_datetime', '&lt;=', datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))]"/>
                 <separator/>
                 <filter name="filter_done" string="Hechos" domain="[('state', '=', 'done')]"/>
                 <group>
@@ -156,6 +183,20 @@
               parent="estate_management.estate_menu_planning_root"
               action="action_estate_reminder"
               sequence="25"/>
+
+    <!-- ==================== BOTÓN EN EL DOCUMENTO ==================== -->
+    <record id="view_document_form_inherit_reminders" model="ir.ui.view">
+        <field name="name">estate.document.form.inherit.reminders</field>
+        <field name="model">estate.document</field>
+        <field name="inherit_id" ref="estate_document.estate_document_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_create_reminder" string="Crear recordatorio"
+                        type="object" icon="fa-bell-o"
+                        title="Avisarme antes de que este documento venza"/>
+            </xpath>
+        </field>
+    </record>
 
     <!-- ==================== BOTÓN EN EL CLIENTE ==================== -->
     <record id="view_partner_form_inherit_reminders" model="ir.ui.view">
