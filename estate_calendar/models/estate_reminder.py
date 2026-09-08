@@ -208,10 +208,49 @@ class EstateReminder(models.Model):
         })
 
     def action_notify_now(self):
-        """Botón para probar el aviso sin esperar al cron."""
-        for rec in self:
-            rec._notify(due=rec.days_left <= 0)
-        return True
+        """Botón para probar el aviso sin esperar al cron.
+
+        Devuelve una notificación con el resultado real: si el push no sale
+        (responsable sin la app vinculada, o servidor sin credenciales de
+        Firebase) antes no había forma de enterarse.
+        """
+        self.ensure_one()
+        enviado = self._notify(due=self.days_left <= 0)
+        if not self.notify_push:
+            titulo, mensaje, tipo = (
+                'Aviso registrado',
+                'Quedó la actividad en Odoo. El push al móvil está desactivado '
+                'en este recordatorio.',
+                'info')
+        elif enviado:
+            titulo, mensaje, tipo = (
+                'Aviso enviado',
+                'Se envió la notificación push a %s y quedó la actividad en Odoo.'
+                % self.user_id.name,
+                'success')
+        elif not self.user_id.fcm_token:
+            titulo, mensaje, tipo = (
+                'Sin app vinculada',
+                '%s todavía no ha iniciado sesión en la app móvil con las '
+                'notificaciones aceptadas, así que no hay a dónde enviar el push. '
+                'La actividad sí quedó en Odoo.' % self.user_id.name,
+                'warning')
+        else:
+            titulo, mensaje, tipo = (
+                'No se pudo enviar el push',
+                'Revisa el archivo de credenciales de Firebase en el servidor. '
+                'La actividad sí quedó registrada en Odoo.',
+                'danger')
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': titulo,
+                'message': mensaje,
+                'type': tipo,
+                'sticky': tipo in ('warning', 'danger'),
+            },
+        }
 
     def action_open_document(self):
         self.ensure_one()
@@ -259,7 +298,11 @@ class EstateReminder(models.Model):
         return detalle
 
     def _notify(self, due=False):
-        """Levanta el aviso: actividad en Odoo, chatter y push al móvil."""
+        """Levanta el aviso: actividad en Odoo, chatter y push al móvil.
+
+        Devuelve True si el push salió para todos los recordatorios de self.
+        """
+        push_enviado = True
         for rec in self:
             body = rec._reminder_body(due=due)
             titulo = '%s %s' % (TYPE_ICON.get(rec.reminder_type, '🔔'),
@@ -284,18 +327,33 @@ class EstateReminder(models.Model):
             except Exception:
                 _logger.exception('No se pudo publicar el recordatorio %s en el chatter', rec.id)
 
-            if rec.notify_push and rec.user_id.fcm_token:
-                rec.user_id.send_firebase_push(
-                    title=titulo,
-                    body=body,
-                    data={
-                        'type': 'client_reminder',
-                        'reminder_id': rec.id,
-                        'partner_id': rec.partner_id.id or 0,
-                        'document_id': rec.document_id.id or 0,
-                        'reminder_type': rec.reminder_type,
-                    },
-                )
+            if rec.notify_push:
+                if not rec.user_id.fcm_token:
+                    _logger.warning(
+                        'Recordatorio %s: %s no tiene la app vinculada, no se envía push.',
+                        rec.id, rec.user_id.name)
+                    rec.message_post(body=(
+                        'No se envió la notificación al móvil: %s todavía no ha '
+                        'vinculado la app (iniciar sesión y aceptar las '
+                        'notificaciones).' % rec.user_id.name))
+                    push_enviado = False
+                else:
+                    enviado = bool(rec.user_id.send_firebase_push(
+                        title=titulo,
+                        body=body,
+                        data={
+                            'type': 'client_reminder',
+                            'reminder_id': rec.id,
+                            'partner_id': rec.partner_id.id or 0,
+                            'document_id': rec.document_id.id or 0,
+                            'reminder_type': rec.reminder_type,
+                        },
+                    ))
+                    push_enviado = push_enviado and enviado
+                    if not enviado:
+                        rec.message_post(body=(
+                            'No se pudo enviar la notificación al móvil. '
+                            'Revisa las credenciales de Firebase del servidor.'))
 
             vals = {'last_notified_on': fields.Datetime.now(), 'advance_notified': True}
             if due:
@@ -303,6 +361,7 @@ class EstateReminder(models.Model):
                 # (anticipación 0) se dan los dos por enviados.
                 vals['due_notified'] = True
             rec.write(vals)
+        return push_enviado
 
     # ── Cron ────────────────────────────────────────────────────────────────
     @api.model

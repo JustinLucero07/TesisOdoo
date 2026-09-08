@@ -23,6 +23,24 @@
                         Cada cita puede además tener su propio tiempo, que manda sobre este.
                     </p>
                 </page>
+                <page string="App móvil" name="mobile_app_advisor">
+                    <group>
+                        <field name="mobile_app_linked" readonly="1"/>
+                        <field name="fcm_token" readonly="1" groups="base.group_system"/>
+                    </group>
+                    <button name="action_unlink_mobile_app" type="object"
+                            string="Desvincular dispositivo" class="btn-secondary"
+                            invisible="not mobile_app_linked"
+                            confirm="El usuario tendrá que volver a entrar a la app para recibir notificaciones. ¿Continuar?"/>
+                    <p class="text-muted">
+                        <i class="fa fa-info-circle" title="Información"/>
+                        Las notificaciones push de citas y recordatorios se env&#237;an a este
+                        dispositivo. Si aparece sin vincular, el usuario debe abrir la app,
+                        iniciar sesi&#243;n y <b>aceptar el permiso de notificaciones</b>: reci&#233;n
+                        ah&#237; queda registrado. Mientras tanto los avisos siguen llegando dentro
+                        de Odoo, pero no al celular.
+                    </p>
+                </page>
             </xpath>
         </field>
     </record>

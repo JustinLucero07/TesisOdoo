@@ -31,8 +31,22 @@ class ResUsers(models.Model):
         help='Equivalente en minutos de la anticipación elegida (uso interno).')
     fcm_token = fields.Char(
         string='Firebase FCM Token',
-        index=True,
+        index=True, copy=False,
         help='Token de registro de Firebase Cloud Messaging para notificaciones push en Android/iOS.')
+    mobile_app_linked = fields.Boolean(
+        string='App móvil vinculada', compute='_compute_mobile_app_linked',
+        help='Se marca solo cuando el usuario inicia sesión en la app y acepta '
+             'las notificaciones. Sin esto el servidor no tiene a dónde enviar '
+             'los avisos push.')
+
+    @api.depends('fcm_token')
+    def _compute_mobile_app_linked(self):
+        for user in self:
+            user.mobile_app_linked = bool(user.fcm_token)
+
+    def action_unlink_mobile_app(self):
+        """Olvida el dispositivo: la app lo vuelve a registrar al entrar."""
+        self.write({'fcm_token': False})
 
     @api.depends('whatsapp_reminder_value', 'whatsapp_reminder_unit')
     def _compute_whatsapp_reminder_minutes(self):
@@ -79,8 +93,10 @@ class ResUsers(models.Model):
                 "Content-Type": "application/json; UTF-8",
             }
 
+            todo_ok = True
             for user in self:
                 if not user.fcm_token:
+                    todo_ok = False
                     continue
 
                 payload = {
@@ -116,8 +132,9 @@ class ResUsers(models.Model):
                 if resp.status_code == 200:
                     _logger.info("Notificación Push FCM enviada con éxito a usuario %s (ID %s)", user.name, user.id)
                 else:
+                    todo_ok = False
                     _logger.warning("Error al enviar notificación FCM a usuario %s: %s", user.name, resp.text)
-            return True
+            return todo_ok
         except Exception as e:
             _logger.error("Error al procesar notificación Firebase FCM: %s", e)
             return False

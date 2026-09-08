@@ -30,6 +30,9 @@ class NotificationService {
   bool _ready = false;
   bool _enabled = true;
   String? _fcmToken;
+  OdooClient? _odoo;
+  int? _userId;
+  String? _tokenEnviado;
 
   bool get enabled => _enabled;
   String? get fcmToken => _fcmToken;
@@ -105,6 +108,7 @@ class NotificationService {
 
         FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
           _fcmToken = newToken;
+          _pushTokenToOdoo();
         });
       } catch (_) {}
     }
@@ -130,6 +134,7 @@ class NotificationService {
         if (settings.authorizationStatus == AuthorizationStatus.authorized ||
             settings.authorizationStatus == AuthorizationStatus.provisional) {
           await _fetchTokenAfterPermission();
+          await _pushTokenToOdoo();
           return true;
         }
       }
@@ -166,6 +171,8 @@ class NotificationService {
     required OdooClient odoo,
     required int userId,
   }) async {
+    _odoo = odoo;
+    _userId = userId;
     try {
       if (_fcmToken == null &&
           !kIsWeb &&
@@ -173,16 +180,38 @@ class NotificationService {
               defaultTargetPlatform == TargetPlatform.iOS)) {
         _fcmToken = await FirebaseMessaging.instance.getToken();
       }
-
-      if (_fcmToken != null && _fcmToken!.isNotEmpty) {
-        await odoo.write(
-          model: 'res.users',
-          id: userId,
-          values: {'fcm_token': _fcmToken},
-        );
-      }
-    } catch (_) {}
+    } catch (_) {
+      // En iOS todavía puede no haber token si falta el permiso; se
+      // reintenta al concederlo.
+    }
+    await _pushTokenToOdoo();
   }
+
+  /// Guarda el token en el usuario de Odoo. Sin esto el servidor no tiene
+  /// a dónde mandar el push. Se llama al iniciar sesión, al conceder el
+  /// permiso y cada vez que Firebase renueva el token.
+  Future<void> _pushTokenToOdoo() async {
+    final odoo = _odoo;
+    final userId = _userId;
+    final token = _fcmToken;
+    if (odoo == null || userId == null || token == null || token.isEmpty) {
+      return;
+    }
+    if (token == _tokenEnviado) return;
+    try {
+      await odoo.write(
+        model: 'res.users',
+        id: userId,
+        values: {'fcm_token': token},
+      );
+      _tokenEnviado = token;
+    } catch (_) {
+      // Sin sesión o sin red: se reintenta en el próximo arranque.
+    }
+  }
+
+  /// True si este dispositivo ya quedó registrado en Odoo para recibir push.
+  bool get deviceLinked => _tokenEnviado != null;
 
   Future<void> setEnabled(bool value) async {
     _enabled = value;
