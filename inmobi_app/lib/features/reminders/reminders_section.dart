@@ -43,6 +43,11 @@ class _RemindersSectionState extends State<RemindersSection> {
     if (oldWidget.partnerId != widget.partnerId) _load();
   }
 
+  Future<void> _reprogramar() => ReminderService.scheduleAllUpcoming(
+    widget.odoo,
+    currentUserId: widget.odoo.userId,
+  );
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -79,6 +84,7 @@ class _RemindersSectionState extends State<RemindersSection> {
       } else {
         await _service.reopen(r.id);
       }
+      await _reprogramar();
       await _load();
     } catch (_) {
       messenger.showSnackBar(
@@ -109,6 +115,7 @@ class _RemindersSectionState extends State<RemindersSection> {
     if (confirm != true) return;
     try {
       await _service.delete(r.id);
+      await _reprogramar();
       await _load();
     } catch (_) {
       messenger.showSnackBar(

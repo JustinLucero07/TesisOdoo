@@ -42,6 +42,10 @@ class _ReminderListScreenState extends State<ReminderListScreen> {
       } else {
         await service.reopen(r.id);
       }
+      await ReminderService.scheduleAllUpcoming(
+        service.odoo,
+        currentUserId: service.odoo.userId,
+      );
       _refresh();
     } catch (_) {
       messenger.showSnackBar(
@@ -72,6 +76,10 @@ class _ReminderListScreenState extends State<ReminderListScreen> {
     if (confirm != true) return;
     try {
       await service.delete(r.id);
+      await ReminderService.scheduleAllUpcoming(
+        service.odoo,
+        currentUserId: service.odoo.userId,
+      );
       _refresh();
     } catch (_) {
       messenger.showSnackBar(

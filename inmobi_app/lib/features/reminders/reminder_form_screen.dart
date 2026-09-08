@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -211,6 +213,9 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
       } else {
         await _service.create(vals);
       }
+      unawaited(
+        ReminderService.scheduleAllUpcoming(_odoo, currentUserId: _odoo.userId),
+      );
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
       setState(() => _error = 'No se pudo guardar el recordatorio.');

@@ -19,6 +19,7 @@ import '../dashboard/dashboard_screen.dart';
 import '../finance/finance_screens.dart';
 import '../offers/offer_screens.dart';
 import '../reminders/reminder_list_screen.dart';
+import '../reminders/reminder_service.dart';
 import '../properties/property_form_screen.dart';
 import '../properties/property_list_screen.dart';
 import '../settings/settings_screen.dart';
@@ -80,6 +81,9 @@ class _HomeShellState extends State<HomeShell> {
 
       unawaited(
         VisitService.scheduleAllUpcoming(odoo, currentUserId: odoo.userId),
+      );
+      unawaited(
+        ReminderService.scheduleAllUpcoming(odoo, currentUserId: odoo.userId),
       );
     });
   }

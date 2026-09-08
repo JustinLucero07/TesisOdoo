@@ -252,9 +252,22 @@ class NotificationService {
     required String body,
     required DateTime start,
     required int minutesBefore,
+  }) => scheduleAt(
+    id: visitId,
+    title: title,
+    body: body,
+    when: start.subtract(Duration(minutes: minutesBefore)),
+  );
+
+  /// Programa una notificación en el propio celular para una fecha futura.
+  /// No depende del push del servidor: la dispara el sistema operativo.
+  Future<void> scheduleAt({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime when,
   }) async {
     if (!_ready || !_enabled) return;
-    final when = start.subtract(Duration(minutes: minutesBefore));
     if (!when.isAfter(DateTime.now())) return;
 
     const details = NotificationDetails(
@@ -272,7 +285,7 @@ class NotificationService {
     try {
       final scheduledDate = tz.TZDateTime.from(when, tz.local);
       await _plugin.zonedSchedule(
-        id: visitId,
+        id: id,
         title: title,
         body: body,
         scheduledDate: scheduledDate,
@@ -282,7 +295,7 @@ class NotificationService {
     } catch (e) {
       try {
         await _plugin.zonedSchedule(
-          id: visitId,
+          id: id,
           title: title,
           body: body,
           scheduledDate: tz.TZDateTime.from(when, tz.local),
@@ -294,7 +307,19 @@ class NotificationService {
   }
 
   Future<void> cancelVisit(int visitId) async => _plugin.cancel(id: visitId);
+  Future<void> cancel(int id) async => _plugin.cancel(id: id);
   Future<void> cancelAll() async => _plugin.cancelAll();
+
+  /// Borra las notificaciones pendientes cuyo id cae en un rango, para poder
+  /// reprogramar un grupo entero sin arrastrar las que ya no aplican.
+  Future<void> cancelRange(int from, int to) async {
+    if (!_ready) return;
+    for (final n in await pending()) {
+      if (n.id >= from && n.id <= to) {
+        await _plugin.cancel(id: n.id);
+      }
+    }
+  }
 
   Future<List<PendingNotificationRequest>> pending() async {
     if (!_ready) return const [];

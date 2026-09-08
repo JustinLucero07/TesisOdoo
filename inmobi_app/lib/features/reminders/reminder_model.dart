@@ -18,6 +18,7 @@ class Reminder {
   final int remindValue;
   final String remindUnit;
   final DateTime? notifyDatetime;
+  final DateTime? deadline;
   final int? documentId;
   final String documentName;
   final int? userId;
@@ -43,6 +44,7 @@ class Reminder {
     this.remindValue = 7,
     this.remindUnit = 'days',
     this.notifyDatetime,
+    this.deadline,
     this.documentId,
     this.documentName = '',
     this.userId,
@@ -65,6 +67,7 @@ class Reminder {
     'remind_value',
     'remind_unit',
     'notify_datetime',
+    'deadline',
     'document_id',
     'user_id',
     'notify_push',
@@ -90,7 +93,12 @@ class Reminder {
     remindUnit: asOdooString(j['remind_unit'], 'days'),
     notifyDatetime: j['notify_datetime'] is String
         ? DateTime.tryParse(
-            (j['notify_datetime'] as String).replaceFirst(' ', 'T'),
+            '${(j['notify_datetime'] as String).replaceFirst(' ', 'T')}Z',
+          )?.toLocal()
+        : null,
+    deadline: j['deadline'] is String
+        ? DateTime.tryParse(
+            '${(j['deadline'] as String).replaceFirst(' ', 'T')}Z',
           )?.toLocal()
         : null,
     documentId: j['document_id'] is List ? j['document_id'][0] as int : null,

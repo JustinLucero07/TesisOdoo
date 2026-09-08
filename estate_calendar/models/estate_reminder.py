@@ -327,6 +327,18 @@ class EstateReminder(models.Model):
             except Exception:
                 _logger.exception('No se pudo publicar el recordatorio %s en el chatter', rec.id)
 
+            # Recuadro emergente en la sesión web del responsable, para que el
+            # aviso se vea en el momento y no solo en la campanita.
+            try:
+                rec.user_id._bus_send('simple_notification', {
+                    'title': titulo,
+                    'message': body,
+                    'type': 'danger' if due else 'warning',
+                    'sticky': True,
+                })
+            except Exception:
+                _logger.exception('No se pudo emitir el aviso en pantalla del recordatorio %s', rec.id)
+
             if rec.notify_push:
                 if not rec.user_id.fcm_token:
                     _logger.warning(
