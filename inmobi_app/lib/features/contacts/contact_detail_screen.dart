@@ -12,6 +12,7 @@ import '../auth/auth_service.dart';
 import '../contracts/contract_list_screen.dart';
 import '../documents/document_service.dart';
 import '../documents/documents_section.dart';
+import '../reminders/reminders_section.dart';
 import 'contact_form_screen.dart';
 import 'contact_model.dart';
 import 'contact_service.dart';
@@ -297,6 +298,8 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 22),
+        RemindersSection(odoo: _odoo, partnerId: c.id, partnerName: c.name),
         const SizedBox(height: 22),
         DocumentsSection(odoo: _odoo, owner: DocumentOwner.partner(c.id)),
       ],

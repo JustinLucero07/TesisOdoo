@@ -18,6 +18,7 @@ import '../crm/crm_shell_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../finance/finance_screens.dart';
 import '../offers/offer_screens.dart';
+import '../reminders/reminder_list_screen.dart';
 import '../properties/property_form_screen.dart';
 import '../properties/property_list_screen.dart';
 import '../settings/settings_screen.dart';
@@ -491,6 +492,20 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const OfferListScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _DrawerActionTile(
+                    icon: Icons.notifications_active_outlined,
+                    title: 'Recordatorios de Clientes',
+                    subtitle: 'Pólizas, cuotas y renovaciones',
+                    color: const Color(0xFFF59E0B),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ReminderListScreen(),
                         ),
                       );
                     },

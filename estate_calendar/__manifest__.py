@@ -1,6 +1,6 @@
 {
     'name': 'Agenda Inmobiliaria',
-    'version': '19.0.1.0.2',
+    'version': '19.0.1.0.3',
     'category': 'Real Estate',
     'summary': 'Agenda de citas integrada en el calendario estándar de Odoo',
     'description': """
@@ -10,6 +10,7 @@
         * Campos para Propiedad y Cliente en citas
         * Seguimiento de Visitas (Resultado y Valoración)
         * Recordatorios WhatsApp automáticos (Meta Cloud API)
+        * Recordatorios de clientes (pólizas, cuotas, renovaciones) con aviso push
     """,
     'author': 'Inmobi Community',
     'license': 'LGPL-3',
@@ -18,6 +19,7 @@
         'security/ir.model.access.csv',
         'security/estate_calendar_security.xml',
         'data/estate_whatsapp_cron.xml',
+        'data/estate_reminder_cron.xml',
         'report/report_weekly_calendar.xml',
         'wizards/calendar_print_wizard_views.xml',
         'views/calendar_event_views.xml',
@@ -25,6 +27,7 @@
         'views/estate_whatsapp_config_views.xml',
         'views/res_users_views.xml',
         'views/estate_advisor_unavailability_views.xml',
+        'views/estate_reminder_views.xml',
         'views/estate_calendar_menus.xml',
     ],
     'demo': [

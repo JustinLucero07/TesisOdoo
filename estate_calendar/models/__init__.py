@@ -4,3 +4,4 @@ from . import res_config_settings
 from . import res_users
 from . import crm_lead
 from . import estate_advisor_unavailability
+from . import estate_reminder
