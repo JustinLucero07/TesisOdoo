@@ -50,6 +50,36 @@ class _ReminderListScreenState extends State<ReminderListScreen> {
     }
   }
 
+  Future<void> _delete(ReminderService service, Reminder r) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Eliminar recordatorio'),
+        content: Text('¿Eliminar "${r.name}"? No se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await service.delete(r.id);
+      _refresh();
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('No se pudo eliminar el recordatorio.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final odoo = context.read<AuthService>().odoo;
@@ -92,6 +122,7 @@ class _ReminderListScreenState extends State<ReminderListScreen> {
         reminder: r,
         onTap: () => _edit(r),
         onToggleDone: () => _toggleDone(service, r),
+        onDelete: () => _delete(service, r),
       ),
     );
   }
