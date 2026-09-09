@@ -573,6 +573,67 @@
                 </div>
             </div>
 
+            <!-- ══ GANANCIAS NETAS DE LA OFICINA ══════════════════════════ -->
+            <t t-if="rtype == 'office_earnings'">
+                <t t-set="tot_hon" t-value="sum(r.amount or 0 for r in records)"/>
+                <t t-set="tot_ases" t-value="sum(r.amount_assigned or 0 for r in records)"/>
+                <t t-set="tot_ofi" t-value="sum(r.amount_office or 0 for r in records)"/>
+                <table style="width:100%; border-collapse:collapse; margin-bottom:14px;">
+                    <tr>
+                        <td style="width:33%; padding:10px 14px; background:#F8F9FB; border:1px solid #E0E4EC;">
+                            <div style="font-size:7px; color:#999; text-transform:uppercase; letter-spacing:1.5px;">Honorarios cobrados</div>
+                            <div style="font-size:17px; font-weight:900; color:#004274;">$<t t-esc="'{:,.2f}'.format(tot_hon)"/></div>
+                        </td>
+                        <td style="width:33%; padding:10px 14px; background:#F8F9FB; border:1px solid #E0E4EC;">
+                            <div style="font-size:7px; color:#999; text-transform:uppercase; letter-spacing:1.5px;">Pagado a asesores</div>
+                            <div style="font-size:17px; font-weight:900; color:#C8102E;">$<t t-esc="'{:,.2f}'.format(tot_ases)"/></div>
+                        </td>
+                        <td style="width:34%; padding:10px 14px; background:#004274; border:1px solid #004274;">
+                            <div style="font-size:7px; color:#a8bcdb; text-transform:uppercase; letter-spacing:1.5px;">Ganancia neta</div>
+                            <div style="font-size:17px; font-weight:900; color:white;">$<t t-esc="'{:,.2f}'.format(tot_ofi)"/></div>
+                            <div style="font-size:8px; color:#a8bcdb;">
+                                <t t-esc="'{:.1f}'.format(tot_ofi / tot_hon * 100 if tot_hon else 0)"/>% de los honorarios
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px;">
+                    Detalle por negocio
+                </div>
+                <table style="width:100%; border-collapse:collapse; font-size:9px;">
+                    <thead>
+                        <tr style="background:#F1F3F7; color:#004274;">
+                            <th style="padding:7px 10px; text-align:left; font-weight:700;">Fecha</th>
+                            <th style="padding:7px 10px; text-align:left; font-weight:700;">Ref.</th>
+                            <th style="padding:7px 10px; text-align:left; font-weight:700;">Propiedad</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Honorarios</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">A asesores</th>
+                            <th style="padding:7px 10px; text-align:right; font-weight:700;">Ganancia neta</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="records" t-as="rec">
+                            <tr t-att-style="'background:#F9FAFB;' if rec_index % 2 == 0 else 'background:white;'">
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.date"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; font-family:monospace; font-size:9px; color:#004274;"><t t-esc="rec.name"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED;"><t t-esc="rec.property_id.title or rec.property_id.name or '&#8212;'"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right;">$<t t-esc="'{:,.2f}'.format(rec.amount or 0)"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; color:#C8102E;">$<t t-esc="'{:,.2f}'.format(rec.amount_assigned or 0)"/></td>
+                                <td style="padding:6px 10px; border-bottom:1px solid #E8EAED; text-align:right; font-weight:700; color:#004274;">$<t t-esc="'{:,.2f}'.format(rec.amount_office or 0)"/></td>
+                            </tr>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#004274; color:white; font-weight:700;">
+                            <td colspan="3" style="padding:8px 10px;">Total: <t t-esc="len(records)"/> negocios</td>
+                            <td style="padding:8px 10px; text-align:right;">$<t t-esc="'{:,.2f}'.format(tot_hon)"/></td>
+                            <td style="padding:8px 10px; text-align:right;">$<t t-esc="'{:,.2f}'.format(tot_ases)"/></td>
+                            <td style="padding:8px 10px; text-align:right;">$<t t-esc="'{:,.2f}'.format(tot_ofi)"/></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </t>
+
             <!-- ══ PROPIEDADES DISPONIBLES ════════════════════════════════ -->
             <t t-if="rtype == 'available_properties'">
                 <div style="background:#004274; color:white; font-size:8px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:6px 14px; margin-bottom:0;">

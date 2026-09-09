@@ -76,7 +76,13 @@ class EstateCommission(models.Model):
         currency_field='company_currency')
     amount_office = fields.Monetary(
         string='Queda en la oficina', compute='_compute_split_totals', store=True,
-        currency_field='company_currency')
+        currency_field='company_currency',
+        help='Honorarios menos lo repartido a los asesores. Solo tiene sentido en '
+             'el total del negocio: en la comisión de un asesor es cero.')
+    is_deal_total = fields.Boolean(
+        string='Es el total del negocio', compute='_compute_split_totals', store=True,
+        help='Marca la comisión que representa los honorarios completos, para no '
+             'sumar dos veces al analizar las ganancias.')
     pct_assigned = fields.Float(
         string='% repartido', compute='_compute_split_totals', store=True)
     is_exclusive = fields.Boolean(
@@ -98,7 +104,7 @@ class EstateCommission(models.Model):
                                      if rec.parent_commission_id else rec.amount)
 
     @api.depends('split_line_ids.amount', 'split_line_ids.percentage', 'amount',
-                 'child_commission_ids.amount')
+                 'child_commission_ids.amount', 'parent_commission_id')
     def _compute_split_totals(self):
         for rec in self:
             rec.split_count = len(rec.split_line_ids)
@@ -110,7 +116,18 @@ class EstateCommission(models.Model):
             else:
                 rec.amount_assigned = sum(rec.split_line_ids.mapped('amount'))
                 rec.pct_assigned = sum(rec.split_line_ids.mapped('percentage'))
-            rec.amount_office = (rec.amount or 0.0) - rec.amount_assigned
+            # La oficina solo gana en el total del negocio. En la comisión de un
+            # asesor no queda nada, y en una comisión suelta (las de antes del
+            # reparto por roles) se le pagó todo al asesor.
+            if rec.parent_commission_id:
+                rec.amount_office = 0.0
+                rec.is_deal_total = False
+            elif rec.child_commission_ids or rec.split_line_ids:
+                rec.amount_office = (rec.amount or 0.0) - rec.amount_assigned
+                rec.is_deal_total = True
+            else:
+                rec.amount_office = 0.0
+                rec.is_deal_total = True
 
     def _default_split_values(self):
         """Los cuatro pasos del negocio con los porcentajes configurados.

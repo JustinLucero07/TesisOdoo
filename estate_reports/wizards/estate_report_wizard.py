@@ -31,6 +31,7 @@ class EstateReportWizard(models.TransientModel):
         ('conversion_funnel', 'Embudo de Conversión'),
         ('advisor_portfolio', 'Cartera por Asesor'),
         ('occupancy_report', 'Ocupación de Arriendos'),
+        ('office_earnings', 'Ganancias Netas de la Oficina'),
     ], string='Tipo de Reporte', required=True, default='available_properties')
 
     date_from = fields.Date(string='Desde')
@@ -135,6 +136,19 @@ class EstateReportWizard(models.TransientModel):
             ], order='contract_end_date')
             data['records'] = records
             data['title'] = 'Contratos por Vencer (próximos 60 días)'
+
+        elif self.report_type == 'office_earnings':
+            # Solo el total de cada negocio: sumar también las comisiones de los
+            # asesores contaría los honorarios dos veces.
+            domain = [('is_deal_total', '=', True),
+                      ('state', 'not in', ('cancelled',))]
+            if self.date_from:
+                domain.append(('date', '>=', self.date_from))
+            if self.date_to:
+                domain.append(('date', '<=', self.date_to))
+            records = self.env['estate.commission'].search(domain, order='date desc')
+            data['records'] = records
+            data['title'] = 'Ganancias Netas de la Oficina'
 
         elif self.report_type == 'agent_commissions':
             domain = [('state', '=', 'sold'), ('user_id', '!=', False)]
@@ -272,9 +286,44 @@ class EstateReportWizard(models.TransientModel):
         row = 3
 
         # ==============================
+        # GANANCIAS NETAS DE LA OFICINA
+        # ==============================
+        if self.report_type == 'office_earnings':
+            headers = ['Fecha', 'Referencia', 'Propiedad', 'Venta', 'Honorarios',
+                       'A asesores', '% a asesores', 'Ganancia neta']
+            col_count = len(headers)
+            ws.merge_range(0, 0, 0, col_count - 1, data['title'], title_fmt)
+            for col, h in enumerate(headers):
+                ws.write(row, col, h, header_fmt)
+            row += 1
+            tot_hon = tot_ases = tot_ofi = 0.0
+            for rec in data['records']:
+                ws.write(row, 0, str(rec.date or ''), cell_fmt)
+                ws.write(row, 1, rec.name or '', cell_fmt)
+                ws.write(row, 2, rec.property_id.title or rec.property_id.name or '', cell_fmt)
+                ws.write(row, 3, rec.sale_amount or 0, money_fmt)
+                ws.write(row, 4, rec.amount or 0, money_fmt)
+                ws.write(row, 5, rec.amount_assigned or 0, money_fmt)
+                ws.write(row, 6, rec.pct_assigned or 0, number_fmt)
+                ws.write(row, 7, rec.amount_office or 0, money_fmt)
+                tot_hon += rec.amount or 0
+                tot_ases += rec.amount_assigned or 0
+                tot_ofi += rec.amount_office or 0
+                row += 1
+            ws.write(row, 2, 'TOTALES:', total_label_fmt)
+            ws.write(row, 4, tot_hon, total_fmt)
+            ws.write(row, 5, tot_ases, total_fmt)
+            ws.write(row, 7, tot_ofi, total_fmt)
+            row += 2
+            ws.write(row, 0, f"{len(data['records'])} negocios · "
+                             f"La oficina se quedó con el "
+                             f"{(tot_ofi / tot_hon * 100) if tot_hon else 0:.1f}% de los honorarios",
+                     cell_fmt)
+
+        # ==============================
         # PROPIEDADES DISPONIBLES
         # ==============================
-        if self.report_type == 'available_properties':
+        elif self.report_type == 'available_properties':
             headers = ['Ref.', 'Título', 'Tipo', 'Ciudad', 'Precio',
                        'Construcción (m²)', 'Terreno (m²)', 'Habitaciones']
             col_count = len(headers)
