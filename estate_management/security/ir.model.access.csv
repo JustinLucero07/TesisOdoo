@@ -71,3 +71,6 @@ access_estate_bot_link_admin,estate.property.bot.link.admin,model_estate_propert
 access_estate_commission_split_user,estate.commission.split.user,model_estate_commission_split,estate_group_agent,1,1,1,1
 access_estate_commission_split_manager,estate.commission.split.manager,model_estate_commission_split,estate_group_manager,1,1,1,1
 access_estate_commission_split_admin,estate.commission.split.admin,model_estate_commission_split,estate_group_admin,1,1,1,1
+access_estate_commission_pay_wizard_agent,estate.commission.pay.wizard.agent,model_estate_commission_pay_wizard,estate_group_agent,1,1,1,1
+access_estate_commission_pay_wizard_manager,estate.commission.pay.wizard.manager,model_estate_commission_pay_wizard,estate_group_manager,1,1,1,1
+access_estate_commission_pay_wizard_admin,estate.commission.pay.wizard.admin,model_estate_commission_pay_wizard,estate_group_admin,1,1,1,1

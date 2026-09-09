@@ -8,6 +8,7 @@ EstateCommissionSplit_ROLES = [
     ('reception', 'Recepción'),
     ('visit', 'Visita'),
     ('closing', 'Cierre'),
+    ('all', 'Todos los pasos'),
     ('other', 'Otro'),
 ]
 
@@ -82,7 +83,8 @@ class EstateCommission(models.Model):
         string='Captación en exclusividad', related='property_id.is_exclusive',
         readonly=True)
 
-    _ROLE_ORDER = {'capture': 1, 'reception': 2, 'visit': 3, 'closing': 4, 'other': 9}
+    _ROLE_ORDER = {'capture': 1, 'reception': 2, 'visit': 3, 'closing': 4,
+                   'all': 5, 'other': 9}
 
     @api.depends('role')
     def _compute_role_sequence(self):
@@ -409,6 +411,22 @@ class EstateCommission(models.Model):
             if rec.state == 'draft' and rec.invoice_id and rec.invoice_id.state != 'cancel':
                 rec.invoice_id.button_cancel()
         self.write({'state': 'cancelled'})
+
+    def action_open_pay_wizard(self):
+        """Abre el desglose por rol antes de pagarle a un único asesor."""
+        self.ensure_one()
+        if self.state == 'paid':
+            raise UserError('Esta comisión ya está pagada.')
+        if self.state == 'cancelled':
+            raise UserError('No se puede pagar una comisión cancelada.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Pagar comisión al asesor',
+            'res_model': 'estate.commission.pay.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'active_id': self.id},
+        }
 
     def action_register_payment(self):
         """Registra el pago de la comisión al asesor y deja constancia.

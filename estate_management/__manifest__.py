@@ -45,6 +45,7 @@
         'data/estate_mail_templates.xml',
         'wizards/estate_property_comparator_wizard_views.xml',
         'wizards/estate_sale_wizard_views.xml',
+        'wizards/estate_commission_pay_wizard_views.xml',
         'data/estate_hr_integrations.xml',
         'views/estate_portal_templates.xml',
         'views/estate_advisor_fb_post_views.xml',

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="estate_commission_pay_wizard_view_form" model="ir.ui.view">
+        <field name="name">estate.commission.pay.wizard.form</field>
+        <field name="model">estate.commission.pay.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pagar comisión al asesor">
+                <field name="commission_id" invisible="1"/>
+                <field name="company_currency" invisible="1"/>
+                <div class="alert alert-info" role="alert">
+                    <b><field name="user_id" readonly="1" nolabel="1" class="oe_inline"/></b>
+                    hizo los cuatro pasos de este negocio. Aun as&#237; cobra la suma de los
+                    cuatro roles, no el total de los honorarios: el resto queda en la oficina.
+                </div>
+                <group>
+                    <group string="El negocio">
+                        <field name="property_id" readonly="1"/>
+                        <field name="deal_total" widget="monetary"
+                               options="{'currency_field': 'company_currency'}"/>
+                        <field name="is_exclusive"/>
+                    </group>
+                    <group string="Desglose por rol">
+                        <field name="pct_capture"
+                               help="La única que cambia según haya exclusividad o no."/>
+                        <field name="pct_reception" readonly="1"/>
+                        <field name="pct_visit" readonly="1"/>
+                        <field name="pct_closing" readonly="1"/>
+                    </group>
+                </group>
+                <group class="oe_subtotal_footer">
+                    <field name="pct_total"/>
+                    <field name="amount_advisor" widget="monetary"
+                           options="{'currency_field': 'company_currency'}"
+                           class="oe_subtotal_footer_separator"/>
+                    <field name="amount_office" widget="monetary"
+                           options="{'currency_field': 'company_currency'}"/>
+                </group>
+                <group string="Pago">
+                    <group>
+                        <field name="payment_method"/>
+                        <field name="payment_date"/>
+                    </group>
+                    <group>
+                        <field name="payment_reference"
+                               placeholder="N&#186; transferencia, recibo, cheque..."/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Pagar y facturar" type="object"
+                            class="btn-primary"
+                            confirm="Se generará la factura de proveedor del asesor y se registrará su pago. ¿Continuar?"/>
+                    <button string="Cancelar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_estate_commission_pay_wizard" model="ir.actions.act_window">
+        <field name="name">Pagar comisión al asesor</field>
+        <field name="res_model">estate.commission.pay.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_estate_commission"/>
+        <field name="binding_view_types">form</field>
+    </record>
+</odoo>
