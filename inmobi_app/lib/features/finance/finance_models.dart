@@ -16,6 +16,7 @@ class Commission {
   final String type;
   final String role;
   final double rolePct;
+  final double dealTotalAmount;
   final String state;
   final DateTime? date;
   final DateTime? paymentDate;
@@ -33,6 +34,7 @@ class Commission {
     this.type = 'sale',
     this.role = '',
     this.rolePct = 0,
+    this.dealTotalAmount = 0,
     this.state = 'draft',
     this.date,
     this.paymentDate,
@@ -49,6 +51,7 @@ class Commission {
     'type',
     'role',
     'role_pct',
+    'deal_total_amount',
     'state',
     'date',
     'payment_date',
@@ -67,6 +70,7 @@ class Commission {
     type: asOdooString(j['type'], 'sale'),
     role: asOdooString(j['role']),
     rolePct: asOdooDouble(j['role_pct']),
+    dealTotalAmount: asOdooDouble(j['deal_total_amount']),
     state: asOdooString(j['state'], 'draft'),
     date: j['date'] is String ? DateTime.tryParse(j['date']) : null,
     paymentDate: j['payment_date'] is String

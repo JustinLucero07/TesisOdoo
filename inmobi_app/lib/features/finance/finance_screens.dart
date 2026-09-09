@@ -110,7 +110,12 @@ class CommissionListScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Comisión ${c.commissionPct.toStringAsFixed(1)}%',
+                            // En un reparto por roles importa el % del rol y
+                            // sobre qué total se calculó, no el % sobre la venta.
+                            c.rolePct > 0
+                                ? '${c.rolePct.toStringAsFixed(0)}% de '
+                                      '${_currency.format(c.dealTotalAmount)}'
+                                : 'Comisión ${c.commissionPct.toStringAsFixed(1)}%',
                             style: AppType.caption.copyWith(
                               color: p.mutedLight,
                             ),

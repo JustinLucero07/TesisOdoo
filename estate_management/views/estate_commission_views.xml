@@ -49,6 +49,8 @@
                 <field name="user_id" widget="many2one_avatar_user"/>
                 <field name="role" optional="show"/>
                 <field name="role_pct" string="% del rol" optional="show"/>
+                <field name="deal_total_amount" string="Comisión del negocio" widget="monetary"
+                       options="{'currency_field': 'company_currency'}" optional="show"/>
                 <field name="lead_id" optional="show"/>
                 <field name="property_id"/>
                 <field name="type" widget="badge"
@@ -97,6 +99,10 @@
                             type="object" class="btn-primary" icon="fa-share-alt"
                             invisible="state in ('paid', 'cancelled', 'split') or split_count == 0"
                             confirm="Se creará una comisión aprobada por cada asesor del reparto y esta quedará como el total del negocio. ¿Continuar?"/>
+                    <button name="action_pay_all_children" string="Pagar a todos los asesores"
+                            type="object" class="btn-success" icon="fa-check-circle"
+                            invisible="state != 'split'"
+                            confirm="Se generará la factura de proveedor de cada asesor y se registrará su pago. ¿Continuar?"/>
                     <button name="action_undo_split" string="Deshacer reparto"
                             type="object" invisible="state != 'split'"
                             confirm="Se borrarán las comisiones por asesor generadas. ¿Continuar?"/>
@@ -145,6 +151,9 @@
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="role" invisible="not parent_commission_id"/>
                             <field name="role_pct" invisible="not parent_commission_id"/>
+                            <field name="deal_total_amount" widget="monetary"
+                                   options="{'currency_field': 'company_currency'}"
+                                   invisible="not parent_commission_id"/>
                             <field name="parent_commission_id" readonly="1"
                                    invisible="not parent_commission_id"/>
                             <field name="type"/>
@@ -208,7 +217,8 @@
                             </field>
                         </page>
                     </notebook>
-                    <group string="Pago al Asesor (Constancia)" name="payment_proof">
+                    <group string="Pago al Asesor (Constancia)" name="payment_proof"
+                           invisible="state == 'split' and child_count == 0">
                         <group>
                             <field name="payment_method"
                                    readonly="state == 'paid'"

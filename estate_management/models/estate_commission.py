@@ -49,6 +49,12 @@ class EstateCommission(models.Model):
         string='% de los honorarios', tracking=True,
         help='Porcentaje de los honorarios de la agencia que corresponde a este rol.')
 
+    deal_total_amount = fields.Monetary(
+        string='Comisión total del negocio', compute='_compute_deal_total',
+        store=True, currency_field='company_currency',
+        help='Honorarios completos de esta propiedad. El monto de cada asesor es '
+             'su porcentaje sobre este total.')
+
     parent_commission_id = fields.Many2one(
         'estate.commission', string='Comisión repartida', index=True,
         ondelete='cascade', copy=False,
@@ -72,6 +78,12 @@ class EstateCommission(models.Model):
     is_exclusive = fields.Boolean(
         string='Captación en exclusividad', related='property_id.is_exclusive',
         readonly=True)
+
+    @api.depends('amount', 'parent_commission_id.amount')
+    def _compute_deal_total(self):
+        for rec in self:
+            rec.deal_total_amount = (rec.parent_commission_id.amount
+                                     if rec.parent_commission_id else rec.amount)
 
     @api.depends('split_line_ids.amount', 'split_line_ids.percentage', 'amount',
                  'child_commission_ids.amount')
@@ -168,6 +180,41 @@ class EstateCommission(models.Model):
             'view_mode': 'list,form',
             'domain': [('parent_commission_id', '=', self.id)],
         }
+
+    def action_pay_all_children(self):
+        """Paga de una sola vez a todos los asesores del reparto.
+
+        Cada uno recibe su propia factura de proveedor, igual que si se pagaran
+        uno por uno; esto solo evita entrar cuatro veces. Las que ya estaban
+        pagadas se saltan.
+        """
+        self.ensure_one()
+        if self.state != 'split':
+            raise UserError('Esta comisión no está repartida entre asesores.')
+        if not self.payment_method:
+            raise UserError(
+                'Indica la Forma de Pago en "Pago al Asesor (Constancia)" antes '
+                'de pagar a todos.')
+        pendientes = self.child_commission_ids.filtered(
+            lambda c: c.state in ('draft', 'approved'))
+        if not pendientes:
+            raise UserError('Todas las comisiones de este reparto ya están pagadas.')
+
+        fecha = self.payment_date or fields.Date.context_today(self)
+        for hija in pendientes:
+            hija.write({
+                'payment_method': self.payment_method,
+                'payment_date': hija.payment_date or fecha,
+                'payment_reference': hija.payment_reference or self.payment_reference,
+            })
+            hija.action_register_payment()
+
+        total = sum(pendientes.mapped('amount'))
+        self.message_post(body=(
+            '<b>Pagadas %d comisiones</b> por un total de $%s. '
+            'Cada asesor tiene su propia factura de proveedor.'
+            % (len(pendientes), '{:,.2f}'.format(total))))
+        return self.action_view_children()
 
     def action_view_children(self):
         self.ensure_one()
