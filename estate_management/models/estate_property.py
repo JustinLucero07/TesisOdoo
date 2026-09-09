@@ -560,7 +560,13 @@ class EstateProperty(models.Model):
             'res_model': 'estate.commission',
             'view_mode': 'list,form',
             'domain': [('property_id', '=', self.id)],
-            'context': {'default_property_id': self.id},
+            # Agrupadas por rol y sin el total repartido, para que se lea quién
+            # cobra qué en esta propiedad y no se mezcle con el total.
+            'context': {
+                'default_property_id': self.id,
+                'search_default_only_children': 1,
+                'search_default_group_role': 1,
+            },
         }
 
     def action_view_appraisals(self):

@@ -48,7 +48,7 @@
                 <field name="name"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
                 <field name="role" optional="show"/>
-                <field name="role_pct" string="% rol" optional="hide"/>
+                <field name="role_pct" string="% del rol" optional="show"/>
                 <field name="lead_id" optional="show"/>
                 <field name="property_id"/>
                 <field name="type" widget="badge"
@@ -57,7 +57,8 @@
                        decoration-warning="type == 'bonus'"/>
                 <field name="sale_amount" widget="monetary" string="Venta"
                        options="{'currency_field': 'company_currency'}" optional="show"/>
-                <field name="commission_pct" string="%" optional="show"/>
+                <field name="commission_pct" string="% s/venta" optional="hide"/>
+                <field name="parent_commission_id" string="Reparto de" optional="hide"/>
                 <field name="amount" sum="Total Comisiones" widget="monetary"
                        options="{'currency_field': 'company_currency'}"/>
                 <field name="company_currency" column_invisible="1"/>
@@ -101,7 +102,7 @@
                             confirm="Se borrarán las comisiones por asesor generadas. ¿Continuar?"/>
                     <button name="action_register_payment" string="Pagar Comisión y Facturar"
                             type="object" class="btn-success" icon="fa-check-circle"
-                            invisible="state not in ('draft', 'approved')"
+                            invisible="state not in ('draft', 'approved') or split_count &gt; 0"
                             confirm="Se generará/confirmará la factura de comisión y se registrará su pago contable en un solo paso. ¿Continuar?"/>
                     <button name="action_reset_to_approved" string="Revertir Pago" type="object"
                             invisible="state != 'paid'"
@@ -248,8 +249,18 @@
                 <separator/>
                 <filter string="Sin Factura" name="no_invoice" domain="[('invoice_id','=',False)]"/>
                 <separator/>
+                <filter string="Solo comisiones por asesor" name="only_children"
+                        domain="[('state','!=','split')]"
+                        help="Oculta el total del negocio y deja lo que cobra cada asesor."/>
+                <filter string="Solo totales repartidos" name="only_parents"
+                        domain="[('state','=','split')]"/>
+                <separator/>
                 <filter string="Agrupar por Asesor" name="group_user"
                         context="{'group_by': 'user_id'}"/>
+                <filter string="Agrupar por Propiedad" name="group_property"
+                        context="{'group_by': 'property_id'}"/>
+                <filter string="Agrupar por Rol" name="group_role"
+                        context="{'group_by': 'role'}"/>
                 <filter string="Agrupar por Tipo" name="group_type"
                         context="{'group_by': 'type'}"/>
                 <filter string="Agrupar por Mes" name="group_month"
