@@ -40,6 +40,9 @@ class CommissionListScreen extends StatelessWidget {
         if (filter != null) domain.add(['state', '=', filter]);
         if (onlyMine && odoo.uid != null)
           domain.add(['user_id', '=', odoo.uid]);
+        // El registro padre de un reparto es el total del negocio, no la
+        // comisión de nadie: se muestra solo si se piden todas.
+        if (filter == null) domain.add(['state', '!=', 'split']);
         final rows = await odoo.searchRead(
           model: 'estate.commission',
           domain: domain,
@@ -144,6 +147,8 @@ class CommissionListScreen extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
+                    if (c.roleBadge.isNotEmpty)
+                      AppBadge(label: c.roleBadge, color: p.navy),
                     AppBadge(
                       label: Commission.typeLabel(c.type),
                       color: p.mutedLight,

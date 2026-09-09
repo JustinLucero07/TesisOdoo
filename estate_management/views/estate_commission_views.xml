@@ -47,6 +47,8 @@
                 <field name="date"/>
                 <field name="name"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="role" optional="show"/>
+                <field name="role_pct" string="% rol" optional="hide"/>
                 <field name="lead_id" optional="show"/>
                 <field name="property_id"/>
                 <field name="type" widget="badge"
@@ -86,6 +88,17 @@
                             invisible="1"/>
                     <button name="action_view_invoice" string="Ver Factura" type="object"
                             invisible="not invoice_id"/>
+                    <button name="action_generate_split" string="Preparar reparto"
+                            type="object" class="btn-secondary" icon="fa-users"
+                            invisible="state in ('paid', 'cancelled', 'split') or split_count &gt; 0 or parent_commission_id"
+                            help="Carga los cuatro pasos del negocio con sus porcentajes para asignar quién hizo cada uno."/>
+                    <button name="action_split_into_commissions" string="Generar comisiones por asesor"
+                            type="object" class="btn-primary" icon="fa-share-alt"
+                            invisible="state in ('paid', 'cancelled', 'split') or split_count == 0"
+                            confirm="Se creará una comisión aprobada por cada asesor del reparto y esta quedará como el total del negocio. ¿Continuar?"/>
+                    <button name="action_undo_split" string="Deshacer reparto"
+                            type="object" invisible="state != 'split'"
+                            confirm="Se borrarán las comisiones por asesor generadas. ¿Continuar?"/>
                     <button name="action_register_payment" string="Pagar Comisión y Facturar"
                             type="object" class="btn-success" icon="fa-check-circle"
                             invisible="state not in ('draft', 'approved')"
@@ -98,6 +111,8 @@
                             confirm="¿Está seguro de cancelar esta comisión?"/>
                     <field name="state" widget="statusbar"
                            statusbar_visible="draft,approved,paid"/>
+                    <field name="split_count" invisible="1"/>
+                    <field name="child_count" invisible="1"/>
                 </header>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -111,7 +126,14 @@
                                 </span>
                             </div>
                         </button>
+                        <button class="oe_stat_button" icon="fa-users"
+                                type="object" name="action_view_children"
+                                invisible="child_count == 0">
+                            <field name="child_count" string="Asesores" widget="statinfo"/>
+                        </button>
                     </div>
+                    <widget name="web_ribbon" title="REPARTIDA" bg_color="text-bg-info"
+                            invisible="state != 'split'"/>
                     <div class="oe_title">
                         <h1><field name="name" readonly="1"/></h1>
                     </div>
@@ -120,6 +142,10 @@
                             <field name="lead_id" placeholder="Seleccionar Oportunidad / Lead..."/>
                             <field name="property_id"/>
                             <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="role" invisible="not parent_commission_id"/>
+                            <field name="role_pct" invisible="not parent_commission_id"/>
+                            <field name="parent_commission_id" readonly="1"
+                                   invisible="not parent_commission_id"/>
                             <field name="type"/>
                             <field name="date"/>
                         </group>
@@ -133,6 +159,54 @@
                             <field name="invoice_id" readonly="1"/>
                         </group>
                     </group>
+                    <notebook invisible="parent_commission_id">
+                        <page string="Reparto entre asesores" name="split">
+                            <p class="text-muted">
+                                Qui&#233;n hizo cada paso de <b>este</b> negocio. Var&#237;a de una venta a
+                                otra: uno recibe el contacto, otro hace la visita, otro cierra y la
+                                captaci&#243;n puede ser de un cuarto. Los porcentajes vienen de
+                                Configuraci&#243;n &gt; Ajustes y se pueden ajustar aqu&#237; caso por caso.
+                            </p>
+                            <field name="split_line_ids" readonly="state in ('paid', 'split', 'cancelled')">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="role"/>
+                                    <field name="user_id" widget="many2one_avatar_user"
+                                           placeholder="Asignar asesor..."/>
+                                    <field name="percentage"/>
+                                    <field name="amount" widget="monetary"
+                                           options="{'currency_field': 'company_currency'}"/>
+                                    <field name="note" placeholder="Observaci&#243;n"/>
+                                    <field name="company_currency" column_invisible="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="pct_assigned" string="% repartido"/>
+                                <field name="amount_assigned" widget="monetary"
+                                       options="{'currency_field': 'company_currency'}"/>
+                                <field name="amount_office" widget="monetary"
+                                       options="{'currency_field': 'company_currency'}"
+                                       class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+                        <page string="Comisiones por asesor" name="children"
+                              invisible="child_count == 0">
+                            <field name="child_commission_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="role"/>
+                                    <field name="user_id" widget="many2one_avatar_user"/>
+                                    <field name="role_pct"/>
+                                    <field name="amount" widget="monetary"
+                                           options="{'currency_field': 'company_currency'}"/>
+                                    <field name="state" widget="badge"
+                                           decoration-success="state == 'paid'"
+                                           decoration-info="state == 'approved'"/>
+                                    <field name="company_currency" column_invisible="1"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                     <group string="Pago al Asesor (Constancia)" name="payment_proof">
                         <group>
                             <field name="payment_method"

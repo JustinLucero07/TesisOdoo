@@ -1,5 +1,15 @@
 from odoo import models, fields, api
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
+
+# Los pasos del negocio que pueden cobrar comisión. Se definen aquí porque los
+# usan tanto la comisión como sus líneas de reparto.
+EstateCommissionSplit_ROLES = [
+    ('capture', 'Captación'),
+    ('reception', 'Recepción'),
+    ('visit', 'Visita'),
+    ('closing', 'Cierre'),
+    ('other', 'Otro'),
+]
 
 
 class EstateCommission(models.Model):
@@ -32,11 +42,176 @@ class EstateCommission(models.Model):
         ('bonus', 'Bono/Premio')
     ], string='Tipo de Comisión', required=True, default='sale')
 
+    role = fields.Selection(
+        EstateCommissionSplit_ROLES, string='Rol en el negocio', tracking=True,
+        help='Por qué paso del negocio se le paga a este asesor.')
+    role_pct = fields.Float(
+        string='% de los honorarios', tracking=True,
+        help='Porcentaje de los honorarios de la agencia que corresponde a este rol.')
+
+    parent_commission_id = fields.Many2one(
+        'estate.commission', string='Comisión repartida', index=True,
+        ondelete='cascade', copy=False,
+        help='Comisión total del negocio de la que salió esta parte.')
+    child_commission_ids = fields.One2many(
+        'estate.commission', 'parent_commission_id', string='Comisiones por asesor')
+    child_count = fields.Integer(compute='_compute_split_totals', store=True)
+
+    # --- Reparto entre los asesores que participaron ---
+    split_line_ids = fields.One2many(
+        'estate.commission.split', 'commission_id', string='Reparto entre asesores')
+    split_count = fields.Integer(compute='_compute_split_totals', store=True)
+    amount_assigned = fields.Monetary(
+        string='Repartido a asesores', compute='_compute_split_totals', store=True,
+        currency_field='company_currency')
+    amount_office = fields.Monetary(
+        string='Queda en la oficina', compute='_compute_split_totals', store=True,
+        currency_field='company_currency')
+    pct_assigned = fields.Float(
+        string='% repartido', compute='_compute_split_totals', store=True)
+    is_exclusive = fields.Boolean(
+        string='Captación en exclusividad', related='property_id.is_exclusive',
+        readonly=True)
+
+    @api.depends('split_line_ids.amount', 'split_line_ids.percentage', 'amount',
+                 'child_commission_ids.amount')
+    def _compute_split_totals(self):
+        for rec in self:
+            rec.split_count = len(rec.split_line_ids)
+            rec.child_count = len(rec.child_commission_ids)
+            # Una vez generadas las comisiones por asesor, mandan ellas.
+            if rec.child_commission_ids:
+                rec.amount_assigned = sum(rec.child_commission_ids.mapped('amount'))
+                rec.pct_assigned = sum(rec.child_commission_ids.mapped('role_pct'))
+            else:
+                rec.amount_assigned = sum(rec.split_line_ids.mapped('amount'))
+                rec.pct_assigned = sum(rec.split_line_ids.mapped('percentage'))
+            rec.amount_office = (rec.amount or 0.0) - rec.amount_assigned
+
+    def _default_split_values(self):
+        """Los cuatro pasos del negocio con los porcentajes configurados.
+
+        El asesor queda vacío a propósito: se asigna al momento de pagar, que es
+        cuando se sabe quién recibió, quién visitó y quién cerró.
+        """
+        self.ensure_one()
+        company = self.env.company
+        pct_captacion = (company.estate_pct_capture_exclusive
+                         if self.property_id.is_exclusive
+                         else company.estate_pct_capture)
+        captador = (self.property_id.exclusive_user_id
+                    or self.property_id.user_id or self.user_id)
+        return [
+            {'sequence': 10, 'role': 'capture', 'percentage': pct_captacion,
+             'user_id': captador.id if captador else False},
+            {'sequence': 20, 'role': 'reception', 'percentage': company.estate_pct_reception},
+            {'sequence': 30, 'role': 'visit', 'percentage': company.estate_pct_visit},
+            {'sequence': 40, 'role': 'closing', 'percentage': company.estate_pct_closing},
+        ]
+
+    def action_generate_split(self):
+        """Rellena el reparto con los cuatro roles y sus porcentajes."""
+        for rec in self:
+            if rec.split_line_ids:
+                raise UserError(
+                    'Esta comisión ya tiene un reparto. Borra las líneas si '
+                    'quieres volver a generarlo.')
+            rec.split_line_ids = [(0, 0, vals) for vals in rec._default_split_values()]
+        return True
+
+    def action_split_into_commissions(self):
+        """Convierte el reparto en una comisión por asesor, pagable por separado.
+
+        Cada línea con asesor se vuelve su propia comisión aprobada, así el pago
+        y la factura de cada uno siguen el mismo circuito de siempre. Esta queda
+        como el total del negocio, marcada como Repartida.
+        """
+        self.ensure_one()
+        if self.state == 'paid':
+            raise UserError('Esta comisión ya está pagada; no se puede repartir.')
+        if self.child_commission_ids:
+            raise UserError(
+                'Esta comisión ya fue repartida. Revisa las comisiones por asesor.')
+        lineas = self.split_line_ids.filtered(lambda l: l.user_id and l.amount > 0)
+        if not lineas:
+            raise UserError(
+                'Asigna al menos un asesor con monto en el reparto antes de generarlo.')
+
+        etiquetas = dict(EstateCommissionSplit_ROLES)
+        creadas = self.env['estate.commission']
+        for linea in lineas:
+            creadas |= self.create({
+                'property_id': self.property_id.id,
+                'lead_id': self.lead_id.id,
+                'user_id': linea.user_id.id,
+                'sale_amount': self.sale_amount,
+                'commission_pct': self.commission_pct * ((linea.percentage or 0.0) / 100.0),
+                'amount': linea.amount,
+                'role': linea.role,
+                'role_pct': linea.percentage,
+                'type': self.type,
+                'date': self.date,
+                'state': 'approved',
+                'parent_commission_id': self.id,
+            })
+        self.state = 'split'
+        detalle = ' · '.join(
+            '%s: %s ${:,.2f}'.format(l.amount) % (etiquetas.get(l.role, l.role), l.user_id.name)
+            for l in lineas)
+        self.message_post(body=(
+            '<b>Comisión repartida</b> en %d parte(s) — %s · Oficina ${:,.2f}'
+            .format(self.amount_office) % (len(lineas), detalle)))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Comisiones por asesor',
+            'res_model': 'estate.commission',
+            'view_mode': 'list,form',
+            'domain': [('parent_commission_id', '=', self.id)],
+        }
+
+    def action_view_children(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Comisiones por asesor',
+            'res_model': 'estate.commission',
+            'view_mode': 'list,form',
+            'domain': [('parent_commission_id', '=', self.id)],
+        }
+
+    def action_undo_split(self):
+        """Deshace el reparto si todavía no se pagó nada."""
+        self.ensure_one()
+        pagadas = self.child_commission_ids.filtered(lambda c: c.state == 'paid')
+        if pagadas:
+            raise UserError(
+                'No se puede deshacer: ya hay comisiones pagadas en este reparto.')
+        self.child_commission_ids.unlink()
+        self.state = 'approved'
+        self.message_post(body='Reparto deshecho por %s.' % self.env.user.name)
+        return True
+
+    @api.constrains('split_line_ids', 'amount')
+    def _check_split_not_over(self):
+        for rec in self:
+            if not rec.split_line_ids:
+                continue
+            # Se compara con una holgura de un centavo por el redondeo.
+            if rec.amount_assigned > (rec.amount or 0.0) + 0.01:
+                raise ValidationError(
+                    'El reparto (%.2f) supera el monto de la comisión (%.2f). '
+                    'Ajusta los porcentajes o los montos.'
+                    % (rec.amount_assigned, rec.amount or 0.0))
+
     @api.depends('sale_amount', 'commission_pct')
     def _compute_commission_amount(self):
         for rec in self:
+            # Siempre hay que asignar: el campo es obligatorio y almacenado, y
+            # dejarlo sin valor rompía la creación por código con NOT NULL.
             if rec.sale_amount and rec.commission_pct:
                 rec.amount = rec.sale_amount * (rec.commission_pct / 100.0)
+            elif not rec.amount:
+                rec.amount = 0.0
 
     @api.onchange('lead_id')
     def _onchange_lead_id_autofill(self):
@@ -96,6 +271,7 @@ class EstateCommission(models.Model):
     state = fields.Selection([
         ('draft', 'Borrador'),
         ('approved', 'Aprobada'),
+        ('split', 'Repartida'),
         ('paid', 'Pagada'),
         ('cancelled', 'Cancelada')
     ], string='Estado', default='draft', tracking=True)
@@ -160,6 +336,10 @@ class EstateCommission(models.Model):
                 raise UserError('Esta comisión ya está marcada como Pagada.')
             if rec.state == 'cancelled':
                 raise UserError('No se puede pagar una comisión cancelada.')
+            if rec.state == 'split':
+                raise UserError(
+                    'Esta comisión está repartida entre asesores: paga cada una '
+                    'de las comisiones por asesor, no el total.')
             if rec.amount <= 0:
                 raise UserError('No se puede registrar pago para una comisión cuyo monto sea $0.00 o negativo.')
             if not rec.payment_method:
@@ -301,3 +481,48 @@ class EstateCommission(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+
+class EstateCommissionSplit(models.Model):
+    """Reparto de una comisión entre los asesores que participaron.
+
+    Los roles no se fijan en la propiedad porque varían negocio a negocio: uno
+    recibe el contacto, otro hace la visita, otro cierra y la captación puede
+    ser de un cuarto. Por eso se asignan aquí, al momento de pagar.
+    """
+    _name = 'estate.commission.split'
+    _description = 'Reparto de comisión por rol'
+    _order = 'sequence, id'
+
+    commission_id = fields.Many2one(
+        'estate.commission', string='Comisión', required=True,
+        ondelete='cascade', index=True)
+    sequence = fields.Integer(default=10)
+    role = fields.Selection(
+        EstateCommissionSplit_ROLES, string='Rol', required=True, default='other')
+    user_id = fields.Many2one(
+        'res.users', string='Asesor', domain=[('share', '=', False)],
+        help='Quien realizó este paso del negocio. Déjalo vacío si no aplica: '
+             'ese porcentaje se queda en la oficina.')
+    percentage = fields.Float(
+        string='% de los honorarios', required=True, default=0.0,
+        help='Porcentaje sobre los honorarios de la agencia, no sobre el precio '
+             'de venta.')
+    amount = fields.Monetary(
+        string='A pagar', compute='_compute_amount', store=True, readonly=False,
+        currency_field='company_currency')
+    company_currency = fields.Many2one(
+        'res.currency', related='commission_id.company_currency', readonly=True)
+    note = fields.Char(string='Observación')
+
+    @api.depends('percentage', 'commission_id.amount')
+    def _compute_amount(self):
+        for line in self:
+            base = line.commission_id.amount or 0.0
+            line.amount = base * ((line.percentage or 0.0) / 100.0)
+
+    @api.constrains('percentage')
+    def _check_percentage(self):
+        for line in self:
+            if not (0.0 <= line.percentage <= 100.0):
+                raise ValidationError('El porcentaje del rol debe estar entre 0 y 100.')

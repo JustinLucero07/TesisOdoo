@@ -14,6 +14,8 @@ class Commission {
   final double commissionPct;
   final double amount;
   final String type;
+  final String role;
+  final double rolePct;
   final String state;
   final DateTime? date;
   final DateTime? paymentDate;
@@ -29,6 +31,8 @@ class Commission {
     this.commissionPct = 0,
     this.amount = 0,
     this.type = 'sale',
+    this.role = '',
+    this.rolePct = 0,
     this.state = 'draft',
     this.date,
     this.paymentDate,
@@ -43,6 +47,8 @@ class Commission {
     'commission_pct',
     'amount',
     'type',
+    'role',
+    'role_pct',
     'state',
     'date',
     'payment_date',
@@ -59,6 +65,8 @@ class Commission {
     commissionPct: asOdooDouble(j['commission_pct']),
     amount: asOdooDouble(j['amount']),
     type: asOdooString(j['type'], 'sale'),
+    role: asOdooString(j['role']),
+    rolePct: asOdooDouble(j['role_pct']),
     state: asOdooString(j['state'], 'draft'),
     date: j['date'] is String ? DateTime.tryParse(j['date']) : null,
     paymentDate: j['payment_date'] is String
@@ -69,13 +77,42 @@ class Commission {
   static String stateLabel(String s) => switch (s) {
     'approved' => 'Aprobada',
     'paid' => 'Pagada',
+    'split' => 'Repartida',
     'cancelled' => 'Anulada',
     _ => 'Borrador',
   };
 
+  /// El paso del negocio por el que se cobra: captación, recepción, visita o
+  /// cierre. Vacío en las comisiones que no se repartieron por roles.
+  static String roleLabel(String r) => switch (r) {
+    'capture' => 'Captación',
+    'reception' => 'Recepción',
+    'visit' => 'Visita',
+    'closing' => 'Cierre',
+    'other' => 'Otro',
+    _ => '',
+  };
+
+  static IconData roleIcon(String r) => switch (r) {
+    'capture' => Icons.flag_outlined,
+    'reception' => Icons.call_received_rounded,
+    'visit' => Icons.directions_walk_rounded,
+    'closing' => Icons.handshake_outlined,
+    _ => Icons.sell_outlined,
+  };
+
+  String get roleBadge {
+    final etiqueta = roleLabel(role);
+    if (etiqueta.isEmpty) return '';
+    return rolePct > 0
+        ? '$etiqueta · ${rolePct.toStringAsFixed(0)}%'
+        : etiqueta;
+  }
+
   static Color stateColor(String s, AppPalette colors) => switch (s) {
     'approved' => colors.info,
     'paid' => colors.success,
+    'split' => colors.warning,
     'cancelled' => colors.danger,
     _ => colors.mutedLight,
   };

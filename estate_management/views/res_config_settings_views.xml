@@ -7,6 +7,41 @@
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
                 <app string="Inmobiliaria" name="estate_management" logo="/estate_management/static/description/icon.png">
+                    <block title="Reparto de comisiones entre asesores" name="estate_commission_split">
+                        <div class="text-muted mb-3">
+                            Porcentaje de <b>los honorarios de la agencia</b> (no del precio de venta)
+                            que cobra cada paso del negocio. Lo que no se reparte se queda en la
+                            oficina. Estos valores son el punto de partida: en cada comisi&#243;n se
+                            pueden ajustar antes de generar el reparto.
+                        </div>
+                        <setting string="Captaci&#243;n sin exclusividad"
+                                 help="Cuando la propiedad se capt&#243; sin contrato de exclusividad.">
+                            <field name="estate_pct_capture"/> %
+                        </setting>
+                        <setting string="Captaci&#243;n con exclusividad"
+                                 help="Cuando la propiedad est&#225; marcada como En Exclusividad.">
+                            <field name="estate_pct_capture_exclusive"/> %
+                        </setting>
+                        <setting string="Recepci&#243;n"
+                                 help="Para quien recibi&#243; el contacto del cliente interesado.">
+                            <field name="estate_pct_reception"/> %
+                        </setting>
+                        <setting string="Visita"
+                                 help="Para quien realiz&#243; la visita al inmueble.">
+                            <field name="estate_pct_visit"/> %
+                        </setting>
+                        <setting string="Cierre"
+                                 help="Para quien cerr&#243; el negocio.">
+                            <field name="estate_pct_closing"/> %
+                        </setting>
+                        <setting string="Resumen (con exclusividad)"
+                                 help="C&#243;mo queda el reparto sumando los cuatro pasos.">
+                            <div>
+                                A asesores: <field name="estate_pct_advisors_total" readonly="1" class="oe_inline"/> %
+                                &#183; Oficina: <field name="estate_pct_office" readonly="1" class="oe_inline"/> %
+                            </div>
+                        </setting>
+                    </block>
                     <block title="Plantillas de Contrato Word (.docx)" name="estate_contract_tpl">
                         <setting string="1. Con Exclusividad - Propietario"
                                  help="Plantilla Word para Corretaje con Exclusividad cuando comparece el propietario directamente.">

@@ -68,3 +68,6 @@ access_estate_contact_phone_manager,estate.contact.phone.manager,model_estate_co
 access_estate_bot_link_agent,estate.property.bot.link.agent,model_estate_property_bot_link,estate_group_agent,1,1,1,1
 access_estate_bot_link_manager,estate.property.bot.link.manager,model_estate_property_bot_link,estate_group_manager,1,1,1,1
 access_estate_bot_link_admin,estate.property.bot.link.admin,model_estate_property_bot_link,estate_group_admin,1,1,1,1
+access_estate_commission_split_user,estate.commission.split.user,model_estate_commission_split,estate_group_agent,1,1,1,1
+access_estate_commission_split_manager,estate.commission.split.manager,model_estate_commission_split,estate_group_manager,1,1,1,1
+access_estate_commission_split_admin,estate.commission.split.admin,model_estate_commission_split,estate_group_admin,1,1,1,1
