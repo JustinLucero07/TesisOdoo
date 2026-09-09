@@ -16,7 +16,7 @@ class EstateCommission(models.Model):
     _name = 'estate.commission'
     _description = 'Comisión Inmobiliaria'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    _order = 'date desc, id desc'
+    _order = 'date desc, parent_commission_id, role_sequence, id desc'
 
     name = fields.Char(string='Referencia', required=True, copy=False, readonly=True, default='NUEVO')
     lead_id = fields.Many2one(
@@ -49,6 +49,9 @@ class EstateCommission(models.Model):
         string='% de los honorarios', tracking=True,
         help='Porcentaje de los honorarios de la agencia que corresponde a este rol.')
 
+    role_sequence = fields.Integer(
+        compute='_compute_role_sequence', store=True,
+        help='Orden del rol dentro del negocio, para listarlos como ocurren.')
     deal_total_amount = fields.Monetary(
         string='Comisión total del negocio', compute='_compute_deal_total',
         store=True, currency_field='company_currency',
@@ -78,6 +81,13 @@ class EstateCommission(models.Model):
     is_exclusive = fields.Boolean(
         string='Captación en exclusividad', related='property_id.is_exclusive',
         readonly=True)
+
+    _ROLE_ORDER = {'capture': 1, 'reception': 2, 'visit': 3, 'closing': 4, 'other': 9}
+
+    @api.depends('role')
+    def _compute_role_sequence(self):
+        for rec in self:
+            rec.role_sequence = self._ROLE_ORDER.get(rec.role, 0)
 
     @api.depends('amount', 'parent_commission_id.amount')
     def _compute_deal_total(self):
@@ -148,6 +158,10 @@ class EstateCommission(models.Model):
         if not lineas:
             raise UserError(
                 'Asigna al menos un asesor con monto en el reparto antes de generarlo.')
+        if not self.payment_method:
+            raise UserError(
+                'Indica la Forma de Pago en "Pago al Asesor (Constancia)": al '
+                'generar el reparto se paga y factura a cada asesor.')
 
         etiquetas = dict(EstateCommissionSplit_ROLES)
         creadas = self.env['estate.commission']
@@ -173,13 +187,11 @@ class EstateCommission(models.Model):
         self.message_post(body=(
             '<b>Comisión repartida</b> en %d parte(s) — %s · Oficina ${:,.2f}'
             .format(self.amount_office) % (len(lineas), detalle)))
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Comisiones por asesor',
-            'res_model': 'estate.commission',
-            'view_mode': 'list,form',
-            'domain': [('parent_commission_id', '=', self.id)],
-        }
+
+        # Repartir y pagar es un solo paso: no tiene sentido entrar a cada
+        # comisión a repetir la misma forma de pago.
+        self.action_pay_all_children()
+        return self.action_view_children()
 
     def action_pay_all_children(self):
         """Paga de una sola vez a todos los asesores del reparto.

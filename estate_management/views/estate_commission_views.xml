@@ -95,13 +95,14 @@
                             type="object" class="btn-secondary" icon="fa-users"
                             invisible="state in ('paid', 'cancelled', 'split') or split_count &gt; 0 or parent_commission_id"
                             help="Carga los cuatro pasos del negocio con sus porcentajes para asignar quién hizo cada uno."/>
-                    <button name="action_split_into_commissions" string="Generar comisiones por asesor"
-                            type="object" class="btn-primary" icon="fa-share-alt"
-                            invisible="state in ('paid', 'cancelled', 'split') or split_count == 0"
-                            confirm="Se creará una comisión aprobada por cada asesor del reparto y esta quedará como el total del negocio. ¿Continuar?"/>
-                    <button name="action_pay_all_children" string="Pagar a todos los asesores"
+                    <button name="action_split_into_commissions" string="Generar y pagar a los asesores"
                             type="object" class="btn-success" icon="fa-check-circle"
+                            invisible="state in ('paid', 'cancelled', 'split') or split_count == 0"
+                            confirm="Se creará la comisión de cada asesor, se generará su factura de proveedor y se registrará su pago. ¿Continuar?"/>
+                    <button name="action_pay_all_children" string="Pagar pendientes"
+                            type="object" class="btn-warning" icon="fa-check-circle"
                             invisible="state != 'split'"
+                            help="Solo si quedó alguna comisión del reparto sin pagar."
                             confirm="Se generará la factura de proveedor de cada asesor y se registrará su pago. ¿Continuar?"/>
                     <button name="action_undo_split" string="Deshacer reparto"
                             type="object" invisible="state != 'split'"
@@ -217,8 +218,7 @@
                             </field>
                         </page>
                     </notebook>
-                    <group string="Pago al Asesor (Constancia)" name="payment_proof"
-                           invisible="state == 'split' and child_count == 0">
+                    <group string="Pago al Asesor (Constancia)" name="payment_proof">
                         <group>
                             <field name="payment_method"
                                    readonly="state == 'paid'"
@@ -302,10 +302,10 @@
         <field name="name">Estado de Pago de Comisiones</field>
         <field name="res_model">estate.commission</field>
         <field name="view_mode">list,pivot,graph,form</field>
-        <field name="context">{'search_default_group_state': 1}</field>
+        <field name="context">{'search_default_group_state': 1, 'search_default_group_property': 2}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Sin comisiones registradas.</p>
-            <p>Agrupadas por estado: ve cuánto está <b>devengado</b> (borrador/aprobada) y cuánto ya <b>pagado</b>. Cada grupo suma el total.</p>
+            <p>Agrupadas por estado y por propiedad: ve cuánto está <b>devengado</b> (borrador/aprobada) y cuánto ya <b>pagado</b>, y dentro de cada propiedad el reparto entre los asesores. Cada grupo suma el total.</p>
         </field>
     </record>
 
