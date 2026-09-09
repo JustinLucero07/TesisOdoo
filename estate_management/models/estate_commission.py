@@ -239,15 +239,39 @@ class EstateCommission(models.Model):
         }
 
     def action_undo_split(self):
-        """Deshace el reparto si todavía no se pagó nada."""
+        """Deshace el reparto, incluso si ya se pagó.
+
+        Como generar el reparto paga de inmediato, un asesor mal asignado se
+        descubre cuando el pago ya está hecho. Se anula la factura de cada
+        comisión pagada y se borran todas para volver a empezar. El pago
+        contable queda como movimiento suelto y hay que conciliarlo a mano.
+        """
         self.ensure_one()
-        pagadas = self.child_commission_ids.filtered(lambda c: c.state == 'paid')
-        if pagadas:
-            raise UserError(
-                'No se puede deshacer: ya hay comisiones pagadas en este reparto.')
+        if self.state != 'split':
+            raise UserError('Esta comisión no está repartida.')
+
+        anuladas = []
+        for hija in self.child_commission_ids:
+            factura = hija.invoice_id
+            if factura and factura.state != 'cancel':
+                try:
+                    if factura.state == 'posted':
+                        factura.button_draft()
+                    factura.button_cancel()
+                    anuladas.append(factura.name)
+                except Exception as e:
+                    raise UserError(
+                        'No se pudo anular la factura %s de %s: %s\n\n'
+                        'Anúlala a mano desde Facturación y vuelve a intentarlo.'
+                        % (factura.name, hija.user_id.name, e)) from None
+
         self.child_commission_ids.unlink()
         self.state = 'approved'
-        self.message_post(body='Reparto deshecho por %s.' % self.env.user.name)
+        detalle = (' Facturas anuladas: %s. El pago contable queda suelto y debe '
+                   'conciliarse o revertirse a mano.' % ', '.join(anuladas)
+                   if anuladas else '')
+        self.message_post(body='<b>Reparto deshecho</b> por %s.%s'
+                               % (self.env.user.name, detalle))
         return True
 
     @api.constrains('split_line_ids', 'amount')

@@ -106,7 +106,7 @@
                             confirm="Se generará la factura de proveedor de cada asesor y se registrará su pago. ¿Continuar?"/>
                     <button name="action_undo_split" string="Deshacer reparto"
                             type="object" invisible="state != 'split'"
-                            confirm="Se borrarán las comisiones por asesor generadas. ¿Continuar?"/>
+                            confirm="Se borrarán las comisiones por asesor y se ANULARÁN sus facturas si ya se pagaron. El pago contable quedará suelto y habrá que revertirlo a mano en Facturación. ¿Continuar?"/>
                     <button name="action_register_payment" string="Pagar Comisión y Facturar"
                             type="object" class="btn-success" icon="fa-check-circle"
                             invisible="state not in ('draft', 'approved') or split_count &gt; 0"
