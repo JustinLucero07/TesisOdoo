@@ -27,6 +27,7 @@
         'data/estate_property_type_data.xml',
         'data/res_partner_category_data.xml',
         'views/estate_property_views.xml',
+        'views/estate_property_image_views.xml',
         'views/estate_commission_views.xml',
         'views/estate_property_type_views.xml',
         'views/estate_contract_views.xml',

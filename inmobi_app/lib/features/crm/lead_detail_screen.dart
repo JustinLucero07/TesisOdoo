@@ -396,8 +396,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                         ? null
                         : () => Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ContactDetailScreen(contactId: lead.partnerId!),
+                              builder: (_) => ContactDetailScreen(
+                                contactId: lead.partnerId!,
+                              ),
                             ),
                           ),
                   ),

@@ -316,6 +316,52 @@
     </record>
 
     <!-- ============================================================
+         COMISIONES POR ASESOR (solo gerencia)
+    ============================================================ -->
+    <record id="estate_commission_by_advisor_view_pivot" model="ir.ui.view">
+        <field name="name">estate.commission.by.advisor.pivot</field>
+        <field name="model">estate.commission</field>
+        <field name="arch" type="xml">
+            <pivot string="Comisiones por asesor" sample="1">
+                <field name="user_id" type="row"/>
+                <field name="property_id" type="row"/>
+                <field name="date" interval="month" type="col"/>
+                <field name="amount" type="measure" string="Comisión"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="estate_commission_by_advisor_view_graph" model="ir.ui.view">
+        <field name="name">estate.commission.by.advisor.graph</field>
+        <field name="model">estate.commission</field>
+        <field name="arch" type="xml">
+            <graph string="Comisiones por asesor" type="bar" stacked="True" sample="1">
+                <field name="date" interval="month"/>
+                <field name="user_id"/>
+                <field name="amount" type="measure" string="Comisión"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_estate_commission_by_advisor" model="ir.actions.act_window">
+        <field name="name">Comisiones por Asesor</field>
+        <field name="res_model">estate.commission</field>
+        <field name="view_mode">pivot,graph,list,form</field>
+        <!-- Fuera el total de un negocio ya repartido: no es de nadie y
+             duplicaría las cifras. Las comisiones sueltas sí son del asesor. -->
+        <field name="domain">[('state', 'not in', ('split', 'cancelled'))]</field>
+        <field name="context">{'search_default_group_user': 1, 'search_default_group_month': 2}</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('estate_commission_by_advisor_view_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('estate_commission_by_advisor_view_graph')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Todavía no hay comisiones de asesores.</p>
+            <p>Cuánto se lleva cada asesor, por propiedad y por mes. Las filas son
+               asesor y propiedad, las columnas los meses.</p>
+        </field>
+    </record>
+
+    <!-- ============================================================
          GANANCIAS DE LA OFICINA
     ============================================================ -->
     <record id="estate_commission_office_view_tree" model="ir.ui.view">

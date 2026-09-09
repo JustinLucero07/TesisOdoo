@@ -500,6 +500,22 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                       );
                     },
                   ),
+                  if (context.read<AuthService>().odoo.isAdmin)
+                    _DrawerActionTile(
+                      icon: Icons.groups_outlined,
+                      title: 'Comisiones del Equipo',
+                      subtitle: 'Cuánto cobra cada asesor',
+                      color: const Color(0xFF7C3AED),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const CommissionListScreen(onlyMine: false),
+                          ),
+                        );
+                      },
+                    ),
                   _DrawerActionTile(
                     icon: Icons.notifications_active_outlined,
                     title: 'Recordatorios de Clientes',

@@ -352,7 +352,16 @@
                                 <i class="fa fa-picture-o text-primary" title="Galería"/>
                                 <span class="fw-bold">Galería de la propiedad</span>
                                 <small class="text-muted">— arrastra para reordenar</small>
+                                <button name="action_download_all_images" type="object"
+                                        class="btn btn-sm btn-secondary ms-auto"
+                                        icon="fa-download" invisible="not image_ids"
+                                        string="Descargar todas (ZIP)"/>
                             </div>
+                            <small class="text-muted d-block mb-2">
+                                Para bajar solo algunas, abre la vista de lista
+                                (<i class="fa fa-list-ul" title="Lista"/>), marca las que quieras
+                                y usa <b>Descargar seleccionadas</b>.
+                            </small>
                             <field name="image_ids" mode="kanban">
                                 <kanban create="false" group_create="false">
                                     <field name="id"/>
@@ -367,14 +376,19 @@
                                                 <div class="p-1 text-center text-truncate small text-muted">
                                                     <field name="name"/>
                                                 </div>
+                                                <button name="action_download_image" type="object"
+                                                        class="btn btn-sm btn-light position-absolute top-0 end-0 m-1"
+                                                        icon="fa-download" title="Descargar esta foto"/>
                                             </div>
                                         </t>
                                     </templates>
                                 </kanban>
-                                <list create="false">
+                                <list create="false" multi_edit="1">
                                     <field name="sequence" widget="handle"/>
                                     <field name="image" widget="image" options="{'size': [100, 100]}"/>
                                     <field name="name"/>
+                                    <button name="action_download_image" type="object"
+                                            icon="fa-download" title="Descargar esta foto"/>
                                 </list>
                             </field>
                             <div class="text-center text-muted py-4" invisible="image_ids">

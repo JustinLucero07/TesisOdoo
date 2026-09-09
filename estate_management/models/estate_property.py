@@ -569,6 +569,14 @@ class EstateProperty(models.Model):
             },
         }
 
+    def action_download_all_images(self):
+        """Descarga todas las fotos de la propiedad en un solo ZIP."""
+        self.ensure_one()
+        imagenes = self.image_ids.filtered('image')
+        if not imagenes:
+            raise UserError('Esta propiedad todavía no tiene fotos en la galería.')
+        return imagenes._build_zip_download()
+
     def action_view_appraisals(self):
         self.ensure_one()
         return {

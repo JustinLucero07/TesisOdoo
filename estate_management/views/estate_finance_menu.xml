@@ -77,6 +77,13 @@
                   sequence="55"
                   groups="estate_management.estate_group_manager"/>
 
+        <menuitem id="estate_menu_finance_by_advisor"
+                  name="Comisiones por Asesor"
+                  parent="estate_menu_finance_root"
+                  action="action_estate_commission_by_advisor"
+                  sequence="58"
+                  groups="estate_management.estate_group_manager"/>
+
         <menuitem id="estate_menu_finance_office_earnings"
                   name="Ganancias de la Oficina"
                   parent="estate_menu_finance_root"

@@ -62,6 +62,10 @@
         <menuitem id="estate_menu_commission_wizard" name="Liquidación de Comisiones"
                   parent="estate_menu_ventas_root" action="action_estate_commission_report_owl"
                   sequence="60" groups="estate_management.estate_group_manager"/>
+        <menuitem id="estate_menu_reports_by_advisor" name="Comisiones por Asesor"
+                  parent="estate_menu_ventas_root"
+                  action="estate_management.action_estate_commission_by_advisor"
+                  sequence="63" groups="estate_management.estate_group_manager"/>
         <menuitem id="estate_menu_office_earnings" name="Ganancias de la Oficina"
                   parent="estate_menu_ventas_root"
                   action="estate_management.action_estate_commission_office"

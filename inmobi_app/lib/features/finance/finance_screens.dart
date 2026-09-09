@@ -40,15 +40,17 @@ class CommissionListScreen extends StatelessWidget {
         if (filter != null) domain.add(['state', '=', filter]);
         if (onlyMine && odoo.uid != null)
           domain.add(['user_id', '=', odoo.uid]);
-        // El registro padre de un reparto es el total del negocio, no la
-        // comisión de nadie: se muestra solo si se piden todas.
-        if (filter == null) domain.add(['state', '!=', 'split']);
+        // Solo el total de un negocio YA repartido no es de nadie; las
+        // comisiones sueltas sí son del asesor y deben verse.
+        domain.add(['state', '!=', 'split']);
         final rows = await odoo.searchRead(
           model: 'estate.commission',
           domain: domain,
           fields: Commission.fields,
-          order: 'date desc, id desc',
-          limit: 120,
+          order: onlyMine
+              ? 'date desc, id desc'
+              : 'user_id, date desc, id desc',
+          limit: 200,
         );
         return rows.map(Commission.fromJson).toList();
       },
@@ -64,10 +66,14 @@ class CommissionListScreen extends StatelessWidget {
           entries: [
             ('Cobrado', _currency.format(paid)),
             ('Por cobrar', _currency.format(pending)),
-            ('Registros', '${items.length}'),
+            if (onlyMine)
+              ('Registros', '${items.length}')
+            else
+              ('Asesores', '${items.map((c) => c.userName).toSet().length}'),
           ],
         );
       },
+      groupBy: onlyMine ? null : (c) => c.userName,
       itemBuilder: (context, c) {
         final p = AppColors.of(context);
         return Card(

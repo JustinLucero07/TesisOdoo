@@ -18,6 +18,10 @@ class RecordListScaffold<T> extends StatefulWidget {
   final VoidCallback? onCreate;
   final String? createLabel;
 
+  /// Si se indica, la lista se parte en secciones con este título. El orden de
+  /// llegada manda: los elementos ya vienen ordenados desde el servidor.
+  final String Function(T item)? groupBy;
+
   const RecordListScaffold({
     super.key,
     required this.title,
@@ -30,6 +34,7 @@ class RecordListScaffold<T> extends StatefulWidget {
     this.summaryBuilder,
     this.onCreate,
     this.createLabel,
+    this.groupBy,
   });
 
   @override
@@ -133,18 +138,72 @@ class _RecordListScaffoldState<T> extends State<RecordListScaffold<T>> {
         ],
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpace.lg,
-        AppSpace.xs,
-        AppSpace.lg,
-        90,
-      ),
-      itemCount: _items.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
+    const padding = EdgeInsets.fromLTRB(
+      AppSpace.lg,
+      AppSpace.xs,
+      AppSpace.lg,
+      90,
+    );
 
-      itemBuilder: (context, i) =>
-          FadeSlideIn(index: i, child: widget.itemBuilder(context, _items[i])),
+    final agrupar = widget.groupBy;
+    if (agrupar == null) {
+      return ListView.separated(
+        padding: padding,
+        itemCount: _items.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, i) => FadeSlideIn(
+          index: i,
+          child: widget.itemBuilder(context, _items[i]),
+        ),
+      );
+    }
+
+    // Cada elemento va precedido de su cabecera cuando cambia el grupo.
+    final filas = <Widget>[];
+    String? grupoActual;
+    for (var i = 0; i < _items.length; i++) {
+      final grupo = agrupar(_items[i]);
+      if (grupo != grupoActual) {
+        grupoActual = grupo;
+        filas.add(_GroupHeader(title: grupo.isEmpty ? 'Sin asignar' : grupo));
+      }
+      filas.add(
+        FadeSlideIn(index: i, child: widget.itemBuilder(context, _items[i])),
+      );
+    }
+    return ListView.separated(
+      padding: padding,
+      itemCount: filas.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (context, i) => filas[i],
+    );
+  }
+}
+
+class _GroupHeader extends StatelessWidget {
+  final String title;
+  const _GroupHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    final p = AppColors.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 2),
+      child: Row(
+        children: [
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+              color: p.muted,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Divider(color: p.line, height: 1)),
+        ],
+      ),
     );
   }
 }
