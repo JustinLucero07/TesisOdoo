@@ -31,17 +31,26 @@
                     </button>
                 </xpath>
 
-                <!-- Teléfonos adicionales: bajo el teléfono, con lista editable
-                     ("agregar una línea" añade otro número). -->
-                <xpath expr="//field[@name='phone']" position="after">
-                    <field name="extra_phone_ids" nolabel="1" colspan="2"
-                           context="{'form_view_ref': False}">
-                        <list string="Teléfonos adicionales" editable="bottom">
-                            <field name="sequence" widget="handle"/>
-                            <field name="label" placeholder="Casa, Trabajo, WhatsApp…"/>
-                            <field name="phone" placeholder="Otro número de teléfono" widget="phone"/>
-                        </list>
-                    </field>
+                <!-- Teléfonos adicionales: en su propio bloque antes de las
+                     pestañas. Iba pegado al campo Teléfono, dentro del div de la
+                     cabecera, y el flex dejaba el número sin ancho: solo se veía
+                     el enlace "Llamar" y no se podía escribir encima. -->
+                <xpath expr="//notebook" position="before">
+                    <group string="Teléfonos adicionales" name="estate_extra_phones">
+                        <field name="extra_phone_ids" nolabel="1" colspan="2"
+                               context="{'form_view_ref': False}">
+                            <list string="Teléfonos adicionales" editable="bottom">
+                                <field name="sequence" widget="handle"/>
+                                <field name="label" placeholder="Casa, Trabajo, WhatsApp…"/>
+                                <field name="phone" placeholder="Otro número de teléfono" widget="phone"/>
+                            </list>
+                        </field>
+                        <div class="text-muted" colspan="2">
+                            <i class="fa fa-info-circle" title="Información"/>
+                            El n&#250;mero principal se edita arriba, junto al nombre.
+                            Aqu&#237; van los dem&#225;s: casa, trabajo, un familiar, etc.
+                        </div>
+                    </group>
                 </xpath>
 
                 <!-- Cambiar etiqueta RUC por Cédula / RUC y mostrar campos de generales de ley (Estado civil, profesión) cuando es Persona -->
