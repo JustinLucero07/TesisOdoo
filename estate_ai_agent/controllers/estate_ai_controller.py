@@ -402,6 +402,12 @@ INSTRUCCIONES DE RESPUESTA:
                     domain.append(('price', '>=', args['min_price']))
                 if args.get('property_type'):
                     domain.append(('property_type_id.name', 'ilike', args['property_type']))
+                # Captar y ser el responsable de la venta son cosas distintas: el
+                # captador puede ser uno y el que la gestiona, otro.
+                if args.get('captured_by'):
+                    domain.append(('capture_user_ids.name', 'ilike', args['captured_by']))
+                if args.get('advisor_name'):
+                    domain.append(('user_id.name', 'ilike', args['advisor_name']))
                 limit = int(args.get('limit', 50))
                 props = env['estate.property'].sudo().search(domain, limit=limit, order='state asc, price desc')
                 result = [
@@ -411,6 +417,8 @@ INSTRUCCIONES DE RESPUESTA:
                         'precio_fmt': f'${p.price:,.0f}' if p.price else 'Consultar',
                         'estado': p.state, 'area': p.area,
                         'area_terreno': p.land_area,
+                        'asesor_responsable': p.user_id.name or '',
+                        'captado_por': ', '.join(p.capture_user_ids.mapped('name')),
                         'habitaciones': p.bedrooms, 'tipo': p.property_type_id.name if p.property_type_id else '',
                         'dias_mercado': p.days_on_market,
                         'avm_status': getattr(p, 'avm_status', ''),
@@ -621,6 +629,7 @@ INSTRUCCIONES DE RESPUESTA:
                     'tipo_operacion': prop.offer_type,
                     'tipo_propiedad': prop.property_type_id.name if prop.property_type_id else '',
                     'propietario': prop.owner_id.name if prop.owner_id else '',
+                    'captado_por': ', '.join(prop.capture_user_ids.mapped('name')),
                     'asesor': prop.user_id.name if prop.user_id else '',
                     'descripcion': (prop.description or '')[:500],
                     'avm_precio': prop.avm_estimated_price if hasattr(prop, 'avm_estimated_price') else 0,
@@ -1729,6 +1738,7 @@ INSTRUCCIONES DE RESPUESTA:
                     'avm_info': avm_note,
                     'imagenes_disponibles': img_count,
                     'visitas_realizadas': visit_count,
+                    'captado_por': ', '.join(prop.capture_user_ids.mapped('name')),
                     'asesor': prop.user_id.name if prop.user_id else '',
                     'asesor_extra_prompt': getattr(prop, 'ai_extra_prompt', '') or '',
                     'tags': tags,

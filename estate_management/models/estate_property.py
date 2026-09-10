@@ -173,7 +173,21 @@ class EstateProperty(models.Model):
         help='Indica si la propiedad fue captada bajo contrato de exclusividad.')
     exclusive_user_id = fields.Many2one(
         'res.users', string='Asesor Responsable (Captador)', tracking=True,
-        help='El asesor que captó la exclusividad de esta propiedad.')
+        help='El asesor que captó esta propiedad, es decir quien consiguió que el '
+             'propietario la pusiera con nosotros.')
+    co_capture_user_id = fields.Many2one(
+        'res.users', string='Asesor Responsable (Co-Captador)', tracking=True,
+        help='Segundo asesor que participó en la captación, si la hicieron entre dos.')
+    capture_user_ids = fields.Many2many(
+        'res.users', 'estate_property_capture_user_rel', 'property_id', 'user_id',
+        string='Captadores', compute='_compute_capture_user_ids', store=True,
+        help='Captador y co-captador juntos, para poder buscar "propiedades captadas '
+             'por X" sin confundirlos con el asesor responsable de la venta.')
+
+    @api.depends('exclusive_user_id', 'co_capture_user_id')
+    def _compute_capture_user_ids(self):
+        for rec in self:
+            rec.capture_user_ids = (rec.exclusive_user_id | rec.co_capture_user_id)
     is_no_contract = fields.Boolean(
         string='Sin Contrato', default=False, tracking=True,
         help='Indica que la propiedad se gestiona sin un contrato formal firmado.')

@@ -19,7 +19,10 @@ TOOLS_OPENAI = [
                 "Busca propiedades inmobiliarias en la base de datos según filtros. "
                 "Cuando el usuario pida 'todas las propiedades disponibles', 'la más cara', "
                 "'las más baratas', 'todas las casas', etc. → usa limit=100 para traer todas. "
-                "Ordena los resultados por precio descendente por defecto."
+                "Ordena los resultados por precio descendente por defecto. "
+                "OJO con los dos roles de asesor, que son distintos: 'captada/captó/captación' "
+                "→ usa captured_by; 'responsable/a cargo/encargado/gestiona/vende' → usa "
+                "advisor_name. Nunca uses advisor_name para responder quién captó."
             ),
             "parameters": {
                 "type": "object",
@@ -29,6 +32,8 @@ TOOLS_OPENAI = [
                     "max_price": {"type": "number", "description": "Precio máximo"},
                     "min_price": {"type": "number", "description": "Precio mínimo"},
                     "state": {"type": "string", "description": "Estado: available, sold, rented, reserved"},
+                    "captured_by": {"type": "string", "description": "Nombre del asesor que CAPTÓ la propiedad (captador o co-captador). Para '¿qué propiedades captó X?'"},
+                    "advisor_name": {"type": "string", "description": "Nombre del asesor RESPONSABLE de la propiedad y de su venta. Para '¿qué propiedades gestiona X?'"},
                     "limit": {"type": "integer", "description": "Máximo de resultados (default 50, usa 100 para 'todas')"},
                 },
             },
@@ -723,7 +728,10 @@ TOOLS_OPENAI = [
             "estate_property: id, name(referencia), title, price, area, bedrooms, bathrooms, "
             "parking_spaces, floor, year_built, city, street, state(selection: available/reserved/sold/rented), "
             "offer_type(sale/rent), property_type_id(FK→estate_property_type.id), "
-            "user_id(FK→res_users.id = asesor), owner_id(FK→res_partner.id), "
+            "user_id(FK→res_users.id = asesor RESPONSABLE de la propiedad y su venta), "
+            "exclusive_user_id(FK→res_users.id = asesor CAPTADOR), "
+            "co_capture_user_id(FK→res_users.id = asesor CO-CAPTADOR), "
+            "owner_id(FK→res_partner.id), "
             "buyer_id(FK→res_partner.id), date_listed, date_sold, days_on_market, "
             "commission_percentage, commission_amount, avm_estimated_price, avm_status. "
             "estate_property_type: id, name. "
