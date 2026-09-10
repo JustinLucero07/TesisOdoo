@@ -15,7 +15,7 @@
         <field name="name">estate.property.tree</field>
         <field name="model">estate.property</field>
         <field name="arch" type="xml">
-            <list string="Propiedades" decoration-muted="state == 'draft'" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'">
+            <list string="Propiedades" multi_edit="1" decoration-muted="state == 'draft'" decoration-success="state == 'available'" decoration-danger="state == 'sold'" decoration-warning="state == 'reserved'">
                 <field name="image_main" widget="image" options="{'size': [150, 150]}" />
                 <field name="name"/>
                 <field name="title"/>
@@ -26,6 +26,12 @@
                 <field name="area" optional="show"/>
                 <field name="land_area" optional="hide"/>
                 <field name="bedrooms"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="hide"
+                       string="Responsable"/>
+                <field name="exclusive_user_id" widget="many2one_avatar_user" optional="hide"
+                       string="Captador"/>
+                <field name="co_capture_user_id" widget="many2one_avatar_user" optional="hide"
+                       string="Co-captador"/>
                 <field name="days_on_market" optional="show"
                        decoration-warning="days_on_market &gt; 60"
                        decoration-danger="days_on_market &gt; 120"/>
@@ -578,7 +584,14 @@
                 <field name="name"/>
                 <field name="city"/>
                 <field name="property_type_id"/>
+                <field name="exclusive_user_id" string="Captador"/>
+                <field name="co_capture_user_id" string="Co-captador"/>
                 <filter name="filter_mine" string="Mis propiedades" domain="[('user_id', '=', uid)]"/>
+                <filter name="filter_captured_by_me" string="Captadas por mí"
+                        domain="[('capture_user_ids', 'in', [uid])]"/>
+                <filter name="filter_no_capturer" string="Sin captador asignado"
+                        domain="[('exclusive_user_id', '=', False)]"
+                        help="Captaciones que quedaron sin asesor porque el campo estaba oculto."/>
                 <separator/>
                 <filter name="filter_available" string="Disponibles" domain="[('state', '=', 'available')]"/>
                 <filter name="filter_reserved" string="Reservadas" domain="[('state', '=', 'reserved')]"/>
