@@ -39,6 +39,7 @@ class Lead {
   final int completedVisitsCount;
   final int lastActivityDays;
   final int leadVelocityDays;
+  final DateTime? createDate;
 
   Lead({
     required this.id,
@@ -76,6 +77,7 @@ class Lead {
     this.completedVisitsCount = 0,
     this.lastActivityDays = 0,
     this.leadVelocityDays = 0,
+    this.createDate,
   });
 
   static const List<String> listFields = [
@@ -89,6 +91,7 @@ class Lead {
     'lead_temperature',
     'stage_id',
     'target_property_id',
+    'create_date',
   ];
 
   static const List<String> detailFields = [
@@ -140,6 +143,12 @@ class Lead {
           ? json['lead_source_id'][0] as int
           : null,
       leadSourceName: many2oneName(json['lead_source_id']),
+      // Odoo manda los datetime en UTC y sin zona: se marcan como tal.
+      createDate: json['create_date'] is String
+          ? DateTime.tryParse(
+              '${(json['create_date'] as String).replaceFirst(' ', 'T')}Z',
+            )?.toLocal()
+          : null,
       clientNeeds: asOdooString(json['client_needs']),
       smartNegotiationTips: asOdooString(json['smart_negotiation_tips']),
       preferredPropertyTypeId: json['preferred_property_type_id'] is List

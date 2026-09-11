@@ -756,6 +756,26 @@ class _LeadListScreenState extends State<LeadListScreen> {
                               ),
                           ],
                         ),
+                        if (lead.createDate != null) ...[
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.event_note_outlined,
+                                size: 13,
+                                color: colors.mutedLight,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Creado el ${DateFormat('d MMM y', 'es_EC').format(lead.createDate!)}',
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: colors.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         const SizedBox(height: 10),
 
                         Row(

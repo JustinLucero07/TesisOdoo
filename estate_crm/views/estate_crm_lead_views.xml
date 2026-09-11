@@ -238,6 +238,10 @@
                         <field name="lead_source_id"/>
                     </span>
                 </div>
+                <div class="text-muted small mt-1">
+                    <i class="fa fa-calendar-o me-1" title="Fecha de creación"/>Creado el
+                    <field name="create_date" widget="date"/>
+                </div>
                 <div t-if="record.match_percentage.raw_value > 0" class="mt-1">
                     <span class="badge rounded-pill text-bg-success" t-if="record.match_percentage.raw_value &gt;= 80">
                         <i class="fa fa-star" title="Match alto"/> Match: <field name="match_percentage"/>%

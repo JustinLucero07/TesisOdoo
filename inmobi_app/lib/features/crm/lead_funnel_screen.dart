@@ -763,6 +763,23 @@ class _FunnelCard extends StatelessWidget {
                   ],
                 ),
               ],
+              if (lead.createDate != null) ...[
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.event_note_outlined,
+                      size: 13,
+                      color: colors.mutedLight,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Creado el ${DateFormat('d MMM y', 'es_EC').format(lead.createDate!)}',
+                      style: TextStyle(fontSize: 12, color: colors.muted),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 9),
               Row(
                 children: [

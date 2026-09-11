@@ -98,33 +98,18 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       _nameCtrl.text =
           'Interesado en ${widget.initialPropertyName ?? 'Propiedad #${widget.initialPropertyId}'}';
     }
-
-    if (widget.existing == null && _leadSource == null) {
-      _loadDefaultSource();
-    }
-  }
-
-  Future<void> _loadDefaultSource() async {
-    try {
-      final rows = await _odoo.searchRead(
-        model: 'estate.crm.lead.source',
-        domain: [],
-        fields: ['id', 'name'],
-        limit: 1,
-      );
-      if (rows.isNotEmpty && mounted && _leadSource == null) {
-        setState(() {
-          _leadSource = Many2oneValue(
-            rows.first['id'] as int,
-            rows.first['name']?.toString() ?? '',
-          );
-        });
-      }
-    } catch (_) {}
   }
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_leadSource == null) {
+      const aviso = 'Elige la fuente del lead: por dónde llegó este cliente.';
+      setState(() => _error = aviso);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text(aviso)));
+      return;
+    }
     setState(() {
       _saving = true;
       _error = null;
@@ -141,21 +126,7 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
       vals['contact_name'] = _partner!.name;
     }
 
-    if (_leadSource != null) {
-      vals['lead_source_id'] = _leadSource!.id;
-    } else {
-      try {
-        final srcs = await _odoo.searchRead(
-          model: 'estate.crm.lead.source',
-          domain: [],
-          fields: ['id', 'name'],
-          limit: 1,
-        );
-        if (srcs.isNotEmpty) {
-          vals['lead_source_id'] = srcs.first['id'] as int;
-        }
-      } catch (_) {}
-    }
+    vals['lead_source_id'] = _leadSource!.id;
 
     if (_odoo.userId != null && _odoo.userId! > 0) {
       vals['user_id'] = _odoo.userId;
@@ -254,6 +225,7 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
               label: 'Fuente del Lead',
               odoo: _odoo,
               model: 'estate.crm.lead.source',
+              required: true,
               value: _leadSource,
               onChanged: (v) => setState(() => _leadSource = v),
             ),
