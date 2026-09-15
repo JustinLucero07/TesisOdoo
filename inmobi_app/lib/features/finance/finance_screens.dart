@@ -17,6 +17,79 @@ NumberFormat get _currency =>
     NumberFormat.currency(locale: 'es_EC', symbol: '\$', decimalDigits: 0);
 DateFormat get _dateFmt => DateFormat('d MMM y', 'es_EC');
 
+/// Los roles de un mismo negocio (captación, recepción, visita, cierre) se
+/// juntan en una sola tarjeta: al asesor le interesa cuánto gana por propiedad,
+/// no cuánto le toca de cada paso por separado.
+class CommissionGroup {
+  final List<Commission> parts;
+  const CommissionGroup(this.parts);
+
+  Commission get first => parts.first;
+  int? get propertyId => first.propertyId;
+  String get title =>
+      first.propertyName.isNotEmpty ? first.propertyName : first.reference;
+  String get userName => first.userName;
+  String get type => first.type;
+  double get dealTotal => first.dealTotalAmount;
+  double get saleAmount => first.saleAmount;
+
+  bool get isSplit => parts.length > 1;
+  double get total => parts.fold(0.0, (s, c) => s + c.amount);
+  double get paid =>
+      parts.where((c) => c.state == 'paid').fold(0.0, (s, c) => s + c.amount);
+  double get pending => parts
+      .where((c) => c.state == 'approved' || c.state == 'draft')
+      .fold(0.0, (s, c) => s + c.amount);
+  double get rolePct => parts.fold(0.0, (s, c) => s + c.rolePct);
+
+  DateTime? get date {
+    DateTime? ultima;
+    for (final c in parts) {
+      final d = c.date;
+      if (d == null) continue;
+      if (ultima == null || d.isAfter(ultima)) ultima = d;
+    }
+    return ultima;
+  }
+
+  bool get mixedState => parts.map((c) => c.state).toSet().length > 1;
+
+  /// Con estados mezclados manda lo que todavía está sin cobrar.
+  String get state {
+    final estados = parts.map((c) => c.state).toSet();
+    if (estados.length == 1) return estados.first;
+    if (estados.contains('draft')) return 'draft';
+    if (estados.contains('approved')) return 'approved';
+    return estados.first;
+  }
+}
+
+/// Junta las comisiones por negocio conservando el orden de llegada.
+List<CommissionGroup> _agruparPorNegocio(List<Commission> items) {
+  final porNegocio = <String, List<Commission>>{};
+  final orden = <String>[];
+  for (final c in items) {
+    // Las partes de un reparto comparten el total del negocio; una comisión
+    // suelta (sin reparto) va en su propio grupo.
+    final clave = c.parentCommissionId != null
+        ? 'n${c.parentCommissionId}'
+        : 'c${c.id}';
+    if (!porNegocio.containsKey(clave)) {
+      porNegocio[clave] = <Commission>[];
+      orden.add(clave);
+    }
+    porNegocio[clave]!.add(c);
+  }
+  // Dentro de cada negocio, los pasos en el orden en que ocurren.
+  for (final partes in porNegocio.values) {
+    partes.sort(
+      (a, b) =>
+          Commission.roleOrder(a.role).compareTo(Commission.roleOrder(b.role)),
+    );
+  }
+  return [for (final k in orden) CommissionGroup(porNegocio[k]!)];
+}
+
 class CommissionListScreen extends StatelessWidget {
   final bool onlyMine;
   const CommissionListScreen({super.key, this.onlyMine = true});
@@ -24,7 +97,7 @@ class CommissionListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final odoo = context.read<AuthService>().odoo;
-    return RecordListScaffold<Commission>(
+    return RecordListScaffold<CommissionGroup>(
       title: onlyMine ? 'Mis comisiones' : 'Comisiones',
       errorMessage: 'No se pudieron cargar las comisiones.',
       emptyMessage: 'No hay comisiones registradas.',
@@ -38,8 +111,9 @@ class CommissionListScreen extends StatelessWidget {
       load: (filter) async {
         final domain = <dynamic>[];
         if (filter != null) domain.add(['state', '=', filter]);
-        if (onlyMine && odoo.uid != null)
+        if (onlyMine && odoo.uid != null) {
           domain.add(['user_id', '=', odoo.uid]);
+        }
         // Solo el total de un negocio YA repartido no es de nadie; las
         // comisiones sueltas sí son del asesor y deben verse.
         domain.add(['state', '!=', 'split']);
@@ -52,29 +126,25 @@ class CommissionListScreen extends StatelessWidget {
               : 'user_id, date desc, id desc',
           limit: 200,
         );
-        return rows.map(Commission.fromJson).toList();
+        return _agruparPorNegocio(rows.map(Commission.fromJson).toList());
       },
-      summaryBuilder: (items) {
-        if (items.isEmpty) return null;
-        final paid = items
-            .where((c) => c.state == 'paid')
-            .fold<double>(0, (s, c) => s + c.amount);
-        final pending = items
-            .where((c) => c.state == 'approved' || c.state == 'draft')
-            .fold<double>(0, (s, c) => s + c.amount);
+      summaryBuilder: (grupos) {
+        if (grupos.isEmpty) return null;
+        final cobrado = grupos.fold<double>(0, (s, g) => s + g.paid);
+        final porCobrar = grupos.fold<double>(0, (s, g) => s + g.pending);
         return TotalsBar(
           entries: [
-            ('Cobrado', _currency.format(paid)),
-            ('Por cobrar', _currency.format(pending)),
+            ('Cobrado', _currency.format(cobrado)),
+            ('Por cobrar', _currency.format(porCobrar)),
             if (onlyMine)
-              ('Registros', '${items.length}')
+              ('Total', _currency.format(cobrado + porCobrar))
             else
-              ('Asesores', '${items.map((c) => c.userName).toSet().length}'),
+              ('Asesores', '${grupos.map((g) => g.userName).toSet().length}'),
           ],
         );
       },
-      groupBy: onlyMine ? null : (c) => c.userName,
-      itemBuilder: (context, c) {
+      groupBy: onlyMine ? null : (g) => g.userName,
+      itemBuilder: (context, g) {
         final p = AppColors.of(context);
         return Card(
           child: Padding(
@@ -86,24 +156,24 @@ class CommissionListScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _EntityLink(
-                        label: c.propertyName.isNotEmpty
-                            ? c.propertyName
-                            : c.reference,
+                        label: g.title,
                         style: AppType.heading.copyWith(color: p.ink),
-                        onTap: c.propertyId == null
+                        onTap: g.propertyId == null
                             ? null
                             : () => Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) => PropertyDetailScreen(
-                                    propertyId: c.propertyId!,
+                                    propertyId: g.propertyId!,
                                   ),
                                 ),
                               ),
                       ),
                     ),
                     AppBadge(
-                      label: Commission.stateLabel(c.state),
-                      color: Commission.stateColor(c.state, p),
+                      label: g.mixedState
+                          ? 'Parcial'
+                          : Commission.stateLabel(g.state),
+                      color: Commission.stateColor(g.state, p),
                     ),
                   ],
                 ),
@@ -116,19 +186,18 @@ class CommissionListScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            // En un reparto por roles importa el % del rol y
-                            // sobre qué total se calculó, no el % sobre la venta.
-                            c.rolePct > 0
-                                ? '${c.rolePct.toStringAsFixed(0)}% de '
-                                      '${_currency.format(c.dealTotalAmount)}'
-                                : 'Comisión ${c.commissionPct.toStringAsFixed(1)}%',
+                            g.rolePct > 0
+                                ? '${g.rolePct.toStringAsFixed(0)}% de '
+                                      '${_currency.format(g.dealTotal)}'
+                                : 'Comisión '
+                                      '${g.first.commissionPct.toStringAsFixed(1)}%',
                             style: AppType.caption.copyWith(
                               color: p.mutedLight,
                             ),
                           ),
                           const SizedBox(height: 1),
                           Text(
-                            _currency.format(c.amount),
+                            _currency.format(g.total),
                             style: AppType.numeric.copyWith(
                               fontSize: 20,
                               color: p.navy,
@@ -141,31 +210,85 @@ class CommissionListScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          'Sobre ${_currency.format(c.saleAmount)}',
+                          'Sobre ${_currency.format(g.saleAmount)}',
                           style: AppType.caption.copyWith(color: p.mutedLight),
                         ),
-                        if (c.date != null)
+                        if (g.date != null)
                           Text(
-                            _dateFmt.format(c.date!),
+                            _dateFmt.format(g.date!),
                             style: AppType.caption.copyWith(color: p.muted),
                           ),
                       ],
                     ),
                   ],
                 ),
+                if (g.isSplit) ...[
+                  const SizedBox(height: AppSpace.sm),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: p.neutralBg,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: [
+                        for (final c in g.parts)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Commission.roleIcon(c.role),
+                                  size: 14,
+                                  color: p.mutedLight,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    c.roleBadge.isNotEmpty
+                                        ? c.roleBadge
+                                        : Commission.typeLabel(c.type),
+                                    style: AppType.caption.copyWith(
+                                      color: p.muted,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  _currency.format(c.amount),
+                                  style: AppType.caption.copyWith(
+                                    color: p.ink,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  Commission.stateLabel(c.state),
+                                  style: AppType.caption.copyWith(
+                                    fontSize: 10,
+                                    color: Commission.stateColor(c.state, p),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppSpace.sm),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    if (c.roleBadge.isNotEmpty)
-                      AppBadge(label: c.roleBadge, color: p.navy),
                     AppBadge(
-                      label: Commission.typeLabel(c.type),
+                      label: Commission.typeLabel(g.type),
                       color: p.mutedLight,
                     ),
-                    if (!onlyMine && c.userName.isNotEmpty)
-                      AppBadge(label: c.userName, color: p.navyLight),
+                    if (!onlyMine && g.userName.isNotEmpty)
+                      AppBadge(label: g.userName, color: p.navyLight),
                   ],
                 ),
               ],

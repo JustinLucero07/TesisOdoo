@@ -16,6 +16,10 @@ class Commission {
   final String type;
   final String role;
   final double rolePct;
+
+  /// Comisión total del negocio de la que salió esta parte. Es la clave
+  /// para juntar en una sola tarjeta los roles de una misma propiedad.
+  final int? parentCommissionId;
   final double dealTotalAmount;
   final String state;
   final DateTime? date;
@@ -34,6 +38,7 @@ class Commission {
     this.type = 'sale',
     this.role = '',
     this.rolePct = 0,
+    this.parentCommissionId,
     this.dealTotalAmount = 0,
     this.state = 'draft',
     this.date,
@@ -51,6 +56,7 @@ class Commission {
     'type',
     'role',
     'role_pct',
+    'parent_commission_id',
     'deal_total_amount',
     'state',
     'date',
@@ -70,6 +76,9 @@ class Commission {
     type: asOdooString(j['type'], 'sale'),
     role: asOdooString(j['role']),
     rolePct: asOdooDouble(j['role_pct']),
+    parentCommissionId: j['parent_commission_id'] is List
+        ? j['parent_commission_id'][0] as int
+        : null,
     dealTotalAmount: asOdooDouble(j['deal_total_amount']),
     state: asOdooString(j['state'], 'draft'),
     date: j['date'] is String ? DateTime.tryParse(j['date']) : null,
@@ -95,6 +104,16 @@ class Commission {
     'closing' => 'Cierre',
     'other' => 'Otro',
     _ => '',
+  };
+
+  /// Orden en que ocurren los pasos del negocio, para listarlos como pasan.
+  static int roleOrder(String r) => switch (r) {
+    'capture' => 1,
+    'reception' => 2,
+    'visit' => 3,
+    'closing' => 4,
+    'all' => 5,
+    _ => 9,
   };
 
   static IconData roleIcon(String r) => switch (r) {
