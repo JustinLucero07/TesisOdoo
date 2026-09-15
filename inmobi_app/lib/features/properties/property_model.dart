@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/api/odoo_json.dart';
 import '../../core/config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/html_text.dart';
 
 class Property {
   final int id;
@@ -30,6 +31,9 @@ class Property {
   final int? propertyTypeId;
   final String propertyTypeName;
   final String description;
+
+  /// HTML tal cual lo guarda Odoo, para poder pintar negritas y viñetas.
+  final String descriptionHtml;
   final bool isExclusive;
   final int? ownerId;
   final String ownerName;
@@ -80,6 +84,7 @@ class Property {
     this.propertyTypeId,
     required this.propertyTypeName,
     this.description = '',
+    this.descriptionHtml = '',
     this.isExclusive = false,
     this.ownerId,
     this.ownerName = '',
@@ -190,10 +195,10 @@ class Property {
           : null,
       propertyTypeName: many2oneName(json['property_type_id']),
 
-      description: asOdooString(json['description'])
-          .replaceAll(RegExp(r'<[^>]*>'), ' ')
-          .replaceAll(RegExp(r'\s+'), ' ')
-          .trim(),
+      descriptionHtml: asOdooString(json['description']),
+      // Quitar las etiquetas a secas dejaba un bloque corrido: ahora se
+      // respetan párrafos y viñetas.
+      description: HtmlText.toPlain(asOdooString(json['description'])),
       isExclusive: json['is_exclusive'] == true,
       ownerId: json['owner_id'] is List ? json['owner_id'][0] as int : null,
       ownerName: many2oneName(json['owner_id']),

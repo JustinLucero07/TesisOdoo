@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/html_text.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/expandable_section.dart';
@@ -949,13 +951,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 const SizedBox(height: 8),
                 ExpandableSection(
                   title: 'Descripción',
-                  child: Text(
-                    p.description,
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      height: 1.5,
-                      color: colors.ink,
-                    ),
+                  child: _DescriptionBody(
+                    html: p.descriptionHtml.isNotEmpty
+                        ? p.descriptionHtml
+                        : p.description,
+                    plain: p.description,
                   ),
                 ),
               ],
@@ -1631,6 +1631,64 @@ class _CaptureSheetSection extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Descripción con el formato que trae de Odoo y un botón para copiarla.
+class _DescriptionBody extends StatelessWidget {
+  final String html;
+  final String plain;
+
+  const _DescriptionBody({required this.html, required this.plain});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final runs = HtmlText.toRuns(html);
+    final estilo = TextStyle(fontSize: 13.5, height: 1.5, color: colors.ink);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: plain));
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Descripción copiada al portapapeles.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy_rounded, size: 16),
+            label: const Text('Copiar', style: TextStyle(fontSize: 12.5)),
+          ),
+        ),
+        SelectionArea(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                for (final r in runs)
+                  TextSpan(
+                    text: r.text,
+                    style: r.bold
+                        ? const TextStyle(fontWeight: FontWeight.w700)
+                        : null,
+                  ),
+              ],
+            ),
+            style: estilo,
+          ),
+        ),
+      ],
     );
   }
 }
