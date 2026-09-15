@@ -1060,7 +1060,7 @@ class EstateProperty(models.Model):
         for prop in self:
             if prop.state in ('sold', 'rented'):
                 raise UserError('No se puede retirar una propiedad que ya fue vendida o arrendada. Usa "Anular Venta" si ocurrió un error.')
-            if hasattr(prop, 'action_unpublish_wordpress') and getattr(prop, 'wp_published', False):
+            if hasattr(prop, 'action_unpublish_wordpress') and (getattr(prop, 'wp_published', False) or getattr(prop, 'wp_post_id', False)):
                 try:
                     prop.action_unpublish_wordpress()
                 except Exception as e:
@@ -1225,7 +1225,7 @@ class EstateProperty(models.Model):
             raise UserError('Solo se puede marcar como Vendida una propiedad Disponible o Reservada.')
 
         # Despublicar de WordPress antes de cambiar el estado
-        if self.wp_published and self.wp_post_id and hasattr(self, 'action_unpublish_wordpress'):
+        if (self.wp_published or self.wp_post_id) and hasattr(self, 'action_unpublish_wordpress'):
             try:
                 self.action_unpublish_wordpress()
             except Exception as e:
@@ -1247,7 +1247,7 @@ class EstateProperty(models.Model):
         if not self.rental_price:
             raise UserError('Debes ingresar el Canon Mensual de Arriendo antes de continuar.')
 
-        if self.wp_published and self.wp_post_id and hasattr(self, 'action_unpublish_wordpress'):
+        if (self.wp_published or self.wp_post_id) and hasattr(self, 'action_unpublish_wordpress'):
             try:
                 self.action_unpublish_wordpress()
             except Exception as e:
@@ -1501,7 +1501,7 @@ class EstateProperty(models.Model):
                 _logger.warning("No se pudo auto-registrar pago al contado en factura directa: %s", e_pay)
 
         # Despublicar de WordPress al concretar la venta (igual que action_set_sold)
-        if self.wp_published and self.wp_post_id and hasattr(self, 'action_unpublish_wordpress'):
+        if (self.wp_published or self.wp_post_id) and hasattr(self, 'action_unpublish_wordpress'):
             try:
                 self.action_unpublish_wordpress()
             except Exception as e:

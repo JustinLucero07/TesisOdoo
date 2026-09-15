@@ -110,21 +110,42 @@
             <field name="arch" type="xml">
                 <!-- Botones WordPress en el header (antes del campo de estado) -->
                 <xpath expr="//header/field[@name='state']" position="before">
+                    <field name="wp_sync_state" invisible="1"/>
                     <button name="action_publish_wordpress" string="Publicar en Web" type="object"
                             class="btn-success" icon="fa-wordpress"
-                            invisible="wp_published or state == 'draft'"/>
+                            invisible="wp_published or state in ('draft', 'sold', 'rented', 'cancelled') or wp_sync_state == 'syncing'"/>
+                    <button string="⏳ Publicando en Web..." type="object" name="action_publish_wordpress"
+                            class="btn-secondary" icon="fa-spinner fa-spin"
+                            invisible="wp_sync_state != 'syncing'"/>
                     <button name="action_unpublish_wordpress" string="Quitar de Web" type="object"
                             class="btn-secondary" icon="fa-wordpress"
-                            invisible="not wp_published"
+                            invisible="not wp_published or wp_sync_state == 'syncing'"
                             confirm="¿Quitar esta propiedad del sitio web WordPress? En Odoo se conserva."/>
+                    <button name="action_unpublish_wordpress" string="Purgar de Web" type="object"
+                            class="btn-danger" icon="fa-trash-o"
+                            invisible="wp_published or state not in ('sold', 'rented', 'cancelled') or wp_sync_state == 'syncing'"
+                            help="Busca y elimina cualquier post duplicado o huérfano de esta propiedad en el sitio web."
+                            confirm="¿Buscar y eliminar cualquier publicación huérfana de esta propiedad en el sitio web WordPress?"/>
                     <button name="action_relink_wordpress" string="Re-enlazar WP" type="object"
                             class="btn-warning" icon="fa-link"
-                            invisible="not wp_unlinked or wp_post_id_backup == 0"/>
+                            invisible="not wp_unlinked or wp_post_id_backup == 0 or wp_sync_state == 'syncing'"/>
                 </xpath>
 
                 <!-- Pestaña WordPress -->
                 <xpath expr="//page[@name='wordpress']" position="replace">
                     <page string="WordPress" name="wordpress">
+                        <div class="alert alert-info mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;"
+                             invisible="wp_sync_state != 'syncing'">
+                            <i class="fa fa-spinner fa-spin" title="Publicando"/> <strong>Publicación en proceso...</strong>
+                            — Se están subiendo imágenes y datos a WordPress en segundo plano. El botón se actualizará en unos segundos.
+                        </div>
+                        <div class="alert alert-danger mb-2 py-2 px-3" role="alert"
+                             style="border-radius:8px; font-size:0.88em;"
+                             invisible="wp_sync_state != 'error'">
+                            <i class="fa fa-exclamation-triangle" title="Error"/> <strong>Error de sincronización</strong>
+                            — Hubo un problema al subir a WordPress. Puedes intentar publicar nuevamente o revisar la conexión en Ajustes.
+                        </div>
                         <div class="alert alert-success mb-2 py-2 px-3" role="alert"
                              style="border-radius:8px; font-size:0.88em;"
                              invisible="wp_published != True">
@@ -139,12 +160,18 @@
                         </div>
                         <div class="alert alert-secondary mb-2 py-2 px-3" role="alert"
                              style="border-radius:8px; font-size:0.88em;"
-                             invisible="wp_published == True or wp_unlinked == True">
-                            <i class="fa fa-globe" title="Sin publicar"/> <strong>Sin publicar</strong> — Usa el botón "Publicar en WP" del header.
+                             invisible="wp_published == True or wp_unlinked == True or wp_sync_state == 'syncing'">
+                            <i class="fa fa-globe" title="Sin publicar"/> <strong>Sin publicar</strong> — Usa el botón "Publicar en Web" del header.
                         </div>
                         <group>
-                            <field name="wp_published" readonly="1"/>
-                            <field name="wp_post_id" readonly="1"/>
+                            <group>
+                                <field name="wp_published" readonly="1"/>
+                                <field name="wp_post_id" readonly="1"/>
+                            </group>
+                            <group>
+                                <field name="wp_sync_state" readonly="1"/>
+                                <field name="wp_needs_sync" readonly="1"/>
+                            </group>
                         </group>
                     </page>
                 </xpath>

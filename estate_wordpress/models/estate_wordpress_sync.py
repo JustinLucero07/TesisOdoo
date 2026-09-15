@@ -97,12 +97,34 @@ class EstatePropertyWordPress(models.Model):
         help='Se marca cuando una propiedad ya publicada cambia en campos relevantes. '
              'La tarea de re-sincronización la vuelve a publicar y limpia la marca.')
 
+    wp_sync_state = fields.Selection([
+        ('idle', 'No publicado'),
+        ('syncing', 'Publicando...'),
+        ('done', 'Publicado'),
+        ('error', 'Error'),
+    ], string='Estado Sincronización Web', default='idle', copy=False)
+
     def write(self, vals):
         res = super().write(vals)
-        # Marca para re-sincronizar si cambian campos relevantes de una propiedad
-        # ya publicada. El guard 'no_wp_sync' evita marcar durante la propia sync.
-        if not self.env.context.get('no_wp_sync') and _WP_TRACKED_FIELDS.intersection(vals):
-            published = self.filtered(lambda p: p.wp_published and not p.wp_needs_sync)
+        if self.env.context.get('no_wp_sync'):
+            return res
+
+        # 1. Si el estado cambia a no publicable (sold, rented, cancelled) o se archiva (active=False)
+        new_state = vals.get('state')
+        is_inactive = vals.get('active') is False
+        if (new_state in ('sold', 'rented', 'cancelled')) or is_inactive:
+            to_unpublish = self.filtered(lambda p: p.wp_published or p.wp_post_id)
+            for prop in to_unpublish:
+                try:
+                    prop._wp_unpublish_now()
+                except Exception as e:
+                    _logger.warning("Auto-unpublish en write() falló para propiedad %s: %s", prop.id, e)
+
+        # 2. Si cambian campos relevantes en propiedades publicadas que continúan en venta/reserva
+        elif _WP_TRACKED_FIELDS.intersection(vals):
+            published = self.filtered(
+                lambda p: p.wp_published and not p.wp_needs_sync and p.state in ('available', 'reserved') and p.active
+            )
             if published:
                 published.with_context(no_wp_sync=True).write({'wp_needs_sync': True})
         return res
@@ -132,8 +154,12 @@ class EstatePropertyWordPress(models.Model):
         ICP = self.env['ir.config_parameter'].sudo()
         if ICP.get_param('estate_wp.auto_resync', 'False') != 'True':
             return
-        props = self.search(
-            [('wp_published', '=', True), ('wp_needs_sync', '=', True)], limit=20)
+        props = self.search([
+            ('wp_published', '=', True),
+            ('wp_needs_sync', '=', True),
+            ('state', 'in', ('available', 'reserved')),
+            ('active', '=', True),
+        ], limit=20)
         for prop in props:
             try:
                 prop._wp_sync_now()
@@ -143,6 +169,56 @@ class EstatePropertyWordPress(models.Model):
                 _logger.error("Cron re-sync WP falló para propiedad %s: %s", prop.id, e)
         if props:
             _logger.info("Cron re-sync WP: %d propiedad(es) procesadas.", len(props))
+
+    @api.model
+    def _cron_unpublish_sold_properties(self):
+        """Verifica y despublica automáticamente de WordPress todas las propiedades
+        que se encuentren vendidas, arrendadas, canceladas o archivadas pero sigan
+        publicadas o con posts huérfanos en WordPress."""
+        cfg = self._get_wp_config()
+        if cfg['active'] != 'True' or not cfg['url']:
+            return
+
+        # 1. Propiedades con bandera activa en Odoo
+        props_with_flag = self.sudo().with_context(active_test=False).search([
+            '|',
+            ('state', 'in', ('sold', 'rented', 'cancelled')),
+            ('active', '=', False),
+            '|',
+            ('wp_published', '=', True),
+            ('wp_post_id', '!=', 0),
+        ])
+
+        # 2. Propiedades vendidas o retiradas recientes para chequear que no haya quedado post huérfano en WP
+        sold_props = self.sudo().with_context(active_test=False).search([
+            ('state', 'in', ('sold', 'rented', 'cancelled')),
+        ], limit=50)
+
+        all_props = props_with_flag | sold_props
+        if not all_props:
+            return
+
+        _logger.info("Cron WP Cleanup: Verificando %d propiedad(es) vendidas/no activas.", len(all_props))
+        count = 0
+        for prop in all_props:
+            try:
+                if prop.wp_published or prop.wp_post_id:
+                    if prop._wp_unpublish_now():
+                        count += 1
+                else:
+                    # Si no tiene bandera en Odoo, chequear si aún existe post huérfano en WP con este código
+                    remote_ids = prop._wp_find_posts_by_reference(cfg)
+                    if remote_ids:
+                        _logger.info("Cron WP Cleanup: Encontrados posts huérfanos %s para propiedad %s (%s). Purgando...", remote_ids, prop.id, prop.name)
+                        if prop._wp_unpublish_now():
+                            count += 1
+                self.env.cr.commit()
+            except Exception as e:
+                self.env.cr.rollback()
+                _logger.error("Cron WP Cleanup: Error verificando propiedad %s: %s", prop.id, e)
+
+        if count:
+            _logger.info("Cron WP Cleanup completado: %d propiedad(es) purgadas de WordPress.", count)
 
     def _get_wp_config(self):
         """Get WordPress configuration."""
@@ -478,6 +554,21 @@ class EstatePropertyWordPress(models.Model):
         headers = dict(cfg['headers'])
         headers['Content-Type'] = 'application/json'
 
+        # Prevención de duplicados: Si no tenemos wp_post_id asignado en Odoo, buscar si ya existe
+        # un post en WordPress con este código de propiedad (ej. PROP-0137) para no crear uno nuevo.
+        if not self.wp_post_id:
+            existing_ids = self._wp_find_posts_by_reference(cfg)
+            if existing_ids:
+                self.wp_post_id = existing_ids[0]
+                _logger.info("Propiedad %s encontrada en WP con Post ID %s. Se reutiliza para evitar duplicado.", self.name, self.wp_post_id)
+                # Si existían múltiples posts duplicados previos en WP, purgamos los demás
+                for dup_id in existing_ids[1:]:
+                    try:
+                        requests.delete(f"{api_url}/{dup_id}?force=true", auth=cfg['auth'], headers=headers, timeout=20)
+                        _logger.info("Post duplicado previo %s eliminado en WP.", dup_id)
+                    except Exception as e_dup:
+                        _logger.warning("No se pudo eliminar post duplicado %s: %s", dup_id, e_dup)
+
         response = None
         if self.wp_post_id:
             response = requests.post(
@@ -496,6 +587,52 @@ class EstatePropertyWordPress(models.Model):
         else:
             _logger.error(f"WP create/update error: {response.text[:500]}")
             return 0
+
+    def _wp_find_posts_by_reference(self, cfg, prop_name=None):
+        """Busca en WordPress todos los posts asociados a esta propiedad por su código (ej. PROP-0137) o título."""
+        ref = prop_name or self.name
+        if not ref or cfg['active'] != 'True' or not cfg['url']:
+            return []
+
+        post_type = cfg['post_type']
+        found_post_ids = []
+        headers = dict(cfg['headers'])
+
+        # 1. Buscar por código de referencia en REST API
+        try:
+            url = f"{cfg['url']}/wp-json/wp/v2/{post_type}"
+            resp = requests.get(
+                url, params={'search': ref, 'per_page': 20, 'context': 'edit'},
+                auth=cfg['auth'], headers=headers, timeout=20
+            )
+            if resp.status_code == 200:
+                posts = resp.json() or []
+                for p in posts:
+                    p_id = p.get('id')
+                    if p_id and p_id not in found_post_ids:
+                        found_post_ids.append(p_id)
+        except Exception as e:
+            _logger.warning("Error buscando post por referencia '%s' en WP: %s", ref, e)
+
+        # 2. Si no encontró por código y tenemos título, buscar por título
+        if not found_post_ids and self.title:
+            try:
+                url = f"{cfg['url']}/wp-json/wp/v2/{post_type}"
+                resp = requests.get(
+                    url, params={'search': self.title, 'per_page': 10, 'context': 'edit'},
+                    auth=cfg['auth'], headers=headers, timeout=20
+                )
+                if resp.status_code == 200:
+                    posts = resp.json() or []
+                    for p in posts:
+                        p_id = p.get('id')
+                        t = (p.get('title', {}).get('raw') or p.get('title', {}).get('rendered') or '').strip().lower()
+                        if p_id and (t == self.title.strip().lower() or ref.lower() in t) and p_id not in found_post_ids:
+                            found_post_ids.append(p_id)
+            except Exception as e:
+                _logger.warning("Error buscando post por título '%s' en WP: %s", self.title, e)
+
+        return found_post_ids
 
     # -------------------------------------------------------------------------
     # STEP 2: Save meta via custom endpoint
@@ -603,6 +740,8 @@ class EstatePropertyWordPress(models.Model):
                         prop._auto_geocode_from_address()
                     cfg = prop._get_wp_config()
                     if cfg['active'] != 'True' or not cfg['url']:
+                        prop.with_context(no_wp_sync=True).write({'wp_sync_state': 'idle'})
+                        cr.commit()
                         return
                     featured_id, gallery_ids = prop._wp_upload_all_images(cfg)
                     wp_id = prop._wp_create_or_update_post(cfg, featured_id)
@@ -610,12 +749,27 @@ class EstatePropertyWordPress(models.Model):
                         meta = prop._build_houzez_meta(cfg, featured_id, gallery_ids)
                         prop._wp_save_meta(cfg, wp_id, meta)
                         prop._wp_set_taxonomies(cfg, wp_id)
-                        prop.with_context(no_wp_sync=True).write(
-                            {'wp_post_id': wp_id, 'wp_published': True, 'wp_needs_sync': False})
+                        prop.with_context(no_wp_sync=True).write({
+                            'wp_post_id': wp_id,
+                            'wp_published': True,
+                            'wp_sync_state': 'done',
+                            'wp_needs_sync': False,
+                        })
+                    else:
+                        prop.with_context(no_wp_sync=True).write({'wp_sync_state': 'error'})
                     cr.commit()
                     _logger.info("WP sync en fondo completado: propiedad=%s post_id=%s", prop_id, wp_id)
             except Exception as e:
                 _logger.error("WP sync en fondo falló: propiedad=%s error=%s", prop_id, e, exc_info=True)
+                try:
+                    with Registry(dbname).cursor() as cr_err:
+                        env_err = api.Environment(cr_err, uid, {'no_wp_sync': True, 'active_test': False})
+                        prop_err = env_err['estate.property'].browse(prop_id)
+                        if prop_err.exists():
+                            prop_err.with_context(no_wp_sync=True).write({'wp_sync_state': 'error'})
+                            cr_err.commit()
+                except Exception:
+                    pass
 
         t = threading.Thread(target=_do_sync, daemon=True)
         t.start()
@@ -626,8 +780,12 @@ class EstatePropertyWordPress(models.Model):
     def action_publish_wordpress(self):
         """Publica/actualiza la propiedad en WordPress en segundo plano (no bloquea)."""
         self.ensure_one()
-        cfg = self._get_wp_config()
+        if self.wp_sync_state == 'syncing':
+            return self._show_notification(
+                '⏳ Publicación en curso',
+                f'La propiedad "{self.title or self.name}" ya se está subiendo a WordPress. Espera unos segundos a que termine.')
 
+        cfg = self._get_wp_config()
         if cfg['active'] != 'True':
             return self._show_notification(
                 'Integración desactivada', 'Activar en Ajustes → WordPress')
@@ -635,46 +793,88 @@ class EstatePropertyWordPress(models.Model):
             return self._show_notification(
                 'Configuración incompleta', 'Falta la URL de WordPress.')
 
+        # Marcar inmediatamente wp_sync_state = 'syncing' para bloquear el botón y dar feedback en UI
+        self.with_context(no_wp_sync=True).write({'wp_sync_state': 'syncing'})
+        self.env.cr.commit()
+
         self._trigger_wp_sync_async()
         return self._show_notification(
             '⏳ Subiendo a WordPress en segundo plano',
             f'La propiedad "{self.title or self.name}" se está publicando. '
-            'En unos segundos el estado se actualizará automáticamente.'
+            'En unos segundos el botón cambiará a "Quitar de Web".'
         )
 
     # -------------------------------------------------------------------------
-    # UNPUBLISH
+    # UNPUBLISH & PURGE
     # -------------------------------------------------------------------------
-    def action_unpublish_wordpress(self):
+    def _wp_unpublish_now(self):
+        """Despublica / elimina la propiedad y cualquier duplicado de WordPress de forma síncrona.
+        Retorna True si fue eliminada de WP o ya no existe allí, False si hubo error."""
         self.ensure_one()
         cfg = self._get_wp_config()
+
+        if cfg['active'] != 'True' or not cfg['url']:
+            # Si no está activa la integración o no hay URL, limpiamos las marcas locales
+            self.with_context(no_wp_sync=True).write({
+                'wp_published': False,
+                'wp_sync_state': 'idle',
+                'wp_needs_sync': False,
+            })
+            return True
+
+        headers = dict(cfg['headers'])
+        headers['Content-Type'] = 'application/json'
+        success = True
+
+        # 1. Eliminar por Post ID actual asignado en Odoo
         if self.wp_post_id:
             try:
-                # WP requires ?force=true to delete custom post types that don't support Trash.
                 api_url = f"{cfg['url']}/wp-json/wp/v2/{cfg['post_type']}/{self.wp_post_id}?force=true"
-                headers = dict(cfg['headers'])
-                headers['Content-Type'] = 'application/json'
-                
-                response = requests.delete(
-                    api_url, auth=cfg['auth'], headers=headers, timeout=30)
-                    
-                if response.status_code in (200, 204):
-                    self.write({'wp_post_id': 0, 'wp_published': False})
-                    return self._show_notification('Eliminado de WordPress', 'La propiedad fue borrada exitosamente.')
-                elif response.status_code == 404:
-                    # If it's already gone from WP, just clear it locally.
-                    self.write({'wp_post_id': 0, 'wp_published': False})
-                    return self._show_notification('Sincronizado', 'La propiedad ya había sido eliminada en WordPress, se desenlazó en Odoo.')
+                response = requests.delete(api_url, auth=cfg['auth'], headers=headers, timeout=30)
+                if response.status_code not in (200, 204, 404):
+                    _logger.error(
+                        "Error al eliminar propiedad %s en WordPress (Post ID %s). Código %s: %s",
+                        self.id, self.wp_post_id, response.status_code, response.text[:200]
+                    )
+                    success = False
                 else:
-                    error_msg = f"No se pudo eliminar en WP. Código {response.status_code}: {response.text[:100]}"
-                    _logger.error(error_msg)
-                    return self._show_notification('Error al Eliminar', error_msg)
+                    _logger.info("Post ID %s de propiedad %s eliminado en WordPress.", self.wp_post_id, self.name)
             except Exception as e:
-                _logger.error(f"WordPress unpublish error: {str(e)}")
-                return self._show_notification('Error de conexión', str(e))
+                _logger.error("Excepción al despublicar de WordPress propiedad %s: %s", self.id, e)
+                success = False
+
+        # 2. Buscar y purgar cualquier post huérfano o duplicado en WordPress con esta referencia (ej: PROP-0137)
+        try:
+            orphan_ids = self._wp_find_posts_by_reference(cfg)
+            for orphan_id in orphan_ids:
+                if orphan_id != self.wp_post_id:
+                    try:
+                        del_url = f"{cfg['url']}/wp-json/wp/v2/{cfg['post_type']}/{orphan_id}?force=true"
+                        del_resp = requests.delete(del_url, auth=cfg['auth'], headers=headers, timeout=20)
+                        _logger.info("Post huérfano/duplicado %s (%s) eliminado de WordPress (Status %s).", orphan_id, self.name, del_resp.status_code)
+                    except Exception as e_del:
+                        _logger.warning("No se pudo eliminar post huérfano %s: %s", orphan_id, e_del)
+        except Exception as e_search:
+            _logger.warning("Error buscando duplicados huérfanos para %s: %s", self.name, e_search)
+
+        if success:
+            self.with_context(no_wp_sync=True).write({
+                'wp_post_id': 0,
+                'wp_published': False,
+                'wp_sync_state': 'idle',
+                'wp_needs_sync': False,
+            })
+            _logger.info("Propiedad %s despublicada y limpiada exitosamente de WordPress.", self.id)
+            return True
+        return False
+
+    def action_unpublish_wordpress(self):
+        self.ensure_one()
+        success = self._wp_unpublish_now()
+        if success:
+            return self._show_notification('Eliminado de WordPress', 'La propiedad fue borrada exitosamente de la web.')
         else:
-            self.write({'wp_published': False})
-            return self._show_notification('Acción completada', 'Se marcó como no publicado localmente (no existía en WP).')
+            return self._show_notification('Error al Eliminar', 'No se pudo eliminar de WordPress en este momento. La tarea programada lo reintentará automáticamente.')
 
     def _show_notification(self, title, message):
         return {

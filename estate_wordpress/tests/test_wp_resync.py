@@ -36,3 +36,21 @@ class TestWpResync(TransactionCase):
         self.env['ir.config_parameter'].sudo().set_param('estate_wp.auto_resync', 'False')
         # No debe fallar ni sincronizar nada cuando el toggle está apagado.
         self.env['estate.property']._cron_wp_resync()
+
+    def test_unpublish_al_marcar_vendida(self):
+        self.prop.with_context(no_wp_sync=True).write({'wp_published': True, 'wp_post_id': 0})
+        self.prop.write({'state': 'sold'})
+        self.assertFalse(self.prop.wp_published,
+                         "Al marcar como vendida debe despublicarse automáticamente")
+
+    def test_cron_unpublish_sold_properties(self):
+        # Desactivar integración activa para test local síncrono limpio
+        self.env['ir.config_parameter'].sudo().set_param('estate_wp.active', 'False')
+        self.prop.with_context(no_wp_sync=True).write({
+            'state': 'sold',
+            'wp_published': True,
+        })
+        self.env['estate.property']._cron_unpublish_sold_properties()
+        self.assertFalse(self.prop.wp_published,
+                         "El cron debe limpiar wp_published en propiedades vendidas")
+

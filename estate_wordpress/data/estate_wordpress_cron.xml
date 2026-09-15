@@ -11,4 +11,15 @@
         <field name="interval_type">hours</field>
         <field name="active" eval="True"/>
     </record>
+
+    <!-- Limpieza y verificación periódica: despublica propiedades vendidas, arrendadas, canceladas o inactivas de WordPress -->
+    <record id="cron_wp_unpublish_sold" model="ir.cron">
+        <field name="name">WordPress: despublicar propiedades vendidas/retiradas pendientes</field>
+        <field name="model_id" ref="estate_management.model_estate_property"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_unpublish_sold_properties()</field>
+        <field name="interval_number">30</field>
+        <field name="interval_type">minutes</field>
+        <field name="active" eval="True"/>
+    </record>
 </odoo>

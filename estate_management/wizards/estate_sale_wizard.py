@@ -216,7 +216,7 @@ class EstateSaleWizard(models.TransientModel):
             raise UserError('El comprador no puede ser el mismo propietario del inmueble.')
 
         # Despublicar de WordPress antes de cerrar
-        if prop.wp_published and prop.wp_post_id and hasattr(prop, 'action_unpublish_wordpress'):
+        if (prop.wp_published or prop.wp_post_id) and hasattr(prop, 'action_unpublish_wordpress'):
             try:
                 prop.action_unpublish_wordpress()
             except Exception as e:
