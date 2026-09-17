@@ -20,6 +20,7 @@ import 'visit_detail_screen.dart';
 import 'visit_form_screen.dart';
 import 'visit_model.dart';
 import 'visit_service.dart';
+import '../../core/api/odoo_json.dart';
 
 class _AdvisorItem {
   final int id;
@@ -708,8 +709,8 @@ class _VisitListScreenState extends State<VisitListScreen> {
       );
       if (rows.isNotEmpty) {
         final r = rows.first;
-        final mobile = (r['mobile'] ?? '').toString().trim();
-        final phone = (r['phone'] ?? '').toString().trim();
+        final mobile = asOdooString(r['mobile']).trim();
+        final phone = asOdooString(r['phone']).trim();
         final chosen = mobile.isNotEmpty ? mobile : phone;
         if (chosen.isNotEmpty) {
           _partnerPhones[partnerId] = chosen;

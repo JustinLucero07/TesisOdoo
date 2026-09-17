@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../api/odoo_client.dart';
+import '../api/odoo_json.dart';
 import '../theme/app_theme.dart';
 import '../../features/contacts/contact_form_screen.dart';
 import 'odoo_image.dart';
@@ -360,8 +361,8 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
             final price = r['price'] is num
                 ? (r['price'] as num).toDouble()
                 : 0.0;
-            final city = (r['city'] ?? '').toString();
-            final sector = (r['sector'] ?? '').toString();
+            final city = asOdooString(r['city']);
+            final sector = asOdooString(r['sector']);
             final location = [
               city,
               sector,
@@ -609,6 +610,9 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                         width: 52,
                                         height: 52,
                                         child: OdooImage(
+                                          key: ValueKey(
+                                            'estate.property-${item.id}',
+                                          ),
                                           odoo: widget.odoo,
                                           model: 'estate.property',
                                           id: item.id,

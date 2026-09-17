@@ -18,6 +18,7 @@ import 'lead_detail_screen.dart';
 import 'lead_form_screen.dart';
 import 'lead_model.dart';
 import 'lead_service.dart';
+import '../../core/api/odoo_json.dart';
 
 class LeadListScreen extends StatefulWidget {
   final bool isPostSale;
@@ -952,8 +953,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
           limit: 1,
         );
         if (res.isNotEmpty) {
-          final m = (res.first['mobile'] ?? '').toString().trim();
-          final p = (res.first['phone'] ?? '').toString().trim();
+          final m = asOdooString(res.first['mobile']).trim();
+          final p = asOdooString(res.first['phone']).trim();
           phone = m.isNotEmpty ? m : p;
         }
       } catch (_) {}
@@ -988,8 +989,8 @@ class _LeadListScreenState extends State<LeadListScreen> {
           limit: 1,
         );
         if (res.isNotEmpty) {
-          final m = (res.first['mobile'] ?? '').toString().trim();
-          final p = (res.first['phone'] ?? '').toString().trim();
+          final m = asOdooString(res.first['mobile']).trim();
+          final p = asOdooString(res.first['phone']).trim();
           phone = m.isNotEmpty ? m : p;
         }
       } catch (_) {}

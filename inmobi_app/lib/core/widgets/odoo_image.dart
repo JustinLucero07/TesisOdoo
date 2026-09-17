@@ -56,21 +56,31 @@ class _OdooImageState extends State<OdooImage> {
   }
 
   Future<void> _load() async {
-    final cached = OdooImage._cache[widget._cacheKey];
+    // Se fija la clave al empezar: si mientras se descarga el widget pasa a
+    // mostrar otro registro (la lista se reutiliza al buscar), la respuesta
+    // vieja no debe pintarse ni guardarse bajo la clave nueva. Eso era lo que
+    // mostraba la portada de una propiedad en la tarjeta de otra.
+    final key = widget._cacheKey;
+    final url =
+        '/web/image/${widget.model}/${widget.id}/${widget.field}/${widget.width}x${widget.height}';
+
+    final cached = OdooImage._cache[key];
     if (cached != null) {
       setState(() {
         _bytes = cached;
         _loading = false;
+        _failed = false;
       });
       return;
     }
     setState(() {
+      _bytes = null;
       _loading = true;
       _failed = false;
     });
     try {
       final resp = await widget.odoo.client.get<List<int>>(
-        '/web/image/${widget.model}/${widget.id}/${widget.field}/${widget.width}x${widget.height}',
+        url,
         options: Options(responseType: ResponseType.bytes),
       );
       final bytes = Uint8List.fromList(resp.data ?? const []);
@@ -89,14 +99,14 @@ class _OdooImageState extends State<OdooImage> {
         throw Exception('svg default placeholder');
       }
 
-      OdooImage._cache[widget._cacheKey] = bytes;
-      if (!mounted) return;
+      OdooImage._cache[key] = bytes;
+      if (!mounted || widget._cacheKey != key) return;
       setState(() {
         _bytes = bytes;
         _loading = false;
       });
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || widget._cacheKey != key) return;
       setState(() {
         _failed = true;
         _loading = false;

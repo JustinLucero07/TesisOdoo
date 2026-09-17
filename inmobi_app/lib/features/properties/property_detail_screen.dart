@@ -28,6 +28,7 @@ import 'property_gallery.dart';
 import 'property_model.dart';
 import 'property_service.dart';
 import 'wordpress_section.dart';
+import '../../core/api/odoo_json.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
   final int propertyId;
@@ -78,8 +79,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
         limit: 1,
       );
       if (rows.isEmpty) return;
-      final phone = (rows.first['mobile'] ?? rows.first['phone'] ?? '')
-          .toString();
+      final movil = asOdooString(rows.first['mobile']).trim();
+      final phone = movil.isNotEmpty
+          ? movil
+          : asOdooString(rows.first['phone']).trim();
       if (mounted && phone.isNotEmpty) setState(() => _advisorPhone = phone);
     } catch (_) {}
   }
@@ -102,7 +105,12 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
       if (!mounted) return;
       setState(() {
         for (final row in rows) {
-          final phone = (row['mobile'] ?? row['phone'] ?? '').toString();
+          // Odoo manda `false` si no hay celular: con `??` nunca se caía al
+          // fijo y el número quedaba como el texto "false".
+          final movil = asOdooString(row['mobile']).trim();
+          final phone = movil.isNotEmpty
+              ? movil
+              : asOdooString(row['phone']).trim();
           if (phone.isNotEmpty) _relatedPhones[row['id'] as int] = phone;
         }
       });

@@ -16,6 +16,7 @@ import '../properties/property_detail_screen.dart';
 import 'visit_form_screen.dart';
 import 'visit_model.dart';
 import 'visit_service.dart';
+import '../../core/api/odoo_json.dart';
 
 class VisitDetailScreen extends StatefulWidget {
   final int visitId;
@@ -89,8 +90,10 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
         limit: 1,
       );
       if (rows.isEmpty) return;
-      final phone = (rows.first['mobile'] ?? rows.first['phone'] ?? '')
-          .toString();
+      final movil = asOdooString(rows.first['mobile']).trim();
+      final phone = movil.isNotEmpty
+          ? movil
+          : asOdooString(rows.first['phone']).trim();
       if (mounted && phone.isNotEmpty) setState(() => _clientPhone = phone);
     } catch (_) {}
   }
