@@ -445,13 +445,11 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   ),
                 ),
                 icon: const Icon(Icons.chat_bubble_rounded, size: 18),
-                label: Text(
-                  p.isForSale
-                      ? 'Comprar por WhatsApp'
-                      : 'Arrendar por WhatsApp',
+                label: const Text(
+                  'Compartir por WhatsApp',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
                     fontSize: 13.5,
                   ),

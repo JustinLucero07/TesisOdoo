@@ -44,6 +44,11 @@
     'demo': [
         'data/estate_crm_leads_demo.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'estate_crm/static/src/css/estate_crm_kanban.css',
+        ],
+    },
     'installable': True,
     'auto_install': False,
 }

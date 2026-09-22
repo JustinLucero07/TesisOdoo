@@ -245,12 +245,16 @@
         </field>
     </record>
 
-    <!-- Heredar Kanban View para mostrar el Match % -->
+    <!-- Heredar Kanban View para mostrar el Match % y conteo de leads por etapa -->
     <record id="crm_case_kanban_view_leads_inherit_estate" model="ir.ui.view">
         <field name="name">crm.lead.kanban.inherit.estate</field>
         <field name="model">crm.lead</field>
         <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
         <field name="arch" type="xml">
+            <!-- Quitar sum_field para que la columna muestre la cantidad de leads en lugar del total de dinero $ -->
+            <xpath expr="//progressbar" position="attributes">
+                <attribute name="sum_field"/>
+            </xpath>
             <xpath expr="//kanban" position="inside">
                 <field name="is_golden_opportunity"/>
                 <field name="lead_temperature"/>
@@ -259,7 +263,6 @@
                 <field name="expected_commission"/>
                 <field name="lead_velocity_days"/>
                 <field name="pending_needs_active"/>
-                <field name="lead_velocity_days"/>
             </xpath>
             <xpath expr="//footer" position="before">
                 <div class="o_kanban_record_subtitle mt-1 mb-1">

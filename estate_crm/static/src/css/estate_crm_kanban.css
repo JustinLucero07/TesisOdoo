@@ -1,0 +1,20 @@
+/* ==========================================================================
+   ESTATE CRM - Kanban Header Counter
+   Muestra el conteo de leads claramente en cada columna de etapa
+   ========================================================================== */
+
+.o_opportunity_kanban .o_kanban_counter_side {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: #495057 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 2px !important;
+}
+
+.o_opportunity_kanban .o_kanban_counter_side span::after {
+    content: " leads";
+    font-size: 0.8em;
+    font-weight: 500;
+    color: #6c757d;
+}
