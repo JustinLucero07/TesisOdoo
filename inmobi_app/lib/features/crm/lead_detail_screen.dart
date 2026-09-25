@@ -24,6 +24,7 @@ import '../visits/visit_form_screen.dart';
 import '../visits/visit_model.dart';
 import '../visits/visit_service.dart';
 import 'crm_stage_service.dart';
+import 'chatter_section.dart';
 import 'interactions_section.dart';
 import 'lead_form_screen.dart';
 import 'lead_model.dart';
@@ -53,7 +54,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     super.initState();
     _odoo = context.read<AuthService>().odoo;
     _stageService = CrmStageService(_odoo);
-    _tabController = TabController(length: 4, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     _load();
   }
 
@@ -224,9 +225,13 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
             ? null
             : TabBar(
                 controller: _tabController,
+                // Con cinco pestañas ya no caben a lo ancho en un móvil.
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
                 tabs: const [
                   Tab(text: 'Resumen'),
                   Tab(text: 'Actividad'),
+                  Tab(text: 'Notas'),
                   Tab(text: 'Documentos'),
                   Tab(text: 'Negociación'),
                 ],
@@ -356,6 +361,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
             children: [
               _buildResumenTab(lead, currency),
               _buildActividadTab(lead),
+              _buildNotasTab(lead),
               _buildDocumentosTab(lead),
               _buildNegociacionTab(lead),
             ],
@@ -645,6 +651,17 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
             }
           },
         ),
+      ],
+    );
+  }
+
+  /// Las tres formas de dejar constancia en un lead, juntas: la descripción de
+  /// la ficha, el timeline de interacciones y la conversación (chatter).
+  Widget _buildNotasTab(Lead lead) {
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        _buildDescripcionCard(lead),
         const SizedBox(height: 22),
         InteractionsSection(
           odoo: _odoo,
@@ -652,7 +669,110 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
           partnerId: lead.partnerId,
           propertyId: lead.targetPropertyId,
         ),
+        const SizedBox(height: 22),
+        ChatterSection(
+          key: ValueKey('chatter_${_refreshKey}_${lead.id}'),
+          odoo: _odoo,
+          model: 'crm.lead',
+          resId: lead.id,
+        ),
       ],
+    );
+  }
+
+  /// La descripción del lead: es lo que en Odoo está en la pestaña "Notas".
+  Widget _buildDescripcionCard(Lead lead) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      size: 17,
+                      color: Color(0xFF28235D),
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Descripción de la ficha',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton.icon(
+                  onPressed: () => _editDescription(lead.description),
+                  icon: Icon(
+                    lead.description.isEmpty
+                        ? Icons.add_rounded
+                        : Icons.edit_outlined,
+                    size: 15,
+                    color: const Color(0xFFD81F26),
+                  ),
+                  label: Text(
+                    lead.description.isEmpty ? 'Agregar' : 'Editar',
+                    style: const TextStyle(
+                      color: Color(0xFFD81F26),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (lead.description.isNotEmpty)
+              SelectableText(
+                lead.description,
+                style: const TextStyle(fontSize: 13.5, height: 1.5),
+              )
+            else
+              InkWell(
+                onTap: () => _editDescription(''),
+                borderRadius: BorderRadius.circular(10),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.of(context).neutralBg,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.of(context).line),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.edit_note_rounded,
+                        size: 18,
+                        color: AppColors.of(context).mutedLight,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Agregar una descripción o notas de requerimiento del lead...',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppColors.of(context).mutedLight,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -660,99 +780,6 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.description_outlined,
-                          size: 17,
-                          color: Color(0xFF28235D),
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Notas de la Ficha (Pestaña Notas)',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    TextButton.icon(
-                      onPressed: () => _editDescription(lead.description),
-                      icon: Icon(
-                        lead.description.isEmpty
-                            ? Icons.add_rounded
-                            : Icons.edit_outlined,
-                        size: 15,
-                        color: const Color(0xFFD81F26),
-                      ),
-                      label: Text(
-                        lead.description.isEmpty ? 'Agregar' : 'Editar',
-                        style: const TextStyle(
-                          color: Color(0xFFD81F26),
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (lead.description.isNotEmpty)
-                  SelectableText(
-                    lead.description,
-                    style: const TextStyle(fontSize: 13.5, height: 1.5),
-                  )
-                else
-                  InkWell(
-                    onTap: () => _editDescription(''),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.of(context).neutralBg,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.of(context).line),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.edit_note_rounded,
-                            size: 18,
-                            color: AppColors.of(context).mutedLight,
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Agregar una descripción o notas de requerimiento del lead...',
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: AppColors.of(context).mutedLight,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 22),
         DocumentsSection(odoo: _odoo, owner: DocumentOwner.lead(lead.id)),
       ],
     );
