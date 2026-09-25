@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PhoneUtils {
@@ -60,6 +61,21 @@ class PhoneUtils {
   }) async {
     final n = normalize(raw, countryCode: countryCode);
     if (n.isEmpty) return false;
+
+    // 1. En iOS/Android intentar primero el esquema nativo directo de WhatsApp.
+    // 'whatsapp' está declarado en LSApplicationQueriesSchemes de iOS (Info.plist),
+    // lo que abre WhatsApp al instante sin intermediación de Safari.
+    final textParam = text != null && text.isNotEmpty
+        ? '&text=${Uri.encodeComponent(text)}'
+        : '';
+    final nativeUri = Uri.parse('whatsapp://send?phone=$n$textParam');
+    final openedNative = await _launch(
+      nativeUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (openedNative) return true;
+
+    // 2. Fallback a enlace web/universal https://wa.me/
     final query = text != null && text.isNotEmpty
         ? '?text=${Uri.encodeComponent(text)}'
         : '';
@@ -67,6 +83,44 @@ class PhoneUtils {
       Uri.parse('https://wa.me/$n$query'),
       mode: LaunchMode.externalApplication,
     );
+  }
+
+  /// Abre WhatsApp para compartir un texto con cualquier contacto o grupo.
+  /// En iOS, 'whatsapp://send?text=...' abre la app y presenta el selector nativo
+  /// de chats de WhatsApp. Si WhatsApp no está instalado, recurre al Share Sheet
+  /// del sistema (con sharePositionOrigin para soporte completo en iPad/iOS).
+  static Future<bool> shareWhatsapp(
+    String text, {
+    Rect? sharePositionOrigin,
+    String? subject,
+  }) async {
+    if (text.isEmpty) return false;
+
+    // 1. Intentar esquema nativo de WhatsApp
+    final nativeUri = Uri.parse(
+      'whatsapp://send?text=${Uri.encodeComponent(text)}',
+    );
+    final openedNative = await _launch(
+      nativeUri,
+      mode: LaunchMode.externalApplication,
+    );
+    if (openedNative) return true;
+
+    // 2. Si no abre WhatsApp (p.ej. no está instalado), abrir Share Sheet nativo
+    try {
+      final res = await Share.share(
+        text,
+        subject: subject,
+        sharePositionOrigin: sharePositionOrigin,
+      );
+      return res.status != ShareResultStatus.unavailable;
+    } catch (_) {
+      // 3. Último recurso: enlace web de WhatsApp
+      final webUri = Uri.parse(
+        'https://api.whatsapp.com/send?text=${Uri.encodeComponent(text)}',
+      );
+      return _launch(webUri, mode: LaunchMode.externalApplication);
+    }
   }
 
   /// No usar canLaunchUrl antes: en iOS devuelve false para todo esquema no

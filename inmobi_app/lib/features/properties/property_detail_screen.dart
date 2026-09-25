@@ -147,12 +147,28 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
   Future<void> _whatsappRelated(String phone) => _whatsappAdvisor(phone);
 
-  Future<void> _openBuyWhatsapp() async {
+  Future<void> _shareCommercialWhatsapp([BuildContext? btnContext]) async {
     if (_property == null) return;
-    await FichaDownloader.shareCommercialWhatsapp(
+    final targetContext = (btnContext != null && btnContext.mounted)
+        ? btnContext
+        : (mounted ? context : null);
+    final box = targetContext != null
+        ? targetContext.findRenderObject() as RenderBox?
+        : null;
+    final origin = box != null && box.hasSize
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
+    final ok = await FichaDownloader.shareCommercialWhatsapp(
       property: _property!,
-      phone: _advisorPhone,
+      sharePositionOrigin: origin,
     );
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se pudo abrir WhatsApp para compartir.'),
+        ),
+      );
+    }
   }
 
   bool get _hasGpsCoords {
@@ -434,24 +450,26 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
             const SizedBox(width: 10),
 
             Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _openBuyWhatsapp,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+              child: Builder(
+                builder: (btnCtx) => ElevatedButton.icon(
+                  onPressed: () => _shareCommercialWhatsapp(btnCtx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                ),
-                icon: const Icon(Icons.chat_bubble_rounded, size: 18),
-                label: const Text(
-                  'Compartir por WhatsApp',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.5,
+                  icon: const Icon(Icons.chat_bubble_rounded, size: 18),
+                  label: const Text(
+                    'Compartir por WhatsApp',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                    ),
                   ),
                 ),
               ),

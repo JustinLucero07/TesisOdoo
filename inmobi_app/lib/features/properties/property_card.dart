@@ -476,34 +476,43 @@ class _PropertyCardState extends State<PropertyCard> {
                         const SizedBox(width: 8),
 
                         Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () =>
+                          child: Builder(
+                            builder: (btnCtx) => ElevatedButton.icon(
+                              onPressed: () {
+                                final box =
+                                    btnCtx.findRenderObject() as RenderBox?;
+                                final origin = box != null && box.hasSize
+                                    ? box.localToGlobal(Offset.zero) & box.size
+                                    : null;
                                 FichaDownloader.shareCommercialWhatsapp(
                                   property: p,
+                                  sharePositionOrigin: origin,
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF25D366),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 9,
+                                  horizontal: 6,
                                 ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF25D366),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 9,
-                                horizontal: 6,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                              icon: const Icon(
+                                Icons.chat_bubble_outline_rounded,
+                                size: 15,
                               ),
-                            ),
-                            icon: const Icon(
-                              Icons.chat_bubble_outline_rounded,
-                              size: 15,
-                            ),
-                            label: const FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                'WhatsApp',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
+                              label: const FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'WhatsApp',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                             ),

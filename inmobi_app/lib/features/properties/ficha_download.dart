@@ -227,7 +227,16 @@ class FichaDownloader {
     if (choice == null || !context.mounted) return;
 
     if (choice.action == FichaActionType.shareWhatsappText) {
-      await shareCommercialWhatsapp(property: property);
+      final box = context.mounted
+          ? context.findRenderObject() as RenderBox?
+          : null;
+      final origin = box != null && box.hasSize
+          ? box.localToGlobal(Offset.zero) & box.size
+          : null;
+      await shareCommercialWhatsapp(
+        property: property,
+        sharePositionOrigin: origin,
+      );
       return;
     }
 
@@ -304,9 +313,11 @@ class FichaDownloader {
     }
   }
 
-  static Future<void> shareCommercialWhatsapp({
+  static Future<bool> shareCommercialWhatsapp({
     required Property property,
     String? phone,
+    Rect? sharePositionOrigin,
+    BuildContext? context,
   }) async {
     final title = property.title.isEmpty ? property.reference : property.title;
     final location = [
@@ -349,15 +360,27 @@ class FichaDownloader {
 
     final message = buffer.toString();
 
-    if (phone != null && phone.isNotEmpty) {
-      final normalized = PhoneUtils.normalize(phone);
-      if (normalized.isNotEmpty) {
-        await PhoneUtils.whatsapp(phone, text: message);
-        return;
+    Rect? origin = sharePositionOrigin;
+    if (origin == null && context != null && context.mounted) {
+      final box = context.findRenderObject() as RenderBox?;
+      if (box != null && box.hasSize) {
+        origin = box.localToGlobal(Offset.zero) & box.size;
       }
     }
 
-    await Share.share(message, subject: 'Ficha Comercial: $title');
+    if (phone != null && phone.trim().isNotEmpty) {
+      final normalized = PhoneUtils.normalize(phone);
+      if (normalized.isNotEmpty) {
+        final sent = await PhoneUtils.whatsapp(phone, text: message);
+        if (sent) return true;
+      }
+    }
+
+    return PhoneUtils.shareWhatsapp(
+      message,
+      sharePositionOrigin: origin,
+      subject: 'Ficha Comercial: $title',
+    );
   }
 }
 
