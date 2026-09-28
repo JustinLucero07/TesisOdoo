@@ -132,11 +132,7 @@ class _ChatterSectionState extends State<ChatterSection> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       // El chatter guarda HTML: se escapa el texto y se respetan los saltos.
-      final cuerpo = result.texto
-          .replaceAll('&', '&amp;')
-          .replaceAll('<', '&lt;')
-          .replaceAll('>', '&gt;')
-          .replaceAll('\n', '<br/>');
+      final cuerpo = result.texto.replaceAll('\n', '<br/>');
       await widget.odoo.callKw(
         model: widget.model,
         method: 'message_post',

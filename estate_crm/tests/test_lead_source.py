@@ -48,3 +48,21 @@ class TestLeadSource(TransactionCase):
         with self.assertRaises(Exception):
             self.env['estate.crm.lead.source'].create({'name': 'Duplicado', 'code': 'whatsapp'})
             self.env.cr.flush()
+
+    def test_usuario_puede_editar_fuente(self):
+        source = self.env['estate.crm.lead.source'].create({'name': 'Fuente Para Editar'})
+        source.write({'name': 'Fuente Modificada'})
+        self.assertEqual(source.name, 'Fuente Modificada')
+
+    def test_eliminar_fuente_reasigna_leads_a_otro(self):
+        custom = self.env['estate.crm.lead.source'].create({'name': 'Fuente Temporal'})
+        lead = self.env['crm.lead'].create({
+            'name': 'Lead Con Fuente Temporal',
+            'lead_source_id': custom.id,
+        })
+        self.assertEqual(lead.lead_source_id.id, custom.id)
+        # Al eliminar la fuente, los leads se reasignan a 'other'
+        custom.unlink()
+        lead.invalidate_recordset()
+        other_source = self.env.ref('estate_crm.lead_source_other')
+        self.assertEqual(lead.lead_source_id.id, other_source.id)

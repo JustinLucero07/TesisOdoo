@@ -53,6 +53,19 @@ class HtmlText {
 
     var s = html;
 
+    // Si viene con HTML escapado (&lt;b&gt;, &lt;br/&gt;, etc.), desescapar primero
+    // las etiquetas de formato para que se interpreten adecuadamente.
+    if (s.contains('&lt;') && (s.contains('&gt;') || s.contains('gt;'))) {
+      s = s
+          .replaceAll('&lt;b&gt;', '<b>')
+          .replaceAll('&lt;/b&gt;', '</b>')
+          .replaceAll('&lt;strong&gt;', '<strong>')
+          .replaceAll('&lt;/strong&gt;', '</strong>')
+          .replaceAll(RegExp(r'&lt;br\s*/?&gt;', caseSensitive: false), '<br/>')
+          .replaceAll('&lt;p&gt;', '<p>')
+          .replaceAll('&lt;/p&gt;', '</p>');
+    }
+
     // Saltos de bloque.
     s = s.replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n');
     s = s.replaceAll(

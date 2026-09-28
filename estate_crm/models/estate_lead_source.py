@@ -21,11 +21,53 @@ class EstateCrmLeadSource(models.Model):
              'Las fuentes creadas manualmente no necesitan código.')
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
+    lead_count = fields.Integer(string='N° Leads', compute='_compute_lead_count')
 
     _unique_code = models.Constraint(
         'unique(code)',
         'Ya existe una fuente de lead con ese código técnico.',
     )
+
+    def _compute_lead_count(self):
+        for rec in self:
+            rec.lead_count = self.env['crm.lead'].search_count([('lead_source_id', '=', rec.id)])
+
+    def action_view_leads(self):
+        self.ensure_one()
+        return {
+            'name': f'Leads de {self.name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'crm.lead',
+            'view_mode': 'kanban,list,form',
+            'domain': [('lead_source_id', '=', self.id)],
+            'context': {'default_lead_source_id': self.id},
+        }
+
+    def action_edit_source(self):
+        self.ensure_one()
+        return {
+            'name': 'Editar Fuente de Lead',
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.crm.lead.source',
+            'view_mode': 'form',
+            'res_id': self.id,
+            'target': 'new',
+        }
+
+    def action_delete_source(self):
+        self.unlink()
+        return True
+
+    def unlink(self):
+        for rec in self:
+            leads = self.env['crm.lead'].search([('lead_source_id', '=', rec.id)])
+            if leads:
+                fallback = self.search([('code', '=', 'other'), ('id', 'not in', self.ids)], limit=1)
+                if not fallback:
+                    fallback = self.search([('id', 'not in', self.ids)], limit=1)
+                if fallback:
+                    leads.write({'lead_source_id': fallback.id})
+        return super().unlink()
 
     @api.model
     def get_by_code(self, code):

@@ -1,4 +1,5 @@
 import logging
+from markupsafe import Markup
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError
@@ -307,7 +308,7 @@ class CrmLead(models.Model):
             )
         commissions.action_approve()
         self.message_post(
-            body=f'Comisión aprobada: <b>${sum(commissions.mapped("amount")):,.2f}</b>.')
+            body=Markup(f'Comisión aprobada: <b>${sum(commissions.mapped("amount")):,.2f}</b>.'))
 
     def action_view_lead_contracts(self):
         self.ensure_one()
@@ -385,7 +386,7 @@ class CrmLead(models.Model):
                 })]
         order = self.env['sale.order'].create(order_vals)
         self.message_post(
-            body=f'Orden de venta <b>{order.name}</b> creada desde este lead.')
+            body=Markup(f'Orden de venta <b>{order.name}</b> creada desde este lead.'))
         return {
             'type': 'ir.actions.act_window',
             'name': 'Orden de Venta',
@@ -874,9 +875,11 @@ class CrmLead(models.Model):
                 if pending_stage:
                     lead.stage_id = pending_stage.id
                 lead.message_post(
-                    body='No se encontró match en el catálogo actual. '
-                         'Lead marcado como <b>Con Necesidad Pendiente</b>. '
-                         'El cron cada 6h buscará automáticamente nuevas propiedades compatibles.',
+                    body=Markup(
+                        'No se encontró match en el catálogo actual. '
+                        'Lead marcado como <b>Con Necesidad Pendiente</b>. '
+                        'El cron cada 6h buscará automáticamente nuevas propiedades compatibles.'
+                    ),
                     message_type='comment', subtype_xmlid='mail.mt_note')
                 return {
                     'type': 'ir.actions.client',
@@ -929,7 +932,7 @@ class CrmLead(models.Model):
         if not prop.buyer_id and self.partner_id:
             prop.buyer_id = self.partner_id
         self.message_post(
-            body=f'Propiedad <strong>{prop.title}</strong> marcada como <strong>Reservada</strong> desde esta oportunidad.'
+            body=Markup(f'Propiedad <strong>{prop.title}</strong> marcada como <strong>Reservada</strong> desde esta oportunidad.')
         )
         return {
             'type': 'ir.actions.client',
@@ -1225,7 +1228,7 @@ class CrmLead(models.Model):
                 continue
             referrer = lead.referral_partner_id
             lead.message_post(
-                body=(
+                body=Markup(
                     f'<b>Referidor notificado:</b> {referrer.name} refirió este cliente. '
                     f'Recordar reconocimiento o beneficio del programa de referidos.'
                 )
@@ -1284,7 +1287,7 @@ class CrmLead(models.Model):
     def _notify_team_new_lead(self, lead):
         """Notificación interna al asesor asignado y al canal del equipo."""
         source_label = lead.lead_source_id.name or 'Desconocido'
-        msg = (
+        msg = Markup(
             f'<b>Nuevo lead recibido</b> vía <b>{source_label}</b>.<br/>'
             f'<b>Cliente:</b> {lead.partner_id.name or lead.contact_name or "Sin nombre"}<br/>'
             f'<b>Presupuesto:</b> ${lead.client_budget:,.0f}<br/>'
@@ -1314,8 +1317,10 @@ class CrmLead(models.Model):
             vals['stage_id'] = pending_stage.id
         self.write(vals)
         self.message_post(
-            body='Lead marcado como <b>Con Necesidad Pendiente</b> manualmente. '
-                 'El sistema buscará propiedades compatibles cada 6 horas.',
+            body=Markup(
+                'Lead marcado como <b>Con Necesidad Pendiente</b> manualmente. '
+                'El sistema buscará propiedades compatibles cada 6 horas.'
+            ),
             message_type='comment', subtype_xmlid='mail.mt_note')
         return {
             'type': 'ir.actions.client',
@@ -1440,7 +1445,7 @@ class CrmLead(models.Model):
 
                 # Log en chatter
                 lead.message_post(
-                    body=(
+                    body=Markup(
                         f'<b>Match automático encontrado</b> ({best_score}% compatibilidad)<br/>'
                         f'Propiedad: <b>{best_match.title}</b> — '
                         f'{best_match.city} — ${best_match.price:,.0f}<br/>'

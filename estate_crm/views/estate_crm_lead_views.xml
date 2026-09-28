@@ -225,7 +225,7 @@
                     <field name="lead_source_id" nolabel="1" required="1"
                            placeholder="Fuente del lead: ¿por dónde llegó?"
                            class="o_field_highlight w-100 mb-0"
-                           options="{'no_quick_create': False}"/>
+                           options="{'no_quick_create': False, 'no_open': False, 'no_create_edit': False}"/>
                 </div>
                 <div class="d-flex align-items-center" colspan="2">
                     <i class="fa fa-usd" title="Presupuesto del cliente"/>
