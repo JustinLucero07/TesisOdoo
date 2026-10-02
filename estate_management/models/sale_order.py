@@ -10,6 +10,12 @@ class SaleOrder(models.Model):
     estate_transaction_type = fields.Selection([
         ('sale', 'Venta'),
     ], string='Tipo de Contrato Inmobiliario', default='sale')
+    property_sold_by = fields.Selection(
+        related='property_id.sold_by', string='Cerrado por',
+        store=True, index=True,
+        help='Quién cerró la venta de la propiedad vinculada: la agencia, el '
+             'propietario o un externo. Se toma de la propiedad para poder '
+             'filtrar las cotizaciones por ese criterio.')
     lead_id = fields.Many2one('crm.lead', string='Lead de Origen', tracking=True,
                               help='Lead CRM que originó esta orden de venta.')
     customer_signature = fields.Binary(

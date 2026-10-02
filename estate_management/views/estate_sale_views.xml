@@ -12,6 +12,9 @@
             <xpath expr="//header" position="inside">
                 <button name="%(estate_management.action_report_estate_contract)d" string=" Generar Contrato AI" type="action" class="btn-primary"/>
             </xpath>
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="string">Cliente (Propietario)</attribute>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="property_id"/>
                 <field name="estate_transaction_type"/>
@@ -45,9 +48,13 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_tree"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="string">Cliente (Propietario)</attribute>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
                 <field name="estate_transaction_type" optional="show"/>
+                <field name="property_sold_by" optional="hide"/>
             </xpath>
         </field>
     </record>
@@ -58,9 +65,38 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="string">Cliente (Propietario)</attribute>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
                 <field name="estate_transaction_type" optional="show"/>
+                <field name="property_sold_by" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+    <!-- Buscar y filtrar por quién cerró la venta -->
+    <record id="view_sales_order_filter_inherit_estate" model="ir.ui.view">
+        <field name="name">sale.order.search.inherit.estate</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='activity_type_id']" position="after">
+                <field name="property_id" string="Propiedad Vinculada"/>
+                <field name="property_sold_by" string="Cerrado por"/>
+            </xpath>
+            <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                <separator/>
+                <filter name="estate_closed_agency" string="Cerrado por: Agencia"
+                        domain="[('property_sold_by', '=', 'agency')]"/>
+                <filter name="estate_closed_owner" string="Cerrado por: Propietario"
+                        domain="[('property_sold_by', '=', 'owner')]"/>
+                <filter name="estate_closed_external" string="Cerrado por: Externo"
+                        domain="[('property_sold_by', '=', 'external')]"/>
+            </xpath>
+            <xpath expr="//group" position="inside">
+                <filter name="estate_group_sold_by" string="Cerrado por"
+                        context="{'group_by': 'property_sold_by'}"/>
             </xpath>
         </field>
     </record>
