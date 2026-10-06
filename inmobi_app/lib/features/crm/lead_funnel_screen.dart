@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -40,6 +42,13 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
   int? _selectedAdvisorId;
   List<_AdvisorOption> _advisors = [];
 
+  final _searchCtrl = TextEditingController();
+  Timer? _debounce;
+  String _query = '';
+  // Cada búsqueda lleva un número: si una respuesta vieja llega después de
+  // una nueva, se descarta en vez de pisar los resultados.
+  int _loadSeq = 0;
+
   @override
   void initState() {
     super.initState();
@@ -59,7 +68,32 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _searchCtrl.dispose();
+    _debounce?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {});
+    _debounce?.cancel();
+    // Se espera a que deje de escribir para no lanzar una consulta por letra.
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      final q = value.trim();
+      if (q == _query) return;
+      _query = q;
+      _load();
+    });
+  }
+
+  void _clearSearch() {
+    _debounce?.cancel();
+    _searchCtrl.clear();
+    if (_query.isEmpty) {
+      setState(() {});
+      return;
+    }
+    _query = '';
+    _load();
   }
 
   Future<void> _loadAdvisors() async {
@@ -90,6 +124,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
   }
 
   Future<void> _load() async {
+    final pedido = ++_loadSeq;
     setState(() {
       _loading = true;
       _error = null;
@@ -120,6 +155,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
             currentUserId: auth.odoo.userId,
             advisorId: advisorFilter,
             stageId: s.id,
+            searchText: _query,
           ),
         ),
       );
@@ -127,16 +163,40 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       for (var i = 0; i < stages.length; i++) {
         grouped[stages[i].id] = porEtapa[i];
       }
-      if (mounted) {
-        setState(() {
-          _stages = stages;
-          _leadsByStage = grouped;
-        });
+      if (!mounted || pedido != _loadSeq) return;
+      setState(() {
+        _stages = stages;
+        _leadsByStage = grouped;
+      });
+      // Al buscar se salta a la primera etapa con resultados: si no, la
+      // primera columna podía salir vacía y parecer que no había nada.
+      if (_query.isNotEmpty) {
+        final idx = stages.indexWhere(
+          (st) => (grouped[st.id] ?? const <Lead>[]).isNotEmpty,
+        );
+        if (idx >= 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_pageController.hasClients) {
+              _pageController.animateToPage(
+                idx,
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+              );
+            }
+          });
+        }
       }
     } catch (e) {
-      if (mounted) setState(() => _error = 'No se pudo cargar el embudo.');
+      if (!mounted || pedido != _loadSeq) return;
+      if (_stages.isEmpty) {
+        setState(() => _error = 'No se pudo cargar el embudo.');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo completar la búsqueda.')),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && pedido == _loadSeq) setState(() => _loading = false);
     }
   }
 
@@ -323,8 +383,10 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const LoadingView();
-    if (_error != null) {
+    // Solo la primera carga ocupa toda la pantalla: en las siguientes (al
+    // buscar o filtrar) el buscador debe seguir ahí, o se cerraría el teclado.
+    if (_loading && _stages.isEmpty) return const LoadingView();
+    if (_error != null && _stages.isEmpty) {
       return MessageView(
         icon: Icons.error_outline,
         message: _error!,
@@ -490,23 +552,60 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
               ),
             ),
 
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: _stages.length,
-              onPageChanged: (i) => setState(() => _currentPage = i),
-              itemBuilder: (context, i) {
-                final stage = _stages[i];
-                final leads = _leadsByStage[stage.id] ?? const <Lead>[];
-                return _StageColumn(
-                  stage: stage,
-                  leads: leads,
-                  currency: currency,
-                  onRefresh: _load,
-                );
-              },
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: _onSearchChanged,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                isDense: true,
+                hintText: 'Buscar lead, cliente, asesor o teléfono…',
+                prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                suffixIcon: _searchCtrl.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Limpiar búsqueda',
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        onPressed: _clearSearch,
+                      ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ),
+          SizedBox(
+            height: 2,
+            child: _loading ? const LinearProgressIndicator() : null,
+          ),
+
+          if (_query.isNotEmpty && !_loading && _totalLeadsCount == 0)
+            Expanded(
+              child: MessageView(
+                icon: Icons.search_off_rounded,
+                message: 'Ningún lead coincide con "$_query".',
+              ),
+            )
+          else
+            Expanded(
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: _stages.length,
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                itemBuilder: (context, i) {
+                  final stage = _stages[i];
+                  final leads = _leadsByStage[stage.id] ?? const <Lead>[];
+                  return _StageColumn(
+                    stage: stage,
+                    leads: leads,
+                    currency: currency,
+                    onRefresh: _load,
+                  );
+                },
+              ),
+            ),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 4, 0, 78),

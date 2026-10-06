@@ -25,10 +25,18 @@ class LeadService {
     ];
     if (searchText != null && searchText.trim().isNotEmpty) {
       final text = searchText.trim();
+      // Se busca en todo lo que el asesor puede tener a mano: el título del
+      // lead, el contacto (escrito o vinculado), el asesor y el teléfono.
       domain.addAll([
+        '|',
+        '|',
+        '|',
         '|',
         ['name', 'ilike', text],
         ['contact_name', 'ilike', text],
+        ['partner_id.name', 'ilike', text],
+        ['user_id.name', 'ilike', text],
+        ['phone', 'ilike', text],
       ]);
     }
     if (temperature != null) {
