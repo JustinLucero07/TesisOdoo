@@ -649,10 +649,16 @@ Responde ÚNICAMENTE el bloque HTML. Nada más."""
                 diff_clr = '#E53935' if diff > 5 else ('#00897B' if diff < -5 else '#888')
                 sign = '+' if diff >= 0 else ''
                 href = f'/odoo/estate-management/{s.id}'
+                # Fuera de la f-string: las barras invertidas dentro de una
+                # expresión de f-string solo son válidas desde Python 3.12.
+                subtitulo = (
+                    "<br/><span style='color:#999;font-size:10.5px'>" + s.title + "</span>"
+                    if s.title else ""
+                )
                 rows += (
                     f'<tr style="border-bottom:1px solid #f0f2f5">'
                     f'<td style="padding:6px 8px;font-size:11.5px"><a href="{href}" style="color:#004274;font-weight:600">{s.name or ""}</a>'
-                    f'{"<br/><span style=\'color:#999;font-size:10.5px\'>" + s.title + "</span>" if s.title else ""}</td>'
+                    f'{subtitulo}</td>'
                     f'<td style="padding:6px 8px;font-size:11px;color:#666">{s.city or ""}</td>'
                     f'<td style="padding:6px 8px;font-size:11.5px;text-align:right"><b style="color:#004274">${s.price:,.0f}</b></td>'
                     f'<td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:700;color:{diff_clr}">{sign}{diff:.0f}%</td>'
