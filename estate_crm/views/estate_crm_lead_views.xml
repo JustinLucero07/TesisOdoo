@@ -15,6 +15,10 @@
                     <label for="lead_temperature" class="d-block text-muted small mb-0">Temperatura</label>
                     <field name="lead_temperature" widget="label_selection" options="{'classes': {'cold': 'info', 'warm': 'success', 'hot': 'warning', 'boiling': 'danger'}}" class="h5 mb-0 fw-bold"/>
                 </div>
+                <div class="col-auto ms-4 border-start ps-4" invisible="not id">
+                    <label for="create_date" string="Creado el" class="d-block text-muted small mb-0"/>
+                    <field name="create_date" widget="date" readonly="1" class="fw-bold"/>
+                </div>
             </xpath>
             <xpath expr="//div[hasclass('oe_title')]" position="before">
                 <widget name="web_ribbon" title="GOLDEN" bg_color="bg-warning" invisible="not is_golden_opportunity" />

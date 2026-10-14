@@ -1270,6 +1270,17 @@ class CrmLead(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
+            # Si el nombre llega vacío (el bot y algunos webhooks lo mandan
+            # así) Odoo no aplica _compute_name, porque el campo "viene" en la
+            # creación. Se rellena aquí con el contacto para que ningún lead
+            # quede sin título.
+            if not (vals.get('name') or '').strip():
+                nombre = ''
+                if vals.get('partner_id'):
+                    nombre = self.env['res.partner'].browse(vals['partner_id']).name or ''
+                nombre = nombre or (vals.get('contact_name') or '').strip()
+                if nombre:
+                    vals['name'] = nombre
             if not vals.get('lead_source_id'):
                 # Si viene de webhook / segundo plano sin fuente especificada, usar fallback
                 def_src = self._default_lead_source_id()

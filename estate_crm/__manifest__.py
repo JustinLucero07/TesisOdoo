@@ -1,6 +1,6 @@
 {
     'name': 'CRM Inmobiliario',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Real Estate',
     'summary': 'Gestión de clientes inmobiliarios',
     'description': """

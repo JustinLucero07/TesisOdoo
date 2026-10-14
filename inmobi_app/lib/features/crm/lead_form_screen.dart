@@ -100,6 +100,23 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
     }
   }
 
+  /// Al elegir el contacto, el título del lead toma su nombre.
+  ///
+  /// Solo si el título está vacío o seguía siendo el nombre del contacto
+  /// anterior (es decir, lo puso la app y no el asesor): lo que el asesor
+  /// haya escrito a mano no se pisa.
+  void _onPartnerChanged(Many2oneValue? nuevo) {
+    final tituloActual = _nameCtrl.text.trim();
+    final anterior = _partner?.name.trim() ?? '';
+    final puestoPorLaApp = tituloActual.isEmpty || tituloActual == anterior;
+    setState(() {
+      _partner = nuevo;
+      if (puestoPorLaApp && nuevo != null && nuevo.name.trim().isNotEmpty) {
+        _nameCtrl.text = nuevo.name.trim();
+      }
+    });
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     if (_leadSource == null) {
@@ -218,7 +235,7 @@ class _LeadFormScreenState extends State<LeadFormScreen> {
               odoo: _odoo,
               model: 'res.partner',
               value: _partner,
-              onChanged: (v) => setState(() => _partner = v),
+              onChanged: _onPartnerChanged,
             ),
             const SizedBox(height: 14),
             Many2oneField(
