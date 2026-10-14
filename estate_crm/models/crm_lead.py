@@ -533,6 +533,14 @@ class CrmLead(models.Model):
             )
 
     def write(self, vals):
+        # Arrastrar la tarjeta a la columna "Perdido" escribe solo la etapa:
+        # el lead quedaba perdido pero con la probabilidad que traía (100% si
+        # venía de Cierre). Se iguala a lo que hace el botón "Perdido".
+        if vals.get('stage_id'):
+            lost_stage = self._lost_stage()
+            if lost_stage and vals['stage_id'] == lost_stage.id:
+                vals.setdefault('probability', 0)
+                vals.setdefault('automated_probability', 0)
         # Capturar estado anterior de is_golden_opportunity para detectar el cambio
         old_golden = {lead.id: lead.is_golden_opportunity for lead in self}
         result = super().write(vals)
