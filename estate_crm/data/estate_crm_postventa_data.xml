@@ -72,5 +72,14 @@
             <field name="is_won">True</field>
             <field name="team_ids" eval="[Command.set([ref('crm_team_postventa')])]"/>
         </record>
+    
+        <!-- "Perdido" también es etapa de Postventa. Solo pertenecía a Ventas:
+             un lead de Postventa marcado perdido quedaba en una etapa que su
+             propio embudo no mostraba (ni columna ni barra de etapas).
+             Se enlaza aquí y no en estate_crm_stage_data.xml porque ese
+             archivo carga antes de que exista el equipo Postventa. -->
+        <record id="stage_lead_perdido" model="crm.stage">
+            <field name="team_ids" eval="[Command.link(ref('crm_team_postventa'))]"/>
+        </record>
     </data>
 </odoo>

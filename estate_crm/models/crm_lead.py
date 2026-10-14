@@ -539,6 +539,7 @@ class CrmLead(models.Model):
         if vals.get('stage_id'):
             lost_stage = self._lost_stage()
             if lost_stage and vals['stage_id'] == lost_stage.id:
+                self._check_no_confirmed_sale_before_lost()
                 vals.setdefault('probability', 0)
                 vals.setdefault('automated_probability', 0)
         # Capturar estado anterior de is_golden_opportunity para detectar el cambio
@@ -557,6 +558,33 @@ class CrmLead(models.Model):
     # desaparece del kanban: un registro archivado NUNCA se muestra en una
     # columna. Aquí el lead perdido se queda VISIBLE en la etapa "Perdido"
     # (is_lost), pero se le sigue tratando como perdido en filtros y reportes.
+
+    def _check_no_confirmed_sale_before_lost(self):
+        """Un lead con la venta confirmada no puede pasar a Perdido.
+
+        Quedaba perdido con la orden de venta, la factura y la comisión vivas
+        y la propiedad marcada como vendida. El orden correcto es anular
+        primero la venta y después marcar el lead como perdido.
+        """
+        if 'order_ids' not in self._fields:
+            return
+        for lead in self:
+            ventas = lead.order_ids.filtered(lambda o: o.state == 'sale')
+            if not ventas:
+                continue
+            nombres = ', '.join(ventas.mapped('name'))
+            propiedad = lead.target_property_id
+            donde = (
+                'en la propiedad «%s» con el botón «Anular Venta» (solo gerentes)'
+                % (propiedad.title or propiedad.name)
+                if propiedad else 'desde la propiedad con el botón «Anular Venta»'
+            )
+            raise UserError(
+                'No se puede marcar como perdido «%s»: tiene la venta %s confirmada.\n\n'
+                'Primero anula la venta %s; eso cancela también su factura y su '
+                'comisión. Si la orden no está vinculada a la propiedad, cancélala '
+                'en Ventas → Cotizaciones. Después ya puedes marcar el lead como '
+                'perdido.' % (lead.name, nombres, donde))
 
     def _lost_stage(self):
         return self.env.ref('estate_crm.stage_lead_perdido', raise_if_not_found=False)
