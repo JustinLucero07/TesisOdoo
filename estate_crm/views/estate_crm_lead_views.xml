@@ -6,6 +6,16 @@
         <field name="model">crm.lead</field>
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="arch" type="xml">
+            <!-- Clic en "Perdido" desde la barra de etapas: el onchange marca el
+                 lead como perdido (won_status = 'lost') y Odoo vuelve la barra de
+                 solo lectura (readonly="won_status == 'lost' ..."). El navegador
+                 no envía al guardar los campos de solo lectura, así que la etapa
+                 nueva se perdía y el lead "volvía" a su etapa. force_save hace
+                 que la etapa se envíe igual. Arrastrar en el kanban no pasaba por
+                 aquí y por eso sí funcionaba. -->
+            <xpath expr="//header/field[@name='stage_id']" position="attributes">
+                <attribute name="force_save">1</attribute>
+            </xpath>
             <xpath expr="//field[@name='probability']" position="after">
                 <!-- El Match se muestra una sola vez (barra en "Operación Inmobiliaria"). -->
                 <field name="lead_score" widget="priority" invisible="type == 'lead'"/>
