@@ -15,7 +15,7 @@
                     <label for="lead_temperature" class="d-block text-muted small mb-0">Temperatura</label>
                     <field name="lead_temperature" widget="label_selection" options="{'classes': {'cold': 'info', 'warm': 'success', 'hot': 'warning', 'boiling': 'danger'}}" class="h5 mb-0 fw-bold"/>
                 </div>
-                <div class="col-auto ms-4 border-start ps-4" invisible="not id">
+                <div class="col-auto ms-4 border-start ps-4" invisible="not id or type != 'lead'">
                     <label for="create_date" string="Creado el" class="d-block text-muted small mb-0"/>
                     <field name="create_date" widget="date" readonly="1" class="fw-bold"/>
                 </div>
@@ -57,6 +57,13 @@
                         <i class="fa fa-comments-o me-1"/>Interacciones
                         <span class="badge text-bg-secondary ms-1"><field name="interaction_count"/></span>
                     </button>
+                    <!-- Fecha de creación arriba a la derecha, en la misma fila. -->
+                    <div class="ms-auto text-end align-self-center" invisible="not id">
+                        <div class="text-muted small">
+                            <i class="fa fa-calendar-o me-1" title="Fecha de creación"/>Creado el
+                        </div>
+                        <field name="create_date" readonly="1" class="fw-bold"/>
+                    </div>
                 </div>
             </xpath>
             <!-- Ocultar "Nueva cotización" estándar: redundante con "Nueva Oferta" -->
