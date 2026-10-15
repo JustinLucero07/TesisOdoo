@@ -432,7 +432,7 @@
                                                     <button name="action_download_video" type="object"
                                                             class="btn btn-sm btn-light"
                                                             icon="fa-download" title="Descargar este video"/>
-                                                    <a type="delete" class="btn btn-sm btn-light text-danger"
+                                                    <a type="delete" role="button" class="btn btn-sm btn-light text-danger"
                                                        title="Quitar este video">
                                                         <i class="fa fa-trash" title="Quitar"/>
                                                     </a>
