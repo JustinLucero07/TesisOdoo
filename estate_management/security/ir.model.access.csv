@@ -77,3 +77,7 @@ access_estate_commission_pay_wizard_admin,estate.commission.pay.wizard.admin,mod
 access_estate_property_image_download_agent,estate.property.image.download.agent,model_estate_property_image_download,estate_group_agent,1,1,1,1
 access_estate_property_image_download_manager,estate.property.image.download.manager,model_estate_property_image_download,estate_group_manager,1,1,1,1
 access_estate_property_image_download_admin,estate.property.image.download.admin,model_estate_property_image_download,estate_group_admin,1,1,1,1
+access_estate_property_video_agent,estate.property.video.agent,model_estate_property_video,estate_group_agent,1,1,1,1
+access_estate_property_video_manager,estate.property.video.manager,model_estate_property_video,estate_group_manager,1,1,1,1
+access_estate_property_video_admin,estate.property.video.admin,model_estate_property_video,estate_group_admin,1,1,1,1
+access_estate_property_video_marketing,estate.property.video.marketing,model_estate_property_video,estate_group_marketing,1,1,1,0

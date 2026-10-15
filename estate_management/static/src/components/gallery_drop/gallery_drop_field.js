@@ -8,9 +8,14 @@ import {
     many2ManyBinaryField,
 } from "@web/views/fields/many2many_binary/many2many_binary_field";
 
+const ACEPTADOS = ["image/", "video/"];
+
 /**
- * Igual que el widget many2many_binary pero con zona de arrastrar-y-soltar.
- * Soltar imagenes las sube con el mismo mecanismo que el boton de adjuntar.
+ * Zona de carga de fotos y videos de la propiedad.
+ *
+ * Igual que many2many_binary, pero toda la zona es clicable y admite soltar
+ * archivos encima. Al guardar la propiedad, las fotos pasan a la galería y los
+ * videos a su propia sección (ver _sync_gallery_to_images).
  */
 export class GalleryDropField extends Many2ManyBinaryField {
     static template = "estate_management.GalleryDropField";
@@ -18,24 +23,51 @@ export class GalleryDropField extends Many2ManyBinaryField {
     setup() {
         super.setup();
         this.uploadFiles = useFileUploader();
-        this.dropState = useState({ dragging: false });
+        // Contador y no booleano: dragenter/dragleave se disparan también al
+        // pasar por encima de los elementos hijos, y con un booleano el
+        // resaltado parpadeaba.
+        this.dropState = useState({ depth: 0 });
+    }
+
+    get dragging() {
+        return this.dropState.depth > 0;
+    }
+
+    get pendingSummary() {
+        const fotos = this.files.filter((f) => (f.mimetype || "").startsWith("image/")).length;
+        const videos = this.files.filter((f) => (f.mimetype || "").startsWith("video/")).length;
+        const partes = [];
+        if (fotos) {
+            partes.push(`${fotos} ${fotos === 1 ? "foto" : "fotos"}`);
+        }
+        if (videos) {
+            partes.push(`${videos} ${videos === 1 ? "video" : "videos"}`);
+        }
+        return partes.join(" y ") || `${this.files.length} archivos`;
+    }
+
+    onDragEnter(ev) {
+        ev.preventDefault();
+        this.dropState.depth++;
     }
 
     onDragOver(ev) {
         ev.preventDefault();
-        this.dropState.dragging = true;
     }
 
     onDragLeave(ev) {
         ev.preventDefault();
-        this.dropState.dragging = false;
+        this.dropState.depth = Math.max(0, this.dropState.depth - 1);
     }
 
     async onDrop(ev) {
         ev.preventDefault();
-        this.dropState.dragging = false;
+        this.dropState.depth = 0;
+        if (this.props.readonly) {
+            return;
+        }
         const files = [...(ev.dataTransfer ? ev.dataTransfer.files : [])].filter((f) =>
-            f.type.startsWith("image/")
+            ACEPTADOS.some((tipo) => f.type.startsWith(tipo))
         );
         if (!files.length) {
             return;

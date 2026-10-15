@@ -1,0 +1,157 @@
+// Galería de fotos y videos de la pestaña Multimedia de la propiedad.
+$inmobi-navy: #004274;
+
+.o_estate_media_header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin: 1.75rem 0 0.75rem;
+
+    .o_estate_media_title {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .o_estate_media_hint {
+        font-size: 0.8rem;
+        opacity: 0.65;
+    }
+}
+
+// Las fotos y los videos son kanban dentro del formulario: se reemplaza su
+// maquetación por una cuadrícula que se adapta al ancho disponible.
+.o_estate_media_gallery {
+    .o_kanban_renderer {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 1rem;
+        padding: 0 !important;
+        background: transparent !important;
+    }
+
+    .o_kanban_record {
+        width: auto !important;
+        min-width: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    .o_kanban_ghost {
+        display: none !important;
+    }
+
+    &.o_estate_video_gallery .o_kanban_renderer {
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+}
+
+.o_estate_media_card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 14px;
+    background: rgba(127, 127, 127, 0.04);
+    box-shadow: 0 0 0 1px rgba(127, 127, 127, 0.18);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 30px -14px rgba($inmobi-navy, 0.45),
+            0 0 0 1px rgba($inmobi-navy, 0.25);
+    }
+}
+
+.o_estate_media_thumb_wrap {
+    overflow: hidden;
+}
+
+.o_estate_media_thumb {
+    aspect-ratio: 4 / 3;
+    background-position: center;
+    background-size: cover;
+    transition: transform 0.35s ease;
+
+    .o_estate_media_card:hover & {
+        transform: scale(1.05);
+    }
+}
+
+.o_estate_media_caption {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+// Botones flotantes (descargar, quitar): aparecen al pasar el ratón.
+.o_estate_media_actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 2;
+    display: flex;
+    gap: 0.35rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+
+    .btn {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+    }
+
+    .o_estate_media_card:hover &,
+    &:focus-within {
+        opacity: 1;
+    }
+}
+
+// En pantallas táctiles no hay "pasar el ratón": se ven siempre.
+@media (hover: none) {
+    .o_estate_media_actions {
+        opacity: 1;
+    }
+}
+
+.o_estate_video_card {
+    &:hover {
+        transform: none;
+    }
+
+    video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        object-fit: contain;
+    }
+}
+
+.o_estate_media_empty {
+    padding: 1.5rem 1rem;
+    border: 1px dashed rgba(127, 127, 127, 0.35);
+    border-radius: 14px;
+    text-align: center;
+    opacity: 0.75;
+
+    .fa {
+        display: block;
+        margin-bottom: 0.4rem;
+        font-size: 1.6rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .o_estate_media_card,
+    .o_estate_media_thumb {
+        transition: none;
+    }
+
+    .o_estate_media_card:hover,
+    .o_estate_media_card:hover .o_estate_media_thumb {
+        transform: none;
+    }
+}

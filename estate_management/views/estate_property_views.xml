@@ -325,71 +325,62 @@
                             <field name="description"/>
                         </page>
                         <page string="Multimedia" name="images">
-                            <div class="row g-4 mb-3">
+                            <div class="row g-4 mb-2">
                                 <!-- Portada -->
-                                <div class="col-lg-4">
+                                <div class="col-12 col-md-5 col-xl-4">
                                     <div class="d-flex align-items-center gap-2 mb-2">
                                         <i class="fa fa-star text-warning" title="Portada"/>
-                                        <span class="fw-bold">Imagen Principal (portada)</span>
+                                        <span class="fw-bold">Imagen principal (portada)</span>
                                     </div>
                                     <field name="image_main" widget="image" class="w-100"
                                            options="{'size': [400, 300]}"/>
                                     <small class="text-muted d-block mt-1">
-                                        Esta es la foto destacada que se publica en portales y redes.
+                                        La foto destacada que se publica en la web y en redes.
                                     </small>
                                 </div>
 
-                                <!-- Carga múltiple -->
-                                <div class="col-lg-8">
+                                <!-- Carga de fotos y videos -->
+                                <div class="col-12 col-md-7 col-xl-8">
                                     <div class="d-flex align-items-center gap-2 mb-2">
-                                        <i class="fa fa-cloud-upload text-primary" title="Subir varias"/>
-                                        <span class="fw-bold">Subir varias imágenes a la vez</span>
+                                        <i class="fa fa-cloud-upload text-primary" title="Subir"/>
+                                        <span class="fw-bold">Subir fotos y videos</span>
                                     </div>
-                                    <div class="p-3 rounded" style="background:#f8f9fa;border:1px dashed #b9c5d6;">
-                                        <field name="gallery_ids" widget="gallery_drop"
-                                               options="{'accepted_file_extensions': 'image/*'}"/>
-                                        <small class="text-muted d-block mt-2">
-                                            <i class="fa fa-info-circle" title="Info"/>
-                                            Selecciona o arrastra <strong>varias imágenes desde tu computadora</strong>
-                                            a la vez. Al <strong>guardar</strong>, se agregarán automáticamente a la
-                                            galería de abajo y quedarán listas para publicar.
-                                        </small>
-                                    </div>
+                                    <field name="gallery_ids" widget="gallery_drop" nolabel="1"
+                                           options="{'accepted_file_extensions': 'image/*,video/*'}"/>
                                 </div>
                             </div>
 
-                            <!-- Galería existente -->
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <i class="fa fa-picture-o text-primary" title="Galería"/>
-                                <span class="fw-bold">Galería de la propiedad</span>
-                                <small class="text-muted">— arrastra para reordenar</small>
+                            <!-- Fotos -->
+                            <div class="o_estate_media_header">
+                                <i class="fa fa-picture-o text-primary" title="Fotos"/>
+                                <span class="o_estate_media_title">Fotos</span>
+                                <span class="o_estate_media_hint">arrastra para reordenar · se publican en la web</span>
                                 <button name="action_download_all_images" type="object"
                                         class="btn btn-sm btn-secondary ms-auto"
                                         icon="fa-download" invisible="not image_ids"
-                                        string="Descargar todas (ZIP)"/>
+                                        string="Descargar fotos (ZIP)"/>
                             </div>
-                            <small class="text-muted d-block mb-2">
-                                Para bajar solo algunas, abre la vista de lista
-                                (<i class="fa fa-list-ul" title="Lista"/>), marca las que quieras
-                                y usa <b>Descargar seleccionadas</b>.
-                            </small>
-                            <field name="image_ids" mode="kanban">
+                            <field name="image_ids" mode="kanban" nolabel="1" class="o_estate_media_gallery">
                                 <kanban create="false" group_create="false">
                                     <field name="id"/>
                                     <field name="name"/>
                                     <field name="sequence" widget="handle"/>
                                     <templates>
                                         <t t-name="card">
-                                            <div class="oe_kanban_global_click position-relative">
-                                                <div class="o_kanban_image_fill_left"
-                                                     style="height:140px;background-size:cover;background-position:center;border-radius:6px;"
-                                                     t-attf-style="background-image:url('/web/image/estate.property.image/#{record.id.raw_value}/image');height:140px;background-size:cover;background-position:center;border-radius:6px;"/>
-                                                <div class="p-1 text-center text-truncate small text-muted">
-                                                    <field name="name"/>
+                                            <div class="oe_kanban_global_click o_estate_media_card">
+                                                <div class="o_estate_media_thumb_wrap">
+                                                    <div class="o_estate_media_thumb"
+                                                         t-attf-style="background-image:url('/web/image/estate.property.image/#{record.id.raw_value}/image/480x360')"/>
                                                 </div>
-                                                <button name="action_download_image" type="object"
-                                                        class="btn btn-sm btn-light position-absolute top-0 end-0 m-1"
-                                                        icon="fa-download" title="Descargar esta foto"/>
+                                                <div class="o_estate_media_caption">
+                                                    <i class="fa fa-picture-o text-muted" title="Foto"/>
+                                                    <span class="text-truncate"><field name="name"/></span>
+                                                </div>
+                                                <div class="o_estate_media_actions">
+                                                    <button name="action_download_image" type="object"
+                                                            class="btn btn-sm btn-light"
+                                                            icon="fa-download" title="Descargar esta foto"/>
+                                                </div>
                                             </div>
                                         </t>
                                     </templates>
@@ -402,9 +393,58 @@
                                             icon="fa-download" title="Descargar esta foto"/>
                                 </list>
                             </field>
-                            <div class="text-center text-muted py-4" invisible="image_ids">
-                                <i class="fa fa-picture-o fa-2x mb-2 d-block" title="Sin imágenes"/>
-                                <small>Aún no hay imágenes en la galería. Usa la zona de carga de arriba.</small>
+                            <div class="o_estate_media_empty" invisible="image_ids">
+                                <i class="fa fa-picture-o" title="Sin fotos"/>
+                                Aún no hay fotos. Súbelas en la zona de arriba.
+                            </div>
+                            <small class="text-muted d-block mt-2" invisible="not image_ids">
+                                Para bajar solo algunas fotos, cambia a la vista de lista
+                                (<i class="fa fa-list-ul" title="Lista"/>), marca las que quieras
+                                y usa <b>Descargar seleccionadas</b>.
+                            </small>
+
+                            <!-- Videos: solo en Odoo, no se publican en la web -->
+                            <div class="o_estate_media_header">
+                                <i class="fa fa-film text-danger" title="Videos"/>
+                                <span class="o_estate_media_title">Videos</span>
+                                <span class="o_estate_media_hint">solo en Odoo · no se publican en la web</span>
+                            </div>
+                            <field name="video_ids" mode="kanban" nolabel="1"
+                                   class="o_estate_media_gallery o_estate_video_gallery">
+                                <kanban create="false" group_create="false">
+                                    <field name="id"/>
+                                    <field name="name"/>
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="video_url"/>
+                                    <field name="file_size_mb"/>
+                                    <templates>
+                                        <t t-name="card">
+                                            <div class="o_estate_media_card o_estate_video_card">
+                                                <video t-if="record.video_url.raw_value"
+                                                       t-att-src="record.video_url.raw_value"
+                                                       controls="controls" preload="metadata" playsinline="playsinline"/>
+                                                <div class="o_estate_media_caption">
+                                                    <i class="fa fa-film text-muted" title="Video"/>
+                                                    <span class="text-truncate flex-grow-1"><field name="name"/></span>
+                                                    <span class="text-muted text-nowrap"><field name="file_size_mb"/> MB</span>
+                                                </div>
+                                                <div class="o_estate_media_actions">
+                                                    <button name="action_download_video" type="object"
+                                                            class="btn btn-sm btn-light"
+                                                            icon="fa-download" title="Descargar este video"/>
+                                                    <a type="delete" class="btn btn-sm btn-light text-danger"
+                                                       title="Quitar este video">
+                                                        <i class="fa fa-trash" title="Quitar"/>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </templates>
+                                </kanban>
+                            </field>
+                            <div class="o_estate_media_empty mb-3" invisible="video_ids">
+                                <i class="fa fa-film" title="Sin videos"/>
+                                Aún no hay videos. Arrástralos a la zona de arriba, igual que las fotos.
                             </div>
 
                             <!-- Tour Virtual 360° -->

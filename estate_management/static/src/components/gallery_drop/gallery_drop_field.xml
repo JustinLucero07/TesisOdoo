@@ -2,30 +2,48 @@
 <templates xml:space="preserve">
 
     <t t-name="estate_management.GalleryDropField">
-        <div t-attf-class="oe_fileupload o_gallery_drop {{ props.className ? props.className : '' }} {{ dropState.dragging ? 'o_gallery_drop_active' : '' }}"
-             t-on-dragover="onDragOver" t-on-dragenter="onDragOver"
+        <div t-attf-class="o_gallery_drop {{ props.className ? props.className : '' }} {{ dragging ? 'o_gallery_drop_active' : '' }}"
+             t-on-dragenter="onDragEnter" t-on-dragover="onDragOver"
              t-on-dragleave="onDragLeave" t-on-drop="onDrop" aria-atomic="true">
-            <div t-if="dropState.dragging" class="o_gallery_drop_hint text-center p-3">
-                <i class="fa fa-cloud-upload fa-2x d-block mb-2"/>
-                <span class="fw-bold">Suelta las imagenes aqui</span>
-            </div>
-            <div class="o_attachments">
-                <t t-foreach="files" t-as="file" t-key="file_index">
-                    <t t-call="web.Many2ManyBinaryField.attachment_preview"/>
-                </t>
-            </div>
-            <div t-if="!props.readonly &amp;&amp; (!props.numberOfFiles or files.length &lt; props.numberOfFiles)"
-                 class="oe_add">
-                <FileInput
-                    acceptedFileExtensions="props.acceptedFileExtensions"
-                    multiUpload="true"
-                    onUpload.bind="onFileUploaded"
-                    resModel="props.record.resModel"
-                    resId="props.record.resId or 0">
-                    <button class="btn btn-secondary o_attach" data-tooltip="Adjuntar">
-                        <span class="fa fa-paperclip" aria-label="Adjuntar"/> <t t-esc="uploadText"/>
-                    </button>
-                </FileInput>
+
+            <FileInput t-if="!props.readonly"
+                acceptedFileExtensions="props.acceptedFileExtensions"
+                multiUpload="true"
+                onUpload.bind="onFileUploaded"
+                resModel="props.record.resModel"
+                resId="props.record.resId or 0">
+                <div class="o_gallery_drop_zone" role="button" tabindex="0"
+                     aria-label="Subir fotos y videos">
+                    <div class="o_gallery_drop_icon">
+                        <i t-attf-class="fa {{ dragging ? 'fa-arrow-down' : 'fa-cloud-upload' }}"/>
+                    </div>
+                    <div class="o_gallery_drop_text">
+                        <div class="o_gallery_drop_title">
+                            <t t-if="dragging">Suelta aquí tus fotos y videos</t>
+                            <t t-else="">Arrastra fotos y videos aquí</t>
+                        </div>
+                        <div class="o_gallery_drop_subtitle">
+                            o <span class="o_gallery_drop_link">haz clic para elegirlos</span>
+                            desde tu computadora o tu celular
+                        </div>
+                        <div class="o_gallery_drop_formats">
+                            <span><i class="fa fa-picture-o"/> JPG · PNG · WEBP</span>
+                            <span class="o_gallery_drop_format_video"><i class="fa fa-film"/> MP4 · MOV · WEBM</span>
+                        </div>
+                    </div>
+                </div>
+            </FileInput>
+
+            <div t-if="files.length" class="o_gallery_drop_pending">
+                <div class="o_gallery_drop_pending_head">
+                    <i class="fa fa-clock-o"/>
+                    <span><b t-esc="pendingSummary"/> listos · se agregarán a la galería al <b>Guardar</b></span>
+                </div>
+                <div class="o_attachments o_gallery_drop_grid">
+                    <t t-foreach="files" t-as="file" t-key="file_index">
+                        <t t-call="web.Many2ManyBinaryField.attachment_preview"/>
+                    </t>
+                </div>
             </div>
         </div>
     </t>

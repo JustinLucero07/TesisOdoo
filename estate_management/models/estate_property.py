@@ -284,9 +284,11 @@ class EstateProperty(models.Model):
     # --- Imágenes ---
     image_ids = fields.One2many(
         'estate.property.image', 'property_id', string='Imágenes')
+    video_ids = fields.One2many(
+        'estate.property.video', 'property_id', string='Videos')
     gallery_ids = fields.Many2many(
-        'ir.attachment', string='Galería de Imágenes',
-        help='Arrastra imágenes aquí para subirlas directamente.')
+        'ir.attachment', string='Fotos y videos',
+        help='Arrastra fotos y videos aquí para subirlos directamente.')
     image_main = fields.Binary(string='Imagen Principal')
 
     # --- WordPress ---
@@ -868,12 +870,19 @@ class EstateProperty(models.Model):
         gallery_ids es solo una zona de carga múltiple intuitiva. Tras convertir,
         se limpia la zona y se eliminan los adjuntos temporales."""
         Image = self.env['estate.property.image']
+        Video = self.env['estate.property.video']
         for prop in self:
             if not prop.gallery_ids:
                 continue
+            # Los videos se separan antes de leer `datas`: leerlo cargaría el
+            # archivo entero en memoria solo para descartarlo.
+            videos = prop.gallery_ids.filtered(
+                lambda a: (a.mimetype or '').startswith('video/'))
+            imagenes = prop.gallery_ids - videos
+
             base = Image.search_count([('property_id', '=', prop.id)])
             new_imgs = []
-            for idx, att in enumerate(prop.gallery_ids, 1):
+            for idx, att in enumerate(imagenes, 1):
                 if not att.datas:
                     continue
                 clean_name = (att.name or f'Imagen {base + idx}').rsplit('.', 1)[0]
@@ -885,10 +894,27 @@ class EstateProperty(models.Model):
                 })
             if new_imgs:
                 Image.create(new_imgs)
-            # Limpiar zona de carga + borrar adjuntos temporales (guard anti-recursión)
-            atts = prop.gallery_ids
+
+            # Cada video reaprovecha su adjunto: se le cambia el dueño a su
+            # registro de video en vez de copiarlo, así no se duplica en disco.
+            base_v = Video.search_count([('property_id', '=', prop.id)])
+            for idx, att in enumerate(videos, 1):
+                video = Video.create({
+                    'property_id': prop.id,
+                    'name': (att.name or f'Video {base_v + idx}').rsplit('.', 1)[0],
+                    'sequence': (base_v + idx) * 10,
+                    'attachment_id': att.id,
+                })
+                att.sudo().write({
+                    'res_model': 'estate.property.video',
+                    'res_id': video.id,
+                    'res_field': False,
+                })
+
+            # Limpiar zona de carga y borrar solo los adjuntos de fotos, que ya
+            # se copiaron; los de video ahora son de su registro.
             prop.with_context(_syncing_gallery=True).gallery_ids = [(5, 0, 0)]
-            atts.sudo().unlink()
+            imagenes.sudo().unlink()
 
     @api.constrains('year_built')
     def _check_year_built(self):

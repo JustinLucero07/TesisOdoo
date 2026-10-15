@@ -8,6 +8,7 @@ from . import estate_property
 from . import estate_property_avm
 from . import estate_property_geo
 from . import estate_property_image
+from . import estate_property_video
 from . import estate_commission
 from . import estate_contract
 from . import estate_payment
