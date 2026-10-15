@@ -1,6 +1,75 @@
 // Galería de fotos y videos de la pestaña Multimedia de la propiedad.
 $inmobi-navy: #004274;
 
+// Fila de arriba: portada a la izquierda y zona de carga a la derecha.
+// Cuadrícula propia en vez de .row de Bootstrap: la portada se dibuja a
+// 400 px fijos y se salía de su columna, comiéndose la separación.
+.o_estate_media_top {
+    display: grid;
+    grid-template-columns: minmax(240px, 380px) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: stretch;
+    margin-bottom: 0.5rem;
+
+    @media (max-width: 767.98px) {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+    }
+}
+
+.o_estate_media_cover {
+    min-width: 0;
+
+    .o_field_image,
+    .o_field_image > div {
+        display: block;
+        width: 100%;
+    }
+
+    img {
+        display: block;
+        width: 100%;
+        max-width: 100% !important;
+        height: auto;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        border-radius: 14px;
+        box-shadow: 0 0 0 1px rgba(127, 127, 127, 0.18);
+    }
+}
+
+// La zona de carga ocupa todo su lado y llega hasta la altura de la portada.
+.o_estate_media_upload {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+
+    .o_field_gallery_drop {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        width: 100%;
+    }
+
+    .o_gallery_drop {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+    }
+
+    .o_gallery_drop .o_file_input,
+    .o_gallery_drop .o_file_input_trigger {
+        display: flex;
+        flex: 1 1 auto;
+    }
+
+    .o_gallery_drop_zone {
+        flex: 1 1 auto;
+        justify-content: center;
+        min-height: 220px;
+    }
+}
+
 .o_estate_media_header {
     display: flex;
     flex-wrap: wrap;

@@ -325,9 +325,9 @@
                             <field name="description"/>
                         </page>
                         <page string="Multimedia" name="images">
-                            <div class="row g-4 mb-2">
+                            <div class="o_estate_media_top">
                                 <!-- Portada -->
-                                <div class="col-12 col-md-5 col-xl-4">
+                                <div class="o_estate_media_cover">
                                     <div class="d-flex align-items-center gap-2 mb-2">
                                         <i class="fa fa-star text-warning" title="Portada"/>
                                         <span class="fw-bold">Imagen principal (portada)</span>
@@ -340,7 +340,7 @@
                                 </div>
 
                                 <!-- Carga de fotos y videos -->
-                                <div class="col-12 col-md-7 col-xl-8">
+                                <div class="o_estate_media_upload">
                                     <div class="d-flex align-items-center gap-2 mb-2">
                                         <i class="fa fa-cloud-upload text-primary" title="Subir"/>
                                         <span class="fw-bold">Subir fotos y videos</span>
