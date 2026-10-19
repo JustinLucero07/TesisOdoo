@@ -51,10 +51,21 @@
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="string">Cliente (Propietario)</attribute>
             </xpath>
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="estate_buyer_id" optional="show"/>
+                <field name="estate_buyer_phone" widget="phone" optional="show"/>
+                <field name="estate_buyer_phone2" widget="phone" optional="hide"/>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="estate_owner_phone" widget="phone" optional="show"/>
+                <field name="estate_owner_phone2" widget="phone" optional="hide"/>
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
-                <field name="estate_transaction_type" optional="show"/>
+                <field name="estate_transaction_type" optional="hide"/>
                 <field name="property_sold_by" optional="hide"/>
+                <field name="estate_source" optional="show"/>
+                <field name="estate_advisor_roles" optional="show"/>
+                <field name="estate_date_sold" optional="show"/>
+                <field name="estate_sale_price" sum="Total vendido" optional="show"/>
             </xpath>
         </field>
     </record>
@@ -68,10 +79,21 @@
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="string">Cliente (Propietario)</attribute>
             </xpath>
+            <xpath expr="//field[@name='partner_id']" position="before">
+                <field name="estate_buyer_id" optional="show"/>
+                <field name="estate_buyer_phone" widget="phone" optional="show"/>
+                <field name="estate_buyer_phone2" widget="phone" optional="hide"/>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="estate_owner_phone" widget="phone" optional="show"/>
+                <field name="estate_owner_phone2" widget="phone" optional="hide"/>
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
-                <field name="estate_transaction_type" optional="show"/>
+                <field name="estate_transaction_type" optional="hide"/>
                 <field name="property_sold_by" optional="hide"/>
+                <field name="estate_source" optional="show"/>
+                <field name="estate_advisor_roles" optional="show"/>
+                <field name="estate_date_sold" optional="show"/>
+                <field name="estate_sale_price" sum="Total vendido" optional="show"/>
             </xpath>
         </field>
     </record>
@@ -84,6 +106,14 @@
             <xpath expr="//field[@name='activity_type_id']" position="after">
                 <field name="property_id" string="Propiedad Vinculada"/>
                 <field name="property_sold_by" string="Cerrado por"/>
+                <field name="estate_buyer_id" string="Comprador"/>
+                <field name="estate_source" string="Difusión"/>
+                <field name="partner_id" string="Teléfono"
+                       filter_domain="['|', '|', '|',
+                                       ('partner_id.phone', 'ilike', self),
+                                       ('partner_id.mobile', 'ilike', self),
+                                       ('estate_buyer_id.phone', 'ilike', self),
+                                       ('estate_buyer_id.mobile', 'ilike', self)]"/>
             </xpath>
             <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
                 <separator/>
@@ -93,10 +123,19 @@
                         domain="[('property_sold_by', '=', 'owner')]"/>
                 <filter name="estate_closed_external" string="Cerrado por: Externo"
                         domain="[('property_sold_by', '=', 'external')]"/>
+                <separator/>
+                <filter name="estate_date_sold_filter" string="Fecha de venta"
+                        date="estate_date_sold"/>
             </xpath>
             <xpath expr="//group" position="inside">
                 <filter name="estate_group_sold_by" string="Cerrado por"
                         context="{'group_by': 'property_sold_by'}"/>
+                <filter name="estate_group_source" string="Difusión"
+                        context="{'group_by': 'estate_source'}"/>
+                <filter name="estate_group_buyer" string="Comprador"
+                        context="{'group_by': 'estate_buyer_id'}"/>
+                <filter name="estate_group_date_sold" string="Fecha de venta"
+                        context="{'group_by': 'estate_date_sold:month'}"/>
             </xpath>
         </field>
     </record>
