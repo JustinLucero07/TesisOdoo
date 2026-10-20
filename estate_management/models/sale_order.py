@@ -287,12 +287,11 @@ class SaleOrder(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Comisión — %s' % (self.property_id.display_name or self.name),
             'res_model': 'estate.commission',
-            'context': {'default_property_id': self.property_id.id,
-                        'default_amount': self.amount_untaxed},
         }
         if len(commissions) == 1:
             action.update(view_mode='form', res_id=commissions.id)
         else:
+            action['context'] = {'default_property_id': self.property_id.id}
             action.update(view_mode='list,form', domain=[('property_id', '=', self.property_id.id)])
         return action
 

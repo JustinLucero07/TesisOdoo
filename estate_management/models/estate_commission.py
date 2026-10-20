@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.tools.misc import clean_context
 from odoo.exceptions import UserError, ValidationError
 
 # Los pasos del negocio que pueden cobrar comisión. Se definen aquí porque los
@@ -181,6 +182,9 @@ class EstateCommission(models.Model):
 
     def action_generate_split(self):
         """Rellena el reparto con los cuatro roles y sus porcentajes."""
+        # Un "default_amount" de la pantalla anterior se colaba en cada línea
+        # y le ponía el monto completo en vez de su porcentaje.
+        self = self.with_context(clean_context(self.env.context))
         for rec in self:
             if rec.split_line_ids:
                 raise UserError(
@@ -197,6 +201,7 @@ class EstateCommission(models.Model):
         como el total del negocio, marcada como Repartida.
         """
         self.ensure_one()
+        self = self.with_context(clean_context(self.env.context))
         if self.state == 'paid':
             raise UserError('Esta comisión ya está pagada; no se puede repartir.')
         if self.child_commission_ids:
