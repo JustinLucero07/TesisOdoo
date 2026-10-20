@@ -95,8 +95,8 @@ body.o_ix_login_body {
         background: #fff;
         transition: border-color .15s, box-shadow .15s;
         &:focus {
-            border-color: #0d1940;
-            box-shadow: 0 0 0 3px rgba(13, 25, 64, .14);
+            border-color: #142559;
+            box-shadow: 0 0 0 3px rgba(20, 37, 89, .14);
         }
     }
     .input-group {
@@ -116,11 +116,11 @@ body.o_ix_login_body {
             border-radius: 10px;
             font-weight: 500;
             font-size: .98rem;
-            background: #0d1940;
-            border-color: #0d1940;
-            box-shadow: 0 8px 20px -10px rgba(13, 25, 64, .7);
+            background: #142559;
+            border-color: #142559;
+            box-shadow: 0 8px 20px -10px rgba(20, 37, 89, .7);
             transition: background-color .15s, transform .15s;
-            &:hover { background: #142559; border-color: #142559; }
+            &:hover { background: #0d1940; border-color: #0d1940; }
             &:active { transform: translateY(1px); }
         }
         .btn-link { color: #6b7280; }
@@ -132,7 +132,7 @@ body.o_ix_login_body {
         border-top: 1px solid #e7e9ee;
         text-align: center;
         font-size: .8rem;
-        a { color: #6b7280; text-decoration: none; &:hover { color: #0d1940; } }
+        a { color: #6b7280; text-decoration: none; &:hover { color: #142559; } }
     }
 }
 @media (max-width: 991.98px) {

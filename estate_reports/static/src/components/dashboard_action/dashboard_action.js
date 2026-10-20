@@ -50,7 +50,7 @@ export class DashChart extends Component {
                 datasets: [{
                     label: d.label || "",
                     data: d.values,
-                    backgroundColor: d.color || "#0d1940",
+                    backgroundColor: d.color || "#142559",
                     hoverBackgroundColor: "#d9042b",
                     borderRadius: 6,
                     borderSkipped: false,
@@ -64,7 +64,7 @@ export class DashChart extends Component {
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: "#0d1940",
+                        backgroundColor: "#142559",
                         padding: 10,
                         cornerRadius: 8,
                         displayColors: false,
