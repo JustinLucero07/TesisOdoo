@@ -38,6 +38,28 @@ class SaleOrder(models.Model):
         string='Asesores', compute='_compute_estate_advisor_roles',
         help='Iniciales de los asesores que comisionaron por cada paso: '
              'Capt. (captación), Rec. (recepción), Vis. (visita), Cie. (cierre).')
+    estate_capture_initials = fields.Char(
+        string='Captación', compute='_compute_estate_advisor_roles')
+    estate_reception_initials = fields.Char(
+        string='Recepción', compute='_compute_estate_advisor_roles')
+    estate_visit_initials = fields.Char(
+        string='Visita', compute='_compute_estate_advisor_roles')
+    estate_closing_initials = fields.Char(
+        string='Cierre', compute='_compute_estate_advisor_roles')
+
+    # --- Cobro de la comisión al propietario ---
+    estate_collected_manual = fields.Boolean(
+        string='Cobro marcado a mano', copy=False, tracking=True,
+        help='Marca la comisión como cobrada aunque no se haya registrado el '
+             'pago en la factura (por ejemplo, si se cobró en efectivo).')
+    estate_collected_manual_date = fields.Date(
+        string='Fecha de cobro (manual)', copy=False)
+    estate_commission_collected = fields.Boolean(
+        string='Comisión cobrada', compute='_compute_estate_collected', store=True,
+        help='Se marca sola cuando la factura de la comisión queda pagada, o '
+             'cuando se marca a mano con "Marcar como cobrada".')
+    estate_collected_date = fields.Date(
+        string='Fecha de cobro', compute='_compute_estate_collected', store=True)
     lead_id = fields.Many2one('crm.lead', string='Lead de Origen', tracking=True,
                               help='Lead CRM que originó esta orden de venta.')
     customer_signature = fields.Binary(
@@ -86,7 +108,12 @@ class SaleOrder(models.Model):
             ('state', '!=', 'cancelled'),
             ('child_commission_ids', '=', False),
         ]) if properties else self.env['estate.commission']
+        role_fields = {'capture': 'estate_capture_initials',
+                       'reception': 'estate_reception_initials',
+                       'visit': 'estate_visit_initials',
+                       'closing': 'estate_closing_initials'}
         for order in self:
+            by_role = {fname: [] for fname in role_fields.values()}
             lines = commissions.filtered(
                 lambda c: c.property_id == order.property_id
             ).sorted(lambda c: (c.role_sequence, c.id))
@@ -96,7 +123,44 @@ class SaleOrder(models.Model):
                 part = f"{self._ESTATE_ROLE_SHORT[c.role]} {initials}" if c.role else initials
                 if part not in parts:
                     parts.append(part)
+                roles = role_fields.values() if c.role == 'all' else [role_fields.get(c.role)]
+                for fname in roles:
+                    if fname and initials not in by_role[fname]:
+                        by_role[fname].append(initials)
             order.estate_advisor_roles = ' · '.join(parts) or False
+            for fname, initials in by_role.items():
+                order[fname] = ' y '.join(initials) or False
+
+    @api.depends('estate_collected_manual', 'estate_collected_manual_date',
+                 'order_line.invoice_lines.move_id.payment_state',
+                 'order_line.invoice_lines.move_id.state')
+    def _compute_estate_collected(self):
+        for order in self:
+            invoices = order.order_line.invoice_lines.move_id.filtered(
+                lambda m: m.move_type == 'out_invoice' and m.state == 'posted')
+            paid = bool(invoices) and all(
+                m.payment_state in ('paid', 'in_payment') for m in invoices)
+            date = False
+            if paid:
+                receivable = invoices.line_ids.filtered(
+                    lambda l: l.account_id.account_type == 'asset_receivable')
+                dates = receivable.matched_credit_ids.mapped('max_date')
+                date = max(dates) if dates else max(invoices.mapped('invoice_date'))
+            order.estate_commission_collected = paid or order.estate_collected_manual
+            order.estate_collected_date = (order.estate_collected_manual_date
+                                           if order.estate_collected_manual else date)
+
+    def action_estate_mark_collected(self):
+        for order in self:
+            order.write({
+                'estate_collected_manual': True,
+                'estate_collected_manual_date': (order.estate_collected_manual_date
+                                                 or fields.Date.context_today(order)),
+            })
+
+    def action_estate_unmark_collected(self):
+        self.write({'estate_collected_manual': False,
+                    'estate_collected_manual_date': False})
 
     @api.onchange('customer_signature')
     def _onchange_customer_signature(self):

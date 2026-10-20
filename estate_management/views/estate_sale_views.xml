@@ -11,6 +11,13 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="%(estate_management.action_report_estate_contract)d" string=" Generar Contrato AI" type="action" class="btn-primary"/>
+                <button name="action_estate_mark_collected" type="object"
+                        string="Marcar comisión cobrada" icon="fa-check-circle"
+                        invisible="not property_id or state != 'sale' or estate_commission_collected"/>
+                <button name="action_estate_unmark_collected" type="object"
+                        string="Quitar cobro manual" icon="fa-undo"
+                        invisible="not estate_collected_manual"
+                        confirm="¿Quitar la marca de comisión cobrada?"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="string">Cliente (Propietario)</attribute>
@@ -19,6 +26,11 @@
                 <field name="property_id"/>
                 <field name="estate_transaction_type"/>
                 <field name="lead_id"/>
+                <field name="estate_collected_manual" invisible="1"/>
+                <field name="estate_commission_collected" invisible="not property_id"/>
+                <field name="estate_collected_date" invisible="not estate_commission_collected"/>
+                <field name="estate_collected_manual_date" string="Fecha de cobro (editar)"
+                       invisible="not estate_collected_manual"/>
             </xpath>
             <!-- Firma digital del cliente inmobiliario -->
             <xpath expr="//page[@name='order_lines']" position="after">
@@ -124,6 +136,11 @@
                 <filter name="estate_closed_external" string="Cerrado por: Externo"
                         domain="[('property_sold_by', '=', 'external')]"/>
                 <separator/>
+                <filter name="estate_collected" string="Comisión cobrada"
+                        domain="[('estate_commission_collected', '=', True)]"/>
+                <filter name="estate_not_collected" string="Comisión por cobrar"
+                        domain="[('estate_commission_collected', '=', False), ('state', '=', 'sale')]"/>
+                <separator/>
                 <filter name="estate_date_sold_filter" string="Fecha de venta"
                         date="estate_date_sold"/>
             </xpath>
@@ -136,7 +153,60 @@
                         context="{'group_by': 'estate_buyer_id'}"/>
                 <filter name="estate_group_date_sold" string="Fecha de venta"
                         context="{'group_by': 'estate_date_sold:month'}"/>
+                <filter name="estate_group_collected_date" string="Fecha de cobro"
+                        context="{'group_by': 'estate_collected_date:month'}"/>
             </xpath>
         </field>
     </record>
+
+    <!-- Ventas cobradas: la misma hoja que se llevaba en Excel -->
+    <record id="view_sale_order_estate_collected_list" model="ir.ui.view">
+        <field name="name">sale.order.list.estate.collected</field>
+        <field name="model">sale.order</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list string="Ventas y comisiones cobradas" create="0" default_order="estate_date_sold desc"
+                  decoration-muted="not estate_commission_collected">
+                <field name="estate_date_sold" string="Fecha"/>
+                <field name="estate_buyer_id" string="Comprador"/>
+                <field name="partner_id" string="Vendedor (Propietario)"/>
+                <field name="property_id" string="Propiedad"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="amount_total" string="Comisión" sum="Total comisión"
+                       widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="estate_capture_initials"/>
+                <field name="estate_reception_initials"/>
+                <field name="estate_visit_initials"/>
+                <field name="estate_closing_initials"/>
+                <field name="estate_sale_price" string="Valor de venta" sum="Total vendido" optional="hide"/>
+                <field name="estate_source" optional="hide"/>
+                <field name="name" string="Orden" optional="hide"/>
+                <field name="estate_commission_collected" string="Cobrada"/>
+                <field name="estate_collected_date" optional="show"/>
+                <button name="action_estate_mark_collected" type="object" icon="fa-check-circle"
+                        title="Marcar comisión cobrada" string="Marcar cobrada"
+                        invisible="estate_commission_collected"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_sale_order_estate_collected" model="ir.actions.act_window">
+        <field name="name">Ventas cobradas</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="view_id" ref="view_sale_order_estate_collected_list"/>
+        <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale')]</field>
+        <field name="context">{'search_default_estate_collected': 1, 'search_default_estate_group_date_sold': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Aún no hay ventas con la comisión cobrada.</p>
+            <p>La comisión se marca como cobrada sola cuando la factura al propietario queda
+               pagada, o a mano con el botón "Marcar cobrada".</p>
+        </field>
+    </record>
+
+    <menuitem id="estate_menu_sale_collected"
+              name="Ventas cobradas"
+              parent="sale.sale_order_menu"
+              action="action_sale_order_estate_collected"
+              sequence="25"/>
 </odoo>

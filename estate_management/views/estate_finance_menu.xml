@@ -77,6 +77,13 @@
                   sequence="55"
                   groups="estate_management.estate_group_manager"/>
 
+        <menuitem id="estate_menu_finance_sales_collected"
+                  name="Ventas Cobradas"
+                  parent="estate_menu_finance_root"
+                  action="estate_management.action_sale_order_estate_collected"
+                  sequence="56"
+                  groups="estate_management.estate_group_manager"/>
+
         <menuitem id="estate_menu_finance_by_advisor"
                   name="Comisiones por Asesor"
                   parent="estate_menu_finance_root"

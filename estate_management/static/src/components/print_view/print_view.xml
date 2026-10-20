@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="estate_management.PrintViewItem">
+        <DropdownItem class="'o_estate_print_view_menu'" onSelected.bind="onPrint">
+            <i class="fa fa-fw fa-print me-1"/>Imprimir
+        </DropdownItem>
+    </t>
+</templates>
