@@ -162,8 +162,8 @@
                         <!-- ══ ASESOR ════════════════════════════════════════════════════ -->
                         <div style="background:#F8F9FB; border:1px solid #D8DCE5; padding:10px 14px; font-size:11px; margin-bottom:14px;">
                             <strong>Asesor Responsable:</strong> <t t-esc="prop.user_id.name or '&#8212;'"/>
-                            <t t-if="prop.co_capture_user_id">
-                                &#160;&#183;&#160; <strong>Co-captador:</strong> <t t-esc="prop.co_capture_user_id.name"/>
+                            <t t-if="prop.co_user_id">
+                                &#160;&#183;&#160; <strong>Co-Asesor:</strong> <t t-esc="prop.co_user_id.name"/>
                             </t>
                         </div>
 

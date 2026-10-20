@@ -399,6 +399,10 @@ class EstateCommission(models.Model):
                 if prop.is_allied_property:
                     allied_ratio = (prop.allied_split_pct or 50.0) / 100.0
                     pct = pct * allied_ratio
+                if prop.co_user_id and lead.user_id == prop.co_user_id and 0 < prop.commission_split_pct < 100:
+                    pct = pct * (prop.commission_split_pct / 100.0)
+                elif prop.co_user_id and lead.user_id == prop.user_id and 0 < prop.commission_split_pct < 100:
+                    pct = pct * ((100.0 - prop.commission_split_pct) / 100.0)
                 self.commission_pct = pct
         else:
             if lead.client_budget:

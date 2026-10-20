@@ -746,7 +746,8 @@ class CrmLead(models.Model):
                              len(stuck), vendedores_stage.name, recepcion_stage.name)
 
     @api.depends('client_budget', 'target_property_id', 'target_property_id.price',
-                 'target_property_id.commission_percentage', 'target_property_id.is_allied_property',
+                 'target_property_id.commission_percentage', 'target_property_id.commission_split_pct',
+                 'target_property_id.co_user_id', 'target_property_id.is_allied_property',
                  'target_property_id.allied_split_pct')
     def _compute_financials(self):
         for lead in self:
@@ -758,6 +759,10 @@ class CrmLead(models.Model):
                 if lead.target_property_id.is_allied_property:
                     allied_ratio = (lead.target_property_id.allied_split_pct or 50.0) / 100.0
                     pct = pct * allied_ratio
+                # Si además tiene co-asesor interno con split, calculamos la parte correspondiente
+                if lead.target_property_id.co_user_id and 0 < lead.target_property_id.commission_split_pct < 100:
+                    co_ratio = (100.0 - lead.target_property_id.commission_split_pct) / 100.0
+                    pct = pct * co_ratio
             
             comm = base_amount * (pct / 100.0)
             lead.expected_commission = comm

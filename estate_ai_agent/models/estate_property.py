@@ -140,7 +140,7 @@ class EstateProperty(models.Model):
             agent_group = self.env.ref(
                 'estate_management.estate_group_agent', raise_if_not_found=False)
             candidates = list(agent_group.user_ids) if agent_group else []
-            candidates += [prop.user_id, prop.co_capture_user_id]
+            candidates += [prop.user_id, prop.co_user_id, prop.co_capture_user_id]
             for user in candidates:
                 if user and user.partner_id:
                     p = (user.partner_id.mobile or user.partner_id.phone or '').strip()

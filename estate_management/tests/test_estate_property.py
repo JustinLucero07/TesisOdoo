@@ -53,6 +53,26 @@ class TestEstatePropertyConstraints(TransactionCase):
         prop = self._make(price=100000.0, bottom_price=85000.0)
         self.assertEqual(prop.bottom_price, 85000.0)
 
+    def test_commission_split_negative_raises(self):
+        with self.assertRaises(UserError):
+            self._make(commission_split_pct=-5)
+
+    def test_commission_split_over_100_raises(self):
+        with self.assertRaises(UserError):
+            self._make(commission_split_pct=150)
+
+    def test_commission_split_in_range_passes(self):
+        prop = self._make(commission_split_pct=50)
+        self.assertEqual(prop.commission_split_pct, 50)
+
+    def test_commission_split_boundary_0_passes(self):
+        prop = self._make(commission_split_pct=0)
+        self.assertEqual(prop.commission_split_pct, 0)
+
+    def test_commission_split_boundary_100_passes(self):
+        prop = self._make(commission_split_pct=100)
+        self.assertEqual(prop.commission_split_pct, 100)
+
     def test_default_state_draft(self):
         # Una propiedad nueva inicia en 'draft' (Borrador) y se publica con
         # action_publish() para pasar a 'available' (Disponible).
