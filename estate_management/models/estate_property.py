@@ -1,7 +1,6 @@
 import logging
 import qrcode
 import base64
-import requests
 from io import BytesIO
 from odoo import models, fields, api
 from odoo.exceptions import UserError
@@ -12,7 +11,7 @@ _logger = logging.getLogger(__name__)
 class EstateProperty(models.Model):
     _name = 'estate.property'
     _description = 'Propiedad Inmobiliaria'
-    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.phone.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.whatsapp.mixin']
     _order = 'create_date desc'
     _rec_name = 'title'
 
@@ -1245,27 +1244,6 @@ class EstateProperty(models.Model):
             'context': {'edit_deal_mode': True},
         }
 
-    def action_set_sold(self):
-        self.ensure_one()
-        if self.state not in ('available', 'reserved'):
-            raise UserError('Solo se puede marcar como Vendida una propiedad Disponible o Reservada.')
-
-        # Despublicar de WordPress antes de cambiar el estado
-        if (self.wp_published or self.wp_post_id) and hasattr(self, 'action_unpublish_wordpress'):
-            try:
-                self.action_unpublish_wordpress()
-            except Exception as e:
-                _logger.warning(
-                    'WP unpublish automático al vender propiedad %s falló: %s', self.id, e)
-
-        vals = {'state': 'sold'}
-        if not self.date_sold:
-            vals['date_sold'] = fields.Date.today()
-        if not self.sold_by:
-            vals['sold_by'] = 'agency'
-        self.with_context(no_wp_sync=True).write(vals)
-        self._create_commission_records('sale', self.commission_amount, self.price, self.commission_percentage)
-
     def action_set_rented(self):
         self.ensure_one()
         if self.state not in ('available', 'reserved'):
@@ -1447,25 +1425,6 @@ class EstateProperty(models.Model):
                 'state': 'approved',
             })
 
-    @api.model
-    def _backfill_missing_sale_commissions(self):
-        """Utilidad de mantenimiento (ejecutar una sola vez desde el shell):
-        genera la comisión faltante de propiedades ya vendidas cuyo negocio se
-        cerró sin pasar por el asistente de venta — por ejemplo, una propiedad
-        reservada cuya factura se pagó y el cron la marcó "vendida" sola (ver
-        estate_management/models/account_move.py), camino que hasta ahora no
-        creaba el registro en estate.commission. Devuelve las propiedades corregidas."""
-        sold = self.search([('state', '=', 'sold'), ('user_id', '!=', False)])
-        fixed = self.browse()
-        for prop in sold:
-            existing = self.env['estate.commission'].search([
-                ('property_id', '=', prop.id), ('type', '=', 'sale'), ('state', '!=', 'cancelled'),
-            ], limit=1)
-            if not existing:
-                prop._create_commission_records('sale', prop.commission_amount, prop.price, prop.commission_percentage)
-                fixed |= prop
-        return fixed
-
     def action_create_invoice(self):
         self.ensure_one()
         # Validación: no facturar dos veces una propiedad ya vendida
@@ -1520,7 +1479,7 @@ class EstateProperty(models.Model):
             except Exception as e_pay:
                 _logger.warning("No se pudo auto-registrar pago al contado en factura directa: %s", e_pay)
 
-        # Despublicar de WordPress al concretar la venta (igual que action_set_sold)
+        # Despublicar de WordPress al concretar la venta
         if (self.wp_published or self.wp_post_id) and hasattr(self, 'action_unpublish_wordpress'):
             try:
                 self.action_unpublish_wordpress()
@@ -1540,55 +1499,16 @@ class EstateProperty(models.Model):
         }
 
     # --- Cron: Recordatorio de Contratos ---
-    # _clean_phone() heredado de estate.phone.mixin
-
     def _send_contract_whatsapp_template(self, phone, prop_title, fecha_vencimiento, dias_restantes, destinatario):
-        """Envía recordatorio de contrato por WhatsApp con plantilla aprobada de Meta.
-        Plantilla: recordatorio_contrato
-        Parámetros: {{1}} destinatario, {{2}} propiedad, {{3}} fecha, {{4}} días restantes.
-        """
+        """Recordatorio de contrato con plantilla aprobada de Meta.
+        Parámetros: {{1}} destinatario, {{2}} propiedad, {{3}} fecha, {{4}} días restantes."""
         ICP = self.env['ir.config_parameter'].sudo()
-        phone_number_id = ICP.get_param('estate_calendar.whatsapp_phone_number_id', '')
-        access_token = ICP.get_param('estate_calendar.whatsapp_access_token', '')
-        template_name = ICP.get_param('estate_management.whatsapp_contract_template', 'recordatorio_contrato')
-        if not phone_number_id or not access_token or not phone:
-            return False
-        clean = self._clean_phone(phone)
-        try:
-            resp = requests.post(
-                f'https://graph.facebook.com/v25.0/{phone_number_id}/messages',
-                json={
-                    'messaging_product': 'whatsapp',
-                    'to': clean,
-                    'type': 'template',
-                    'template': {
-                        'name': template_name,
-                        'language': {'code': 'es'},
-                        'components': [{
-                            'type': 'body',
-                            'parameters': [
-                                {'type': 'text', 'text': destinatario},
-                                {'type': 'text', 'text': prop_title},
-                                {'type': 'text', 'text': fecha_vencimiento},
-                                {'type': 'text', 'text': str(dias_restantes)},
-                            ],
-                        }],
-                    },
-                },
-                headers={
-                    'Authorization': f'Bearer {access_token}',
-                    'Content-Type': 'application/json',
-                },
-                timeout=30,
-            )
-            if resp.status_code == 200:
-                _logger.info('WhatsApp contrato (plantilla) enviado a %s', clean)
-                return True
-            _logger.warning('WhatsApp contrato falló (%s): %s', resp.status_code, resp.text[:300])
-            return False
-        except Exception as e:
-            _logger.error('WhatsApp contrato error: %s', e)
-            return False
+        template = ICP.get_param('estate_management.whatsapp_contract_template', 'recordatorio_contrato')
+        lang = ICP.get_param('estate_management.whatsapp_contract_template_lang', 'es')
+        ok, _motivo = self._wa_send_template(
+            phone, template, [destinatario, prop_title, fecha_vencimiento, str(dias_restantes)],
+            lang=lang)
+        return ok
 
     @api.model
     def _cron_check_contract_expiry(self):

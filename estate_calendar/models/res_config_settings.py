@@ -22,6 +22,17 @@ class ResConfigSettings(models.TransientModel):
         config_parameter='estate_calendar.whatsapp_template_name',
         default='recordatorio_cita',
         help='Nombre exacto de la plantilla aprobada en Meta (ej: recordatorio_cita)')
+    whatsapp_template_lang = fields.Char(
+        string='Idioma de la plantilla de citas',
+        config_parameter='estate_calendar.whatsapp_template_lang', default='es_EC',
+        help='Código del idioma con que se aprobó la plantilla de citas en Meta.')
+    whatsapp_contract_template_lang = fields.Char(
+        string='Idioma de la plantilla de contratos',
+        config_parameter='estate_management.whatsapp_contract_template_lang', default='es')
+    whatsapp_api_version = fields.Char(
+        string='Versión de la API de Meta',
+        config_parameter='estate.whatsapp_api_version', default='v25.0',
+        help='Versión de Graph API usada por todos los envíos de WhatsApp (ej. v25.0).')
     whatsapp_reminder_template = fields.Char(
         string='Plantilla — Recordatorios de clientes',
         config_parameter='estate_calendar.whatsapp_reminder_template',

@@ -22,7 +22,7 @@ def reminder_to_minutes(value, unit):
 
 class CalendarEvent(models.Model):
     _name = 'calendar.event'
-    _inherit = ['calendar.event', 'estate.phone.mixin']
+    _inherit = ['calendar.event', 'estate.whatsapp.mixin']
 
     client_id = fields.Many2one(
         'res.partner', string='Cliente',

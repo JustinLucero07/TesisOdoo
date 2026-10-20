@@ -291,7 +291,7 @@ TOOLS_OPENAI = [
         "type": "function",
         "function": {
             "name": "sell_property",
-            "description": "Cierra una propiedad como vendida o alquilada.",
+            "description": "Cierra una propiedad como vendida (crea orden, factura por cobrar y comisión, igual que el botón Vender Propiedad) o alquilada.",
             "parameters": {
                 "type": "object",
                 "required": ["property_id", "close_type"],
@@ -299,6 +299,7 @@ TOOLS_OPENAI = [
                     "property_id": {"type": "integer", "description": "ID de la propiedad"},
                     "close_type": {"type": "string", "description": "Tipo de cierre: sold (vendida) o rented (alquilada)"},
                     "final_price": {"type": "number", "description": "Precio final de cierre (opcional)"},
+                    "buyer_name": {"type": "string", "description": "Nombre del comprador (obligatorio para ventas si la propiedad no tiene comprador)"},
                     "notes": {"type": "string", "description": "Notas del cierre"},
                 },
             },

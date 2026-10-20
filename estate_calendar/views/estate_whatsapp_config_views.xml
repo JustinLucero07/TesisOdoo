@@ -31,10 +31,18 @@
                                  help="Token permanente generado en Meta Business → Usuarios del sistema.">
                             <field name="whatsapp_access_token" password="True" placeholder="EAAx..."/>
                         </setting>
+                        <setting id="whatsapp_api_version_setting"
+                                 string="Versión de la API de Meta"
+                                 help="La usan todos los envíos de WhatsApp del sistema (citas, recordatorios, contratos y pagos vencidos).">
+                            <field name="whatsapp_api_version" placeholder="v25.0"/>
+                        </setting>
                         <setting id="whatsapp_template_name_setting"
                                  string="Plantilla — Citas"
                                  help="Nombre exacto de la plantilla aprobada en Meta para recordatorios de citas. Parámetros: {{1}} cita, {{2}} hora, {{3}} cliente, {{4}} propiedad.">
-                            <field name="whatsapp_template_name" placeholder="recordatorio_cita"/>
+                            <div class="d-flex gap-2">
+                                <field name="whatsapp_template_name" placeholder="recordatorio_cita"/>
+                                <field name="whatsapp_template_lang" placeholder="es_EC" class="w-25"/>
+                            </div>
                         </setting>
                         <setting id="whatsapp_reminder_template_setting"
                                  string="Plantilla — Recordatorios de clientes"
@@ -52,7 +60,10 @@
                         <setting id="whatsapp_contract_template_setting"
                                  string="Plantilla — Contratos"
                                  help="Nombre exacto de la plantilla aprobada en Meta para recordatorios de vencimiento de contratos. Parámetros: {{1}} destinatario, {{2}} propiedad, {{3}} fecha vencimiento, {{4}} días restantes.">
-                            <field name="whatsapp_contract_template" placeholder="recordatorio_contrato"/>
+                            <div class="d-flex gap-2">
+                                <field name="whatsapp_contract_template" placeholder="recordatorio_contrato"/>
+                                <field name="whatsapp_contract_template_lang" placeholder="es" class="w-25"/>
+                            </div>
                         </setting>
                     </block>
                     <block title="WhatsApp Business — Redes Sociales" name="whatsapp_social_settings">

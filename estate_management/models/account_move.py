@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-import logging
-
-from odoo import models, fields, api
-from odoo.exceptions import ValidationError
-
-_logger = logging.getLogger(__name__)
+from odoo import models, fields
 
 
 class AccountMove(models.Model):
@@ -42,48 +37,3 @@ class AccountMove(models.Model):
                              f'marcado como <b>Pagado</b> automáticamente al confirmar la factura.')
         return result
 
-    def _create_commission_if_missing(self, prop):
-        """Genera la comisión del asesor cuando la propiedad se vende SIN pasar
-        por el asistente de venta (p.ej. al confirmarse el pago de la factura
-        desde una reserva) — de lo contrario esa venta queda sin comisión
-        registrada, aunque sí cuente como venta en reportes y rankings."""
-        existing = self.env['estate.commission'].search([
-            ('property_id', '=', prop.id), ('type', '=', 'sale'), ('state', '!=', 'cancelled'),
-        ], limit=1)
-        if not existing and prop.user_id:
-            prop._create_commission_records('sale', prop.commission_amount, prop.price, prop.commission_percentage)
-
-    def action_mark_property_from_invoice(self):
-        """Botón manual: actualiza el estado de la propiedad vinculada al pagar esta factura."""
-        self.ensure_one()
-        if not self.property_id:
-            raise ValidationError('Esta factura no tiene propiedad vinculada.')
-        prop = self.property_id
-        if self.payment_state not in ('paid', 'in_payment'):
-            raise ValidationError('La factura aún no está marcada como pagada.')
-        if prop.state not in ('reserved', 'available'):
-            raise ValidationError(
-                f'La propiedad ya está en estado "{prop.state}". Solo se puede actualizar desde Reservada o Disponible.')
-        prop.write({'state': 'sold'})
-        self._create_commission_if_missing(prop)
-        prop.message_post(
-            body=f'Propiedad marcada como <b>VENDIDA</b> desde la factura <b>{self.name}</b>.')
-        self.message_post(
-            body=f'Propiedad <b>{prop.title}</b> marcada como VENDIDA.')
-
-    @api.model
-    def _cron_sync_property_state_from_invoices(self):
-        """Cron diario: detecta facturas pagadas y actualiza estado de la propiedad vinculada."""
-        paid_invoices = self.search([
-            ('move_type', '=', 'out_invoice'),
-            ('payment_state', 'in', ('paid', 'in_payment')),
-            ('property_id', '!=', False),
-            ('property_id.state', '=', 'reserved'),
-        ])
-        for move in paid_invoices:
-            prop = move.property_id
-            prop.write({'state': 'sold'})
-            self._create_commission_if_missing(prop)
-            prop.message_post(
-                body=f'Propiedad marcada como <b>VENDIDA</b> automáticamente '
-                     f'(factura <b>{move.name}</b> pagada).')

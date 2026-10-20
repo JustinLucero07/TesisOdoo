@@ -905,25 +905,43 @@ INSTRUCCIONES DE RESPUESTA:
                 })
 
             elif tool_name == 'sell_property':
+                # Pasa por el mismo flujo que el botón "Vender Propiedad" /
+                # "Arrendar": orden de venta, factura por cobrar y comisión.
                 property_id = int(args.get('property_id', 0))
                 if not property_id:
                     return json.dumps({'error': 'property_id requerido'})
-                prop = env['estate.property'].sudo().browse(property_id)
+                prop = env['estate.property'].browse(property_id)
                 if not prop.exists():
                     return json.dumps({'error': f'Propiedad {property_id} no encontrada'})
                 close_type = args.get('close_type', 'sold')
-                vals = {'state': close_type if close_type in ('sold', 'rented') else 'sold'}
+                if close_type == 'rented':
+                    prop.action_set_rented()
+                    return json.dumps({
+                        'success': True,
+                        'mensaje': f"Propiedad '{prop.title}' marcada como ARRENDADA.",
+                    })
+                wizard_vals = {'property_id': prop.id}
+                buyer = prop.buyer_id
+                if args.get('buyer_name'):
+                    buyer = env['res.partner'].search(
+                        [('name', 'ilike', args['buyer_name'])], limit=1) or buyer
+                if not buyer:
+                    return json.dumps({'error': 'Para registrar la venta necesito el comprador '
+                                                '(buyer_name). También puedes usar el botón '
+                                                '"Vender Propiedad" en la ficha.'})
+                wizard_vals['buyer_id'] = buyer.id
                 if args.get('final_price'):
-                    vals['price'] = float(args['final_price'])
-                from datetime import date
-                vals['date_sold'] = date.today()
-                prop.write(vals)
-                estado_str = 'VENDIDA' if vals['state'] == 'sold' else 'ALQUILADA'
-                note = args.get('notes', f"Cerrada como {estado_str} vía Agente IA")
-                prop.message_post(body=f"{note}")
+                    wizard_vals['sale_price'] = float(args['final_price'])
+                wizard = env['estate.sale.wizard'].with_context(
+                    default_property_id=prop.id).create(wizard_vals)
+                wizard.action_confirm_sale()
+                if args.get('notes'):
+                    prop.message_post(body=args['notes'])
                 return json.dumps({
                     'success': True,
-                    'mensaje': f"Propiedad '{prop.title}' marcada como {estado_str}. Precio final: ${prop.price:,.2f}",
+                    'mensaje': (f"Propiedad '{prop.title}' VENDIDA a {buyer.name} por "
+                                f"${prop.price:,.2f}. Se creó la orden de venta, la factura de "
+                                f"comisión (por cobrar) y la comisión del asesor."),
                 })
 
             elif tool_name == 'send_whatsapp_lead':

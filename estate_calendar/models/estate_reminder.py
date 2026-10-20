@@ -15,10 +15,7 @@ import pytz
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
-from odoo.addons.estate_management.tools.http_retry import request_with_retry
-
 from .calendar_event import REMINDER_UNITS, reminder_to_minutes
-from .estate_whatsapp import META_API_VERSION
 
 _logger = logging.getLogger(__name__)
 
@@ -37,7 +34,7 @@ REMINDER_TYPES = [
 class EstateReminder(models.Model):
     _name = 'estate.reminder'
     _description = 'Recordatorio de cliente'
-    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.phone.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.whatsapp.mixin']
     _order = 'deadline asc, id desc'
 
     name = fields.Char(
@@ -407,14 +404,8 @@ class EstateReminder(models.Model):
         """
         self.ensure_one()
         ICP = self.env['ir.config_parameter'].sudo()
-        if ICP.get_param('estate_calendar.whatsapp_active', 'False') != 'True':
-            return False, 'la integración de WhatsApp está desactivada en Ajustes.'
-        phone_number_id = ICP.get_param('estate_calendar.whatsapp_phone_number_id', '')
-        access_token = ICP.get_param('estate_calendar.whatsapp_access_token', '')
         template = ICP.get_param('estate_calendar.whatsapp_reminder_template', 'recordatorio_cliente')
         lang = ICP.get_param('estate_calendar.whatsapp_reminder_template_lang', 'es') or 'es'
-        if not phone_number_id or not access_token:
-            return False, 'faltan las credenciales de Meta en Ajustes → WhatsApp.'
         partner = self.user_id.partner_id
         phone = (getattr(partner, 'mobile', None) or partner.phone or '') if partner else ''
         if not phone:
@@ -427,40 +418,15 @@ class EstateReminder(models.Model):
             detalle.append('Documento: %s' % self.document_id.name)
         if self.note:
             detalle.append(self.note)
-        # Meta no acepta saltos de línea ni parámetros vacíos dentro de una variable.
-        detalle = ' | '.join(' '.join(d.split()) for d in detalle) or 'Sin detalle adicional'
 
-        params = [self.name, self.partner_id.name or 'Cliente', self._whatsapp_cuando(due), detalle]
-        payload = {
-            'messaging_product': 'whatsapp',
-            'to': self._clean_phone(phone),
-            'type': 'template',
-            'template': {
-                'name': template,
-                'language': {'code': lang},
-                'components': [{
-                    'type': 'body',
-                    'parameters': [{'type': 'text', 'text': p[:900]} for p in params],
-                }],
-            },
-        }
-        url = 'https://graph.facebook.com/%s/%s/messages' % (META_API_VERSION, phone_number_id)
-        try:
-            resp = request_with_retry('POST', url, json=payload, timeout=30, headers={
-                'Authorization': 'Bearer %s' % access_token,
-                'Content-Type': 'application/json',
-            })
-            data = resp.json()
-        except Exception as e:
-            _logger.error('WhatsApp recordatorio %s: %s', self.id, e)
-            return False, 'error de conexión con Meta.'
-        if resp.status_code == 200 and data.get('messages'):
-            _logger.info('WhatsApp recordatorio %s enviado a %s', self.id, self.user_id.name)
-            return True, ''
-        error = (data.get('error') or {}).get('message') or resp.text[:200]
-        _logger.warning('WhatsApp recordatorio %s falló (%s): %s', self.id, resp.status_code, error)
-        return False, 'Meta respondió: %s (revisa que la plantilla "%s" esté aprobada en idioma "%s").' % (
-            error, template, lang)
+        ok, motivo = self._wa_send_template(
+            phone, template,
+            [self.name, self.partner_id.name or 'Cliente', self._whatsapp_cuando(due),
+             ' | '.join(detalle) or 'Sin detalle adicional'],
+            lang=lang)
+        if not ok and motivo.startswith('Meta'):
+            motivo += ' (revisa que la plantilla "%s" esté aprobada en idioma "%s").' % (template, lang)
+        return ok, motivo
 
     # ── Cron ────────────────────────────────────────────────────────────────
     @api.model

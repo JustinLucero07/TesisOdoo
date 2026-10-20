@@ -2,11 +2,9 @@ import logging
 from datetime import timedelta
 
 from odoo import models, fields, api
-from odoo.addons.estate_management.tools.http_retry import request_with_retry
 
 _logger = logging.getLogger(__name__)
 
-META_API_VERSION = 'v25.0'
 
 # Margen de gracia: si un tick del cron se salta la ventana exacta de una cita
 # (recordatorio corto + intervalo del cron), igual la recupera en el siguiente
@@ -20,97 +18,21 @@ class CalendarEventWhatsApp(models.Model):
     # _clean_phone() heredado de estate.phone.mixin (aplicado en calendar_event.py)
 
     def _send_whatsapp(self, phone, event_name, time_str, client_name, property_name):
-        """
-        Envía mensaje de WhatsApp usando Meta Cloud API con plantilla aprobada.
-        Parámetros de la plantilla: {{1}} cita, {{2}} hora, {{3}} cliente, {{4}} propiedad.
-        """
+        """Recordatorio de cita con la plantilla aprobada en Meta.
+        Parámetros: {{1}} cita, {{2}} hora, {{3}} cliente, {{4}} propiedad."""
         ICP = self.env['ir.config_parameter'].sudo()
-        phone_number_id = ICP.get_param('estate_calendar.whatsapp_phone_number_id', '')
-        access_token = ICP.get_param('estate_calendar.whatsapp_access_token', '')
-        template_name = ICP.get_param('estate_calendar.whatsapp_template_name', 'recordatorio_cita')
-
-        if not phone_number_id or not access_token:
-            _logger.warning('WhatsApp: faltan credenciales Meta Cloud API.')
-            return False
-
-        if not phone:
-            return False
-
-        clean_phone = self._clean_phone(phone)
-        url = f'https://graph.facebook.com/{META_API_VERSION}/{phone_number_id}/messages'
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json',
-        }
-        payload = {
-            'messaging_product': 'whatsapp',
-            'to': clean_phone,
-            'type': 'template',
-            'template': {
-                'name': template_name,
-                'language': {'code': 'es_EC'},
-                'components': [{
-                    'type': 'body',
-                    'parameters': [
-                        {'type': 'text', 'text': event_name},
-                        {'type': 'text', 'text': time_str},
-                        {'type': 'text', 'text': client_name or 'Sin cliente'},
-                        {'type': 'text', 'text': property_name or 'Sin propiedad'},
-                    ],
-                }],
-            },
-        }
-
-        try:
-            resp = request_with_retry('POST', url, json=payload, headers=headers, timeout=30)
-            data = resp.json()
-            if resp.status_code == 200 and data.get('messages'):
-                _logger.info('WhatsApp enviado a %s (cita: %s)', clean_phone, event_name)
-                return True
-            else:
-                _logger.warning('WhatsApp Meta falló (%s): %s', resp.status_code, resp.text[:300])
-                return False
-        except Exception as e:
-            _logger.error('WhatsApp Meta error: %s', e)
-            return False
+        template = ICP.get_param('estate_calendar.whatsapp_template_name', 'recordatorio_cita')
+        lang = ICP.get_param('estate_calendar.whatsapp_template_lang', 'es_EC')
+        ok, _motivo = self._wa_send_template(
+            phone, template,
+            [event_name, time_str, client_name or 'Sin cliente', property_name or 'Sin propiedad'],
+            lang=lang, require_active=False)
+        return ok
 
     def _send_whatsapp_text(self, phone, message):
-        """
-        Envía mensaje de texto libre (solo para contactos que ya te escribieron
-        en las últimas 24h — ventana de servicio al cliente de Meta).
-        Útil para follow-ups manuales.
-        """
-        ICP = self.env['ir.config_parameter'].sudo()
-        phone_number_id = ICP.get_param('estate_calendar.whatsapp_phone_number_id', '')
-        access_token = ICP.get_param('estate_calendar.whatsapp_access_token', '')
-
-        if not phone_number_id or not access_token or not phone:
-            return False
-
-        clean_phone = self._clean_phone(phone)
-        url = f'https://graph.facebook.com/{META_API_VERSION}/{phone_number_id}/messages'
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json',
-        }
-        payload = {
-            'messaging_product': 'whatsapp',
-            'to': clean_phone,
-            'type': 'text',
-            'text': {'body': message},
-        }
-
-        try:
-            resp = request_with_retry('POST', url, json=payload, headers=headers, timeout=30)
-            data = resp.json()
-            if resp.status_code == 200 and data.get('messages'):
-                _logger.info('WhatsApp texto enviado a %s', clean_phone)
-                return True
-            _logger.warning('WhatsApp texto falló (%s): %s', resp.status_code, resp.text[:300])
-            return False
-        except Exception as e:
-            _logger.error('WhatsApp texto error: %s', e)
-            return False
+        """Texto libre (solo si el contacto escribió en las últimas 24 h)."""
+        ok, _motivo = self._wa_send_text(phone, message, require_active=False)
+        return ok
 
     @api.model
     def _cron_send_whatsapp_reminders(self):

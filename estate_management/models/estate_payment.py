@@ -1,5 +1,4 @@
 import logging
-import requests
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError
@@ -10,7 +9,7 @@ _logger = logging.getLogger(__name__)
 class EstatePayment(models.Model):
     _name = 'estate.payment'
     _description = 'Pago Inmobiliario'
-    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.phone.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.whatsapp.mixin']
     _order = 'date desc, id desc'
 
     name = fields.Char(
@@ -149,50 +148,24 @@ class EstatePayment(models.Model):
             'target': 'current',
         }
 
-    # _clean_phone() heredado de estate.phone.mixin
-
     def _send_whatsapp_overdue(self, phone, payment, days_late):
-        """Envía alerta WhatsApp via Meta Cloud API para pago vencido."""
+        """Alerta de pago vencido al responsable.
+
+        Usa la plantilla de recordatorios de clientes (una plantilla aprobada
+        llega siempre; el texto libre solo si el asesor escribió en las últimas
+        24 h). {{1}} asunto, {{2}} cliente, {{3}} cuándo venció, {{4}} detalle."""
         ICP = self.env['ir.config_parameter'].sudo()
-        phone_number_id = ICP.get_param('estate_calendar.whatsapp_phone_number_id', '')
-        access_token = ICP.get_param('estate_calendar.whatsapp_access_token', '')
-
-        if not phone_number_id or not access_token or not phone:
-            return False
-
-        clean_phone = self._clean_phone(phone)
-        url = f'https://graph.facebook.com/v19.0/{phone_number_id}/messages'
-        headers = {
-            'Authorization': f'Bearer {access_token}',
-            'Content-Type': 'application/json',
-        }
-
-        message = (
-            f"PAGO VENCIDO — Sistema Inmobiliario\n"
-            f"Referencia: {payment.name}\n"
-            f"Cliente: {payment.partner_id.name or 'Sin cliente'}\n"
-            f"Contrato: {payment.contract_id.name}\n"
-            f"Monto: ${payment.amount:,.2f}\n"
-            f"Vencido hace {days_late} dia(s) ({payment.date})\n"
-            f"Por favor gestionar cobro."
-        )
-        payload = {
-            'messaging_product': 'whatsapp',
-            'to': clean_phone,
-            'type': 'text',
-            'text': {'body': message},
-        }
-
-        try:
-            resp = requests.post(url, json=payload, headers=headers, timeout=30)
-            data = resp.json()
-            if resp.status_code == 200 and data.get('messages'):
-                _logger.info("WhatsApp enviado a %s por pago vencido %s", clean_phone, payment.name)
-                return True
-            _logger.warning("WhatsApp falló (%s): %s", resp.status_code, resp.text[:300])
-        except Exception as e:
-            _logger.error("Error enviando WhatsApp de pago vencido: %s", e)
-        return False
+        template = ICP.get_param('estate_calendar.whatsapp_reminder_template', 'recordatorio_cliente')
+        lang = ICP.get_param('estate_calendar.whatsapp_reminder_template_lang', 'es') or 'es'
+        ok, _motivo = self._wa_send_template(phone, template, [
+            'Pago vencido %s' % payment.name,
+            payment.partner_id.name or 'Sin cliente',
+            'el %s (hace %d día%s)' % (payment.date.strftime('%d/%m/%Y'), days_late,
+                                       '' if days_late == 1 else 's'),
+            'Contrato %s · Monto $%s · Gestionar cobro' % (
+                payment.contract_id.name or '-', '{:,.2f}'.format(payment.amount)),
+        ], lang=lang)
+        return ok
 
     @api.model
     def _cron_check_overdue_payments(self):

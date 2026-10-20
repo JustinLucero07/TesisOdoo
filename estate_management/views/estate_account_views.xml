@@ -29,12 +29,6 @@
                 <field name="estate_transaction_type"/>
                 <field name="closing_payment_type"/>
             </xpath>
-            <xpath expr="//header" position="inside">
-                <button name="action_mark_property_from_invoice"
-                        string="Marcar Propiedad como Vendida/Arrendada"
-                        type="object" class="btn-success" icon="fa-check-circle"
-                        invisible="property_id == False or payment_state not in ('paid','in_payment') or move_type != 'out_invoice'"/>
-            </xpath>
         </field>
     </record>
 
