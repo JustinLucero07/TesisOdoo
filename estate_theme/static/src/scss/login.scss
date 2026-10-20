@@ -16,7 +16,7 @@ body.o_ix_login_body {
         position: relative;
         overflow: hidden;
         // Misma diagonal en dos azules que el logo
-        background: linear-gradient(225deg, #151e48 0 34%, #202b5b 34% 100%);
+        background: linear-gradient(225deg, #0d1940 0 34%, #142559 34% 100%);
         color: #fff;
         display: flex;
         align-items: center;
@@ -44,7 +44,7 @@ body.o_ix_login_body {
         font-weight: 500;
         letter-spacing: .42em;
         padding-left: .42em;
-        color: #e20421;
+        color: #d9042b;
     }
     &__tagline {
         margin: 0;
@@ -95,8 +95,8 @@ body.o_ix_login_body {
         background: #fff;
         transition: border-color .15s, box-shadow .15s;
         &:focus {
-            border-color: #202b5b;
-            box-shadow: 0 0 0 3px rgba(32, 43, 91, .14);
+            border-color: #0d1940;
+            box-shadow: 0 0 0 3px rgba(13, 25, 64, .14);
         }
     }
     .input-group {
@@ -116,11 +116,11 @@ body.o_ix_login_body {
             border-radius: 10px;
             font-weight: 500;
             font-size: .98rem;
-            background: #202b5b;
-            border-color: #202b5b;
-            box-shadow: 0 8px 20px -10px rgba(32, 43, 91, .7);
+            background: #0d1940;
+            border-color: #0d1940;
+            box-shadow: 0 8px 20px -10px rgba(13, 25, 64, .7);
             transition: background-color .15s, transform .15s;
-            &:hover { background: #151e48; border-color: #151e48; }
+            &:hover { background: #142559; border-color: #142559; }
             &:active { transform: translateY(1px); }
         }
         .btn-link { color: #6b7280; }
@@ -132,7 +132,7 @@ body.o_ix_login_body {
         border-top: 1px solid #e7e9ee;
         text-align: center;
         font-size: .8rem;
-        a { color: #6b7280; text-decoration: none; &:hover { color: #202b5b; } }
+        a { color: #6b7280; text-decoration: none; &:hover { color: #0d1940; } }
     }
 }
 @media (max-width: 991.98px) {

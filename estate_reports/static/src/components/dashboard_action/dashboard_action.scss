@@ -4,8 +4,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 .o_estate_dash {
-    --d-primary: var(--ix-primary, #202b5b);
-    --d-ink: #202b5b;
+    --d-primary: var(--ix-primary, #0d1940);
+    --d-ink: #0d1940;
     --d-canvas: var(--ix-canvas, #f5f6f8);
     --d-surface: #ffffff;
     --d-line: var(--ix-line, #e7e9ee);
@@ -71,7 +71,7 @@
         transition: border-color .15s, box-shadow .15s;
         &:focus-within {
             border-color: var(--d-primary);
-            box-shadow: 0 0 0 3px rgba(32, 43, 91, .12);
+            box-shadow: 0 0 0 3px rgba(13, 25, 64, .12);
         }
         select {
             border: none;
@@ -178,7 +178,7 @@
         cursor: pointer;
         &:hover {
             border-color: #cfd6e0;
-            box-shadow: 0 8px 20px -12px rgba(32, 43, 91, .35);
+            box-shadow: 0 8px 20px -12px rgba(13, 25, 64, .35);
             transform: translateY(-1px);
         }
         &:focus-visible { outline: 2px solid var(--d-primary); outline-offset: 2px; }
@@ -237,7 +237,7 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: linear-gradient(135deg, #202b5b, #e20421);
+        background: linear-gradient(135deg, #0d1940 0%, #590c37 60%, #d9042b 100%);
         color: #fff;
         font-size: .85rem;
     }
