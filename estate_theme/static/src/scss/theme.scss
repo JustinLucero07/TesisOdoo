@@ -1,0 +1,326 @@
+// ═══════════════════════════════════════════════════════════════
+// Inmobi — Tema visual del backend
+// Minimalista: fondo neutro, superficies blancas con bordes finos,
+// tipografía Inter liviana y acentos en el azul de la marca.
+// ═══════════════════════════════════════════════════════════════
+
+:root {
+    --ix-primary: #004274;
+    --ix-primary-hover: #00355d;
+    --ix-primary-soft: #eef3f9;
+    --ix-canvas: #f5f6f8;
+    --ix-surface: #ffffff;
+    --ix-line: #e7e9ee;
+    --ix-line-strong: #d9dde4;
+    --ix-text: #1d2433;
+    --ix-muted: #6b7280;
+    --ix-faint: #9aa1ad;
+    --ix-radius-sm: 6px;
+    --ix-radius: 10px;
+    --ix-radius-lg: 14px;
+    --ix-shadow: 0 1px 2px rgba(17, 24, 39, .04), 0 1px 3px rgba(17, 24, 39, .04);
+    --ix-shadow-hover: 0 4px 14px rgba(17, 24, 39, .08);
+    --ix-ease: cubic-bezier(.2, .8, .2, 1);
+}
+
+// ── Tipografía ───────────────────────────────────────────────────
+body, .o_web_client {
+    font-feature-settings: "cv11", "ss01";   // Inter: "a" y "1" más limpios
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.003em;
+    color: var(--ix-text);
+}
+h1, h2, h3, .o_form_view .oe_title h1 {
+    font-weight: 400;
+    letter-spacing: -0.02em;
+}
+strong, b { font-weight: 600; }
+
+.o_web_client { background-color: var(--ix-canvas); }
+
+// ── Barra superior ───────────────────────────────────────────────
+.o_main_navbar {
+    box-shadow: none;
+    .o_menu_brand {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+    .o_menu_sections .o_nav_entry,
+    .o_menu_sections .dropdown-toggle {
+        font-weight: 450;
+        border-radius: var(--ix-radius-sm);
+        margin: 0 1px;
+        height: 34px;
+        line-height: 34px;
+        align-self: center;
+    }
+    .o_menu_toggle,
+    .o_navbar_apps_menu button,
+    .o_navbar_apps_menu button .oi {
+        color: var(--ix-primary) !important;
+    }
+    .o_navbar_apps_menu button:hover { background-color: var(--ix-primary-soft); }
+    .o_menu_systray .badge {
+        font-weight: 600;
+        border: 2px solid #fff;
+    }
+}
+
+// ── Panel de control (título, botones, buscador) ─────────────────
+.o_control_panel {
+    background-color: var(--ix-surface);
+    border-bottom: 1px solid var(--ix-line);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    .o_breadcrumb {
+        .breadcrumb-item, .breadcrumb-item a { font-weight: 400; color: var(--ix-muted); }
+        .o_last_breadcrumb_item, .active { color: var(--ix-text); font-weight: 500; }
+        font-size: 1.05rem;
+    }
+}
+.o_searchview {
+    border: 1px solid var(--ix-line-strong) !important;
+    border-radius: var(--ix-radius) !important;
+    background: var(--ix-surface);
+    transition: border-color .15s var(--ix-ease), box-shadow .15s var(--ix-ease);
+    &:focus-within {
+        border-color: var(--ix-primary) !important;
+        box-shadow: 0 0 0 3px rgba(0, 66, 116, .10);
+    }
+    .o_searchview_facet {
+        border-radius: 999px;
+        overflow: hidden;
+        .o_searchview_facet_label { border-radius: 999px 0 0 999px; }
+    }
+}
+
+// ── Botones ──────────────────────────────────────────────────────
+.btn {
+    font-weight: 500;
+    border-radius: var(--ix-radius-sm);
+    letter-spacing: 0;
+    transition: background-color .15s var(--ix-ease), border-color .15s var(--ix-ease),
+                color .15s var(--ix-ease), box-shadow .15s var(--ix-ease);
+}
+.btn-primary {
+    box-shadow: 0 1px 2px rgba(0, 66, 116, .25);
+}
+.btn-secondary {
+    background-color: var(--ix-surface);
+    border-color: var(--ix-line-strong);
+    color: var(--ix-text);
+    &:hover { background-color: #f7f8fa; border-color: #c9ced7; color: var(--ix-text); }
+}
+
+// Botones de acción del encabezado (formulario): tonos suaves en lugar de
+// bloques de color fuerte. El color se mantiene como pista, sin gritar.
+@mixin ix-soft-button($fg, $bg, $border) {
+    background-color: $bg;
+    border-color: $border;
+    color: $fg;
+    box-shadow: none;
+    &:hover, &:focus { background-color: darken($bg, 3%); border-color: darken($border, 6%); color: darken($fg, 6%); }
+}
+.o_form_statusbar .o_statusbar_buttons {
+    gap: 6px;
+    .btn-warning, .btn-outline-warning { @include ix-soft-button(#8a5300, #fff6e5, #f6dfb0); }
+    .btn-danger, .btn-outline-danger { @include ix-soft-button(#b42318, #fef1f0, #f6cfcb); }
+    .btn-info, .btn-outline-info { @include ix-soft-button(#035e73, #ecf8fb, #c3e7ef); }
+    .btn-success, .btn-outline-success { @include ix-soft-button(#106b3a, #edf8f1, #c6e9d4); }
+}
+
+// ── Formularios ──────────────────────────────────────────────────
+.o_form_view {
+    background-color: var(--ix-canvas);
+    .o_form_sheet_bg { background-color: var(--ix-canvas); }
+    .o_form_sheet {
+        border: 1px solid var(--ix-line) !important;
+        border-radius: var(--ix-radius-lg);
+        box-shadow: var(--ix-shadow);
+    }
+    .o_form_statusbar {
+        background: transparent;
+        border-bottom: none;
+    }
+    .o_horizontal_separator, .o_group .o_horizontal_separator {
+        font-size: .72rem;
+        font-weight: 600;
+        letter-spacing: .09em;
+        text-transform: uppercase;
+        color: var(--ix-faint);
+        border-bottom-color: var(--ix-line) !important;
+    }
+    .o_form_label {
+        font-weight: 400;
+        color: var(--ix-muted);
+    }
+    .o_field_widget input:focus, .o_field_widget textarea:focus {
+        border-bottom-color: var(--ix-primary);
+    }
+    .oe_title h1 { font-weight: 400; }
+    .nav-tabs {
+        border-bottom-color: var(--ix-line);
+        .nav-link {
+            font-weight: 450;
+            color: var(--ix-muted);
+            border: none;
+            border-bottom: 2px solid transparent;
+            &.active {
+                color: var(--ix-primary);
+                background: transparent;
+                border-bottom-color: var(--ix-primary);
+            }
+            &:hover:not(.active) { color: var(--ix-text); }
+        }
+    }
+}
+
+// Barra de etapas (statusbar)
+.o_statusbar_status .o_arrow_button {
+    font-weight: 450;
+    &.o_arrow_button_current { font-weight: 600; }
+}
+
+// Botones inteligentes (contadores arriba del formulario)
+.oe_button_box .oe_stat_button {
+    border-radius: var(--ix-radius);
+    border: 1px solid var(--ix-line) !important;
+    background: var(--ix-surface);
+    transition: border-color .15s var(--ix-ease), background-color .15s var(--ix-ease);
+    .o_stat_info { font-weight: 400; }
+    .o_stat_value { font-weight: 600; color: var(--ix-text); }
+    .o_button_icon { color: var(--ix-primary); opacity: .85; }
+    &:hover { background: #f9fafb; border-color: var(--ix-line-strong) !important; }
+}
+
+// Cinta (VENDIDO, Cobrada…): más fina
+.ribbon {
+    span {
+        font-weight: 600;
+        letter-spacing: .08em;
+        font-size: .78rem;
+        box-shadow: none;
+    }
+}
+
+// ── Listas ───────────────────────────────────────────────────────
+.o_list_renderer {
+    .o_list_table {
+        thead th {
+            font-size: .82rem;
+            font-weight: 500;
+            letter-spacing: 0;
+            color: var(--ix-muted);
+            background-color: var(--ix-surface);
+            border-bottom: 1px solid var(--ix-line) !important;
+        }
+        tbody .o_data_row > td {
+            border-color: #f0f1f4;
+            padding-top: .62rem;
+            padding-bottom: .62rem;
+        }
+        tbody .o_data_row:hover > td { background-color: #f8fafc; }
+        .o_group_header {
+            background-color: #fafbfc;
+            th, td { font-weight: 500; color: var(--ix-text); }
+        }
+        tfoot td { font-weight: 600; background-color: #fafbfc; }
+    }
+    &.table-responsive, .table-striped > tbody > tr:nth-of-type(odd) > * {
+        --bs-table-striped-bg: transparent;
+    }
+}
+
+// Etiquetas de estado (badges): pastilla suave
+.badge, .o_field_badge .badge {
+    font-weight: 500;
+    letter-spacing: .01em;
+    border-radius: 999px;
+    padding: .32em .7em;
+}
+.o_field_badge .badge, .o_list_renderer .badge {
+    &.text-bg-success, &.bg-success { background-color: #e7f6ee !important; color: #106b3a !important; }
+    &.text-bg-warning, &.bg-warning { background-color: #fff4dc !important; color: #8a5300 !important; }
+    &.text-bg-danger, &.bg-danger { background-color: #fdecea !important; color: #b42318 !important; }
+    &.text-bg-info, &.bg-info { background-color: #e8f4fb !important; color: #035e73 !important; }
+    &.text-bg-primary, &.bg-primary { background-color: var(--ix-primary-soft) !important; color: var(--ix-primary) !important; }
+    &.text-bg-muted, &.text-bg-secondary { background-color: #f1f2f5 !important; color: #4b5563 !important; }
+}
+.o_tag {
+    border-radius: 999px;
+    font-weight: 450;
+}
+
+// ── Kanban ───────────────────────────────────────────────────────
+.o_kanban_renderer {
+    background-color: var(--ix-canvas);
+    .o_kanban_record {
+        border: 1px solid var(--ix-line) !important;
+        border-radius: var(--ix-radius);
+        box-shadow: var(--ix-shadow);
+        transition: box-shadow .2s var(--ix-ease), transform .2s var(--ix-ease), border-color .2s var(--ix-ease);
+        &:hover {
+            box-shadow: var(--ix-shadow-hover);
+            border-color: var(--ix-line-strong) !important;
+        }
+    }
+    .o_kanban_group .o_column_title {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .o_kanban_renderer .o_kanban_record { transition: none; }
+}
+
+// ── Panel lateral de búsqueda ────────────────────────────────────
+.o_search_panel {
+    background-color: var(--ix-surface);
+    border-right: 1px solid var(--ix-line);
+    .o_search_panel_section_header {
+        font-size: .72rem;
+        letter-spacing: .08em;
+        color: var(--ix-faint);
+    }
+    .o_search_panel_category_value header.active,
+    .o_search_panel_category_value .active {
+        background-color: var(--ix-primary-soft);
+        color: var(--ix-primary);
+        border-radius: var(--ix-radius-sm);
+        font-weight: 500;
+    }
+}
+
+// ── Chatter ──────────────────────────────────────────────────────
+.o-mail-Form-chatter, .o-mail-ChatterContainer {
+    background-color: var(--ix-canvas);
+}
+.o-mail-Chatter-topbar .btn-primary {
+    box-shadow: none;
+}
+.o-mail-Message-author { font-weight: 600; }
+
+// ── Diálogos ─────────────────────────────────────────────────────
+.modal-content {
+    border: none;
+    border-radius: var(--ix-radius-lg);
+    box-shadow: 0 24px 60px rgba(17, 24, 39, .18);
+    .modal-header { border-bottom-color: var(--ix-line); }
+    .modal-footer { border-top-color: var(--ix-line); }
+    .modal-title { font-weight: 500; letter-spacing: -0.01em; }
+}
+
+// ── Menús desplegables ───────────────────────────────────────────
+.dropdown-menu {
+    border: 1px solid var(--ix-line);
+    border-radius: var(--ix-radius);
+    box-shadow: 0 10px 30px rgba(17, 24, 39, .10);
+    .dropdown-item { border-radius: var(--ix-radius-sm); margin: 0 4px; width: auto; }
+}
+
+// ── Alertas dentro de formularios ────────────────────────────────
+.o_form_view .alert {
+    border-radius: var(--ix-radius);
+    border-width: 1px;
+}

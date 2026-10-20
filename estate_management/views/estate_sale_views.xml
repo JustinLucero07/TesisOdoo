@@ -110,6 +110,9 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_tree"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='date_order']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
             <xpath expr="//list" position="attributes">
                 <attribute name="class">o_estate_wrap_list</attribute>
             </xpath>
@@ -121,10 +124,10 @@
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="estate_buyer_id" optional="show"/>
-                <field name="estate_buyer_phones" optional="show"/>
+                <field name="estate_buyer_phones" optional="show" width="125px"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="estate_owner_phones" optional="show"/>
+                <field name="estate_owner_phones" optional="show" width="125px"/>
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
                 <field name="estate_transaction_type" optional="hide"/>
                 <field name="property_sold_by" optional="hide"/>
@@ -142,6 +145,9 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
         <field name="arch" type="xml">
+            <xpath expr="//field[@name='create_date']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
             <xpath expr="//list" position="attributes">
                 <attribute name="class">o_estate_wrap_list</attribute>
             </xpath>
@@ -153,10 +159,10 @@
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="estate_buyer_id" optional="show"/>
-                <field name="estate_buyer_phones" optional="show"/>
+                <field name="estate_buyer_phones" optional="show" width="125px"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="estate_owner_phones" optional="show"/>
+                <field name="estate_owner_phones" optional="show" width="125px"/>
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
                 <field name="estate_transaction_type" optional="hide"/>
                 <field name="property_sold_by" optional="hide"/>

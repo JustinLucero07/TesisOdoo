@@ -1,0 +1,62 @@
+// ═══════════════════════════════════════════════════════════════
+// Inmobi — Tema visual: ajustes para celular y tablet
+// ═══════════════════════════════════════════════════════════════
+
+@include media-breakpoint-down(md) {
+    // Formulario a todo el ancho: en pantallas chicas la tarjeta con
+    // márgenes solo resta espacio.
+    .o_form_view .o_form_sheet_bg { padding: 0; }
+    .o_form_view .o_form_sheet {
+        border-radius: 0;
+        border-left: none !important;
+        border-right: none !important;
+        box-shadow: none;
+    }
+
+    // El título de la propiedad baja a varias líneas en lugar de cortarse,
+    // y no queda tapado por la cinta.
+    .o_form_view .oe_title h1,
+    .o_form_view .oe_title .o_field_widget {
+        white-space: normal;
+        word-break: break-word;
+        font-size: 1.45rem;
+        line-height: 1.25;
+    }
+    .o_form_view .ribbon {
+        width: 110px;
+        height: 110px;
+        span {
+            width: 170px;
+            font-size: .66rem;
+            padding: 4px 0;
+        }
+    }
+    .o_form_view .o_widget_web_ribbon ~ .oe_title,
+    .o_form_view .oe_title { padding-right: 48px; }
+
+    // Panel de control más compacto
+    .o_control_panel {
+        padding-top: 6px;
+        padding-bottom: 6px;
+    }
+
+    // Botones del encabezado: cómodos para el dedo
+    .o_form_statusbar .o_statusbar_buttons .btn,
+    .o_cp_buttons .btn {
+        min-height: 40px;
+    }
+
+    // Listas: un poco más de aire entre filas para tocar sin errores
+    .o_list_renderer .o_list_table tbody .o_data_row > td {
+        padding-top: .75rem;
+        padding-bottom: .75rem;
+    }
+
+    // Kanban: tarjetas a todo el ancho con la misma separación
+    .o_kanban_renderer .o_kanban_record {
+        margin-bottom: 8px;
+    }
+
+    // Diálogos a pantalla completa con bordes rectos
+    .modal-content { border-radius: 0; }
+}

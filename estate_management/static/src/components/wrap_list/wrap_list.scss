@@ -19,6 +19,12 @@
         thead th {
             vertical-align: bottom;
         }
+        // Los teléfonos se separan por " / ", nunca a la mitad de un número.
+        .o_data_row > .o_data_cell[name$="_phones"],
+        .o_data_row > .o_data_cell[name$="_phones"] span {
+            overflow-wrap: normal !important;
+            word-break: keep-all;
+        }
         // Los montos no se parten.
         .o_data_row > .o_data_cell.o_list_number,
         .o_data_row > .o_data_cell .o_field_monetary > span {
