@@ -4,16 +4,16 @@
 // ═══════════════════════════════════════════════════════════════
 
 .o_estate_dash {
-    --d-primary: var(--ix-primary, #004274);
-    --d-ink: #0b2440;
+    --d-primary: var(--ix-primary, #2b2770);
+    --d-ink: #28235d;
     --d-canvas: var(--ix-canvas, #f5f6f8);
     --d-surface: #ffffff;
     --d-line: var(--ix-line, #e7e9ee);
     --d-text: var(--ix-text, #1d2433);
     --d-muted: var(--ix-muted, #6b7280);
     --d-faint: var(--ix-faint, #9aa1ad);
-    --d-up: #0f8a4a;
-    --d-down: #c2410c;
+    --d-up: #0f9a4b;
+    --d-down: #e11d48;
 
     height: 100%;
     overflow-y: auto;
@@ -71,7 +71,7 @@
         transition: border-color .15s, box-shadow .15s;
         &:focus-within {
             border-color: var(--d-primary);
-            box-shadow: 0 0 0 3px rgba(0, 66, 116, .10);
+            box-shadow: 0 0 0 3px rgba(43, 39, 112, .12);
         }
         select {
             border: none;
@@ -155,7 +155,7 @@
         width: 30px;
         height: 30px;
         border-radius: 8px;
-        background: #eef3f9;
+        background: #efeefa;
         color: var(--d-primary);
         font-size: .85rem;
         margin-bottom: 4px;
@@ -178,7 +178,7 @@
         cursor: pointer;
         &:hover {
             border-color: #cfd6e0;
-            box-shadow: 0 8px 20px -12px rgba(11, 36, 64, .35);
+            box-shadow: 0 8px 20px -12px rgba(40, 35, 93, .35);
             transform: translateY(-1px);
         }
         &:focus-visible { outline: 2px solid var(--d-primary); outline-offset: 2px; }
@@ -237,7 +237,7 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: linear-gradient(135deg, #0b2440, #004274);
+        background: linear-gradient(135deg, #28235d, #ea0a2a);
         color: #fff;
         font-size: .85rem;
     }
@@ -282,7 +282,7 @@
         font-size: .78rem;
         font-weight: 600;
         &.is-up { background: #e7f6ee; color: var(--d-up); }
-        &.is-down { background: #fdeee6; color: var(--d-down); }
+        &.is-down { background: #ffe4ea; color: var(--d-down); }
         &.is-flat { background: #f1f2f5; color: var(--d-muted); }
     }
     &__prev { margin: 6px 0 0; font-size: .8rem; color: var(--d-faint); }
