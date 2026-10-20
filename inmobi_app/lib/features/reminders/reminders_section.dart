@@ -310,17 +310,33 @@ class ReminderTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    [
-                      if (showPartner && r.partnerName.isNotEmpty)
-                        r.partnerName,
-                      if (r.date != null)
-                        '${dateFmt.format(r.date!)} · ${r.hourLabel}',
-                      if (r.documentName.isNotEmpty)
-                        '📎 ${r.documentName}'
-                      else
-                        ReminderTypeStyle.label(r.reminderType),
-                    ].join(' · '),
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(
+                          text: [
+                            if (showPartner && r.partnerName.isNotEmpty)
+                              r.partnerName,
+                            if (r.date != null)
+                              '${dateFmt.format(r.date!)} · ${r.hourLabel}',
+                            if (r.documentName.isEmpty)
+                              ReminderTypeStyle.label(r.reminderType),
+                          ].join(' · '),
+                        ),
+                        if (r.documentName.isNotEmpty) ...[
+                          const TextSpan(text: ' · '),
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Icon(
+                              Icons.attach_file_rounded,
+                              size: 13,
+                              color: colors.muted,
+                            ),
+                          ),
+                          TextSpan(text: r.documentName),
+                        ],
+                      ],
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(fontSize: 11.5, color: colors.muted),

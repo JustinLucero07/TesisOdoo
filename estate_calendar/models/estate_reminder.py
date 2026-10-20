@@ -32,15 +32,6 @@ REMINDER_TYPES = [
     ('other', 'Otro'),
 ]
 
-TYPE_ICON = {
-    'policy': '🛡️',
-    'payment': '💵',
-    'document': '📄',
-    'contract': '📝',
-    'followup': '📞',
-    'birthday': '🎂',
-    'other': '🔔',
-}
 
 
 class EstateReminder(models.Model):
@@ -321,8 +312,9 @@ class EstateReminder(models.Model):
         push_enviado = True
         for rec in self:
             body = rec._reminder_body(due=due)
-            titulo = '%s %s' % (TYPE_ICON.get(rec.reminder_type, '🔔'),
-                                'Vence hoy' if due else 'Recordatorio')
+            # Sin emojis: el celular ya muestra el ícono de la app en el aviso.
+            titulo = '%s · %s' % ('Vence hoy' if due else 'Recordatorio',
+                                  dict(REMINDER_TYPES).get(rec.reminder_type, 'Otro'))
 
             if rec.notify_activity:
                 try:

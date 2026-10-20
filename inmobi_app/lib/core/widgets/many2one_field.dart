@@ -127,11 +127,10 @@ class Many2oneField extends StatelessWidget {
                         ),
                         if (value!.subtitle != null &&
                             value!.subtitle!.isNotEmpty)
-                          Text(
-                            value!.subtitle!,
+                          SubtitleLine(
+                            text: value!.subtitle!,
+                            model: value!.model ?? model,
                             style: TextStyle(fontSize: 11, color: colors.muted),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                       ],
                     ),
@@ -211,11 +210,10 @@ class Many2oneField extends StatelessWidget {
                         ),
                         if (value!.subtitle != null &&
                             value!.subtitle!.isNotEmpty)
-                          Text(
-                            value!.subtitle!,
+                          SubtitleLine(
+                            text: value!.subtitle!,
+                            model: value!.model ?? model,
                             style: TextStyle(fontSize: 11, color: colors.muted),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                           ),
                       ],
                     ),
@@ -369,7 +367,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
             ].where((s) => s.isNotEmpty).join(', ');
 
             subtitle = [
-              if (location.isNotEmpty) '📍 $location',
+              if (location.isNotEmpty) location,
               if (price > 0) currency.format(price),
             ].join(' · ');
           } else if (isPartner) {
@@ -393,7 +391,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                 ? rawEmail.toString()
                 : '';
             subtitle = [
-              if (phone.isNotEmpty) '📞 $phone',
+              if (phone.isNotEmpty) phone,
               if (email.isNotEmpty) email,
             ].join(' · ');
           }
@@ -447,7 +445,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
             Many2oneValue(
               result,
               name,
-              subtitle: phone.isNotEmpty ? '📞 $phone' : null,
+              subtitle: phone.isNotEmpty ? phone : null,
               model: 'res.partner',
             ),
           );
@@ -683,8 +681,9 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                         if (item.subtitle != null &&
                                             item.subtitle!.isNotEmpty) ...[
                                           const SizedBox(height: 3),
-                                          Text(
-                                            item.subtitle!,
+                                          SubtitleLine(
+                                            text: item.subtitle!,
+                                            model: item.model,
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: isDark
@@ -692,8 +691,6 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                                   : const Color(0xFF64748B),
                                               fontWeight: FontWeight.w500,
                                             ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ],
                                       ],
@@ -733,4 +730,49 @@ class _SearchResultItem {
     required this.model,
     required this.rawData,
   });
+}
+
+
+/// Subtítulo de un resultado con su icono vectorial (ubicación, teléfono o
+/// correo) en lugar de emojis, que se ven distinto en cada celular.
+class SubtitleLine extends StatelessWidget {
+  final String text;
+  final String? model;
+  final TextStyle style;
+
+  const SubtitleLine({
+    super.key,
+    required this.text,
+    required this.model,
+    required this.style,
+  });
+
+  IconData? get _icon {
+    if (model == 'estate.property') return Icons.place_outlined;
+    if (model == 'res.partner') {
+      return RegExp(r'^[+\d(]').hasMatch(text.trim())
+          ? Icons.phone_outlined
+          : Icons.mail_outline_rounded;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _icon;
+    final label = Text(
+      text,
+      style: style,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+    if (icon == null) return label;
+    return Row(
+      children: [
+        Icon(icon, size: (style.fontSize ?? 12) + 1, color: style.color),
+        const SizedBox(width: 3),
+        Flexible(child: label),
+      ],
+    );
+  }
 }
