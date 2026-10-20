@@ -41,29 +41,44 @@ strong, b { font-weight: 600; }
 
 // ── Barra superior ───────────────────────────────────────────────
 .o_main_navbar {
-    box-shadow: none;
+    border-bottom: 0 !important;
+    box-shadow: 0 1px 0 rgba(11, 36, 64, .9), 0 6px 18px -12px rgba(11, 36, 64, .55);
+    position: relative;
+    z-index: 10;
     .o_menu_brand {
         font-weight: 600;
         letter-spacing: -0.01em;
+        color: #fff !important;
     }
     .o_menu_sections .o_nav_entry,
     .o_menu_sections .dropdown-toggle {
         font-weight: 450;
-        border-radius: var(--ix-radius-sm);
+        border-radius: 8px;
         margin: 0 1px;
         height: 34px;
         line-height: 34px;
         align-self: center;
+        &.show, &[aria-expanded="true"] {
+            background-color: rgba(255, 255, 255, .12);
+            color: #fff;
+        }
     }
     .o_menu_toggle,
     .o_navbar_apps_menu button,
-    .o_navbar_apps_menu button .oi {
-        color: var(--ix-primary) !important;
+    .o-wr-launcher-btn {
+        color: rgba(255, 255, 255, .85) !important;
+        border-radius: 8px;
+        &:hover { background-color: rgba(255, 255, 255, .10); color: #fff !important; }
     }
-    .o_navbar_apps_menu button:hover { background-color: var(--ix-primary-soft); }
-    .o_menu_systray .badge {
-        font-weight: 600;
-        border: 2px solid #fff;
+    .o_menu_systray {
+        .o_nav_entry, .dropdown-toggle, > div > button {
+            border-radius: 8px;
+        }
+        .badge {
+            font-weight: 600;
+            border: 2px solid #0b2440;
+            box-shadow: none;
+        }
     }
 }
 
@@ -232,6 +247,15 @@ strong, b { font-weight: 600; }
     }
 }
 
+// Filas coloreadas por estado (decoration-*): tonos más sobrios
+.o_list_renderer .o_data_row {
+    &.text-success { color: #1f6f46 !important; }
+    &.text-danger { color: #a63a32 !important; }
+    &.text-warning { color: #8a5a00 !important; }
+    &.text-info { color: #155e75 !important; }
+    &.text-muted { color: var(--ix-faint) !important; }
+}
+
 // Etiquetas de estado (badges): pastilla suave
 .badge, .o_field_badge .badge {
     font-weight: 500;
@@ -314,9 +338,160 @@ strong, b { font-weight: 600; }
 // ── Menús desplegables ───────────────────────────────────────────
 .dropdown-menu {
     border: 1px solid var(--ix-line);
-    border-radius: var(--ix-radius);
-    box-shadow: 0 10px 30px rgba(17, 24, 39, .10);
-    .dropdown-item { border-radius: var(--ix-radius-sm); margin: 0 4px; width: auto; }
+    border-radius: 12px;
+    padding: 6px;
+    box-shadow: 0 16px 40px -8px rgba(17, 24, 39, .18), 0 2px 6px rgba(17, 24, 39, .06);
+    min-width: 220px;
+    .dropdown-item {
+        border-radius: 8px;
+        padding: .5rem .75rem;
+        font-weight: 400;
+        color: var(--ix-text);
+        transition: background-color .12s var(--ix-ease), color .12s var(--ix-ease);
+        &:hover, &:focus, &.focus { background-color: var(--ix-primary-soft); color: var(--ix-primary); }
+        &.active, &.selected { background-color: var(--ix-primary-soft); color: var(--ix-primary); font-weight: 500; }
+    }
+    .dropdown-header, .o_menu_header {
+        font-size: .7rem;
+        font-weight: 600;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--ix-faint);
+        padding: .7rem .75rem .3rem;
+    }
+    .dropdown-divider { border-color: var(--ix-line); margin: 6px 4px; }
+}
+// Submenús de la barra (Propiedades ▸ …): un poco más anchos y con aire
+.o_main_navbar .o_menu_sections .dropdown-menu {
+    margin-top: 6px !important;
+    min-width: 250px;
+    .dropdown-item { padding-left: .9rem; }
+    .o_dropdown_menu_group_entry.dropdown-item { padding-left: 1.6rem; }
+}
+
+// ── Cajón de aplicaciones (módulo web_responsive) ───────────────
+.o-wr-AppDrawer-backdrop {
+    background: rgba(11, 36, 64, .38);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+}
+.o-wr-AppDrawer {
+    justify-content: flex-start;
+    padding-top: 9vh;
+}
+.o-wr-AppDrawer-header {
+    background: #ffffff !important;
+    border-radius: 18px 18px 0 0 !important;
+    border: 1px solid var(--ix-line);
+    border-bottom: 1px solid var(--ix-line) !important;
+    padding: 16px 18px !important;
+    gap: 14px !important;
+    max-width: 760px !important;
+    .o-wr-AppDrawer-logo {
+        color: var(--ix-text) !important;
+        font-weight: 600 !important;
+        font-size: .95rem !important;
+        .oi-apps { color: var(--ix-primary); }
+    }
+    .o-wr-AppDrawer-search {
+        background: var(--ix-canvas) !important;
+        border: 1px solid var(--ix-line) !important;
+        border-radius: 10px !important;
+        padding: 9px 13px !important;
+        &:focus-within {
+            background: #fff !important;
+            border-color: var(--ix-primary) !important;
+            box-shadow: 0 0 0 3px rgba(0, 66, 116, .10);
+        }
+        .fa-search { color: var(--ix-faint) !important; }
+        input {
+            color: var(--ix-text) !important;
+            font-size: .95rem !important;
+            &::placeholder { color: var(--ix-faint) !important; }
+        }
+        .o-wr-AppDrawer-clearSearch { color: var(--ix-faint) !important; }
+    }
+    .o-wr-AppDrawer-close {
+        background: transparent !important;
+        border: 1px solid var(--ix-line) !important;
+        color: var(--ix-muted) !important;
+        width: 32px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
+        &:hover { background: var(--ix-canvas) !important; color: var(--ix-text) !important; }
+    }
+}
+.o-wr-AppDrawer-grid {
+    max-width: 760px !important;
+    background: #ffffff !important;
+    border: 1px solid var(--ix-line) !important;
+    border-top: none !important;
+    border-radius: 0 0 18px 18px !important;
+    padding: 18px 18px 22px !important;
+    gap: 6px !important;
+    grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)) !important;
+    box-shadow: 0 30px 70px -20px rgba(11, 36, 64, .45) !important;
+}
+.o-wr-AppCard {
+    padding: 14px 6px 12px !important;
+    border-radius: 14px !important;
+    gap: 9px !important;
+    &:hover {
+        background: var(--ix-canvas) !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        transform: translateY(-2px);
+    }
+    &:focus-visible { outline: 2px solid var(--ix-primary); outline-offset: 2px; }
+    .o-wr-AppCard-icon {
+        width: 56px !important;
+        height: 56px !important;
+        border-radius: 14px !important;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, .08), 0 6px 14px -6px rgba(17, 24, 39, .25);
+    }
+    .o-wr-AppCard-name {
+        font-size: .78rem !important;
+        font-weight: 450 !important;
+        color: var(--ix-text) !important;
+    }
+    &.o-wr-AppCard--active {
+        background: var(--ix-primary-soft) !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        .o-wr-AppCard-icon { outline: none !important; }
+        .o-wr-AppCard-name { color: var(--ix-primary) !important; font-weight: 600 !important; }
+    }
+    &.o-wr-AppCard--first {
+        background: var(--ix-canvas) !important;
+        .o-wr-AppCard-name { color: var(--ix-primary) !important; }
+    }
+}
+.o-wr-AppDrawer-hint {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-size: .74rem;
+    color: var(--ix-faint);
+    margin-top: 8px;
+    kbd {
+        font-family: inherit;
+        font-size: .7rem;
+        background: var(--ix-canvas);
+        color: var(--ix-muted);
+        border: 1px solid var(--ix-line);
+        border-radius: 5px;
+        padding: 1px 6px;
+        box-shadow: none;
+    }
+}
+@media (max-width: 767.98px) {
+    .o-wr-AppDrawer { padding-top: 0; justify-content: flex-start; }
+    .o-wr-AppDrawer-header { border-radius: 0 !important; width: 100vw !important; max-width: none !important; }
+    .o-wr-AppDrawer-grid {
+        border-radius: 0 !important; width: 100vw !important; max-width: none !important;
+        max-height: calc(100vh - 70px) !important;
+        grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)) !important;
+    }
+    .o-wr-AppDrawer-hint { display: none; }
 }
 
 // ── Alertas dentro de formularios ────────────────────────────────

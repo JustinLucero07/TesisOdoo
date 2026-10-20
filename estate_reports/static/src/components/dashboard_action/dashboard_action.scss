@@ -1,0 +1,372 @@
+// ═══════════════════════════════════════════════════════════════
+// Dashboard General — diseño minimalista
+// Funciona solo, y toma los tokens del tema (estate_theme) si está instalado.
+// ═══════════════════════════════════════════════════════════════
+
+.o_estate_dash {
+    --d-primary: var(--ix-primary, #004274);
+    --d-ink: #0b2440;
+    --d-canvas: var(--ix-canvas, #f5f6f8);
+    --d-surface: #ffffff;
+    --d-line: var(--ix-line, #e7e9ee);
+    --d-text: var(--ix-text, #1d2433);
+    --d-muted: var(--ix-muted, #6b7280);
+    --d-faint: var(--ix-faint, #9aa1ad);
+    --d-up: #0f8a4a;
+    --d-down: #c2410c;
+
+    height: 100%;
+    overflow-y: auto;
+    background: var(--d-canvas);
+    color: var(--d-text);
+
+    &__inner {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 28px 28px 48px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    // Encabezado
+    &__head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    &__eyebrow {
+        margin: 0 0 4px;
+        font-size: .74rem;
+        font-weight: 600;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--d-faint);
+    }
+    &__title {
+        margin: 0;
+        font-size: 1.85rem;
+        font-weight: 350;
+        letter-spacing: -0.025em;
+        color: var(--d-ink);
+    }
+    &__filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    &__select {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0;
+        padding: 0 4px 0 12px;
+        height: 38px;
+        background: var(--d-surface);
+        border: 1px solid var(--d-line);
+        border-radius: 10px;
+        color: var(--d-muted);
+        transition: border-color .15s, box-shadow .15s;
+        &:focus-within {
+            border-color: var(--d-primary);
+            box-shadow: 0 0 0 3px rgba(0, 66, 116, .10);
+        }
+        select {
+            border: none;
+            background: transparent;
+            color: var(--d-text);
+            font-size: .88rem;
+            padding-right: 8px;
+            outline: none;
+            cursor: pointer;
+        }
+    }
+    &__icon-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: 1px solid var(--d-line);
+        background: var(--d-surface);
+        color: var(--d-primary);
+        transition: background-color .15s, border-color .15s;
+        &:hover { background: #f3f6fa; border-color: #d9dde4; }
+    }
+
+    // KPIs
+    &__kpis {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    // Rejillas de tarjetas
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+    &__trend {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    // Carga
+    &__loading {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    &__skeleton {
+        height: 180px;
+        border-radius: 14px;
+        background: linear-gradient(90deg, #eef0f3 0%, #f6f7f9 50%, #eef0f3 100%);
+        background-size: 200% 100%;
+        animation: o-estate-shimmer 1.4s ease-in-out infinite;
+        &:first-child { grid-column: 1 / -1; height: 64px; }
+    }
+}
+
+@keyframes o-estate-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
+// Tarjeta KPI
+.o_estate_kpi {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 16px 16px 14px;
+    background: var(--d-surface);
+    border: 1px solid var(--d-line);
+    border-radius: 14px;
+    text-align: left;
+    color: inherit;
+    transition: border-color .15s, box-shadow .2s, transform .2s;
+
+    &__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: #eef3f9;
+        color: var(--d-primary);
+        font-size: .85rem;
+        margin-bottom: 4px;
+    }
+    &__label {
+        font-size: .78rem;
+        color: var(--d-muted);
+    }
+    &__value {
+        font-size: 1.7rem;
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        color: var(--d-ink);
+        font-variant-numeric: tabular-nums;
+    }
+    &--warn &__icon { background: #fff4dc; color: #8a5300; }
+    &--danger &__icon { background: #fdecea; color: #b42318; }
+    &--link {
+        cursor: pointer;
+        &:hover {
+            border-color: #cfd6e0;
+            box-shadow: 0 8px 20px -12px rgba(11, 36, 64, .35);
+            transform: translateY(-1px);
+        }
+        &:focus-visible { outline: 2px solid var(--d-primary); outline-offset: 2px; }
+    }
+}
+
+// Tarjeta genérica
+.o_estate_card {
+    background: var(--d-surface);
+    border: 1px solid var(--d-line);
+    border-radius: 14px;
+    padding: 18px 20px;
+
+    &__title {
+        margin: 0 0 12px;
+        font-size: .78rem;
+        font-weight: 600;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--d-faint);
+    }
+}
+
+// Lista de métricas
+.o_estate_metrics {
+    margin: 0;
+    > div {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid #f1f2f5;
+        &:last-child { border-bottom: none; padding-bottom: 0; }
+    }
+    dt { font-weight: 400; color: var(--d-muted); font-size: .9rem; }
+    dd {
+        margin: 0;
+        font-weight: 500;
+        color: var(--d-ink);
+        font-variant-numeric: tabular-nums;
+        &.is-positive { color: var(--d-up); }
+        &.is-negative { color: var(--d-down); }
+    }
+}
+
+// Asistente IA
+.o_estate_ai {
+    padding: 10px 10px 10px 14px;
+    &__row { display: flex; align-items: center; gap: 10px; }
+    &__badge {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        background: linear-gradient(135deg, #0b2440, #004274);
+        color: #fff;
+        font-size: .85rem;
+    }
+    &__input {
+        flex: 1;
+        min-width: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: .95rem;
+        color: var(--d-text);
+        &::placeholder { color: var(--d-faint); }
+    }
+    &__btn { border-radius: 9px; padding: .45rem .9rem; }
+    &__answer {
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        background: #f7f9fc;
+        font-size: .9rem;
+        line-height: 1.55;
+    }
+}
+
+// Tendencia
+.o_estate_trend {
+    &__label { margin: 0 0 6px; font-size: .82rem; color: var(--d-muted); }
+    &__row { display: flex; align-items: center; gap: 12px; }
+    &__value {
+        font-size: 2rem;
+        font-weight: 350;
+        letter-spacing: -0.02em;
+        color: var(--d-ink);
+        font-variant-numeric: tabular-nums;
+    }
+    &__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 600;
+        &.is-up { background: #e7f6ee; color: var(--d-up); }
+        &.is-down { background: #fdeee6; color: var(--d-down); }
+        &.is-flat { background: #f1f2f5; color: var(--d-muted); }
+    }
+    &__prev { margin: 6px 0 0; font-size: .8rem; color: var(--d-faint); }
+}
+
+// Gráfico
+.o_estate_chart {
+    position: relative;
+    height: 230px;
+    &__empty {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: var(--d-faint);
+        font-size: .88rem;
+        i { font-size: 1.6rem; opacity: .5; }
+    }
+}
+
+// Ranking
+.o_estate_rank {
+    &__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-variant-numeric: tabular-nums;
+        th {
+            font-size: .78rem;
+            font-weight: 500;
+            color: var(--d-muted);
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--d-line);
+        }
+        td {
+            padding: 11px 10px;
+            border-bottom: 1px solid #f1f2f5;
+            vertical-align: middle;
+        }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover td { background: #fafbfc; }
+        .is-positive { color: var(--d-up); font-weight: 500; }
+    }
+    &__pos {
+        display: inline-block;
+        width: 22px;
+        color: var(--d-faint);
+        font-size: .82rem;
+        &.is-top { color: #b7791f; font-weight: 600; }
+    }
+    &__avatar {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        margin: 0 10px 0 4px;
+        border-radius: 50%;
+        background: #eef3f9;
+        color: var(--d-primary);
+        font-size: .78rem;
+        font-weight: 600;
+    }
+    &__name { font-weight: 500; }
+    &__empty { text-align: center; color: var(--d-faint); padding: 28px 10px !important; }
+}
+
+// ── Responsive ───────────────────────────────────────────────────
+@media (max-width: 1199.98px) {
+    .o_estate_dash__kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 767.98px) {
+    .o_estate_dash__inner { padding: 18px 14px 32px; gap: 14px; }
+    .o_estate_dash__title { font-size: 1.5rem; }
+    .o_estate_dash__head { align-items: flex-start; }
+    .o_estate_dash__filters { width: 100%; }
+    .o_estate_dash__select { flex: 1; min-width: 0; select { width: 100%; } }
+    .o_estate_dash__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .o_estate_dash__grid, .o_estate_dash__trend, .o_estate_dash__loading { grid-template-columns: 1fr; }
+    .o_estate_kpi { padding: 14px; }
+    .o_estate_kpi__value { font-size: 1.45rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .o_estate_dash__skeleton { animation: none; }
+    .o_estate_kpi--link:hover { transform: none; }
+}

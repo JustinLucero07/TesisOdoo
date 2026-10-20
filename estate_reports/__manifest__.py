@@ -44,6 +44,7 @@
             'estate_reports/static/src/js/estate_dashboard.js',
             'estate_reports/static/src/components/**/*.js',
             'estate_reports/static/src/components/**/*.xml',
+            'estate_reports/static/src/components/**/*.scss',
         ],
     },
     'installable': True,

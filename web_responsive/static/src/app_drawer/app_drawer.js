@@ -25,6 +25,7 @@ export class AppDrawer extends Component {
                                placeholder="Buscar aplicación..."
                                t-ref="searchInput"
                                t-model="state.search"
+                               t-on-keydown="onSearchKeydown"
                                autocomplete="off"
                                spellcheck="false"/>
                         <button t-if="state.search" class="o-wr-AppDrawer-clearSearch"
@@ -45,7 +46,7 @@ export class AppDrawer extends Component {
                            t-as="app"
                            t-key="app.id"
                            class="o-wr-AppCard"
-                           t-att-class="{ 'o-wr-AppCard--active': props.currentApp and props.currentApp.id === app.id }"
+                           t-att-class="{ 'o-wr-AppCard--active': props.currentApp and props.currentApp.id === app.id, 'o-wr-AppCard--first': state.search and app_first }"
                            t-att-href="props.getHref(app)"
                            t-on-click.prevent="() => selectApp(app)"
                            t-att-title="app.name">
@@ -67,6 +68,9 @@ export class AppDrawer extends Component {
                             <span class="o-wr-AppCard-name" t-esc="app.name"/>
                         </a>
                     </t>
+                    <div t-if="filteredApps.length" class="o-wr-AppDrawer-hint">
+                        Escribe para buscar · <kbd>Enter</kbd> abre la primera · <kbd>Esc</kbd> cierra
+                    </div>
                     <div t-else="" class="o-wr-AppDrawer-noResults">
                         <i class="fa fa-search-minus"/>
                         <p>Sin resultados para "<strong t-esc="state.search"/>"</p>
@@ -103,6 +107,14 @@ export class AppDrawer extends Component {
         const q = this.state.search.toLowerCase().trim();
         if (!q) return this.props.apps;
         return this.props.apps.filter((a) => a.name.toLowerCase().includes(q));
+    }
+
+    onSearchKeydown(ev) {
+        // Enter abre la primera aplicación que coincide con lo escrito.
+        if (ev.key === "Enter" && this.filteredApps.length) {
+            ev.preventDefault();
+            this.selectApp(this.filteredApps[0]);
+        }
     }
 
     clearSearch() {

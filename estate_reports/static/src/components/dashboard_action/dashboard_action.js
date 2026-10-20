@@ -51,18 +51,37 @@ export class DashChart extends Component {
                     label: d.label || "",
                     data: d.values,
                     backgroundColor: d.color || "#004274",
-                    borderRadius: 0,
-                    maxBarThickness: 42,
+                    hoverBackgroundColor: "#0b2440",
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    maxBarThickness: 36,
                 }],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 animation: { duration: 700 },
-                plugins: { legend: { display: false } },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: "#0b2440",
+                        padding: 10,
+                        cornerRadius: 8,
+                        displayColors: false,
+                    },
+                },
                 scales: {
-                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#f1f5f9" } },
-                    x: { grid: { display: false } },
+                    y: {
+                        beginAtZero: true,
+                        border: { display: false },
+                        ticks: { precision: 0, color: "#9aa1ad", font: { size: 11 } },
+                        grid: { color: "#f0f2f5" },
+                    },
+                    x: {
+                        border: { display: false },
+                        ticks: { color: "#6b7280", font: { size: 11 } },
+                        grid: { display: false },
+                    },
                 },
             },
         });
@@ -124,12 +143,12 @@ class EstateDashboardAction extends Component {
 
     pctClass(v) {
         const n = Number(v || 0);
-        return n > 0 ? "text-success" : n < 0 ? "text-danger" : "text-muted";
+        return n > 0 ? "is-up" : n < 0 ? "is-down" : "is-flat";
     }
 
     pctArrow(v) {
         const n = Number(v || 0);
-        return n > 0 ? "▲" : n < 0 ? "▼" : "—";
+        return n > 0 ? "↑" : n < 0 ? "↓" : "→";
     }
 
     onUser(ev) {

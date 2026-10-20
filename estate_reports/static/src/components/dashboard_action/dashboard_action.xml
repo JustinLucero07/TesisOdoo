@@ -3,232 +3,222 @@
 
     <!-- Gráfico Chart.js -->
     <t t-name="estate_reports.DashChart">
-        <div style="position:relative;height:220px;">
+        <div class="o_estate_chart">
             <canvas t-if="hasData" t-ref="canvas"/>
-            <div t-else="" class="text-center text-muted py-5">Sin datos en el período</div>
+            <div t-else="" class="o_estate_chart__empty">
+                <i class="fa fa-bar-chart" aria-hidden="true"/>
+                <span>Sin datos en el período</span>
+            </div>
         </div>
     </t>
 
     <!-- Dashboard -->
     <t t-name="estate_reports.DashboardAction">
-        <div class="o_estate_dashboard p-4" style="overflow-y:auto;height:100%;background:#ffffff;">
+        <div class="o_estate_dash">
+            <div class="o_estate_dash__inner">
 
-            <!-- ═══ ENCABEZADO ═══ -->
-            <div class="px-4 pt-4 pb-3">
-                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
-                    <h2 class="m-0" style="color:#004274;font-weight:700;font-size:1.5rem;">
-                        Dashboard General
-                    </h2>
-                    <div class="d-flex gap-2 flex-wrap align-items-center">
-                        <select class="form-select form-select-sm"
-                                style="max-width:200px;border-color:#004274;"
-                                t-on-change="onUser">
-                            <option value="">Todos los asesores</option>
-                            <t t-foreach="state.advisors" t-as="a" t-key="a.id">
-                                <option t-att-value="a.id" t-att-selected="a.id === state.userId" t-esc="a.name"/>
-                            </t>
-                        </select>
-                        <select class="form-select form-select-sm"
-                                style="max-width:170px;border-color:#004274;"
-                                t-on-change="onPeriod">
-                            <t t-foreach="state.periods" t-as="p" t-key="p.value">
-                                <option t-att-value="p.value" t-att-selected="p.value === state.period" t-esc="p.label"/>
-                            </t>
-                        </select>
-                        <button class="btn btn-sm" t-on-click="refresh" title="Actualizar"
-                                style="background:#004274;color:#fff;border:none;">
-                            <i class="fa fa-refresh"/>
+                <!-- ═══ Encabezado ═══ -->
+                <header class="o_estate_dash__head">
+                    <div>
+                        <p class="o_estate_dash__eyebrow">Inmobi · Resumen</p>
+                        <h1 class="o_estate_dash__title">Dashboard General</h1>
+                    </div>
+                    <div class="o_estate_dash__filters">
+                        <label class="o_estate_dash__select">
+                            <i class="fa fa-user-o" aria-hidden="true"/>
+                            <select t-on-change="onUser" aria-label="Asesor">
+                                <option value="">Todos los asesores</option>
+                                <t t-foreach="state.advisors" t-as="a" t-key="a.id">
+                                    <option t-att-value="a.id" t-att-selected="a.id === state.userId" t-esc="a.name"/>
+                                </t>
+                            </select>
+                        </label>
+                        <label class="o_estate_dash__select">
+                            <i class="fa fa-calendar-o" aria-hidden="true"/>
+                            <select t-on-change="onPeriod" aria-label="Período">
+                                <t t-foreach="state.periods" t-as="p" t-key="p.value">
+                                    <option t-att-value="p.value" t-att-selected="p.value === state.period" t-esc="p.label"/>
+                                </t>
+                            </select>
+                        </label>
+                        <button class="o_estate_dash__icon-btn" t-on-click="refresh" title="Actualizar" aria-label="Actualizar">
+                            <i t-att-class="state.loading ? 'fa fa-refresh fa-spin' : 'fa fa-refresh'"/>
                         </button>
                     </div>
-                </div>
+                </header>
 
-                <!-- KPI tiles -->
-                <div class="d-flex flex-wrap gap-0" style="border:1px solid #e5e7eb;">
-                    <div class="text-center px-3 py-2 flex-fill"
-                         style="border-right:1px solid #e5e7eb;cursor:pointer;"
-                         t-on-click="() =&gt; this.openList('estate.property', 'Disponibles', [['state','=','available']])">
-                        <div class="text-muted small text-uppercase">Disponibles</div>
-                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.available_properties"/>
+                <!-- ═══ KPIs ═══ -->
+                <section class="o_estate_dash__kpis">
+                    <button class="o_estate_kpi o_estate_kpi--link"
+                            t-on-click="() =&gt; this.openList('estate.property', 'Disponibles', [['state','=','available']])">
+                        <span class="o_estate_kpi__icon"><i class="fa fa-home"/></span>
+                        <span class="o_estate_kpi__label">Disponibles</span>
+                        <span class="o_estate_kpi__value" t-esc="state.k.available_properties or 0"/>
+                    </button>
+                    <div class="o_estate_kpi">
+                        <span class="o_estate_kpi__icon"><i class="fa fa-handshake-o"/></span>
+                        <span class="o_estate_kpi__label">Ofertas activas</span>
+                        <span class="o_estate_kpi__value" t-esc="state.k.active_offers_count or 0"/>
                     </div>
-                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
-                        <div class="text-muted small text-uppercase">Ofertas activas</div>
-                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.active_offers_count"/>
+                    <div class="o_estate_kpi">
+                        <span class="o_estate_kpi__icon"><i class="fa fa-file-text-o"/></span>
+                        <span class="o_estate_kpi__label">Contratos activos</span>
+                        <span class="o_estate_kpi__value" t-esc="state.k.active_contracts_count or 0"/>
                     </div>
-                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
-                        <div class="text-muted small text-uppercase">Contratos activos</div>
-                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.active_contracts_count"/>
+                    <div class="o_estate_kpi">
+                        <span class="o_estate_kpi__icon"><i class="fa fa-map-marker"/></span>
+                        <span class="o_estate_kpi__label">Visitas</span>
+                        <span class="o_estate_kpi__value" t-esc="state.k.appointments_done or 0"/>
                     </div>
-                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
-                        <div class="text-muted small text-uppercase">Visitas</div>
-                        <div class="h3 m-0" style="color:#004274;" t-esc="state.k.appointments_done"/>
+                    <div class="o_estate_kpi o_estate_kpi--warn">
+                        <span class="o_estate_kpi__icon"><i class="fa fa-hourglass-half"/></span>
+                        <span class="o_estate_kpi__label">Estancadas</span>
+                        <span class="o_estate_kpi__value" t-esc="state.k.stagnant_properties or 0"/>
                     </div>
-                    <div class="text-center px-3 py-2 flex-fill" style="border-right:1px solid #e5e7eb;">
-                        <div class="text-muted small text-uppercase">Estancadas</div>
-                        <div class="h3 m-0 text-warning" t-esc="state.k.stagnant_properties"/>
+                    <div class="o_estate_kpi o_estate_kpi--danger">
+                        <span class="o_estate_kpi__icon"><i class="fa fa-calendar-times-o"/></span>
+                        <span class="o_estate_kpi__label">Por vencer</span>
+                        <span class="o_estate_kpi__value" t-esc="state.k.contracts_expiring or 0"/>
                     </div>
-                    <div class="text-center px-3 py-2 flex-fill">
-                        <div class="text-muted small text-uppercase">Por vencer</div>
-                        <div class="h3 m-0 text-danger" t-esc="state.k.contracts_expiring"/>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ═══ CONTENIDO PRINCIPAL ═══ -->
-            <div class="px-4 pb-4">
+                </section>
 
                 <!-- Cargando -->
-                <div t-if="state.loading" class="text-center py-5 text-muted">
-                    <i class="fa fa-spinner fa-spin fa-2x"/>
-                    <div class="mt-2">Cargando indicadores...</div>
+                <div t-if="state.loading" class="o_estate_dash__loading">
+                    <span class="o_estate_dash__skeleton"/>
+                    <span class="o_estate_dash__skeleton"/>
+                    <span class="o_estate_dash__skeleton"/>
                 </div>
 
-                <div t-else="">
-
-                    <!-- Consultar IA -->
-                    <div class="p-3 mb-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
-                        <div class="small fw-bold mb-1" style="color:#004274;">Consultar Asistente IA</div>
-                        <div class="d-flex gap-2">
-                            <input type="text" class="form-control form-control-sm"
-                                   placeholder="Ej.: ¿Cuál fue el mejor asesor este mes?"
-                                   t-model="state.aiQuery"/>
-                            <button class="btn btn-sm text-nowrap text-white" t-on-click="askAi"
-                                    t-att-disabled="state.aiLoading"
-                                    style="background:#004274;">
-                                <i t-att-class="state.aiLoading ? 'fa fa-spinner fa-spin' : 'fa fa-paper-plane'"/> Preguntar
+                <t t-else="">
+                    <!-- ═══ Asistente IA ═══ -->
+                    <section class="o_estate_card o_estate_ai">
+                        <div class="o_estate_ai__row">
+                            <span class="o_estate_ai__badge"><i class="fa fa-magic"/></span>
+                            <input type="text" class="o_estate_ai__input"
+                                   placeholder="Pregúntale al asistente: ¿quién fue el mejor asesor este mes?"
+                                   t-model="state.aiQuery"
+                                   t-on-keydown="(ev) =&gt; ev.key === 'Enter' and this.askAi()"/>
+                            <button class="btn btn-primary o_estate_ai__btn" t-on-click="askAi"
+                                    t-att-disabled="state.aiLoading">
+                                <i t-att-class="state.aiLoading ? 'fa fa-spinner fa-spin' : 'fa fa-paper-plane'"/>
+                                <span class="d-none d-sm-inline ms-1">Preguntar</span>
                             </button>
                         </div>
-                        <div t-if="state.aiResponse" class="mt-2 small border p-2"
-                             style="background:#fff;" t-out="raw(state.aiResponse)"/>
-                    </div>
+                        <div t-if="state.aiResponse" class="o_estate_ai__answer" t-out="raw(state.aiResponse)"/>
+                    </section>
 
-                    <!-- Secciones de datos -->
-                    <div class="row">
-                        <!-- Propiedades -->
-                        <div class="col-12 col-lg-6">
-                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Propiedades</div>
-                            <table class="table table-sm mb-4">
-                                <tr><td class="text-muted">Total</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.total_properties"/></tr>
-                                <tr><td class="text-muted">Disponibles</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.available_properties"/></tr>
-                                <tr><td class="text-muted">Vendidas / Rentadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.sold_properties"/></tr>
-                                <tr><td class="text-muted">Estancadas (+60 días)</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.stagnant_properties"/></tr>
-                                <tr><td class="text-muted">Días promedio en mercado</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num(state.k.avg_days_on_market)"/></tr>
-                            </table>
-                        </div>
-                        <!-- Clientes y Actividad -->
-                        <div class="col-12 col-lg-6">
-                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Clientes y Actividad</div>
-                            <table class="table table-sm mb-4">
-                                <tr><td class="text-muted">Total clientes</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.total_clients"/></tr>
-                                <tr><td class="text-muted">Clientes activos</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.active_clients"/></tr>
-                                <tr><td class="text-muted">Visitas realizadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.appointments_done"/></tr>
-                                <tr><td class="text-muted">Ofertas activas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.active_offers_count"/></tr>
-                                <tr><td class="text-muted">Contratos por vencer</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.contracts_expiring"/></tr>
-                            </table>
-                        </div>
-                    </div>
+                    <!-- ═══ Bloques de métricas ═══ -->
+                    <section class="o_estate_dash__grid">
+                        <article class="o_estate_card">
+                            <h2 class="o_estate_card__title">Propiedades</h2>
+                            <dl class="o_estate_metrics">
+                                <div><dt>Total</dt><dd t-esc="state.k.total_properties or 0"/></div>
+                                <div><dt>Disponibles</dt><dd t-esc="state.k.available_properties or 0"/></div>
+                                <div><dt>Vendidas / rentadas</dt><dd t-esc="state.k.sold_properties or 0"/></div>
+                                <div><dt>Estancadas (+60 días)</dt><dd t-esc="state.k.stagnant_properties or 0"/></div>
+                                <div><dt>Días promedio en mercado</dt><dd t-esc="num(state.k.avg_days_on_market)"/></div>
+                            </dl>
+                        </article>
+                        <article class="o_estate_card">
+                            <h2 class="o_estate_card__title">Clientes y actividad</h2>
+                            <dl class="o_estate_metrics">
+                                <div><dt>Total clientes</dt><dd t-esc="state.k.total_clients or 0"/></div>
+                                <div><dt>Clientes activos</dt><dd t-esc="state.k.active_clients or 0"/></div>
+                                <div><dt>Visitas realizadas</dt><dd t-esc="state.k.appointments_done or 0"/></div>
+                                <div><dt>Ofertas activas</dt><dd t-esc="state.k.active_offers_count or 0"/></div>
+                                <div><dt>Contratos por vencer</dt><dd t-esc="state.k.contracts_expiring or 0"/></div>
+                            </dl>
+                        </article>
+                        <article class="o_estate_card">
+                            <h2 class="o_estate_card__title">Indicadores financieros</h2>
+                            <dl class="o_estate_metrics">
+                                <div><dt>Comisiones del período</dt><dd t-att-class="state.k.monthly_commissions &gt; 0 ? 'is-positive' : ''" t-esc="money(state.k.monthly_commissions)"/></div>
+                                <div><dt>Ingresos cerrados</dt><dd t-esc="money(state.k.won_revenue_month)"/></div>
+                                <div><dt>Pipeline pendiente</dt><dd t-esc="money(state.k.pending_revenue)"/></div>
+                                <div><dt>Facturas pendientes</dt><dd t-esc="money(state.k.pending_invoices_amount)"/></div>
+                            </dl>
+                        </article>
+                        <article class="o_estate_card">
+                            <h2 class="o_estate_card__title">Embudo CRM</h2>
+                            <dl class="o_estate_metrics">
+                                <div><dt>Leads nuevos</dt><dd t-esc="state.k.funnel_leads_new or 0"/></div>
+                                <div><dt>Visitas realizadas</dt><dd t-esc="state.k.funnel_visits_done or 0"/></div>
+                                <div><dt>Ofertas realizadas</dt><dd t-esc="state.k.funnel_offers_made or 0"/></div>
+                                <div><dt>Ganados</dt><dd t-att-class="state.k.funnel_won &gt; 0 ? 'is-positive' : ''" t-esc="state.k.funnel_won or 0"/></div>
+                                <div><dt>Perdidos</dt><dd t-att-class="state.k.funnel_lost &gt; 0 ? 'is-negative' : ''" t-esc="state.k.funnel_lost or 0"/></div>
+                                <div><dt>Tasa de conversión</dt><dd t-esc="num(state.k.funnel_conversion_pct) + '%'"/></div>
+                            </dl>
+                        </article>
+                    </section>
 
-                    <div class="row">
-                        <!-- Indicadores Financieros -->
-                        <div class="col-12 col-lg-6">
-                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Indicadores Financieros</div>
-                            <table class="table table-sm mb-4">
-                                <tr><td class="text-muted">Comisiones del período</td><td class="text-end fw-semibold text-success" t-esc="money(state.k.monthly_commissions)"/></tr>
-                                <tr><td class="text-muted">Ingresos cerrados</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.won_revenue_month)"/></tr>
-                                <tr><td class="text-muted">Pipeline pendiente</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.pending_revenue)"/></tr>
-                                <tr><td class="text-muted">Facturas pendientes</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="money(state.k.pending_invoices_amount)"/></tr>
-                            </table>
-                        </div>
-                        <!-- Embudo CRM -->
-                        <div class="col-12 col-lg-6">
-                            <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Embudo CRM</div>
-                            <table class="table table-sm mb-4">
-                                <tr><td class="text-muted">Leads nuevos</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.funnel_leads_new"/></tr>
-                                <tr><td class="text-muted">Visitas realizadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.funnel_visits_done"/></tr>
-                                <tr><td class="text-muted">Ofertas realizadas</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="state.k.funnel_offers_made"/></tr>
-                                <tr><td class="text-muted">Ganados</td><td class="text-end fw-semibold text-success" t-esc="state.k.funnel_won"/></tr>
-                                <tr><td class="text-muted">Perdidos</td><td class="text-end fw-semibold text-danger" t-esc="state.k.funnel_lost"/></tr>
-                                <tr><td class="text-muted">Tasa de conversión</td><td class="text-end fw-semibold" style="color:#004274;" t-esc="num(state.k.funnel_conversion_pct) + '%'"/></tr>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Tendencia vs período anterior -->
-                    <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2 mt-2" style="color:#004274;">Tendencia vs Período Anterior</div>
-                    <div style="border:1px solid #e5e7eb;" class="mb-4">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr style="background:#004274;color:#fff;">
-                                    <th class="ps-3">Métrica</th>
-                                    <th class="text-center">Período Actual</th>
-                                    <th class="text-center">Período Anterior</th>
-                                    <th class="text-center pe-3">Variación</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td class="ps-3 fw-semibold">Ventas</td>
-                                    <td class="text-center h6 m-0" t-esc="state.k.trend_sales_current"/>
-                                    <td class="text-center text-muted" t-esc="state.k.trend_sales_prev"/>
-                                    <td class="text-center pe-3 fw-bold" t-att-class="pctClass(state.k.trend_sales_pct)">
-                                        <t t-esc="pctArrow(state.k.trend_sales_pct)"/> <t t-esc="num(state.k.trend_sales_pct)"/>%
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="ps-3 fw-semibold">Leads Nuevos</td>
-                                    <td class="text-center h6 m-0" t-esc="state.k.trend_leads_current"/>
-                                    <td class="text-center text-muted" t-esc="state.k.trend_leads_prev"/>
-                                    <td class="text-center pe-3 fw-bold" t-att-class="pctClass(state.k.trend_leads_pct)">
-                                        <t t-esc="pctArrow(state.k.trend_leads_pct)"/> <t t-esc="num(state.k.trend_leads_pct)"/>%
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Gráficos Chart.js -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12 col-lg-6">
-                            <div style="border:1px solid #e5e7eb;" class="p-3 h-100">
-                                <div class="text-uppercase small fw-bold mb-2" style="color:#004274;">Ventas (últimos 6 meses)</div>
-                                <DashChart data="state.salesChart"/>
+                    <!-- ═══ Tendencia ═══ -->
+                    <section class="o_estate_dash__trend">
+                        <article class="o_estate_card o_estate_trend">
+                            <p class="o_estate_trend__label">Ventas</p>
+                            <div class="o_estate_trend__row">
+                                <span class="o_estate_trend__value" t-esc="state.k.trend_sales_current or 0"/>
+                                <span class="o_estate_trend__chip" t-att-class="pctClass(state.k.trend_sales_pct)">
+                                    <t t-esc="pctArrow(state.k.trend_sales_pct)"/> <t t-esc="num(state.k.trend_sales_pct)"/>%
+                                </span>
                             </div>
-                        </div>
-                        <div class="col-12 col-lg-6">
-                            <div style="border:1px solid #e5e7eb;" class="p-3 h-100">
-                                <div class="text-uppercase small fw-bold mb-2" style="color:#004274;">Leads (últimos 6 meses)</div>
-                                <DashChart data="state.leadsChart"/>
+                            <p class="o_estate_trend__prev">Período anterior: <t t-esc="state.k.trend_sales_prev or 0"/></p>
+                        </article>
+                        <article class="o_estate_card o_estate_trend">
+                            <p class="o_estate_trend__label">Leads nuevos</p>
+                            <div class="o_estate_trend__row">
+                                <span class="o_estate_trend__value" t-esc="state.k.trend_leads_current or 0"/>
+                                <span class="o_estate_trend__chip" t-att-class="pctClass(state.k.trend_leads_pct)">
+                                    <t t-esc="pctArrow(state.k.trend_leads_pct)"/> <t t-esc="num(state.k.trend_leads_pct)"/>%
+                                </span>
                             </div>
-                        </div>
-                    </div>
+                            <p class="o_estate_trend__prev">Período anterior: <t t-esc="state.k.trend_leads_prev or 0"/></p>
+                        </article>
+                    </section>
 
-                    <!-- Ranking de asesores -->
-                    <div class="text-uppercase fw-bold small border-bottom pb-1 mb-2" style="color:#004274;">Ranking de Asesores</div>
-                    <div style="border:1px solid #e5e7eb;" class="mb-4">
-                        <table class="table table-sm mb-0">
-                            <thead>
-                                <tr style="background:#004274;color:#fff;">
-                                    <th class="ps-3">#</th>
-                                    <th>Asesor</th>
-                                    <th class="text-center">Ventas</th>
-                                    <th class="text-end">Ingresos</th>
-                                    <th class="text-end pe-3">Comisión</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr t-foreach="state.ranking" t-as="r" t-key="r_index">
-                                    <td class="ps-3 text-muted" t-esc="r_index + 1"/>
-                                    <td class="fw-semibold" t-esc="r.name"/>
-                                    <td class="text-center" t-esc="r.sales"/>
-                                    <td class="text-end" t-esc="money(r.revenue)"/>
-                                    <td class="text-end pe-3 text-success" t-esc="money(r.commission)"/>
-                                </tr>
-                                <tr t-if="!state.ranking.length">
-                                    <td colspan="5" class="text-center text-muted py-3">Sin ventas registradas en el período</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                    <!-- ═══ Gráficos ═══ -->
+                    <section class="o_estate_dash__grid">
+                        <article class="o_estate_card">
+                            <h2 class="o_estate_card__title">Ventas · últimos 6 meses</h2>
+                            <DashChart data="state.salesChart"/>
+                        </article>
+                        <article class="o_estate_card">
+                            <h2 class="o_estate_card__title">Leads · últimos 6 meses</h2>
+                            <DashChart data="state.leadsChart"/>
+                        </article>
+                    </section>
+
+                    <!-- ═══ Ranking ═══ -->
+                    <section class="o_estate_card o_estate_rank">
+                        <h2 class="o_estate_card__title">Ranking de asesores</h2>
+                        <div class="table-responsive">
+                            <table class="o_estate_rank__table">
+                                <thead>
+                                    <tr>
+                                        <th class="text-start">Asesor</th>
+                                        <th class="text-center">Ventas</th>
+                                        <th class="text-end">Ingresos</th>
+                                        <th class="text-end">Comisión</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr t-foreach="state.ranking" t-as="r" t-key="r_index">
+                                        <td>
+                                            <span class="o_estate_rank__pos" t-att-class="r_index &lt; 3 ? 'is-top' : ''" t-esc="r_index + 1"/>
+                                            <span class="o_estate_rank__avatar" t-esc="(r.name or '?').slice(0, 1).toUpperCase()"/>
+                                            <span class="o_estate_rank__name" t-esc="r.name"/>
+                                        </td>
+                                        <td class="text-center" t-esc="r.sales"/>
+                                        <td class="text-end" t-esc="money(r.revenue)"/>
+                                        <td class="text-end is-positive" t-esc="money(r.commission)"/>
+                                    </tr>
+                                    <tr t-if="!state.ranking.length">
+                                        <td colspan="4" class="o_estate_rank__empty">Sin ventas registradas en el período</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </t>
             </div>
         </div>
     </t>
