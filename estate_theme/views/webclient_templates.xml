@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Aplica el modo oscuro antes de pintar la pantalla (sin parpadeo
+         blanco) y colorea la barra del navegador del celular con la marca. -->
+    <template id="webclient_bootstrap_inmobi" inherit_id="web.webclient_bootstrap" name="Inmobi — modo oscuro y color de marca">
+        <xpath expr="//meta[@name='theme-color']" position="replace">
+            <meta name="theme-color" content="#28235d"/>
+            <script type="text/javascript">
+                try {
+                    if (window.localStorage.getItem("ix_color_scheme") === "dark") {
+                        document.documentElement.classList.add("ix-dark");
+                    }
+                } catch (e) {}
+            </script>
+        </xpath>
+    </template>
+</odoo>

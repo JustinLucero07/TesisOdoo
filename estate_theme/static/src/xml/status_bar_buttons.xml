@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Encabezado de formularios en escritorio: con más de 4 botones se ven
+         los 3 primeros y el resto pasa a "Más ▾" (como ya hace Odoo en celular). -->
+    <t t-name="estate_theme.StatusBarButtons" t-inherit="web.StatusBarButtons" t-inherit-mode="extension">
+        <xpath expr="//t[@t-else='']" position="replace">
+            <t t-else="">
+                <t t-set="ixMax" t-value="visibleSlotNames.length &gt; 4 ? 3 : visibleSlotNames.length"/>
+                <t t-foreach="visibleSlotNames.slice(0, ixMax)" t-as="slot" t-key="slot">
+                    <t t-slot="{{ slot }}" />
+                </t>
+                <Dropdown t-if="visibleSlotNames.length &gt; ixMax">
+                    <button class="btn btn-secondary o_ix_more_actions" title="Más acciones">
+                        Más <i class="fa fa-angle-down ms-1" />
+                    </button>
+                    <t t-set-slot="content">
+                        <t t-foreach="visibleSlotNames.slice(ixMax)" t-as="slot" t-key="slot">
+                            <DropdownItem class="'o-dropdown-item-unstyled-button o_ix_more_item'">
+                                <t t-slot="{{ slot }}" />
+                            </DropdownItem>
+                        </t>
+                    </t>
+                </Dropdown>
+            </t>
+        </xpath>
+    </t>
+</templates>

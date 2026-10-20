@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Inicio de sesión con la identidad de Inmobi: panel de marca a la
+         izquierda y formulario limpio a la derecha. -->
+    <template id="login_layout_inmobi" inherit_id="web.login_layout" name="Inmobi — inicio de sesión">
+        <xpath expr="//t[@t-set='body_classname']" position="attributes">
+            <attribute name="t-value">'o_ix_login_body'</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('container')]" position="replace">
+            <main class="o_ix_login">
+                <section class="o_ix_login__brand" aria-hidden="true">
+                    <div class="o_ix_login__brand-inner">
+                        <svg class="o_ix_login__roof" viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg">
+                            <polygon points="0,270 305,0 400,90" fill="#ab1a2d"/>
+                            <polygon points="305,0 600,0 600,270" fill="#ea0a2a"/>
+                        </svg>
+                        <p class="o_ix_login__brand-name">Inmobi</p>
+                        <p class="o_ix_login__tagline">Gestión inmobiliaria inteligente: propiedades, clientes y comisiones en un solo lugar.</p>
+                    </div>
+                </section>
+                <section class="o_ix_login__panel">
+                    <div t-attf-class="o_ix_login__card {{login_card_classes}} o_database_list">
+                        <div class="o_ix_login__logo">
+                            <img t-attf-src="/web/binary/company_logo{{ '?dbname='+db if db else '' }}" alt="Logo"/>
+                        </div>
+                        <t t-out="0"/>
+                        <div class="o_ix_login__footer" t-if="not disable_footer">
+                            <t t-if="not disable_database_manager">
+                                <a href="/web/database/manager">Administrar bases de datos</a>
+                            </t>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </xpath>
+    </template>
+
+    <!-- Saludo solo en la pantalla de ingreso (no en "restablecer contraseña"). -->
+    <template id="login_inmobi_heading" inherit_id="web.login" name="Inmobi — saludo de ingreso">
+        <xpath expr="//div[@id='oe_structure_login_top']" position="before">
+            <h1 class="o_ix_login__title">Bienvenido</h1>
+            <p class="o_ix_login__subtitle">Ingresa con tu correo y contraseña.</p>
+        </xpath>
+    </template>
+</odoo>

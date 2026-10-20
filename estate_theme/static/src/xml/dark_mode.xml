@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="estate_theme.DarkModeToggle">
+        <div class="o_ix_dark_toggle">
+            <button type="button" class="o_nav_entry"
+                    t-on-click="toggle"
+                    t-att-title="state.dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                    t-att-aria-label="state.dark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'">
+                <i t-att-class="state.dark ? 'fa fa-sun-o' : 'fa fa-moon-o'"/>
+            </button>
+        </div>
+    </t>
+</templates>

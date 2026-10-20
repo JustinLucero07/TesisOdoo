@@ -525,3 +525,27 @@ strong, b { font-weight: 600; }
     border-radius: var(--ix-radius);
     border-width: 1px;
 }
+
+// Botón "Más ▾" del encabezado y sus opciones
+.o_ix_more_actions .fa-angle-down { opacity: .7; }
+.dropdown-menu:has(.o_ix_more_item) { overflow-x: hidden; min-width: 240px; }
+.dropdown-menu .o_ix_more_item {
+    padding: 0 !important;
+    white-space: nowrap;
+    .btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        justify-content: flex-start;
+        padding: .5rem .75rem;
+        border: none !important;
+        border-radius: 8px;
+        background: transparent !important;
+        box-shadow: none !important;
+        font-weight: 450;
+        color: var(--ix-text) !important;
+        &:hover { background: var(--ix-primary-soft) !important; color: var(--ix-primary) !important; }
+        &.btn-danger, &.btn-outline-danger { color: #be123c !important; }
+    }
+}

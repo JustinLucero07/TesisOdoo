@@ -1,0 +1,48 @@
+// ═══════════════════════════════════════════════════════════════
+// Pantallas vacías: ilustración propia (casa con el techo del logo),
+// título claro y texto de ayuda, en vez de la carita de Odoo.
+// ═══════════════════════════════════════════════════════════════
+
+$ix-empty-illustration: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'><defs><radialGradient id='g' cx='50%' cy='40%' r='60%'><stop offset='0' stop-color='%23f3f2fc'/><stop offset='1' stop-color='%23e9e7f8'/></radialGradient></defs><circle cx='80' cy='80' r='72' fill='url(%23g)'/><path d='M46 76 L80 50 L114 76 V112 a4 4 0 0 1 -4 4 H50 a4 4 0 0 1 -4 -4 Z' fill='white' stroke='%232b2770' stroke-width='3' stroke-linejoin='round'/><rect x='70' y='88' width='20' height='28' rx='3' fill='none' stroke='%232b2770' stroke-width='3'/><polygon points='40,80 80,46 92,57' fill='%23ab1a2d'/><polygon points='80,46 120,46 120,80' fill='%23ea0a2a'/><circle cx='118' cy='112' r='13' fill='white' stroke='%232b2770' stroke-width='3'/><path d='M113 112 h10 M118 107 v10' stroke='%232b2770' stroke-width='3' stroke-linecap='round'/></svg>");
+
+.o_view_nocontent {
+    .o_nocontent_help {
+        max-width: 460px;
+        padding: 32px 28px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, .92);
+        box-shadow: 0 20px 50px -24px rgba(40, 35, 93, .35);
+        color: var(--ix-muted, #6b7280);
+        font-size: .92rem;
+        line-height: 1.6;
+
+        > p:first-child,
+        .o_view_nocontent_smiling_face,
+        .o_view_nocontent_neutral_face,
+        .o_view_nocontent_empty_folder {
+            font-size: 1.15rem !important;
+            font-weight: 500 !important;
+            color: var(--ix-text, #1d2433) !important;
+            letter-spacing: -0.01em;
+            margin-bottom: 8px;
+        }
+
+        .o_view_nocontent_smiling_face:before,
+        .o_view_nocontent_neutral_face:before,
+        .o_view_nocontent_empty_folder:before {
+            content: "";
+            display: block;
+            width: 120px !important;
+            height: 120px !important;
+            margin: 0 auto 18px !important;
+            background: $ix-empty-illustration no-repeat center / contain !important;
+        }
+    }
+}
+
+// La muestra de datos de fondo (kanban/listas vacías) más tenue para que
+// el mensaje se lea primero.
+.o_view_sample_data .o_kanban_record,
+.o_view_sample_data .o_list_table {
+    opacity: .45;
+}

@@ -22,7 +22,7 @@ export class PropertySummary extends Component {
                 <div class="d-flex align-items-center justify-content-between px-3 pt-2 pb-1">
                     <div class="d-flex align-items-center gap-2">
                         <i class="fa fa-robot text-primary" style="font-size:1rem;"/>
-                        <strong class="small" style="color:#004274;">Análisis IA</strong>
+                        <strong class="small" style="color:var(--ix-primary, #2b2770);">Análisis IA</strong>
                         <span t-if="state.data.ai_summary_date"
                               class="badge text-bg-light" style="font-size:0.65rem;font-weight:400;">
                             <t t-esc="state.data.ai_summary_date"/>
@@ -49,7 +49,7 @@ export class PropertySummary extends Component {
 
                 <!-- ── Stats pills ── -->
                 <div class="d-flex flex-wrap gap-1 px-3 pb-2">
-                    <span class="badge rounded-pill" style="background:#dbeafe;color:#004274;font-size:0.72rem;">
+                    <span class="badge rounded-pill" style="background:#dbeafe;color:var(--ix-primary, #2b2770);font-size:0.72rem;">
                         <i class="fa fa-calendar-o me-1"/><t t-esc="state.data.meeting_count"/> Citas
                     </span>
                     <span class="badge rounded-pill" style="background:#dcfce7;color:#166534;font-size:0.72rem;">
@@ -107,7 +107,7 @@ export class PropertySummary extends Component {
                                  class="px-3 py-2 d-flex align-items-start gap-2"
                                  style="background:#eff6ff;border-bottom:1px solid #e2e8f0;">
                                 <i class="fa fa-user-circle text-primary mt-1" style="font-size:0.85rem;flex-shrink:0;"/>
-                                <span class="small" style="font-size:0.78rem;color:#004274;font-weight:500;">
+                                <span class="small" style="font-size:0.78rem;color:var(--ix-primary, #2b2770);font-weight:500;">
                                     <t t-esc="msg.text"/>
                                 </span>
                             </div>
@@ -151,7 +151,7 @@ export class PropertySummary extends Component {
                          class="px-3 pb-1 d-flex flex-wrap gap-1">
                         <t t-foreach="suggestions" t-as="sug" t-key="sug_index">
                             <button class="btn btn-sm py-0 px-2"
-                                    style="font-size:0.7rem;border:1px solid #cbd5e1;border-radius:14px;color:#004274;background:#fff;"
+                                    style="font-size:0.7rem;border:1px solid #cbd5e1;border-radius:14px;color:var(--ix-primary, #2b2770);background:#fff;"
                                     t-on-click="() => this.sendChat(sug)">
                                 <t t-esc="sug"/>
                             </button>
@@ -415,29 +415,89 @@ export class PropertySummary extends Component {
 
     _processSummary(raw) {
         if (!raw) return "";
-        let html = raw
+        const html = raw
             .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
             .replace(/\*(.*?)\*/g, "<em>$1</em>")
             .replace(/`(.*?)`/g, "<code>$1</code>");
-        const icons = PropertySummary.SECTION_ICONS;
-        html = html.replace(
-            /(<(?:p|h[1-6])[^>]*>)\s*(?:<strong>)?\s*([\w\sáéíóúüñÁÉÍÓÚÜÑ]+?)(?:<\/strong>)?\s*(<\/(?:p|h[1-6])>)/gi,
-            (match, open, text, close) => {
-                const key = Object.keys(icons).find(k => text.trim().startsWith(k));
-                const svg = key ? icons[key] : "";
-                const label = text.trim();
-                return `${open}<strong style="display:flex;align-items:center;gap:5px;color:#004274;">${svg}${label}</strong>${close}`;
-            }
-        );
-        for (const [key, svg] of Object.entries(icons)) {
-            html = html.replace(
-                new RegExp(`(<strong[^>]*>)(${key}[^<]*)(<\/strong>)`, "g"),
-                (match, open, text, close) => {
-                    if (open.includes("color:#004274")) return match;
-                    return `<strong style="display:flex;align-items:center;gap:5px;color:#004274;">${svg}${text}</strong>`;
-                }
-            );
+        try {
+            return this._buildSections(html) || html;
+        } catch {
+            return html;
         }
-        return html;
+    }
+
+    /**
+     * Convierte el análisis (títulos + listas) en bloques plegables con icono y
+     * contador, y arma arriba un "En pocas palabras" de 3 líneas. Alertas y
+     * Precio quedan abiertos; el resto, cerrado para no abrumar.
+     */
+    _buildSections(html) {
+        const doc = new DOMParser().parseFromString(`<div>${html}</div>`, "text/html");
+        const root = doc.body.firstElementChild;
+        const sections = [];
+        let current = null;
+        for (const node of [...root.children]) {
+            const isTitle = /^(P|H[1-6])$/.test(node.tagName) && node.textContent.trim().length < 40
+                && (node.querySelector("strong") || /^H/.test(node.tagName));
+            if (isTitle) {
+                current = { title: node.textContent.trim().replace(/:$/, ""), nodes: [] };
+                sections.push(current);
+            } else if (current) {
+                current.nodes.push(node);
+            }
+        }
+        if (sections.length < 2) {
+            return "";
+        }
+        const icons = PropertySummary.SECTION_ICONS;
+        const iconFor = (title) => {
+            const key = Object.keys(icons).find((k) => title.startsWith(k));
+            return key ? icons[key] : icons["Acción"];
+        };
+        const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+        const firstSentence = (text) => {
+            const clean = text.replace(/\s+/g, " ").trim();
+            const cut = clean.search(/[.;](\s|$)/);
+            const out = cut > 0 ? clean.slice(0, cut + 1) : clean;
+            return out.length > 150 ? out.slice(0, 147) + "…" : out;
+        };
+
+        // "En pocas palabras": precio, interés y alertas en una línea cada uno.
+        const find = (name) => sections.find((sec) => sec.title.startsWith(name));
+        const items = (sec) => (sec ? sec.nodes.flatMap((n) => [...n.querySelectorAll("li")]) : []);
+        const brief = [];
+        const precio = items(find("Precio"))[0];
+        if (precio) brief.push(["Precio", firstSentence(precio.textContent)]);
+        const interesados = items(find("Interesados"));
+        if (interesados.length) {
+            const n = interesados.reduce((acc, li) => acc + Math.max(1, (li.textContent.match(/\(/g) || []).length), 0);
+            brief.push(["Interesados", `${n} ${n === 1 ? "persona interesada" : "personas interesadas"}`]);
+        }
+        const alertas = items(find("Alertas"));
+        if (alertas.length) {
+            brief.push(["Alertas", `${alertas.length} — ${firstSentence(alertas[0].textContent)}`]);
+        }
+
+        let out = "";
+        if (brief.length) {
+            out += `<div class="o-ps-brief"><p class="o-ps-brief__title">En pocas palabras</p>`;
+            for (const [label, text] of brief) {
+                out += `<p class="o-ps-brief__line"><span>${esc(label)}</span>${esc(text)}</p>`;
+            }
+            out += `</div>`;
+        }
+        for (const sec of sections) {
+            const count = items(sec).length;
+            const open = /^(Alertas|Precio)/.test(sec.title) ? " open" : "";
+            const tone = sec.title.startsWith("Alertas") ? " o-ps-section--alert" : "";
+            out += `<details class="o-ps-section${tone}"${open}><summary>`
+                + `<span class="o-ps-section__icon">${iconFor(sec.title)}</span>`
+                + `<span class="o-ps-section__title">${esc(sec.title)}</span>`
+                + (count ? `<span class="o-ps-section__count">${count}</span>` : "")
+                + `<i class="fa fa-angle-down o-ps-section__caret"></i></summary>`
+                + `<div class="o-ps-section__body">${sec.nodes.map((n) => n.outerHTML).join("")}</div>`
+                + `</details>`;
+        }
+        return out;
     }
 }

@@ -15,6 +15,10 @@ Odoo vuelve a verse como antes.
     'author': 'Inmobi',
     'license': 'LGPL-3',
     'depends': ['web', 'estate_management'],
+    'data': [
+        'views/login_templates.xml',
+        'views/webclient_templates.xml',
+    ],
     'assets': {
         'web._assets_primary_variables': [
             ('prepend', 'estate_theme/static/src/scss/primary_variables.scss'),
@@ -23,6 +27,14 @@ Odoo vuelve a verse como antes.
             'estate_theme/static/src/scss/fonts.scss',
             'estate_theme/static/src/scss/theme.scss',
             'estate_theme/static/src/scss/mobile.scss',
+            'estate_theme/static/src/scss/empty_states.scss',
+            'estate_theme/static/src/scss/dark.scss',
+            'estate_theme/static/src/xml/*.xml',
+            'estate_theme/static/src/js/*.js',
+        ],
+        'web.assets_frontend': [
+            'estate_theme/static/src/scss/fonts.scss',
+            'estate_theme/static/src/scss/login.scss',
         ],
     },
     'installable': True,

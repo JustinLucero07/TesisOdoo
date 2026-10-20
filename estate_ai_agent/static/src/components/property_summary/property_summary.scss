@@ -1,0 +1,89 @@
+// Análisis IA de la propiedad: bloques plegables y resumen corto
+.o-estate-PropertySummary {
+    .o-ps-brief {
+        margin: 2px 12px 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f3f2fc 0%, #fbf7f8 100%);
+        border: 1px solid #e6e4f5;
+        &__title {
+            margin: 0 0 6px;
+            font-size: .68rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--ix-primary, #2b2770);
+        }
+        &__line {
+            margin: 0 0 4px;
+            font-size: .79rem;
+            line-height: 1.45;
+            color: #1e293b;
+            &:last-child { margin-bottom: 0; }
+            span {
+                display: inline-block;
+                min-width: 78px;
+                font-weight: 600;
+                color: #4b5563;
+            }
+        }
+    }
+
+    .o-ps-section {
+        margin: 0 12px 6px;
+        border: 1px solid #eceef2;
+        border-radius: 10px;
+        background: #fff;
+        overflow: hidden;
+        > summary {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+            &::-webkit-details-marker { display: none; }
+            &:hover { background: #fafafd; }
+        }
+        &__icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 7px;
+            background: #efeefa;
+            color: var(--ix-primary, #2b2770);
+            flex-shrink: 0;
+        }
+        &__title { flex: 1; font-size: .8rem; font-weight: 600; color: #1f2937; }
+        &__count {
+            font-size: .68rem;
+            font-weight: 600;
+            padding: 1px 7px;
+            border-radius: 999px;
+            background: #f1f2f5;
+            color: #4b5563;
+        }
+        &__caret { color: #9aa1ad; transition: transform .18s ease; }
+        &[open] &__caret { transform: rotate(180deg); }
+        &__body {
+            padding: 2px 12px 10px 42px;
+            font-size: .78rem;
+            line-height: 1.6;
+            color: #334155;
+            ul { margin: 0; padding-left: 1rem; }
+            li { margin-bottom: 3px; }
+            p { margin: 0 0 4px; }
+        }
+        &--alert {
+            border-color: #fbd0d8;
+            .o-ps-section__icon { background: #ffe4ea; color: #e11d48; }
+            .o-ps-section__count { background: #ffe4ea; color: #be123c; }
+        }
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .o-estate-PropertySummary .o-ps-section__caret { transition: none; }
+}
