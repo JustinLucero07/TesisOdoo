@@ -1,7 +1,7 @@
 import logging
 import re
 
-import requests
+from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError

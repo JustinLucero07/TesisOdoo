@@ -3,7 +3,7 @@
 iframe/URL de mapa y acciones relacionadas. Extraido de estate_property.py."""
 import json
 import logging
-import requests
+from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
 
 from odoo import models, fields, api
 from odoo.exceptions import UserError

@@ -79,32 +79,47 @@ def request_with_retry(method, url, retries=3, backoff=1.5, **kwargs):
 
 class _RetryRequests:
     """Reemplazo parcial de la librería `requests` que aplica reintentos
-    automáticos a get/post/put/delete mediante request_with_retry.
+    automáticos mediante request_with_retry.
 
     Uso (drop-in, sin tocar los call-sites):
         from odoo.addons.estate_management.tools.http_retry import requests_retry as requests
         resp = requests.get(url, params=..., timeout=15)
+
+    `requests_retry_reads` reintenta solo lecturas (GET, PUT, DELETE): un POST
+    o PATCH que crea algo (un post en Facebook, un evento en Google) no se
+    repite, para no duplicarlo si la primera respuesta se perdió.
     """
     RequestException = requests.RequestException
     Timeout = requests.Timeout
     ConnectionError = requests.ConnectionError
+    HTTPError = requests.HTTPError
+    exceptions = requests.exceptions
 
-    @staticmethod
-    def get(url, **kwargs):
+    def __init__(self, retry_writes=True):
+        self._retry_writes = retry_writes
+
+    def _write(self, method, url, **kwargs):
+        if self._retry_writes:
+            return request_with_retry(method, url, **kwargs)
+        kwargs.setdefault('timeout', 15)
+        return requests.request(method, url, **kwargs)
+
+    def get(self, url, **kwargs):
         return request_with_retry('GET', url, **kwargs)
 
-    @staticmethod
-    def post(url, **kwargs):
-        return request_with_retry('POST', url, **kwargs)
-
-    @staticmethod
-    def put(url, **kwargs):
+    def put(self, url, **kwargs):
         return request_with_retry('PUT', url, **kwargs)
 
-    @staticmethod
-    def delete(url, **kwargs):
+    def delete(self, url, **kwargs):
         return request_with_retry('DELETE', url, **kwargs)
 
+    def post(self, url, **kwargs):
+        return self._write('POST', url, **kwargs)
 
-# Instancia lista para importar como reemplazo de `requests`.
+    def patch(self, url, **kwargs):
+        return self._write('PATCH', url, **kwargs)
+
+
+# Instancias listas para importar como reemplazo de `requests`.
 requests_retry = _RetryRequests()
+requests_retry_reads = _RetryRequests(retry_writes=False)

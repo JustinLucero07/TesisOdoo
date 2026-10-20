@@ -18,7 +18,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
-import requests
+from odoo.addons.estate_management.tools.http_retry import requests_retry_reads as requests
 from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
