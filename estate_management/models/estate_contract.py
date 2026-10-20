@@ -690,24 +690,35 @@ class EstateContract(models.Model):
 
     @api.model
     def _cron_generate_rent_invoices(self):
-        """Cron mensual: genera facturas de renta para contratos de arriendo activos."""
+        """Cron mensual: crea la cuota de arriendo del mes (pago pendiente) de
+        cada contrato de arriendo activo. Luego se cobra desde "Pagos de
+        Arrendamiento" y, si se atrasa, entra en las alertas de pagos vencidos."""
+        import calendar
         today = fields.Date.today()
         month_start = today.replace(day=1)
+        month_end = today.replace(day=calendar.monthrange(today.year, today.month)[1])
         active_rent = self.search([
             ('contract_type', '=', 'rent'),
             ('state', '=', 'active'),
-            ('date_end', '>=', today),
+            '|', ('date_end', '=', False), ('date_end', '>=', month_start),
         ])
+        Payment = self.env['estate.payment']
         for contract in active_rent:
-            # Verificar que no se haya generado factura este mes para este contrato
-            already_invoiced = self.env['account.move'].search_count([
-                ('property_id', '=', contract.property_id.id),
-                ('move_type', '=', 'out_invoice'),
-                ('estate_transaction_type', '=', 'rent'),
-                ('invoice_date', '>=', month_start),
-            ])
-            if not already_invoiced:
-                try:
-                    contract.action_generate_rent_invoice()
-                except Exception as e:
-                    _logger.warning("Error generando factura de alquiler para %s: %s", contract.name, e)
+            if Payment.search_count([
+                ('contract_id', '=', contract.id),
+                ('date', '>=', month_start), ('date', '<=', month_end),
+                ('state', '!=', 'cancelled'),
+            ]):
+                continue
+            amount = contract.property_id.rental_price or contract.amount
+            if amount <= 0:
+                _logger.warning('Contrato de arriendo %s sin canon mensual: no se creó la cuota.',
+                                contract.name)
+                continue
+            day = min((contract.date_start or month_start).day, month_end.day)
+            Payment.create({
+                'contract_id': contract.id,
+                'amount': amount,
+                'date': month_start.replace(day=day),
+                'notes': 'Cuota de arriendo de %s' % month_start.strftime('%m/%Y'),
+            })

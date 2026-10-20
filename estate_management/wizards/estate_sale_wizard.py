@@ -393,7 +393,11 @@ class EstateSaleWizard(models.TransientModel):
             try:
                 target_lead.with_context(estate_no_sale_wizard=True).action_set_won_rainbowman()
             except Exception:
-                pass
+                _logger.exception('Venta de %s: no se pudo marcar como ganado el lead %s',
+                                  prop.display_name, target_lead.id)
+                prop.message_post(body=Markup(
+                    'La venta quedó registrada, pero no se pudo marcar como <b>ganado</b> '
+                    'el lead <b>%s</b>. Márcalo a mano en el CRM.') % target_lead.display_name)
         if target_lead:
             target_lead.message_post(body=Markup(f'Venta de propiedad <b>{prop.title}</b> confirmada por <b>${self.sale_price:,.2f}</b> con comisión de <b>${self.commission_amount:,.2f}</b>.'))
 

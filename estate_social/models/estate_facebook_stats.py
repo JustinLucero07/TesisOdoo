@@ -370,8 +370,9 @@ class EstateFacebookStats(models.Model):
                             gender_age_raw = {k: int(v or 0) for k, v in val.items()}
                     if reach and fan_reach:
                         non_fan_reach = max(reach - fan_reach, 0)
-            except Exception:
-                pass
+            except Exception as e:
+                # Métricas opcionales: Meta no las da para todos los posts.
+                _logger.info('Facebook %s: sin métricas de audiencia (%s)', post_id, e)
 
             self.write({
                 'fb_post_id':       post_id,

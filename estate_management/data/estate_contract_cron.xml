@@ -42,7 +42,7 @@
 
     <!-- Generación automática de facturas mensuales de arrendamiento -->
     <record id="ir_cron_generate_rent_invoices" model="ir.cron">
-        <field name="name">Inmobiliaria: Generar Facturas Mensuales de Arrendamiento</field>
+        <field name="name">Inmobiliaria: Generar Cuotas Mensuales de Arrendamiento</field>
         <field name="model_id" ref="estate_management.model_estate_contract"/>
         <field name="state">code</field>
         <field name="code">model._cron_generate_rent_invoices()</field>

@@ -567,15 +567,7 @@ class EstateWordpressImportWizard(models.TransientModel):
             if type_names:
                 property_type_id = self._get_or_create_property_type(type_names[0]).id
         
-        # Fallback 1: detectar tipo desde el nombre del término de taxonomía (ya cubierto arriba, pero mantenemos por seguridad)
-        if not property_type_id:
-            try:
-                # El código anterior usaba una búsqueda manual en _embedded, la nueva _get_taxonomy_term_names es más limpia.
-                pass
-            except Exception:
-                _logger.debug("Excepcion ignorada (best-effort)", exc_info=True)
-
-        # Fallback 2: detectar tipo por palabras clave en el título
+        # Respaldo: detectar el tipo por palabras clave en el título
         if not property_type_id:
             title_lower = title.lower()
             keyword_map = [

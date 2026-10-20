@@ -777,7 +777,7 @@ class EstatePropertyWordPress(models.Model):
                             prop_err.with_context(no_wp_sync=True).write({'wp_sync_state': 'error'})
                             cr_err.commit()
                 except Exception:
-                    pass
+                    _logger.exception('WordPress: no se pudo marcar el error de sincronización')
 
         t = threading.Thread(target=_do_sync, daemon=True)
         t.start()
