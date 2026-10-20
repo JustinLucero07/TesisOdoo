@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_estate_sale_collect_wizard_form" model="ir.ui.view">
+        <field name="name">estate.sale.collect.wizard.form</field>
+        <field name="model">estate.sale.collect.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Marcar comisión cobrada">
+                <p class="text-muted">
+                    Se marcarán como cobradas <b><field name="order_count" readonly="1" class="d-inline"/></b>
+                    venta(s). Después ya puedes pagar las comisiones de los asesores.
+                </p>
+                <group>
+                    <field name="date"/>
+                    <field name="amount_total" widget="monetary" readonly="1"/>
+                </group>
+                <field name="order_ids" readonly="1">
+                    <list>
+                        <field name="estate_date_sold" string="Fecha venta"/>
+                        <field name="estate_buyer_id"/>
+                        <field name="partner_id" string="Propietario"/>
+                        <field name="property_id"/>
+                        <field name="amount_total" string="Comisión" sum="Total"/>
+                    </list>
+                </field>
+                <footer>
+                    <button name="action_confirm" type="object" string="Marcar cobrada"
+                            class="btn-primary" icon="fa-check"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- También en el menú Acciones al seleccionar varias ventas -->
+    <record id="action_estate_sale_collect_wizard" model="ir.actions.act_window">
+        <field name="name">Marcar comisión cobrada</field>
+        <field name="res_model">estate.sale.collect.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">list,form</field>
+    </record>
+</odoo>

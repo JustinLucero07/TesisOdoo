@@ -24,6 +24,7 @@ class Reminder {
   final int? userId;
   final String userName;
   final bool notifyPush;
+  final bool notifyWhatsapp;
   final String state;
   final bool advanceNotified;
   final bool dueNotified;
@@ -50,6 +51,7 @@ class Reminder {
     this.userId,
     this.userName = '',
     this.notifyPush = true,
+    this.notifyWhatsapp = false,
     this.state = 'pending',
     this.advanceNotified = false,
     this.dueNotified = false,
@@ -71,6 +73,7 @@ class Reminder {
     'document_id',
     'user_id',
     'notify_push',
+    'notify_whatsapp',
     'state',
     'advance_notified',
     'due_notified',
@@ -106,6 +109,7 @@ class Reminder {
     userId: j['user_id'] is List ? j['user_id'][0] as int : null,
     userName: many2oneName(j['user_id']),
     notifyPush: j['notify_push'] != false,
+    notifyWhatsapp: j['notify_whatsapp'] == true,
     state: asOdooString(j['state'], 'pending'),
     advanceNotified: j['advance_notified'] == true,
     dueNotified: j['due_notified'] == true,

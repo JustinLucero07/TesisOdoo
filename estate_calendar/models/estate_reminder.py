@@ -15,7 +15,10 @@ import pytz
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
+from odoo.addons.estate_management.tools.http_retry import request_with_retry
+
 from .calendar_event import REMINDER_UNITS, reminder_to_minutes
+from .estate_whatsapp import META_API_VERSION
 
 _logger = logging.getLogger(__name__)
 
@@ -43,7 +46,7 @@ TYPE_ICON = {
 class EstateReminder(models.Model):
     _name = 'estate.reminder'
     _description = 'Recordatorio de cliente'
-    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _inherit = ['mail.thread', 'mail.activity.mixin', 'estate.phone.mixin']
     _order = 'deadline asc, id desc'
 
     name = fields.Char(
@@ -103,6 +106,10 @@ class EstateReminder(models.Model):
     notify_push = fields.Boolean(
         string='Notificar al móvil', default=True,
         help='Envía una notificación push a la app del responsable.')
+    notify_whatsapp = fields.Boolean(
+        string='Avisar por WhatsApp', default=False,
+        help='Además del push, envía el aviso al WhatsApp del responsable '
+             '(usa la plantilla de recordatorios configurada en Ajustes → WhatsApp).')
     notify_activity = fields.Boolean(
         string='Crear actividad en Odoo', default=True,
         help='Deja el aviso en la campanita de actividades de Odoo.')
@@ -215,7 +222,8 @@ class EstateReminder(models.Model):
         Firebase) antes no había forma de enterarse.
         """
         self.ensure_one()
-        enviado = self._notify(due=self.days_left <= 0)
+        whatsapp = []
+        enviado = self._notify(due=self.days_left <= 0, whatsapp_results=whatsapp)
         if not self.notify_push:
             titulo, mensaje, tipo = (
                 'Aviso registrado',
@@ -241,6 +249,14 @@ class EstateReminder(models.Model):
                 'Revisa el archivo de credenciales de Firebase en el servidor. '
                 'La actividad sí quedó registrada en Odoo.',
                 'danger')
+        if whatsapp:
+            ok, motivo = whatsapp[0]
+            if ok:
+                mensaje += ' También se envió por WhatsApp.'
+            else:
+                mensaje += ' WhatsApp: %s' % motivo
+                if tipo in ('success', 'info'):
+                    tipo = 'warning'
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -297,7 +313,7 @@ class EstateReminder(models.Model):
             detalle += ' Documento: %s.' % self.document_id.name
         return detalle
 
-    def _notify(self, due=False):
+    def _notify(self, due=False, whatsapp_results=None):
         """Levanta el aviso: actividad en Odoo, chatter y push al móvil.
 
         Devuelve True si el push salió para todos los recordatorios de self.
@@ -367,6 +383,13 @@ class EstateReminder(models.Model):
                             'No se pudo enviar la notificación al móvil. '
                             'Revisa las credenciales de Firebase del servidor.'))
 
+            if rec.notify_whatsapp:
+                ok, motivo = rec._send_whatsapp_reminder(due=due)
+                if whatsapp_results is not None:
+                    whatsapp_results.append((ok, motivo))
+                if not ok:
+                    rec.message_post(body='No se envió el aviso por WhatsApp: %s' % motivo)
+
             vals = {'last_notified_on': fields.Datetime.now(), 'advance_notified': True}
             if due:
                 # Cuando el aviso previo y el del vencimiento caen juntos
@@ -374,6 +397,78 @@ class EstateReminder(models.Model):
                 vals['due_notified'] = True
             rec.write(vals)
         return push_enviado
+
+    def _whatsapp_cuando(self, due=False):
+        """Texto corto de la fecha para la plantilla: "hoy 09:00", "en 3 días (12/11/2026)"."""
+        cuando = self._format_local(self.deadline)
+        if due and self.days_left < 0:
+            return 'el %s (ya venció)' % cuando
+        if self.days_left <= 0:
+            return 'hoy (%s)' % cuando
+        return 'en %d día%s (%s)' % (self.days_left, '' if self.days_left == 1 else 's', cuando)
+
+    def _send_whatsapp_reminder(self, due=False):
+        """Envía el aviso al WhatsApp del responsable con la plantilla de Meta.
+
+        Plantilla (categoría Utilidad): {{1}} asunto, {{2}} cliente,
+        {{3}} cuándo vence, {{4}} detalle. Devuelve (enviado, motivo).
+        """
+        self.ensure_one()
+        ICP = self.env['ir.config_parameter'].sudo()
+        if ICP.get_param('estate_calendar.whatsapp_active', 'False') != 'True':
+            return False, 'la integración de WhatsApp está desactivada en Ajustes.'
+        phone_number_id = ICP.get_param('estate_calendar.whatsapp_phone_number_id', '')
+        access_token = ICP.get_param('estate_calendar.whatsapp_access_token', '')
+        template = ICP.get_param('estate_calendar.whatsapp_reminder_template', 'recordatorio_cliente')
+        lang = ICP.get_param('estate_calendar.whatsapp_reminder_template_lang', 'es') or 'es'
+        if not phone_number_id or not access_token:
+            return False, 'faltan las credenciales de Meta en Ajustes → WhatsApp.'
+        partner = self.user_id.partner_id
+        phone = (getattr(partner, 'mobile', None) or partner.phone or '') if partner else ''
+        if not phone:
+            return False, '%s no tiene teléfono en su contacto.' % self.user_id.name
+
+        detalle = []
+        if self.property_id:
+            detalle.append('Propiedad: %s' % (self.property_id.title or self.property_id.display_name))
+        if self.document_id:
+            detalle.append('Documento: %s' % self.document_id.name)
+        if self.note:
+            detalle.append(self.note)
+        # Meta no acepta saltos de línea ni parámetros vacíos dentro de una variable.
+        detalle = ' | '.join(' '.join(d.split()) for d in detalle) or 'Sin detalle adicional'
+
+        params = [self.name, self.partner_id.name or 'Cliente', self._whatsapp_cuando(due), detalle]
+        payload = {
+            'messaging_product': 'whatsapp',
+            'to': self._clean_phone(phone),
+            'type': 'template',
+            'template': {
+                'name': template,
+                'language': {'code': lang},
+                'components': [{
+                    'type': 'body',
+                    'parameters': [{'type': 'text', 'text': p[:900]} for p in params],
+                }],
+            },
+        }
+        url = 'https://graph.facebook.com/%s/%s/messages' % (META_API_VERSION, phone_number_id)
+        try:
+            resp = request_with_retry('POST', url, json=payload, timeout=30, headers={
+                'Authorization': 'Bearer %s' % access_token,
+                'Content-Type': 'application/json',
+            })
+            data = resp.json()
+        except Exception as e:
+            _logger.error('WhatsApp recordatorio %s: %s', self.id, e)
+            return False, 'error de conexión con Meta.'
+        if resp.status_code == 200 and data.get('messages'):
+            _logger.info('WhatsApp recordatorio %s enviado a %s', self.id, self.user_id.name)
+            return True, ''
+        error = (data.get('error') or {}).get('message') or resp.text[:200]
+        _logger.warning('WhatsApp recordatorio %s falló (%s): %s', self.id, resp.status_code, error)
+        return False, 'Meta respondió: %s (revisa que la plantilla "%s" esté aprobada en idioma "%s").' % (
+            error, template, lang)
 
     # ── Cron ────────────────────────────────────────────────────────────────
     @api.model

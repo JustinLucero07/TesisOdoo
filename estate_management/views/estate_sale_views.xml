@@ -186,6 +186,9 @@
                 <button name="action_estate_mark_collected" type="object" icon="fa-check-circle"
                         title="Marcar comisión cobrada" string="Marcar cobrada"
                         invisible="estate_commission_collected"/>
+                <button name="action_estate_open_commission" type="object" icon="fa-users"
+                        title="Repartir y pagar la comisión a los asesores" string="Pagar asesores"
+                        invisible="not estate_commission_collected"/>
             </list>
         </field>
     </record>
@@ -203,6 +206,26 @@
                pagada, o a mano con el botón "Marcar cobrada".</p>
         </field>
     </record>
+
+    <record id="action_sale_order_estate_to_collect" model="ir.actions.act_window">
+        <field name="name">Comisiones por cobrar</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="view_id" ref="view_sale_order_estate_collected_list"/>
+        <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale')]</field>
+        <field name="context">{'search_default_estate_not_collected': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay comisiones pendientes de cobro.</p>
+            <p>Cuando el propietario te pague, usa "Marcar cobrada" (o selecciona varias y
+               Acciones → Marcar comisión cobrada) y pon la fecha real del cobro.</p>
+        </field>
+    </record>
+
+    <menuitem id="estate_menu_sale_to_collect"
+              name="Comisiones por cobrar"
+              parent="sale.sale_order_menu"
+              action="action_sale_order_estate_to_collect"
+              sequence="24"/>
 
     <menuitem id="estate_menu_sale_collected"
               name="Ventas cobradas"

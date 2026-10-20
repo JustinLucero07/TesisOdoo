@@ -12,6 +12,15 @@
                     <i class="fa fa-map-marker me-1"/>Visitas
                     <span class="badge text-bg-secondary ms-1"><field name="visit_count"/></span>
                 </button>
+                <button name="action_view_reminders" type="object"
+                    class="btn btn-outline-secondary"
+                    title="Ver o crear recordatorios de este cliente">
+                    <i class="fa fa-bell me-1"/>Recordatorios
+                    <span class="badge text-bg-secondary ms-1"><field name="reminder_count"/></span>
+                </button>
+                <button name="action_create_reminder" type="object"
+                    class="btn btn-outline-secondary" icon="fa-plus"
+                    title="Nuevo recordatorio" aria-label="Nuevo recordatorio"/>
             </xpath>
             <xpath expr="//page[@name='page_timeline']" position="before">
                 <page string="Propiedades Visitadas" name="page_visits">

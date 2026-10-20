@@ -91,6 +91,7 @@
                         <group string="Responsable">
                             <field name="user_id" widget="many2one_avatar_user"/>
                             <field name="notify_push"/>
+                            <field name="notify_whatsapp"/>
                             <field name="notify_activity"/>
                         </group>
                         <group string="Seguimiento">

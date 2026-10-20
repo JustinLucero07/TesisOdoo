@@ -19,6 +19,8 @@ import '../offers/offer_model.dart';
 import '../offers/offer_screens.dart';
 import '../offers/offer_service.dart';
 import '../properties/property_detail_screen.dart';
+import '../reminders/reminder_form_screen.dart';
+import '../reminders/reminders_section.dart';
 import '../visits/visit_detail_screen.dart';
 import '../visits/visit_form_screen.dart';
 import '../visits/visit_model.dart';
@@ -48,6 +50,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   bool _movingStage = false;
   String? _error;
   int _refreshKey = 0;
+  int _remindersVersion = 0;
 
   @override
   void initState() {
@@ -199,6 +202,28 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
     }
   }
 
+  Future<void> _openNewReminder() async {
+    final lead = _lead;
+    if (lead == null) return;
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ReminderFormScreen(
+          initialPartnerId: lead.partnerId,
+          initialPartnerName: lead.partnerName,
+          initialPropertyId: lead.targetPropertyId,
+          initialPropertyName: lead.targetPropertyName,
+          initialLeadId: lead.id,
+        ),
+      ),
+    );
+    if (saved == true && mounted) {
+      setState(() => _remindersVersion++);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Recordatorio guardado')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -206,6 +231,11 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
         title: const Text('Oportunidad'),
         actions: [
           if (_lead != null) ...[
+            IconButton(
+              icon: const Icon(Icons.notification_add_outlined),
+              tooltip: 'Nuevo recordatorio',
+              onPressed: _openNewReminder,
+            ),
             IconButton(
               icon: const Icon(Icons.edit_outlined),
               tooltip: 'Editar',
@@ -623,6 +653,15 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
             ),
           ),
         ),
+        if (lead.partnerId != null) ...[
+          const SizedBox(height: 12),
+          RemindersSection(
+            key: ValueKey('reminders-$_remindersVersion'),
+            odoo: _odoo,
+            partnerId: lead.partnerId!,
+            partnerName: lead.partnerName,
+          ),
+        ],
       ],
     );
   }

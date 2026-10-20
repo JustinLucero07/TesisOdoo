@@ -36,6 +36,14 @@
                                  help="Nombre exacto de la plantilla aprobada en Meta para recordatorios de citas. Parámetros: {{1}} cita, {{2}} hora, {{3}} cliente, {{4}} propiedad.">
                             <field name="whatsapp_template_name" placeholder="recordatorio_cita"/>
                         </setting>
+                        <setting id="whatsapp_reminder_template_setting"
+                                 string="Plantilla — Recordatorios de clientes"
+                                 help="Plantilla de Meta (categoría Utilidad) para los recordatorios de clientes (pólizas, documentos, etc.). Parámetros: {{1}} asunto, {{2}} cliente, {{3}} cuándo vence, {{4}} detalle.">
+                            <div class="d-flex gap-2">
+                                <field name="whatsapp_reminder_template" placeholder="recordatorio_cliente"/>
+                                <field name="whatsapp_reminder_template_lang" placeholder="es" class="w-25"/>
+                            </div>
+                        </setting>
                         <setting id="whatsapp_notify_client_setting"
                                  string="Recordar también al cliente"
                                  help="Además del asesor, envía el recordatorio de la cita al cliente (si tiene teléfono).">

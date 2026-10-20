@@ -81,3 +81,6 @@ access_estate_property_video_agent,estate.property.video.agent,model_estate_prop
 access_estate_property_video_manager,estate.property.video.manager,model_estate_property_video,estate_group_manager,1,1,1,1
 access_estate_property_video_admin,estate.property.video.admin,model_estate_property_video,estate_group_admin,1,1,1,1
 access_estate_property_video_marketing,estate.property.video.marketing,model_estate_property_video,estate_group_marketing,1,1,1,0
+access_estate_sale_collect_wizard_manager,estate.sale.collect.wizard.manager,model_estate_sale_collect_wizard,estate_group_manager,1,1,1,1
+access_estate_sale_collect_wizard_admin,estate.sale.collect.wizard.admin,model_estate_sale_collect_wizard,estate_group_admin,1,1,1,1
+access_estate_sale_collect_wizard_salesman,estate.sale.collect.wizard.salesman,model_estate_sale_collect_wizard,sales_team.group_sale_salesman,1,1,1,1

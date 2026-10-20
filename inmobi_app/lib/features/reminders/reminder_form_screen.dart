@@ -20,6 +20,7 @@ class ReminderFormScreen extends StatefulWidget {
   final String? initialPartnerName;
   final int? initialPropertyId;
   final String? initialPropertyName;
+  final int? initialLeadId;
 
   const ReminderFormScreen({
     super.key,
@@ -28,6 +29,7 @@ class ReminderFormScreen extends StatefulWidget {
     this.initialPartnerName,
     this.initialPropertyId,
     this.initialPropertyName,
+    this.initialLeadId,
   });
 
   bool get isEdit => existing != null;
@@ -53,6 +55,7 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
   int _remindValue = 7;
   String _remindUnit = 'days';
   bool _notifyPush = true;
+  bool _notifyWhatsapp = false;
 
   bool _saving = false;
   String? _error;
@@ -78,6 +81,7 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
       _remindValue = e.remindValue;
       _remindUnit = e.remindUnit;
       _notifyPush = e.notifyPush;
+      _notifyWhatsapp = e.notifyWhatsapp;
       if (e.date != null) _date = e.date!;
       _time = TimeOfDay(
         hour: e.hour.floor().clamp(0, 23),
@@ -203,6 +207,9 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
       'remind_unit': _remindUnit,
       'document_id': _document?.id ?? false,
       'notify_push': _notifyPush,
+      'notify_whatsapp': _notifyWhatsapp,
+      if (!widget.isEdit && widget.initialLeadId != null)
+        'lead_id': widget.initialLeadId,
       'note': _noteCtrl.text.trim(),
       if (!widget.isEdit && _odoo.userId != null) 'user_id': _odoo.userId,
     };
@@ -454,6 +461,19 @@ class _ReminderFormScreenState extends State<ReminderFormScreen> {
               ),
               subtitle: Text(
                 'Además del aviso dentro de Odoo.',
+                style: TextStyle(fontSize: 12, color: colors.muted),
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: _notifyWhatsapp,
+              onChanged: (v) => setState(() => _notifyWhatsapp = v),
+              title: const Text(
+                'Aviso por WhatsApp',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              subtitle: Text(
+                'Te llega también un mensaje a tu WhatsApp.',
                 style: TextStyle(fontSize: 12, color: colors.muted),
               ),
             ),

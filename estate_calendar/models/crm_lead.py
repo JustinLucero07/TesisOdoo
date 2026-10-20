@@ -8,6 +8,52 @@ class CrmLead(models.Model):
     visit_ids = fields.One2many(
         'calendar.event', 'lead_id', string='Propiedades Visitadas')
 
+    reminder_ids = fields.One2many('estate.reminder', 'lead_id', string='Recordatorios')
+    reminder_count = fields.Integer(
+        string='Recordatorios pendientes', compute='_compute_reminder_count')
+
+    def _compute_reminder_count(self):
+        data = self.env['estate.reminder']._read_group(
+            [('lead_id', 'in', self.ids), ('state', '=', 'pending')],
+            ['lead_id'], ['__count'])
+        counts = {lead.id: count for lead, count in data}
+        for lead in self:
+            lead.reminder_count = counts.get(lead.id, 0)
+
+    def _reminder_defaults(self):
+        self.ensure_one()
+        return {
+            'default_lead_id': self.id,
+            'default_partner_id': self.partner_id.id or False,
+            'default_property_id': self.target_property_id.id or False,
+            'default_user_id': (self.user_id or self.env.user).id,
+        }
+
+    def action_create_reminder(self):
+        """Acceso directo: abre un recordatorio nuevo ya ligado al lead."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nuevo recordatorio',
+            'res_model': 'estate.reminder',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': self._reminder_defaults(),
+        }
+
+    def action_view_reminders(self):
+        self.ensure_one()
+        if not self.reminder_ids:
+            return self.action_create_reminder()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Recordatorios — %s' % (self.partner_id.name or self.name),
+            'res_model': 'estate.reminder',
+            'view_mode': 'list,form,calendar',
+            'domain': [('lead_id', '=', self.id)],
+            'context': self._reminder_defaults(),
+        }
+
     def _compute_visit_count(self):
         Event = self.env['calendar.event']
         for lead in self:

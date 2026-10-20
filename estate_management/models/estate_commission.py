@@ -382,6 +382,31 @@ class EstateCommission(models.Model):
         'account.move', string='Factura de Comisión',
         readonly=True, copy=False,
         domain=[('move_type', '=', 'in_invoice')])
+    client_collected = fields.Boolean(
+        string='Cobrada al propietario', compute='_compute_client_collected',
+        search='_search_client_collected',
+        help='La venta de esta propiedad ya tiene la comisión cobrada al propietario '
+             '(ver Ventas → Ventas cobradas). Recién ahí conviene pagar a los asesores.')
+
+    def _collected_property_ids(self):
+        orders = self.env['sale.order'].sudo().search([
+            ('property_id', '!=', False), ('state', '=', 'sale'),
+            ('estate_commission_collected', '=', True),
+        ])
+        return set(orders.property_id.ids)
+
+    def _compute_client_collected(self):
+        collected = self._collected_property_ids() if self.property_id else set()
+        for rec in self:
+            rec.client_collected = rec.property_id.id in collected
+
+    def _search_client_collected(self, operator, value):
+        if operator not in ('=', '!=') or not isinstance(value, bool):
+            return NotImplemented
+        ids = list(self._collected_property_ids())
+        positive = (operator == '=') == value
+        return [('property_id', 'in' if positive else 'not in', ids)]
+
     invoice_state = fields.Selection(
         related='invoice_id.payment_state', string='Estado de Factura', readonly=True)
 

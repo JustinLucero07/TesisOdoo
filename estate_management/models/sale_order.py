@@ -151,12 +151,36 @@ class SaleOrder(models.Model):
                                            if order.estate_collected_manual else date)
 
     def action_estate_mark_collected(self):
-        for order in self:
-            order.write({
-                'estate_collected_manual': True,
-                'estate_collected_manual_date': (order.estate_collected_manual_date
-                                                 or fields.Date.context_today(order)),
-            })
+        """Pide la fecha real del cobro (las ventas antiguas se cobran tarde)."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Marcar comisión cobrada',
+            'res_model': 'estate.sale.collect.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'active_model': 'sale.order', 'active_ids': self.ids},
+        }
+
+    def action_estate_open_commission(self):
+        """Lleva a la comisión de la propiedad para repartirla y pagar a los asesores."""
+        self.ensure_one()
+        commissions = self.env['estate.commission'].search([
+            ('property_id', '=', self.property_id.id),
+            ('parent_commission_id', '=', False),
+            ('state', '!=', 'cancelled'),
+        ])
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': 'Comisión — %s' % (self.property_id.display_name or self.name),
+            'res_model': 'estate.commission',
+            'context': {'default_property_id': self.property_id.id,
+                        'default_amount': self.amount_untaxed},
+        }
+        if len(commissions) == 1:
+            action.update(view_mode='form', res_id=commissions.id)
+        else:
+            action.update(view_mode='list,form', domain=[('property_id', '=', self.property_id.id)])
+        return action
 
     def action_estate_unmark_collected(self):
         self.write({'estate_collected_manual': False,
