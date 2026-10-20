@@ -120,7 +120,8 @@ class TestSalesReportWizard(TransactionCase):
         import json
         wiz = self._make_wizard()
         cd = json.loads(wiz.chart_data)
-        cities = dict(cd.get('top_cities', []))
+        # Cada fila es [ciudad, comisión, volumen].
+        cities = {name: vol for name, _comm, vol in cd.get('top_cities', [])}
         self.assertIn('Cuenca', cities)
         # Volumen total de Cuenca = 100k+200k+300k+400k = 1M
         self.assertEqual(cities['Cuenca'], 1000000.0)

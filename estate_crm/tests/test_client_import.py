@@ -29,7 +29,7 @@ class TestClientImport(TransactionCase):
                'Inmuebles enlazados', 'Encargado Del Cliente']
 
     def _row(self, nombre, apellidos, movil='', email='', tipo='Cliente Comprador',
-             estado='Captado', ubic='Cuenca Azuay', captacion='Fan page facebook',
+             estado='Nuevo', ubic='Cuenca Azuay', captacion='Fan page facebook',
              encargado='', idnum='', coment=''):
         return [idnum, nombre, apellidos, tipo, email, '', movil, ubic, estado,
                 coment, '', 'No', '2024-01-01', '', captacion, '', '', encargado]
@@ -220,7 +220,7 @@ class TestClientImport(TransactionCase):
     def test_avisa_de_los_estados_que_no_reconoce(self):
         wiz = self._import([self._row('Raro', 'Test', movil='593940000001',
                                       tipo='Cliente Comprador', estado='Estado Inventado')])
-        self.assertIn('no reconozco', wiz.result_log)
+        self.assertIn('no pertenecientes a tus embudos', wiz.result_log)
         self.assertIn('estado inventado', wiz.result_log.lower())
 
     def test_fila_sin_contacto_se_dedupe_por_nombre(self):

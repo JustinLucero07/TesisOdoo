@@ -69,7 +69,9 @@ class TestPostventaPipeline(TransactionCase):
         perdido = self.env.ref('estate_crm.stage_lead_perdido')
         self.assertTrue(perdido.is_lost, "Debe estar marcada como etapa perdida")
         self.assertTrue(perdido.fold, "Va plegada para no estorbar el día a día")
-        self.assertEqual(perdido.team_ids, self.ventas_team)
+        # Es de Ventas y también de Postventa, para poder perder leads en ambos.
+        self.assertIn(self.ventas_team, perdido.team_ids)
+        self.assertIn(self.env.ref('estate_crm.crm_team_postventa'), perdido.team_ids)
 
     # --- El lead ganado NO se mueve ---------------------------------------
 

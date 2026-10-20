@@ -177,6 +177,14 @@ class EstatePropertyWordPress(models.Model):
         publicadas o con posts huérfanos en WordPress."""
         cfg = self._get_wp_config()
         if cfg['active'] != 'True' or not cfg['url']:
+            # Sin conexión a WordPress no se puede borrar el post, pero la marca
+            # local "Publicado" de una propiedad vendida o retirada ya no es cierta.
+            stale = self.sudo().with_context(active_test=False).search([
+                ('wp_published', '=', True),
+                '|', ('state', 'in', ('sold', 'rented', 'cancelled')), ('active', '=', False),
+            ])
+            if stale:
+                stale.with_context(no_wp_sync=True).write({'wp_published': False})
             return
 
         # 1. Propiedades con bandera activa en Odoo

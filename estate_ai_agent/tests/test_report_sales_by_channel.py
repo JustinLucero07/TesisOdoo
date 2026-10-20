@@ -49,7 +49,7 @@ class TestReportSalesByChannel(TransactionCase):
         after = json.loads(self.ctrl._execute_report_data(
             {'report_type': 'time_to_sell_summary'}, self.env))['resumen']
 
-        self.assertEqual(after['ventas_analizadas'], before['ventas_analizadas'] + 3)
+        self.assertEqual(after['operaciones_analizadas'], before['operaciones_analizadas'] + 3)
         self.assertLessEqual(after['minimo_dias'], 10)
         self.assertGreaterEqual(after['maximo_dias'], 60)
 

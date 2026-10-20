@@ -91,8 +91,15 @@ class TestWpAreaTaxonomy(TransactionCase):
                 return _resp(201, {'id': 123})
             return _resp(201, {'id': 1})
 
+        def _fake_get(url, **kw):
+            # Antes de crear se busca un post existente con la misma referencia
+            # (para no duplicar): no hay ninguno. La taxonomía sí existe.
+            if '/property_area' in url:
+                return _resp(200, [{'id': 77, 'name': 'Racar'}])
+            return _resp(200, [])
+
         with patch('odoo.addons.estate_wordpress.models.estate_wordpress_sync.requests') as rq:
-            rq.get.return_value = _resp(200, [{'id': 77, 'name': 'Racar'}])
+            rq.get.side_effect = _fake_get
             rq.post.side_effect = _fake_post
             self.prop._wp_create_or_update_post(self.cfg, featured_id=0)
 

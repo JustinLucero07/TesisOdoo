@@ -9,9 +9,12 @@ class TestWpResync(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.ptype = cls.env['estate.property.type'].create({'name': 'Casa Test WP'})
+        # Las propiedades nacen en Borrador; la re-sincronización aplica a las
+        # que están en el mercado.
         cls.prop = cls.env['estate.property'].create({
             'title': 'Casa WP', 'price': 100000.0,
             'property_type_id': cls.ptype.id,
+            'state': 'available',
         })
 
     def test_no_marca_si_no_publicada(self):

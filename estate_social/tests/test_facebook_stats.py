@@ -58,13 +58,17 @@ class TestFacebookStatsFetch(TransactionCase):
                 {'name': 'post_impressions',         'values': [{'value': 3250}]},
                 {'name': 'post_impressions_unique',  'values': [{'value': 2293}]},
                 {'name': 'post_clicks',              'values': [{'value': 55}]},
+            ],
+        })
+        # Seguidores/demografía vienen en una consulta opcional aparte.
+        opt_resp = _mock_resp(200, {
+            'data': [
                 {'name': 'post_impressions_fan_unique', 'values': [{'value': 900}]},
-                {'name': 'post_impressions_organic_unique', 'values': [{'value': 3000}]},
             ],
         })
 
         with patch('odoo.addons.estate_social.models.estate_facebook_stats.request_with_retry',
-                   side_effect=[post_resp, ins_resp]):
+                   side_effect=[post_resp, ins_resp, opt_resp]):
             rec = self._make_stats()
             rec._fetch_stats()
 
@@ -78,7 +82,6 @@ class TestFacebookStatsFetch(TransactionCase):
         self.assertEqual(rec.clicks, 55)
         self.assertEqual(rec.fan_reach, 900)
         self.assertEqual(rec.non_fan_reach, 2293 - 900)  # calculado
-        self.assertEqual(rec.organic_reach, 3000)
 
     def test_post_api_error_sets_fetch_error(self):
         """API devuelve error en la consulta de campos del post."""
@@ -158,14 +161,15 @@ class TestFacebookStatsFetch(TransactionCase):
             'comments': {'summary': {'total_count': 0}},
             'shares': {'count': 0},
         })
-        ins_resp = _mock_resp(200, {
+        ins_resp = _mock_resp(200, {'data': []})
+        opt_resp = _mock_resp(200, {
             'data': [{
                 'name': 'post_impressions_by_age_gender_unique',
                 'values': [{'value': {'M.25-34': 150, 'F.25-34': 120, 'M.35-44': 90}}],
             }],
         })
         with patch('odoo.addons.estate_social.models.estate_facebook_stats.request_with_retry',
-                   side_effect=[post_resp, ins_resp]):
+                   side_effect=[post_resp, ins_resp, opt_resp]):
             rec = self._make_stats(post_id='age_test_001')
             rec._fetch_stats()
 

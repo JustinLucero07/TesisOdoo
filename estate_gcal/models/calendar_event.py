@@ -257,11 +257,11 @@ class CalendarEvent(models.Model):
             g_start = gev.get('start', {}).get('dateTime')
             g_end = gev.get('end', {}).get('dateTime')
             if g_start:
-                new_start = datetime.fromisoformat(g_start).astimezone(timezone.utc).replace(tzinfo=None)
+                new_start = datetime.fromisoformat(g_start.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
                 if not local.start or abs((new_start - local.start).total_seconds()) >= 60:
                     vals['start'] = new_start
             if g_end:
-                new_stop = datetime.fromisoformat(g_end).astimezone(timezone.utc).replace(tzinfo=None)
+                new_stop = datetime.fromisoformat(g_end.replace('Z', '+00:00')).astimezone(timezone.utc).replace(tzinfo=None)
                 if not local.stop or abs((new_stop - local.stop).total_seconds()) >= 60:
                     vals['stop'] = new_stop
             if vals:
