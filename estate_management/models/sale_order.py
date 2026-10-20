@@ -106,6 +106,16 @@ class SaleOrder(models.Model):
         ('paid', 'Pagados'),
     ], string='Pago a asesores', compute='_compute_estate_advisors_state',
         help='Si ya se pagó la comisión a los asesores de esta venta.')
+    # --- Ganancia de la oficina por venta cobrada ---
+    estate_advisors_amount = fields.Monetary(
+        string='A asesores', compute='_compute_estate_office', store=True,
+        help='Lo pagado o asignado a los asesores por esta venta (reparto por pasos '
+             'o pago a un solo asesor).')
+    estate_advisors_pct = fields.Float(
+        string='% a asesores', compute='_compute_estate_office', store=True)
+    estate_office_amount = fields.Monetary(
+        string='Ganancia oficina', compute='_compute_estate_office', store=True,
+        help='Comisión cobrada al propietario (sin IVA) menos lo de los asesores.')
     lead_id = fields.Many2one('crm.lead', string='Lead de Origen', tracking=True,
                               help='Lead CRM que originó esta orden de venta.')
     customer_signature = fields.Binary(
@@ -255,6 +265,29 @@ class SaleOrder(models.Model):
                 order.estate_deal_stage = 'paid'
             else:
                 order.estate_deal_stage = 'collected'
+
+    @api.depends('amount_untaxed', 'property_id.commission_ids.amount',
+                 'property_id.commission_ids.state',
+                 'property_id.commission_ids.parent_commission_id',
+                 'property_id.commission_ids.split_line_ids.amount')
+    def _compute_estate_office(self):
+        for order in self:
+            asesores = 0.0
+            top = order.property_id.commission_ids.filtered(
+                lambda c: not c.parent_commission_id and c.state != 'cancelled')
+            for com in top:
+                hijas = com.child_commission_ids.filtered(lambda c: c.state != 'cancelled')
+                if hijas:
+                    asesores += sum(hijas.mapped('amount'))
+                elif com.split_line_ids:
+                    # Reparto preparado o guardado sin pagar: ya se sabe cuánto va.
+                    asesores += sum(com.split_line_ids.mapped('amount'))
+                elif com.state == 'paid':
+                    asesores += com.amount
+            base = order.amount_untaxed
+            order.estate_advisors_amount = asesores
+            order.estate_advisors_pct = (asesores / base * 100.0) if base else 0.0
+            order.estate_office_amount = base - asesores
 
     def _compute_estate_advisors_state(self):
         commissions = self.env['estate.commission'].sudo().search([

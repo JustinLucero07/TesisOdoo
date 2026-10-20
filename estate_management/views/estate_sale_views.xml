@@ -264,6 +264,10 @@
                 <button name="action_estate_open_commission" type="object" icon="fa-users"
                         title="Repartir y pagar la comisión a los asesores" string="Pagar asesores"
                         invisible="not estate_commission_collected or estate_advisors_state == 'paid'"/>
+                <button name="action_estate_open_commission" type="object" icon="fa-sitemap"
+                        title="Anotar quién hizo captación, recepción, visita y cierre (sin pagar)"
+                        string="Reparto"
+                        invisible="estate_commission_collected or estate_advisors_state == 'paid'"/>
             </list>
         </field>
     </record>
@@ -317,5 +321,80 @@
     </record>
     <record id="sale.action_orders" model="ir.actions.act_window">
         <field name="context">{'search_default_sales': 1}</field>
+    </record>
+
+    <!-- Ganancias de la oficina: solo ventas con la comisión ya cobrada -->
+    <record id="view_sale_order_estate_office_list" model="ir.ui.view">
+        <field name="name">sale.order.list.estate.office</field>
+        <field name="model">sale.order</field>
+        <field name="priority">91</field>
+        <field name="arch" type="xml">
+            <list string="Ganancias de la oficina" class="o_estate_wrap_list" create="0"
+                  default_order="estate_collected_date desc">
+                <field name="estate_collected_date" string="Cobrada el"/>
+                <field name="name" string="Orden" optional="hide"/>
+                <field name="property_id" string="Propiedad"/>
+                <field name="partner_id" string="Propietario" optional="show"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="estate_sale_price" string="Venta" optional="show"/>
+                <field name="amount_untaxed" string="Honorarios cobrados" sum="Honorarios"
+                       widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="estate_advisors_amount" sum="A asesores" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"/>
+                <field name="estate_advisors_pct" optional="show"/>
+                <field name="estate_office_amount" sum="Ganancia neta" widget="monetary"
+                       options="{'currency_field': 'currency_id'}"
+                       decoration-success="estate_office_amount &gt; 0"/>
+                <field name="estate_advisors_state" widget="badge"
+                       decoration-success="estate_advisors_state == 'paid'"
+                       decoration-warning="estate_advisors_state == 'pending'"
+                       decoration-muted="estate_advisors_state == 'none'"/>
+                <field name="estate_collected_method" optional="show"/>
+                <field name="estate_collected_invoice" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_sale_order_estate_office_pivot" model="ir.ui.view">
+        <field name="name">sale.order.pivot.estate.office</field>
+        <field name="model">sale.order</field>
+        <field name="priority">91</field>
+        <field name="arch" type="xml">
+            <pivot string="Ganancias de la oficina" sample="1">
+                <field name="estate_collected_date" interval="month" type="row"/>
+                <field name="amount_untaxed" type="measure" string="Honorarios cobrados"/>
+                <field name="estate_advisors_amount" type="measure"/>
+                <field name="estate_office_amount" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_sale_order_estate_office_graph" model="ir.ui.view">
+        <field name="name">sale.order.graph.estate.office</field>
+        <field name="model">sale.order</field>
+        <field name="priority">91</field>
+        <field name="arch" type="xml">
+            <graph string="Ganancias de la oficina" type="bar" sample="1">
+                <field name="estate_collected_date" interval="month"/>
+                <field name="estate_office_amount" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_estate_commission_office" model="ir.actions.act_window">
+        <field name="name">Ganancias de la Oficina</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">list,pivot,graph,form</field>
+        <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale'), ('amount_total', '>', 0), ('estate_commission_collected', '=', True)]</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list',  'view_id': ref('view_sale_order_estate_office_list')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_sale_order_estate_office_pivot')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_sale_order_estate_office_graph')})]"/>
+        <field name="context">{'search_default_estate_group_collected_date': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Todavía no hay ventas cobradas.</p>
+            <p>Lo que le queda a la inmobiliaria de cada venta <b>ya cobrada</b>: los honorarios
+               que pagó el propietario menos lo que va a los asesores.</p>
+        </field>
     </record>
 </odoo>

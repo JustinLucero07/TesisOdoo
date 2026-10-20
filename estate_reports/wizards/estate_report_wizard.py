@@ -138,15 +138,14 @@ class EstateReportWizard(models.TransientModel):
             data['title'] = 'Contratos por Vencer (próximos 60 días)'
 
         elif self.report_type == 'office_earnings':
-            # Solo el total de cada negocio: sumar también las comisiones de los
-            # asesores contaría los honorarios dos veces.
-            domain = [('is_deal_total', '=', True),
-                      ('state', 'not in', ('cancelled',))]
+            # Una fila por venta con la comisión ya cobrada al propietario.
+            domain = [('property_id', '!=', False), ('state', '=', 'sale'),
+                      ('amount_total', '>', 0), ('estate_commission_collected', '=', True)]
             if self.date_from:
-                domain.append(('date', '>=', self.date_from))
+                domain.append(('estate_collected_date', '>=', self.date_from))
             if self.date_to:
-                domain.append(('date', '<=', self.date_to))
-            records = self.env['estate.commission'].search(domain, order='date desc')
+                domain.append(('estate_collected_date', '<=', self.date_to))
+            records = self.env['sale.order'].search(domain, order='estate_collected_date desc')
             data['records'] = records
             data['title'] = 'Ganancias Netas de la Oficina'
 
@@ -298,17 +297,17 @@ class EstateReportWizard(models.TransientModel):
             row += 1
             tot_hon = tot_ases = tot_ofi = 0.0
             for rec in data['records']:
-                ws.write(row, 0, str(rec.date or ''), cell_fmt)
+                ws.write(row, 0, str(rec.estate_collected_date or ''), cell_fmt)
                 ws.write(row, 1, rec.name or '', cell_fmt)
                 ws.write(row, 2, rec.property_id.title or rec.property_id.name or '', cell_fmt)
-                ws.write(row, 3, rec.sale_amount or 0, money_fmt)
-                ws.write(row, 4, rec.amount or 0, money_fmt)
-                ws.write(row, 5, rec.amount_assigned or 0, money_fmt)
-                ws.write(row, 6, rec.pct_assigned or 0, number_fmt)
-                ws.write(row, 7, rec.amount_office or 0, money_fmt)
-                tot_hon += rec.amount or 0
-                tot_ases += rec.amount_assigned or 0
-                tot_ofi += rec.amount_office or 0
+                ws.write(row, 3, rec.estate_sale_price or 0, money_fmt)
+                ws.write(row, 4, rec.amount_untaxed or 0, money_fmt)
+                ws.write(row, 5, rec.estate_advisors_amount or 0, money_fmt)
+                ws.write(row, 6, rec.estate_advisors_pct or 0, number_fmt)
+                ws.write(row, 7, rec.estate_office_amount or 0, money_fmt)
+                tot_hon += rec.amount_untaxed or 0
+                tot_ases += rec.estate_advisors_amount or 0
+                tot_ofi += rec.estate_office_amount or 0
                 row += 1
             ws.write(row, 2, 'TOTALES:', total_label_fmt)
             ws.write(row, 4, tot_hon, total_fmt)
