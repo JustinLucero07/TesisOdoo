@@ -234,7 +234,7 @@
                   decoration-muted="not estate_commission_collected">
                 <field name="estate_date_sold" string="Fecha"/>
                 <field name="estate_buyer_id" string="Comprador"/>
-                <field name="partner_id" string="Vendedor (Propietario)"/>
+                <field name="partner_id" string="Vendedor (Propietario)" width="190px"/>
                 <field name="property_id" string="Propiedad"/>
                 <field name="currency_id" column_invisible="1"/>
                 <field name="amount_total" string="Comisión" sum="Total comisión"
@@ -252,7 +252,7 @@
                        decoration-warning="estate_collection_state == 'pending'"/>
                 <field name="estate_collected_date" optional="show"/>
                 <field name="estate_collected_method" optional="show"/>
-                <field name="estate_collected_invoice" optional="show"/>
+                <field name="estate_collected_invoice" optional="hide"/>
                 <field name="estate_collected_reference" optional="hide"/>
                 <button name="action_estate_mark_collected" type="object" icon="fa-check-circle"
                         title="Marcar comisión cobrada" string="Marcar cobrada"
