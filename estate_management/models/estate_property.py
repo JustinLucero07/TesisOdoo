@@ -1374,16 +1374,10 @@ class EstateProperty(models.Model):
                     elif self.user_id:
                         invoice.write({'invoice_user_id': self.user_id.id})
 
-                    if hasattr(self, 'deal_payment_type') and self.deal_payment_type == 'cash' and invoice.state == 'posted' and invoice.payment_state in ('not_paid', 'partial'):
-                        try:
-                            payment_register = self.env['account.payment.register'].with_context(active_model='account.move', active_ids=invoice.ids).create({
-                                'payment_date': fields.Date.today(),
-                                'amount': invoice.amount_total,
-                            })
-                            payment_register._create_payments()
-                            _logger.info("Factura %s pagada automáticamente al ser Contado", invoice.name)
-                        except Exception as e_pay:
-                            _logger.warning("No se pudo registrar pago automático de factura al contado: %s", e_pay)
+                    # La factura queda por cobrar aunque el comprador pague de
+                    # contado: "Contado" es cómo paga el comprador, no si el
+                    # propietario ya pagó la comisión. El cobro se registra después
+                    # (pago en la factura o "Marcar cobrada").
         except Exception as e:
             _logger.error('Flujo nativo de venta falló para propiedad %s: %s', self.id, e)
             raise UserError(

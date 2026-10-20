@@ -64,6 +64,18 @@ class SaleOrder(models.Model):
         ('pending', 'Por cobrar'),
         ('collected', 'Cobrada'),
     ], string='Cobro', compute='_compute_estate_collected', store=True)
+    # --- Proceso ordenado de la venta: seña → venta → cobro → asesores ---
+    estate_earnest_amount = fields.Float(
+        related='property_id.deal_earnest_amount', string='Seña / Arras')
+    estate_earnest_received_by = fields.Char(
+        string='Seña recibida por', compute='_compute_estate_earnest')
+    estate_earnest_method = fields.Char(
+        string='Forma de pago de la seña', compute='_compute_estate_earnest')
+    estate_deal_stage = fields.Selection([
+        ('sold', '1. Vendida · comisión por cobrar'),
+        ('collected', '2. Cobrada · asesores por pagar'),
+        ('paid', '3. Asesores pagados'),
+    ], string='Etapa del negocio', compute='_compute_estate_deal_stage')
     estate_advisors_state = fields.Selection([
         ('none', 'Sin comisión'),
         ('pending', 'Por pagar'),
@@ -161,6 +173,40 @@ class SaleOrder(models.Model):
                                              else 'pending')
             order.estate_collected_date = (order.estate_collected_manual_date
                                            if order.estate_collected_manual else date)
+
+    @api.depends('property_id.deal_earnest_received_by_agency',
+                 'property_id.deal_earnest_received_by_owner',
+                 'property_id.deal_earnest_received_by_proxy',
+                 'property_id.deal_earnest_payment_cash',
+                 'property_id.deal_earnest_payment_transfer',
+                 'property_id.deal_earnest_payment_deposit',
+                 'property_id.deal_earnest_payment_other')
+    def _compute_estate_earnest(self):
+        for order in self:
+            prop = order.property_id
+            quien = [label for flag, label in (
+                (prop.deal_earnest_received_by_agency, 'Inmobiliaria'),
+                (prop.deal_earnest_received_by_owner, 'Propietario'),
+                (prop.deal_earnest_received_by_proxy, 'Apoderado'),
+            ) if flag]
+            como = [label for flag, label in (
+                (prop.deal_earnest_payment_cash, 'Efectivo'),
+                (prop.deal_earnest_payment_transfer, 'Transferencia'),
+                (prop.deal_earnest_payment_deposit, 'Depósito'),
+            ) if flag]
+            if prop.deal_earnest_payment_other:
+                como.append(prop.deal_earnest_payment_other)
+            order.estate_earnest_received_by = ', '.join(quien) or False
+            order.estate_earnest_method = ', '.join(como) or False
+
+    def _compute_estate_deal_stage(self):
+        for order in self:
+            if not order.estate_commission_collected:
+                order.estate_deal_stage = 'sold'
+            elif order.estate_advisors_state == 'paid':
+                order.estate_deal_stage = 'paid'
+            else:
+                order.estate_deal_stage = 'collected'
 
     def _compute_estate_advisors_state(self):
         commissions = self.env['estate.commission'].sudo().search([

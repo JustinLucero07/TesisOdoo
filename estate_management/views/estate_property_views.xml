@@ -69,13 +69,10 @@
                             invisible="state not in ('draft', 'available', 'reserved')"
                             confirm="¿Confirmas retirar esta propiedad del catálogo? Se sacará del mercado sin registrar ninguna venta ni comisión."/>
 
-                    <!-- Disponible → Reservado → Vendido / Arrendado -->
+                    <!-- Disponible → Vendido / Arrendado -->
                     <button name="action_set_available" string="Disponible" type="object"
                             class="oe_highlight" invisible="state != 'reserved'"
                             confirm="¿Marcar esta propiedad como disponible nuevamente?"/>
-                    <button name="action_set_reserved" string="Reservar" type="object"
-                            invisible="state != 'available'"
-                            confirm="¿Reservar esta propiedad? Quedará bloqueada para otros compradores."/>
                     <button name="action_open_sale_wizard" string="Vender Propiedad" type="object"
                             class="btn-success oe_highlight" icon="fa-handshake-o"
                             invisible="state not in ('available', 'reserved') or offer_type == 'rent'"

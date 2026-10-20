@@ -9,6 +9,11 @@
                     Se marcarán como cobradas <b><field name="order_count" readonly="1" class="d-inline"/></b>
                     venta(s). Después ya puedes pagar las comisiones de los asesores.
                 </p>
+                <div class="alert alert-info py-2" role="status">
+                    <i class="fa fa-info-circle me-1" title="Nota"/>
+                    Si la <b>inmobiliaria</b> recibió la seña, revisa si ya cubre parte de la
+                    comisión antes de marcarla como cobrada.
+                </div>
                 <group>
                     <field name="date"/>
                     <field name="amount_total" widget="monetary" readonly="1"/>
@@ -19,6 +24,8 @@
                         <field name="estate_buyer_id"/>
                         <field name="partner_id" string="Propietario"/>
                         <field name="property_id"/>
+                        <field name="estate_earnest_amount" string="Seña"/>
+                        <field name="estate_earnest_received_by" string="La recibió"/>
                         <field name="amount_total" string="Comisión" sum="Total"/>
                     </list>
                 </field>

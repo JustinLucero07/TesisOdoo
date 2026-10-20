@@ -63,7 +63,7 @@
                         <group>
                             <field name="buyer_proxy_id" options="{'no_create': False}"/>
                             <field name="deal_deadline"/>
-                            <field name="deal_payment_type"/>
+                            <field name="deal_payment_type" string="¿Cómo paga el comprador?"/>
                         </group>
                         <group>
                             <field name="deal_credit_institution"

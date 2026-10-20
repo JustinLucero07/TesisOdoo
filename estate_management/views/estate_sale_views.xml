@@ -36,6 +36,61 @@
                 <field name="estate_collected_manual_date" string="Fecha de cobro (editar)"
                        invisible="not estate_collected_manual"/>
             </xpath>
+            <!-- El negocio en orden: seña → venta → cobro → pago a asesores -->
+            <xpath expr="//page[@name='order_lines']" position="before">
+                <page string="Proceso de la venta" name="page_estate_deal"
+                      invisible="not property_id or state != 'sale'">
+                    <field name="estate_deal_stage" widget="statusbar" class="mb-3"/>
+                    <group>
+                        <group string="① Seña">
+                            <field name="estate_earnest_amount" string="Monto" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="estate_earnest_received_by" string="La recibió"
+                                   invisible="not estate_earnest_amount"/>
+                            <field name="estate_earnest_method" string="Forma de pago"
+                                   invisible="not estate_earnest_amount"/>
+                            <div colspan="2" class="text-muted small" invisible="estate_earnest_amount">
+                                No se registró seña. Si hubo, agrégala en la propiedad con
+                                "Modificar datos del negocio".
+                            </div>
+                        </group>
+                        <group string="② Venta">
+                            <field name="estate_date_sold" string="Fecha"/>
+                            <field name="estate_buyer_id" string="Comprador"/>
+                            <field name="estate_sale_price" string="Valor" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                            <field name="amount_total" string="Comisión" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"/>
+                        </group>
+                        <group string="③ Cobro de la comisión al propietario">
+                            <field name="estate_collection_state" string="Estado" widget="badge"
+                                   decoration-success="estate_collection_state == 'collected'"
+                                   decoration-warning="estate_collection_state == 'pending'"/>
+                            <field name="estate_collected_date" invisible="not estate_commission_collected"/>
+                            <div colspan="2" invisible="estate_commission_collected">
+                                <button name="action_estate_mark_collected" type="object"
+                                        string="Marcar comisión cobrada" icon="fa-check-circle"
+                                        class="btn-primary btn-sm"/>
+                                <span class="text-muted small ms-2">o registra el pago en la factura.</span>
+                            </div>
+                        </group>
+                        <group string="④ Pago a los asesores">
+                            <field name="estate_advisors_state" string="Estado" widget="badge"
+                                   decoration-success="estate_advisors_state == 'paid'"
+                                   decoration-warning="estate_advisors_state == 'pending'"/>
+                            <field name="estate_advisor_roles" string="Asesores"/>
+                            <div colspan="2" invisible="estate_advisors_state == 'paid'">
+                                <button name="action_estate_open_commission" type="object"
+                                        string="Repartir y pagar" icon="fa-users"
+                                        class="btn-secondary btn-sm"/>
+                                <span class="text-muted small ms-2" invisible="estate_commission_collected">
+                                    El pago se habilita cuando la comisión esté cobrada.
+                                </span>
+                            </div>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
             <!-- Firma digital del cliente inmobiliario -->
             <xpath expr="//page[@name='order_lines']" position="after">
                 <page string="Firma Inmobiliaria" name="page_estate_signature">
@@ -182,6 +237,8 @@
                 <field name="estate_reception_initials"/>
                 <field name="estate_visit_initials"/>
                 <field name="estate_closing_initials"/>
+                <field name="estate_earnest_amount" string="Seña" optional="show"/>
+                <field name="estate_earnest_received_by" string="Seña la recibió" optional="hide"/>
                 <field name="estate_sale_price" string="Valor de venta" sum="Total vendido" optional="hide"/>
                 <field name="estate_source" optional="hide"/>
                 <field name="name" string="Orden" optional="hide"/>
@@ -209,7 +266,7 @@
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,pivot,graph,form</field>
         <field name="view_id" ref="view_sale_order_estate_collected_list"/>
-        <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale')]</field>
+        <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale'), ('amount_total', '>', 0)]</field>
         <field name="context">{'search_default_estate_collected': 1, 'search_default_estate_group_date_sold': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Aún no hay ventas con la comisión cobrada.</p>
@@ -223,7 +280,7 @@
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,pivot,graph,form</field>
         <field name="view_id" ref="view_sale_order_estate_collected_list"/>
-        <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale')]</field>
+        <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale'), ('amount_total', '>', 0)]</field>
         <field name="context">{'search_default_estate_not_collected': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">No hay comisiones pendientes de cobro.</p>
