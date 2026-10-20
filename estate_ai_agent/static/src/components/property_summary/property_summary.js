@@ -22,7 +22,7 @@ export class PropertySummary extends Component {
                 <div class="d-flex align-items-center justify-content-between px-3 pt-2 pb-1">
                     <div class="d-flex align-items-center gap-2">
                         <i class="fa fa-robot text-primary" style="font-size:1rem;"/>
-                        <strong class="small" style="color:var(--ix-primary, #1a275b);">Análisis IA</strong>
+                        <strong class="small" style="color:var(--ix-primary, #202b5b);">Análisis IA</strong>
                         <span t-if="state.data.ai_summary_date"
                               class="badge text-bg-light" style="font-size:0.65rem;font-weight:400;">
                             <t t-esc="state.data.ai_summary_date"/>
@@ -49,7 +49,7 @@ export class PropertySummary extends Component {
 
                 <!-- ── Stats pills ── -->
                 <div class="d-flex flex-wrap gap-1 px-3 pb-2">
-                    <span class="badge rounded-pill" style="background:#dbeafe;color:var(--ix-primary, #1a275b);font-size:0.72rem;">
+                    <span class="badge rounded-pill" style="background:#dbeafe;color:var(--ix-primary, #202b5b);font-size:0.72rem;">
                         <i class="fa fa-calendar-o me-1"/><t t-esc="state.data.meeting_count"/> Citas
                     </span>
                     <span class="badge rounded-pill" style="background:#dcfce7;color:#166534;font-size:0.72rem;">
@@ -107,7 +107,7 @@ export class PropertySummary extends Component {
                                  class="px-3 py-2 d-flex align-items-start gap-2"
                                  style="background:#eff6ff;border-bottom:1px solid #e2e8f0;">
                                 <i class="fa fa-user-circle text-primary mt-1" style="font-size:0.85rem;flex-shrink:0;"/>
-                                <span class="small" style="font-size:0.78rem;color:var(--ix-primary, #1a275b);font-weight:500;">
+                                <span class="small" style="font-size:0.78rem;color:var(--ix-primary, #202b5b);font-weight:500;">
                                     <t t-esc="msg.text"/>
                                 </span>
                             </div>
@@ -151,7 +151,7 @@ export class PropertySummary extends Component {
                          class="px-3 pb-1 d-flex flex-wrap gap-1">
                         <t t-foreach="suggestions" t-as="sug" t-key="sug_index">
                             <button class="btn btn-sm py-0 px-2"
-                                    style="font-size:0.7rem;border:1px solid #cbd5e1;border-radius:14px;color:var(--ix-primary, #1a275b);background:#fff;"
+                                    style="font-size:0.7rem;border:1px solid #cbd5e1;border-radius:14px;color:var(--ix-primary, #202b5b);background:#fff;"
                                     t-on-click="() => this.sendChat(sug)">
                                 <t t-esc="sug"/>
                             </button>
