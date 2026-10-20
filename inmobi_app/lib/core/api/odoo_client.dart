@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
@@ -6,6 +8,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter/foundation.dart';
 
 import 'odoo_exception.dart';
+import 'offline_cache.dart';
 
 class OdooClient {
   OdooClient();
@@ -20,6 +23,30 @@ class OdooClient {
   String? userName;
   bool isAdmin = false;
   bool get isAuthenticated => uid != null;
+
+  /// true mientras se están mostrando datos guardados por falta de conexión.
+  final ValueNotifier<bool> offline = ValueNotifier<bool>(false);
+
+  /// Sesión abierta sin internet (con los datos del último inicio): hay que
+  /// volver a iniciar sesión en el servidor apenas vuelva la conexión.
+  bool _offlineSession = false;
+
+  /// Lo asigna AuthService: vuelve a iniciar sesión con las credenciales
+  /// guardadas (se usa al recuperar la conexión).
+  Future<void> Function()? reauthenticate;
+
+  // Métodos que solo leen: su respuesta se guarda para usarla sin conexión.
+  static const _readMethods = {
+    'search_read',
+    'read',
+    'search_count',
+    'read_group',
+    'web_search_read',
+    'web_read_group',
+    'name_search',
+    'search',
+    'fields_get',
+  };
 
   void _ensureDio(String baseUrl) {
     if (_dioInstance != null && _dioInstance!.options.baseUrl == baseUrl)
@@ -78,9 +105,13 @@ class OdooClient {
       return data;
     } on DioException catch (e) {
       if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.connectionError) {
+          e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          (e.type == DioExceptionType.unknown && e.error is SocketException)) {
         throw OdooException(
-          'No se pudo conectar al servidor. Revisa la URL y tu conexión.',
+          'No se pudo conectar al servidor. Revisa tu conexión a internet.',
+          isNetwork: true,
         );
       }
       rethrow;
@@ -108,6 +139,7 @@ class OdooClient {
     }
     baseUrl = normalized;
     this.db = db;
+    _offlineSession = false;
     uid = result['uid'] as int;
     userName = result['name'] as String? ?? login;
     isAdmin =
@@ -153,7 +185,10 @@ class OdooClient {
     uid = null;
     userName = null;
     isAdmin = false;
+    _offlineSession = false;
+    offline.value = false;
     _cookieJar.deleteAll();
+    unawaited(OfflineCache.clear());
   }
 
   Future<dynamic> callKw({
@@ -165,13 +200,63 @@ class OdooClient {
     if (!isAuthenticated) {
       throw OdooException('Sesión no iniciada.');
     }
-    final data = await _rpc('/web/dataset/call_kw', {
-      'model': model,
-      'method': method,
-      'args': args,
-      'kwargs': kwargs,
-    });
-    return data['result'];
+    final isRead = _readMethods.contains(method);
+    final cacheKey = isRead
+        ? jsonEncode([uid, model, method, args, kwargs])
+        : null;
+    try {
+      if (_offlineSession) await _tryReconnect();
+      final data = await _rpc('/web/dataset/call_kw', {
+        'model': model,
+        'method': method,
+        'args': args,
+        'kwargs': kwargs,
+      });
+      final result = data['result'];
+      if (offline.value) offline.value = false;
+      if (cacheKey != null) unawaited(OfflineCache.write(cacheKey, result));
+      return result;
+    } on OdooException catch (e) {
+      if (!e.isNetwork || cacheKey == null) rethrow;
+      final cached = await OfflineCache.read(cacheKey);
+      if (cached == null) rethrow;
+      offline.value = true;
+      return cached;
+    }
+  }
+
+  Future<void>? _reconnecting;
+
+  Future<void> _tryReconnect() {
+    final relogin = reauthenticate;
+    if (relogin == null) return Future.value();
+    // Varias pantallas consultan a la vez: un solo inicio de sesión para todas.
+    return _reconnecting ??= () async {
+      try {
+        await relogin(); // si sigue sin red lanza OdooException(isNetwork)
+        _offlineSession = false;
+      } finally {
+        _reconnecting = null;
+      }
+    }();
+  }
+
+  /// Abre la sesión sin conexión con los datos del último inicio de sesión.
+  void restoreOffline({
+    required String server,
+    required String db,
+    required int uid,
+    required String? userName,
+    required bool isAdmin,
+  }) {
+    _ensureDio(server);
+    baseUrl = server;
+    this.db = db;
+    this.uid = uid;
+    this.userName = userName;
+    this.isAdmin = isAdmin;
+    _offlineSession = true;
+    offline.value = true;
   }
 
   Future<List<Map<String, dynamic>>> searchRead({

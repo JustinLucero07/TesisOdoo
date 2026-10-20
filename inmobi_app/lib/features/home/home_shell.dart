@@ -236,9 +236,16 @@ class _HomeShellState extends State<HomeShell> {
                 ),
               ],
             ),
-      body: NotificationListener<ScrollNotification>(
-        onNotification: _handleScroll,
-        child: IndexedStack(index: _index, children: screens),
+      body: Column(
+        children: [
+          const OfflineBanner(),
+          Expanded(
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleScroll,
+              child: IndexedStack(index: _index, children: screens),
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: GlassNavBar(
         currentIndex: _index,
@@ -708,6 +715,58 @@ class _DrawerActionTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+
+/// Franja que avisa que se están viendo datos guardados por falta de internet.
+class OfflineBanner extends StatelessWidget {
+  const OfflineBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final odoo = context.read<AuthService>().odoo;
+    return ValueListenableBuilder<bool>(
+      valueListenable: odoo.offline,
+      builder: (context, offline, _) => AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        child: offline
+            ? Material(
+                color: const Color(0xFFB45309),
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(
+                          Icons.cloud_off_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Sin conexión · mostrando los últimos datos guardados',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            : const SizedBox(width: double.infinity),
       ),
     );
   }

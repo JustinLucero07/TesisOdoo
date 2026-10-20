@@ -371,25 +371,8 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
               if (price > 0) currency.format(price),
             ].join(' · ');
           } else if (isPartner) {
-            final rawPhone = r['phone'];
-            final rawMobile = r['mobile'];
-            final rawEmail = r['email'];
-            final phone =
-                (rawPhone != null &&
-                    rawPhone != false &&
-                    rawPhone.toString() != 'false')
-                ? rawPhone.toString()
-                : ((rawMobile != null &&
-                          rawMobile != false &&
-                          rawMobile.toString() != 'false')
-                      ? rawMobile.toString()
-                      : '');
-            final email =
-                (rawEmail != null &&
-                    rawEmail != false &&
-                    rawEmail.toString() != 'false')
-                ? rawEmail.toString()
-                : '';
+            final phone = partnerPhone(r);
+            final email = asOdooString(r['email']);
             subtitle = [
               if (phone.isNotEmpty) phone,
               if (email.isNotEmpty) email,
@@ -429,18 +412,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
         if (rows.isNotEmpty && mounted) {
           final row = rows.first;
           final name = (row['name'] ?? 'Nuevo Contacto').toString();
-          final rawPhone = row['phone'];
-          final rawMobile = row['mobile'];
-          final phone =
-              (rawPhone != null &&
-                  rawPhone != false &&
-                  rawPhone.toString() != 'false')
-              ? rawPhone.toString()
-              : ((rawMobile != null &&
-                        rawMobile != false &&
-                        rawMobile.toString() != 'false')
-                    ? rawMobile.toString()
-                    : '');
+          final phone = partnerPhone(row);
           Navigator.of(context).pop(
             Many2oneValue(
               result,

@@ -19,7 +19,7 @@ import '../offers/offer_model.dart';
 import '../offers/offer_screens.dart';
 import '../offers/offer_service.dart';
 import '../properties/property_detail_screen.dart';
-import '../reminders/reminder_form_screen.dart';
+import '../reminders/lead_reminder.dart';
 import '../reminders/reminders_section.dart';
 import '../visits/visit_detail_screen.dart';
 import '../visits/visit_form_screen.dart';
@@ -205,23 +205,8 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
   Future<void> _openNewReminder() async {
     final lead = _lead;
     if (lead == null) return;
-    final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (_) => ReminderFormScreen(
-          initialPartnerId: lead.partnerId,
-          initialPartnerName: lead.partnerName,
-          initialPropertyId: lead.targetPropertyId,
-          initialPropertyName: lead.targetPropertyName,
-          initialLeadId: lead.id,
-        ),
-      ),
-    );
-    if (saved == true && mounted) {
-      setState(() => _remindersVersion++);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Recordatorio guardado')));
-    }
+    final saved = await openNewReminderForLead(context, lead);
+    if (saved && mounted) setState(() => _remindersVersion++);
   }
 
   @override

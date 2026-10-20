@@ -14,6 +14,7 @@ import '../../core/widgets/skeleton.dart';
 import '../auth/auth_service.dart';
 import '../visits/visit_form_screen.dart';
 import 'crm_stage_service.dart';
+import '../reminders/lead_reminder.dart';
 import 'lead_detail_screen.dart';
 import 'lead_form_screen.dart';
 import 'lead_model.dart';
@@ -782,6 +783,18 @@ class _LeadListScreenState extends State<LeadListScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+                            IconButton(
+                              tooltip: 'Nuevo recordatorio',
+                              visualDensity: VisualDensity.compact,
+                              icon: Icon(
+                                Icons.notification_add_outlined,
+                                size: 20,
+                                color: colors.muted,
+                              ),
+                              onPressed: () =>
+                                  openNewReminderForLead(context, lead),
+                            ),
+                            const SizedBox(width: 4),
                             Material(
                               color: const Color(0xFF25D366),
                               borderRadius: BorderRadius.circular(10),
