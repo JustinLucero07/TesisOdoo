@@ -1470,6 +1470,7 @@ class EstateProperty(models.Model):
         properties = self.search([
             ('contract_end_date', '!=', False),
             ('state', 'in', ['available', 'reserved']),
+            ('id', 'not in', self.env.context.get('estate_skip_contract_ids') or []),
         ])
         for prop in properties:
             days_left = (prop.contract_end_date - today).days

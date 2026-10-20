@@ -1,6 +1,6 @@
 {
     'name': 'Agenda Inmobiliaria',
-    'version': '19.0.1.0.4',
+    'version': '19.0.1.0.5',
     'category': 'Real Estate',
     'summary': 'Agenda de citas integrada en el calendario estándar de Odoo',
     'description': """

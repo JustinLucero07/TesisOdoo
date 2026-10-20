@@ -103,6 +103,12 @@ class EstateReminder(models.Model):
         help='Deja el aviso en la campanita de actividades de Odoo.')
 
     note = fields.Text(string='Notas')
+    auto_origin = fields.Selection([
+        ('document', 'Vencimiento de documento'),
+        ('property_contract', 'Vencimiento de contrato'),
+    ], string='Creado automáticamente por', readonly=True, copy=False,
+        help='Los vencimientos de documentos y contratos generan su recordatorio '
+             'solo, para que todos los avisos lleguen por el mismo camino.')
 
     state = fields.Selection([
         ('pending', 'Pendiente'),

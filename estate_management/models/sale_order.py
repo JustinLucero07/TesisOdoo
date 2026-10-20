@@ -25,20 +25,12 @@ class SaleOrder(models.Model):
         related='property_id.date_sold', string='Fecha de venta', store=True)
     estate_sale_price = fields.Float(
         related='property_id.price', string='Valor de venta', store=True)
-    estate_buyer_phone = fields.Char(
-        string='Tel. comprador', compute='_compute_estate_phones')
-    estate_buyer_phone2 = fields.Char(
-        string='Tel. comprador 2', compute='_compute_estate_phones')
     estate_buyer_phones = fields.Char(
         string='Teléfonos comprador', compute='_compute_estate_phones',
         help='Todos los números del comprador, separados por " / ".')
     estate_owner_phones = fields.Char(
         string='Teléfonos propietario', compute='_compute_estate_phones',
         help='Todos los números del propietario, separados por " / ".')
-    estate_owner_phone = fields.Char(
-        string='Tel. propietario', compute='_compute_estate_phones')
-    estate_owner_phone2 = fields.Char(
-        string='Tel. propietario 2', compute='_compute_estate_phones')
     estate_source = fields.Char(
         string='Difusión', compute='_compute_estate_source', store=True,
         help='Canal por el que llegó el cliente (fuente del lead).')
@@ -88,13 +80,7 @@ class SaleOrder(models.Model):
         ('pending', 'Por cobrar'),
         ('collected', 'Cobrada'),
     ], string='Cobro', compute='_compute_estate_collected', store=True)
-    # --- Proceso ordenado de la venta: seña → venta → cobro → asesores ---
-    estate_earnest_amount = fields.Float(
-        related='property_id.deal_earnest_amount', string='Seña / Arras')
-    estate_earnest_received_by = fields.Char(
-        string='Seña recibida por', compute='_compute_estate_earnest')
-    estate_earnest_method = fields.Char(
-        string='Forma de pago de la seña', compute='_compute_estate_earnest')
+    # --- Proceso ordenado de la venta: venta → cobro → asesores ---
     estate_deal_stage = fields.Selection([
         ('sold', '1. Vendida · comisión por cobrar'),
         ('collected', '2. Cobrada · asesores por pagar'),
@@ -147,9 +133,6 @@ class SaleOrder(models.Model):
             owner = self._estate_partner_phones(order.partner_id)
             order.estate_buyer_phones = ' / '.join(buyer) or False
             order.estate_owner_phones = ' / '.join(owner) or False
-            buyer, owner = buyer + [False, False], owner + [False, False]
-            order.estate_buyer_phone, order.estate_buyer_phone2 = buyer[0], buyer[1]
-            order.estate_owner_phone, order.estate_owner_phone2 = owner[0], owner[1]
 
     @api.depends('property_id.deal_lead_origin')
     def _compute_estate_source(self):
@@ -231,31 +214,6 @@ class SaleOrder(models.Model):
             else:
                 order.estate_collected_method = False
                 order.estate_collected_invoice = False
-
-    @api.depends('property_id.deal_earnest_received_by_agency',
-                 'property_id.deal_earnest_received_by_owner',
-                 'property_id.deal_earnest_received_by_proxy',
-                 'property_id.deal_earnest_payment_cash',
-                 'property_id.deal_earnest_payment_transfer',
-                 'property_id.deal_earnest_payment_deposit',
-                 'property_id.deal_earnest_payment_other')
-    def _compute_estate_earnest(self):
-        for order in self:
-            prop = order.property_id
-            quien = [label for flag, label in (
-                (prop.deal_earnest_received_by_agency, 'Inmobiliaria'),
-                (prop.deal_earnest_received_by_owner, 'Propietario'),
-                (prop.deal_earnest_received_by_proxy, 'Apoderado'),
-            ) if flag]
-            como = [label for flag, label in (
-                (prop.deal_earnest_payment_cash, 'Efectivo'),
-                (prop.deal_earnest_payment_transfer, 'Transferencia'),
-                (prop.deal_earnest_payment_deposit, 'Depósito'),
-            ) if flag]
-            if prop.deal_earnest_payment_other:
-                como.append(prop.deal_earnest_payment_other)
-            order.estate_earnest_received_by = ', '.join(quien) or False
-            order.estate_earnest_method = ', '.join(como) or False
 
     def _compute_estate_deal_stage(self):
         for order in self:
