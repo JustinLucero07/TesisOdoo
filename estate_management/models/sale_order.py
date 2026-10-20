@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import re
+
 from odoo import models, fields, api
 from markupsafe import Markup
 
@@ -27,6 +29,12 @@ class SaleOrder(models.Model):
         string='Tel. comprador', compute='_compute_estate_phones')
     estate_buyer_phone2 = fields.Char(
         string='Tel. comprador 2', compute='_compute_estate_phones')
+    estate_buyer_phones = fields.Char(
+        string='Teléfonos comprador', compute='_compute_estate_phones',
+        help='Todos los números del comprador, separados por " / ".')
+    estate_owner_phones = fields.Char(
+        string='Teléfonos propietario', compute='_compute_estate_phones',
+        help='Todos los números del propietario, separados por " / ".')
     estate_owner_phone = fields.Char(
         string='Tel. propietario', compute='_compute_estate_phones')
     estate_owner_phone2 = fields.Char(
@@ -95,10 +103,14 @@ class SaleOrder(models.Model):
         phones = []
         if partner:
             candidates = [partner.phone, partner.mobile] + partner.extra_phone_ids.mapped('phone')
-            for phone in candidates:
-                if phone and phone not in phones:
-                    phones.append(phone)
-        return phones + [False, False]
+            for value in candidates:
+                # A veces se escriben dos números en el mismo campo.
+                for phone in re.split(r'[,;/\n]+', value or ''):
+                    phone = phone.strip()
+                    key = re.sub(r'\D', '', phone)[-9:]
+                    if phone and key not in [re.sub(r'\D', '', p)[-9:] for p in phones]:
+                        phones.append(phone)
+        return phones
 
     @api.depends('partner_id.phone', 'partner_id.mobile', 'partner_id.extra_phone_ids.phone',
                  'estate_buyer_id.phone', 'estate_buyer_id.mobile',
@@ -107,6 +119,9 @@ class SaleOrder(models.Model):
         for order in self:
             buyer = self._estate_partner_phones(order.estate_buyer_id)
             owner = self._estate_partner_phones(order.partner_id)
+            order.estate_buyer_phones = ' / '.join(buyer) or False
+            order.estate_owner_phones = ' / '.join(owner) or False
+            buyer, owner = buyer + [False, False], owner + [False, False]
             order.estate_buyer_phone, order.estate_buyer_phone2 = buyer[0], buyer[1]
             order.estate_owner_phone, order.estate_owner_phone2 = owner[0], owner[1]
 

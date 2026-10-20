@@ -36,25 +36,13 @@
                 <field name="estate_collected_manual_date" string="Fecha de cobro (editar)"
                        invisible="not estate_collected_manual"/>
             </xpath>
-            <!-- El negocio en orden: seña → venta → cobro → pago a asesores -->
+            <!-- El negocio en orden: venta → cobro → pago a asesores -->
             <xpath expr="//page[@name='order_lines']" position="before">
                 <page string="Proceso de la venta" name="page_estate_deal"
                       invisible="not property_id or state != 'sale'">
                     <field name="estate_deal_stage" widget="statusbar" class="mb-3"/>
                     <group>
-                        <group string="① Seña">
-                            <field name="estate_earnest_amount" string="Monto" widget="monetary"
-                                   options="{'currency_field': 'currency_id'}"/>
-                            <field name="estate_earnest_received_by" string="La recibió"
-                                   invisible="not estate_earnest_amount"/>
-                            <field name="estate_earnest_method" string="Forma de pago"
-                                   invisible="not estate_earnest_amount"/>
-                            <div colspan="2" class="text-muted small" invisible="estate_earnest_amount">
-                                No se registró seña. Si hubo, agrégala en la propiedad con
-                                "Modificar datos del negocio".
-                            </div>
-                        </group>
-                        <group string="② Venta">
+                        <group string="① Venta">
                             <field name="estate_date_sold" string="Fecha"/>
                             <field name="estate_buyer_id" string="Comprador"/>
                             <field name="estate_sale_price" string="Valor" widget="monetary"
@@ -62,7 +50,7 @@
                             <field name="amount_total" string="Comisión" widget="monetary"
                                    options="{'currency_field': 'currency_id'}"/>
                         </group>
-                        <group string="③ Cobro de la comisión al propietario">
+                        <group string="② Cobro de la comisión al propietario">
                             <field name="estate_collection_state" string="Estado" widget="badge"
                                    decoration-success="estate_collection_state == 'collected'"
                                    decoration-warning="estate_collection_state == 'pending'"/>
@@ -74,7 +62,7 @@
                                 <span class="text-muted small ms-2">o registra el pago en la factura.</span>
                             </div>
                         </group>
-                        <group string="④ Pago a los asesores">
+                        <group string="③ Pago a los asesores">
                             <field name="estate_advisors_state" string="Estado" widget="badge"
                                    decoration-success="estate_advisors_state == 'paid'"
                                    decoration-warning="estate_advisors_state == 'pending'"/>
@@ -119,17 +107,21 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_tree"/>
         <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="class">o_estate_wrap_list</attribute>
+            </xpath>
+            <xpath expr="//field[@name='activity_ids']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="string">Cliente (Propietario)</attribute>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="estate_buyer_id" optional="show"/>
-                <field name="estate_buyer_phone" widget="phone" optional="show"/>
-                <field name="estate_buyer_phone2" widget="phone" optional="hide"/>
+                <field name="estate_buyer_phones" optional="show"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="estate_owner_phone" widget="phone" optional="show"/>
-                <field name="estate_owner_phone2" widget="phone" optional="hide"/>
+                <field name="estate_owner_phones" optional="show"/>
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
                 <field name="estate_transaction_type" optional="hide"/>
                 <field name="property_sold_by" optional="hide"/>
@@ -147,17 +139,21 @@
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_quotation_tree_with_onboarding"/>
         <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="class">o_estate_wrap_list</attribute>
+            </xpath>
+            <xpath expr="//field[@name='activity_ids']" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="string">Cliente (Propietario)</attribute>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="before">
                 <field name="estate_buyer_id" optional="show"/>
-                <field name="estate_buyer_phone" widget="phone" optional="show"/>
-                <field name="estate_buyer_phone2" widget="phone" optional="hide"/>
+                <field name="estate_buyer_phones" optional="show"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="estate_owner_phone" widget="phone" optional="show"/>
-                <field name="estate_owner_phone2" widget="phone" optional="hide"/>
+                <field name="estate_owner_phones" optional="show"/>
                 <field name="property_id" string="Propiedad Vinculada" optional="show"/>
                 <field name="estate_transaction_type" optional="hide"/>
                 <field name="property_sold_by" optional="hide"/>
@@ -195,6 +191,9 @@
                 <filter name="estate_closed_external" string="Cerrado por: Externo"
                         domain="[('property_sold_by', '=', 'external')]"/>
                 <separator/>
+                <filter name="estate_not_cancelled" string="Sin canceladas"
+                        domain="[('state', '!=', 'cancel')]"/>
+                <separator/>
                 <filter name="estate_collected" string="Comisión cobrada"
                         domain="[('estate_commission_collected', '=', True)]"/>
                 <filter name="estate_not_collected" string="Comisión por cobrar"
@@ -224,7 +223,7 @@
         <field name="model">sale.order</field>
         <field name="priority">90</field>
         <field name="arch" type="xml">
-            <list string="Ventas y comisiones cobradas" create="0" default_order="estate_date_sold desc"
+            <list string="Ventas y comisiones cobradas" class="o_estate_wrap_list" create="0" default_order="estate_date_sold desc"
                   decoration-muted="not estate_commission_collected">
                 <field name="estate_date_sold" string="Fecha"/>
                 <field name="estate_buyer_id" string="Comprador"/>
@@ -237,8 +236,6 @@
                 <field name="estate_reception_initials"/>
                 <field name="estate_visit_initials"/>
                 <field name="estate_closing_initials"/>
-                <field name="estate_earnest_amount" string="Seña" optional="show"/>
-                <field name="estate_earnest_received_by" string="Seña la recibió" optional="hide"/>
                 <field name="estate_sale_price" string="Valor de venta" sum="Total vendido" optional="hide"/>
                 <field name="estate_source" optional="hide"/>
                 <field name="name" string="Orden" optional="hide"/>
@@ -300,4 +297,15 @@
               parent="sale.sale_order_menu"
               action="action_sale_order_estate_collected"
               sequence="25"/>
+
+    <!-- Las ventas abren sin las órdenes canceladas -->
+    <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
+        <field name="context">{'search_default_my_quotation': 1, 'search_default_estate_not_cancelled': 1}</field>
+    </record>
+    <record id="sale.action_quotations" model="ir.actions.act_window">
+        <field name="context">{'search_default_my_quotation': 1, 'search_default_estate_not_cancelled': 1}</field>
+    </record>
+    <record id="sale.action_orders" model="ir.actions.act_window">
+        <field name="context">{'search_default_sales': 1, 'search_default_estate_not_cancelled': 1}</field>
+    </record>
 </odoo>

@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
+import '../reminders/reminder_form_screen.dart';
 import 'crm_stage_service.dart';
 import 'lead_detail_screen.dart';
 import 'lead_form_screen.dart';
@@ -760,6 +761,26 @@ class _FunnelCard extends StatelessWidget {
     required this.onRefresh,
   });
 
+  Future<void> _newReminder(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => ReminderFormScreen(
+          initialPartnerId: lead.partnerId,
+          initialPartnerName: lead.partnerName,
+          initialPropertyId: lead.targetPropertyId,
+          initialPropertyName: lead.targetPropertyName,
+          initialLeadId: lead.id,
+        ),
+      ),
+    );
+    if (saved == true) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Recordatorio guardado')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -799,6 +820,21 @@ class _FunnelCard extends StatelessWidget {
                     color: LeadTemperatureStyle.color(
                       lead.leadTemperature,
                       colors,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  SizedBox(
+                    width: 30,
+                    height: 30,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      iconSize: 18,
+                      tooltip: 'Nuevo recordatorio',
+                      icon: Icon(
+                        Icons.notification_add_outlined,
+                        color: colors.muted,
+                      ),
+                      onPressed: () => _newReminder(context),
                     ),
                   ),
                 ],
