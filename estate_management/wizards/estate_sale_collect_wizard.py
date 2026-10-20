@@ -12,6 +12,15 @@ class EstateSaleCollectWizard(models.TransientModel):
                        default=fields.Date.context_today,
                        help='Día en que el propietario pagó la comisión. Para ventas '
                             'antiguas pon la fecha real del cobro.')
+    method = fields.Selection(
+        selection=lambda self: self.env['sale.order']._estate_collect_methods(),
+        string='¿Cómo te pagaron?', required=True, default='transfer')
+    invoice = fields.Selection([
+        ('with', 'Con factura'),
+        ('without', 'Sin factura'),
+    ], string='¿Con factura?', required=True, default='with')
+    reference = fields.Char(string='Comprobante / Referencia',
+                            help='Nº de transferencia, recibo o depósito.')
     order_count = fields.Integer(compute='_compute_order_count')
     amount_total = fields.Float(string='Total a marcar', compute='_compute_order_count')
 
@@ -38,8 +47,14 @@ class EstateSaleCollectWizard(models.TransientModel):
         self.order_ids.write({
             'estate_collected_manual': True,
             'estate_collected_manual_date': self.date,
+            'estate_collected_method_manual': self.method,
+            'estate_collected_invoice_manual': self.invoice,
+            'estate_collected_reference': self.reference,
         })
+        metodo = dict(self.env['sale.order']._estate_collect_methods()).get(self.method)
+        factura = dict(self._fields['invoice'].selection).get(self.invoice)
         for order in self.order_ids:
-            order.message_post(body='Comisión marcada como cobrada el %s.'
-                               % self.date.strftime('%d/%m/%Y'))
+            order.message_post(body='Comisión cobrada el %s · %s · %s%s.' % (
+                self.date.strftime('%d/%m/%Y'), metodo, factura,
+                ' · Comprobante %s' % self.reference if self.reference else ''))
         return {'type': 'ir.actions.act_window_close'}

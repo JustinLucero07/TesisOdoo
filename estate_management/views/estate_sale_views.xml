@@ -55,6 +55,9 @@
                                    decoration-success="estate_collection_state == 'collected'"
                                    decoration-warning="estate_collection_state == 'pending'"/>
                             <field name="estate_collected_date" invisible="not estate_commission_collected"/>
+                            <field name="estate_collected_method" invisible="not estate_commission_collected"/>
+                            <field name="estate_collected_invoice" invisible="not estate_commission_collected"/>
+                            <field name="estate_collected_reference" invisible="not estate_collected_reference"/>
                             <div colspan="2" invisible="estate_commission_collected">
                                 <button name="action_estate_mark_collected" type="object"
                                         string="Marcar comisión cobrada" icon="fa-check-circle"
@@ -211,6 +214,10 @@
                         context="{'group_by': 'estate_buyer_id'}"/>
                 <filter name="estate_group_date_sold" string="Fecha de venta"
                         context="{'group_by': 'estate_date_sold:month'}"/>
+                <filter name="estate_group_collected_method" string="Forma de cobro"
+                        context="{'group_by': 'estate_collected_method'}"/>
+                <filter name="estate_group_collected_invoice" string="Con / sin factura"
+                        context="{'group_by': 'estate_collected_invoice'}"/>
                 <filter name="estate_group_collected_date" string="Fecha de cobro"
                         context="{'group_by': 'estate_collected_date:month'}"/>
             </xpath>
@@ -244,6 +251,9 @@
                        decoration-success="estate_collection_state == 'collected'"
                        decoration-warning="estate_collection_state == 'pending'"/>
                 <field name="estate_collected_date" optional="show"/>
+                <field name="estate_collected_method" optional="show"/>
+                <field name="estate_collected_invoice" optional="show"/>
+                <field name="estate_collected_reference" optional="hide"/>
                 <button name="action_estate_mark_collected" type="object" icon="fa-check-circle"
                         title="Marcar comisión cobrada" string="Marcar cobrada"
                         invisible="estate_commission_collected"/>
@@ -300,12 +310,12 @@
 
     <!-- Las ventas abren sin las órdenes canceladas -->
     <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">
-        <field name="context">{'search_default_my_quotation': 1, 'search_default_estate_not_cancelled': 1}</field>
+        <field name="context">{'search_default_estate_not_cancelled': 1}</field>
     </record>
     <record id="sale.action_quotations" model="ir.actions.act_window">
-        <field name="context">{'search_default_my_quotation': 1, 'search_default_estate_not_cancelled': 1}</field>
+        <field name="context">{'search_default_estate_not_cancelled': 1}</field>
     </record>
     <record id="sale.action_orders" model="ir.actions.act_window">
-        <field name="context">{'search_default_sales': 1, 'search_default_estate_not_cancelled': 1}</field>
+        <field name="context">{'search_default_sales': 1}</field>
     </record>
 </odoo>

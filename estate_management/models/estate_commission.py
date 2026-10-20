@@ -177,7 +177,9 @@ class EstateCommission(models.Model):
         if not lineas:
             raise UserError(
                 'Asigna al menos un asesor con monto en el reparto antes de generarlo.')
-        cobrada = self.client_collection_state != 'pending'
+        # "Guardar reparto (sin pagar)" solo registra quién hizo cada paso.
+        cobrada = (self.client_collection_state != 'pending'
+                   and not self.env.context.get('estate_split_only'))
         if cobrada and not self.payment_method:
             raise UserError(
                 'Indica la Forma de Pago en "Pago al Asesor (Constancia)": al '
@@ -209,10 +211,13 @@ class EstateCommission(models.Model):
             .format(self.amount_office) % (len(lineas), detalle)))
 
         if not cobrada:
-            # Queda el reparto hecho; el pago espera a que pague el propietario.
+            # Queda el reparto hecho; el pago se hace después con "Pagar pendientes".
+            motivo = ('el propietario todavía no ha pagado la comisión'
+                      if self.client_collection_state == 'pending'
+                      else 'se pagará más tarde')
             self.message_post(body=(
-                'Reparto guardado <b>sin pagar</b>: el propietario todavía no ha '
-                'pagado la comisión. Cuando se marque como cobrada, usa "Pagar pendientes".'))
+                'Reparto guardado <b>sin pagar</b>: %s. Para pagar a los asesores usa '
+                '"Pagar pendientes".' % motivo))
             return self.action_view_children()
 
         # Repartir y pagar es un solo paso: no tiene sentido entrar a cada
@@ -255,6 +260,27 @@ class EstateCommission(models.Model):
             'Cada asesor tiene su propia factura de proveedor.'
             % (len(pendientes), '{:,.2f}'.format(total))))
         return self.action_view_children()
+
+    def action_open_payout_wizard(self):
+        """Antes de pagar pide cómo se pagó (efectivo, transferencia…)."""
+        self.ensure_one()
+        if self.state in ('paid', 'cancelled'):
+            raise UserError('Esta comisión ya está pagada o cancelada.')
+        self._check_client_collected()
+        if self.state == 'split':
+            mode = 'pending'
+        elif self.parent_commission_id:
+            mode = 'single'
+        else:
+            mode = 'split'
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Pagar a los asesores',
+            'res_model': 'estate.commission.payout.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_commission_id': self.id, 'default_mode': mode},
+        }
 
     def action_view_children(self):
         self.ensure_one()
@@ -455,6 +481,7 @@ class EstateCommission(models.Model):
     payment_method = fields.Selection([
         ('transfer', 'Transferencia'),
         ('cash', 'Efectivo'),
+        ('deposit', 'Depósito'),
         ('check', 'Cheque'),
         ('other', 'Otro'),
     ], string='Forma de Pago', copy=False)
