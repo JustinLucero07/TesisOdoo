@@ -2,10 +2,10 @@
 // Inmobi — Tema visual: variables base (antes de compilar Odoo)
 // ═══════════════════════════════════════════════════════════════
 
-// Marca: azul índigo y rojo del logo de Inmobi
-$o-community-color: #2b2770 !default;
-$o-brand-odoo: #2b2770 !default;
-$o-brand-primary: #2b2770 !default;
+// Marca: azul marino y rojo del logo de Inmobi
+$o-community-color: #1a275b !default;
+$o-brand-odoo: #1a275b !default;
+$o-brand-primary: #1a275b !default;
 
 // Tipografía: Inter (incluida en el módulo, ver fonts.scss)
 $o-system-fonts: ("Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -18,9 +18,9 @@ $o-headings-font-family: ("Inter", -apple-system, BlinkMacSystemFont, "Segoe UI"
 $o-main-text-color: #1d2433 !default;
 $o-main-headings-color: #111827 !default;
 
-// Barra superior: azul índigo del logo
+// Barra superior: azul marino del logo
 $o-navbar-height: 52px !default;
-$o-navbar-background: #28235d !default;
+$o-navbar-background: #1a275b !default;
 $o-navbar-border-bottom: 0 none !default;
 $o-navbar-entry-color: rgba(255, 255, 255, .78) !default;
 $o-navbar-entry-color--hover: #ffffff !default;

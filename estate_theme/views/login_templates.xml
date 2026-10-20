@@ -11,10 +11,11 @@
                 <section class="o_ix_login__brand" aria-hidden="true">
                     <div class="o_ix_login__brand-inner">
                         <svg class="o_ix_login__roof" viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg">
-                            <polygon points="0,270 305,0 400,90" fill="#ab1a2d"/>
-                            <polygon points="305,0 600,0 600,270" fill="#ea0a2a"/>
+                            <polygon points="0,270 305,0 400,90" fill="#a1151e"/>
+                            <polygon points="305,0 600,0 600,270" fill="#e20421"/>
                         </svg>
-                        <p class="o_ix_login__brand-name">Inmobi</p>
+                        <p class="o_ix_login__brand-name">INMOBI</p>
+                        <p class="o_ix_login__brand-sub">BIENES RAÍCES</p>
                         <p class="o_ix_login__tagline">Gestión inmobiliaria inteligente: propiedades, clientes y comisiones en un solo lugar.</p>
                     </div>
                 </section>

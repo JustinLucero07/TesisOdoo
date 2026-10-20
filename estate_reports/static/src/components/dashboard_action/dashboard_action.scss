@@ -4,8 +4,8 @@
 // ═══════════════════════════════════════════════════════════════
 
 .o_estate_dash {
-    --d-primary: var(--ix-primary, #2b2770);
-    --d-ink: #28235d;
+    --d-primary: var(--ix-primary, #1a275b);
+    --d-ink: #1a275b;
     --d-canvas: var(--ix-canvas, #f5f6f8);
     --d-surface: #ffffff;
     --d-line: var(--ix-line, #e7e9ee);
@@ -71,7 +71,7 @@
         transition: border-color .15s, box-shadow .15s;
         &:focus-within {
             border-color: var(--d-primary);
-            box-shadow: 0 0 0 3px rgba(43, 39, 112, .12);
+            box-shadow: 0 0 0 3px rgba(26, 39, 91, .12);
         }
         select {
             border: none;
@@ -155,7 +155,7 @@
         width: 30px;
         height: 30px;
         border-radius: 8px;
-        background: #efeefa;
+        background: #eef1f8;
         color: var(--d-primary);
         font-size: .85rem;
         margin-bottom: 4px;
@@ -178,7 +178,7 @@
         cursor: pointer;
         &:hover {
             border-color: #cfd6e0;
-            box-shadow: 0 8px 20px -12px rgba(40, 35, 93, .35);
+            box-shadow: 0 8px 20px -12px rgba(26, 39, 91, .35);
             transform: translateY(-1px);
         }
         &:focus-visible { outline: 2px solid var(--d-primary); outline-offset: 2px; }
@@ -237,7 +237,7 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: linear-gradient(135deg, #28235d, #ea0a2a);
+        background: linear-gradient(135deg, #1a275b, #e20421);
         color: #fff;
         font-size: .85rem;
     }

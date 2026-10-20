@@ -5,11 +5,11 @@
 // ═══════════════════════════════════════════════════════════════
 
 :root {
-    --ix-primary: #2b2770;        // índigo del logo
-    --ix-primary-hover: #221f5c;
-    --ix-primary-soft: #efeefa;
-    --ix-accent: #ea0a2a;         // rojo del logo (solo acentos)
-    --ix-ink: #28235d;
+    --ix-primary: #1a275b;        // azul marino del logo
+    --ix-primary-hover: #151e48;
+    --ix-primary-soft: #eef1f8;
+    --ix-accent: #e20421;         // rojo del logo (solo acentos)
+    --ix-ink: #1a275b;
     --ix-success: #12a150;
     --ix-success-soft: #dcf7e7;
     --ix-warning: #d97706;
@@ -52,7 +52,7 @@ strong, b { font-weight: 600; }
 // ── Barra superior ───────────────────────────────────────────────
 .o_main_navbar {
     border-bottom: 0 !important;
-    box-shadow: 0 6px 18px -12px rgba(40, 35, 93, .6);
+    box-shadow: 0 6px 18px -12px rgba(26, 39, 91, .6);
     position: relative;
     z-index: 10;
     .o_menu_brand {
@@ -87,7 +87,7 @@ strong, b { font-weight: 600; }
         }
         .badge {
             font-weight: 600;
-            border: 2px solid #28235d;
+            border: 2px solid #1a275b;
             box-shadow: none;
         }
     }
@@ -108,7 +108,7 @@ strong, b { font-weight: 600; }
 .o_cp_searchview {
     border-radius: var(--ix-radius);
     transition: box-shadow .15s var(--ix-ease);
-    &:focus-within { box-shadow: 0 0 0 3px rgba(43, 39, 112, .12); }
+    &:focus-within { box-shadow: 0 0 0 3px rgba(26, 39, 91, .12); }
     .o_searchview_dropdown_toggler {
         border: 1px solid var(--ix-line-strong) !important;
         border-left: none !important;
@@ -116,7 +116,7 @@ strong, b { font-weight: 600; }
         background: var(--ix-surface) !important;
         color: var(--ix-muted) !important;
         margin-left: 0 !important;
-        &:hover { background: #f7f7fb !important; color: var(--ix-primary) !important; }
+        &:hover { background: #f6f7fb !important; color: var(--ix-primary) !important; }
     }
     &:focus-within .o_searchview,
     &:focus-within .o_searchview_dropdown_toggler {
@@ -145,7 +145,7 @@ strong, b { font-weight: 600; }
                 color .15s var(--ix-ease), box-shadow .15s var(--ix-ease);
 }
 .btn-primary {
-    box-shadow: 0 1px 2px rgba(43, 39, 112, .28);
+    box-shadow: 0 1px 2px rgba(26, 39, 91, .28);
 }
 .btn-secondary {
     background-color: var(--ix-surface);
@@ -397,7 +397,7 @@ strong, b { font-weight: 600; }
 
 // ── Cajón de aplicaciones (módulo web_responsive) ───────────────
 .o-wr-AppDrawer-backdrop {
-    background: rgba(40, 35, 93, .40);
+    background: rgba(26, 39, 91, .40);
     backdrop-filter: blur(6px) saturate(120%);
     -webkit-backdrop-filter: blur(6px) saturate(120%);
 }
@@ -427,7 +427,7 @@ strong, b { font-weight: 600; }
         &:focus-within {
             background: #fff !important;
             border-color: var(--ix-primary) !important;
-            box-shadow: 0 0 0 3px rgba(43, 39, 112, .12);
+            box-shadow: 0 0 0 3px rgba(26, 39, 91, .12);
         }
         .fa-search { color: var(--ix-faint) !important; }
         input {
@@ -456,7 +456,7 @@ strong, b { font-weight: 600; }
     padding: 18px 18px 22px !important;
     gap: 6px !important;
     grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)) !important;
-    box-shadow: 0 30px 70px -20px rgba(40, 35, 93, .45) !important;
+    box-shadow: 0 30px 70px -20px rgba(26, 39, 91, .45) !important;
 }
 .o-wr-AppCard {
     padding: 14px 6px 12px !important;

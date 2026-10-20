@@ -4,15 +4,15 @@
         margin: 2px 12px 10px;
         padding: 10px 12px;
         border-radius: 10px;
-        background: linear-gradient(135deg, #f3f2fc 0%, #fbf7f8 100%);
-        border: 1px solid #e6e4f5;
+        background: linear-gradient(135deg, #f1f3f9 0%, #fbf6f7 100%);
+        border: 1px solid #e3e8f3;
         &__title {
             margin: 0 0 6px;
             font-size: .68rem;
             font-weight: 600;
             letter-spacing: .08em;
             text-transform: uppercase;
-            color: var(--ix-primary, #2b2770);
+            color: var(--ix-primary, #1a275b);
         }
         &__line {
             margin: 0 0 4px;
@@ -44,7 +44,7 @@
             list-style: none;
             user-select: none;
             &::-webkit-details-marker { display: none; }
-            &:hover { background: #fafafd; }
+            &:hover { background: #f9fafc; }
         }
         &__icon {
             display: inline-flex;
@@ -53,8 +53,8 @@
             width: 24px;
             height: 24px;
             border-radius: 7px;
-            background: #efeefa;
-            color: var(--ix-primary, #2b2770);
+            background: #eef1f8;
+            color: var(--ix-primary, #1a275b);
             flex-shrink: 0;
         }
         &__title { flex: 1; font-size: .8rem; font-weight: 600; color: #1f2937; }
