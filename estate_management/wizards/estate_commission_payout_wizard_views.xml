@@ -26,7 +26,7 @@
                 <footer>
                     <button name="action_confirm" type="object" string="Pagar" icon="fa-check"
                             class="btn-success"/>
-                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                    <button string="Más tarde" special="cancel" class="btn-secondary"/>
                 </footer>
             </form>
         </field>

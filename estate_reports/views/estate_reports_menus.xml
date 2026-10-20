@@ -48,17 +48,11 @@
                   parent="estate_menu_ventas_root" action="action_estate_sales_report_owl"
                   sequence="40" groups="estate_management.estate_group_manager"/>
         <!-- Comisiones: las 3 vistas unificadas en esta sección -->
-        <menuitem id="estate_menu_ventas_commissions" name="Comisiones de Asesores"
-                  parent="estate_menu_ventas_root" action="estate_management.action_estate_commission_dashboard"
-                  sequence="50" groups="estate_management.estate_group_manager"/>
         <record id="action_estate_commission_report_owl" model="ir.actions.client">
             <field name="name">Liquidación de Comisiones</field>
             <field name="tag">estate_commission_report_owl</field>
         </record>
 
-        <menuitem id="estate_menu_ventas_commission_status" name="Estado de Pago de Comisiones"
-                  parent="estate_menu_ventas_root" action="estate_management.action_estate_commission_payment_status"
-                  sequence="55" groups="estate_management.estate_group_manager"/>
         <menuitem id="estate_menu_commission_wizard" name="Liquidación de Comisiones"
                   parent="estate_menu_ventas_root" action="action_estate_commission_report_owl"
                   sequence="60" groups="estate_management.estate_group_manager"/>
@@ -72,10 +66,6 @@
                   parent="estate_menu_ventas_root"
                   action="estate_management.action_estate_commission_by_advisor"
                   sequence="63" groups="estate_management.estate_group_manager"/>
-        <menuitem id="estate_menu_office_earnings" name="Ganancias de la Oficina"
-                  parent="estate_menu_ventas_root"
-                  action="estate_management.action_estate_commission_office"
-                  sequence="65" groups="estate_management.estate_group_manager"/>
 
     <!-- ════ 3. ANÁLISIS — agrupado en 3 ════ -->
     <menuitem id="estate_menu_analytics_root" name="Análisis"

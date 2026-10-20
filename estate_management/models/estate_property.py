@@ -319,11 +319,6 @@ class EstateProperty(models.Model):
                                help='Persona autorizada para actuar en nombre del propietario.')
     buyer_id = fields.Many2one('res.partner', string='Comprador', tracking=True, index=True)
     user_id = fields.Many2one('res.users', string='Asesor Responsable', default=lambda self: self.env.user, tracking=True, index=True)
-    co_user_id = fields.Many2one('res.users', string='Co-Asesor', tracking=True,
-                                 help='Segundo asesor que colabora en esta propiedad.')
-    commission_split_pct = fields.Float(
-        string='Split Co-Asesor (%)', default=50.0,
-        help='Porcentaje de la comisión que corresponde al Co-Asesor (el resto es del Asesor Responsable).')
     is_allied_property = fields.Boolean(
         string='Inmueble de Aliado', tracking=True,
         help='Marca este inmueble como vinculado a una agencia aliada: ya sea inventario de esa '
@@ -933,12 +928,6 @@ class EstateProperty(models.Model):
                     f'El precio mínimo aceptable (${rec.bottom_price:,.2f}) debe ser menor al precio de publicación (${rec.price:,.2f}).'
                 )
 
-    @api.constrains('commission_split_pct')
-    def _check_commission_split(self):
-        for rec in self:
-            if not (0 <= rec.commission_split_pct <= 100):
-                raise UserError('El porcentaje de split del Co-Asesor debe estar entre 0% y 100%.')
-
     # ── Onchange warnings (avisan al usuario antes del guardado) ──────────────
     @api.onchange('year_built')
     def _onchange_year_built_warn(self):
@@ -961,14 +950,6 @@ class EstateProperty(models.Model):
                     f'MENOR al precio de publicación (${self.price:,.2f}). '
                     f'Ajuste el valor antes de guardar.'
                 ),
-            }}
-
-    @api.onchange('commission_split_pct')
-    def _onchange_commission_split_warn(self):
-        if self.commission_split_pct and not (0 <= self.commission_split_pct <= 100):
-            return {'warning': {
-                'title': 'Comisión fuera de rango',
-                'message': 'El % de split del Co-Asesor debe estar entre 0 y 100.',
             }}
 
     # Campos que, cuando cambian, deben re-sincronizar la propiedad en WordPress
@@ -1365,7 +1346,8 @@ class EstateProperty(models.Model):
         return order, invoice
 
     def _create_commission_records(self, commission_type, total_amount, sale_price, pct, lead_id=False):
-        """Crea registros de comisión, dividiendo entre asesor y co-asesor si aplica."""
+        """Crea la comisión del negocio (total de honorarios) y deja el reparto
+        por pasos prellenado con los asesores que ya se conocen."""
         today = fields.Date.today()
         if not lead_id:
             active_lead = self.env['crm.lead'].search([
@@ -1380,50 +1362,21 @@ class EstateProperty(models.Model):
             total_amount = total_amount * allied_ratio
             pct = pct * allied_ratio
 
-        if self.co_user_id and 0 < self.commission_split_pct < 100:
-            co_ratio = self.commission_split_pct / 100.0
-            co_amount = total_amount * co_ratio
-            main_amount = total_amount * (1.0 - co_ratio)
-            self.env['estate.commission'].create({
-                'property_id': self.id,
-                'lead_id': lead_id,
-                'user_id': self.user_id.id,
-                'sale_amount': sale_price,
-                'commission_pct': pct * (1.0 - co_ratio),
-                'amount': main_amount,
-                'type': commission_type,
-                'date': today,
-                'state': 'approved',
-            })
-            self.env['estate.commission'].create({
-                'property_id': self.id,
-                'lead_id': lead_id,
-                'user_id': self.co_user_id.id,
-                'sale_amount': sale_price,
-                'commission_pct': pct * co_ratio,
-                'amount': co_amount,
-                'type': commission_type,
-                'date': today,
-                'state': 'approved',
-            })
-            self.message_post(
-                body=f'Comisión de ${total_amount:,.2f} dividida: '
-                     f'{self.user_id.name} ${main_amount:,.2f} ({100-self.commission_split_pct:.0f}%) / '
-                     f'{self.co_user_id.name} ${co_amount:,.2f} ({self.commission_split_pct:.0f}%)',
-                message_type='comment', subtype_xmlid='mail.mt_note',
-            )
-        else:
-            self.env['estate.commission'].create({
-                'property_id': self.id,
-                'lead_id': lead_id,
-                'user_id': self.user_id.id,
-                'sale_amount': sale_price,
-                'commission_pct': pct,
-                'amount': total_amount,
-                'type': commission_type,
-                'date': today,
-                'state': 'approved',
-            })
+        commission = self.env['estate.commission'].create({
+            'property_id': self.id,
+            'lead_id': lead_id,
+            'user_id': self.user_id.id,
+            'sale_amount': sale_price,
+            'commission_pct': pct,
+            'amount': total_amount,
+            'type': commission_type,
+            'date': today,
+            'state': 'approved',
+        })
+        if commission_type == 'sale':
+            # El reparto queda listo con los asesores probables: solo se revisa.
+            commission.action_generate_split()
+        return commission
 
     def action_create_invoice(self):
         self.ensure_one()

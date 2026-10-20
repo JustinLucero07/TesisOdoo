@@ -57,4 +57,22 @@ class EstateSaleCollectWizard(models.TransientModel):
             order.message_post(body='Comisión cobrada el %s · %s · %s%s.' % (
                 self.date.strftime('%d/%m/%Y'), metodo, factura,
                 ' · Comprobante %s' % self.reference if self.reference else ''))
+        # Una sola venta con el reparto ya listo: seguir directo al pago de los
+        # asesores, con la misma forma de pago propuesta.
+        if len(self.order_ids) == 1:
+            commission = self.env['estate.commission'].search([
+                ('property_id', '=', self.order_ids.property_id.id),
+                ('parent_commission_id', '=', False),
+                ('state', 'in', ('approved', 'split')),
+                '|', ('split_line_ids', '!=', False), ('child_commission_ids', '!=', False),
+            ], limit=1)
+            pending = commission and (commission.state == 'approved' or commission.child_commission_ids.filtered(
+                lambda c: c.state in ('draft', 'approved')))
+            if pending:
+                action = commission.action_open_payout_wizard()
+                action['name'] = 'Comisión cobrada · ¿pagar ahora a los asesores?'
+                method = self.method if self.method in dict(
+                    self.env['estate.commission']._fields['payment_method'].selection) else 'other'
+                action['context'] = dict(action['context'], default_payment_method=method)
+                return action
         return {'type': 'ir.actions.act_window_close'}

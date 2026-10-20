@@ -300,17 +300,7 @@
         </field>
     </record>
 
-    <menuitem id="estate_menu_sale_to_collect"
-              name="Comisiones por cobrar"
-              parent="sale.sale_order_menu"
-              action="action_sale_order_estate_to_collect"
-              sequence="24"/>
 
-    <menuitem id="estate_menu_sale_collected"
-              name="Ventas cobradas"
-              parent="sale.sale_order_menu"
-              action="action_sale_order_estate_collected"
-              sequence="25"/>
 
     <!-- Las ventas abren sin las órdenes canceladas -->
     <record id="sale.action_quotations_with_onboarding" model="ir.actions.act_window">

@@ -391,7 +391,7 @@ class EstateSaleWizard(models.TransientModel):
         target_lead = self.lead_id or (order.lead_id if order and hasattr(order, 'lead_id') else False)
         if target_lead and hasattr(target_lead, 'action_set_won_rainbowman'):
             try:
-                target_lead.action_set_won_rainbowman()
+                target_lead.with_context(estate_no_sale_wizard=True).action_set_won_rainbowman()
             except Exception:
                 pass
         if target_lead:

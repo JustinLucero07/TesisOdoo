@@ -129,25 +129,54 @@ class EstateCommission(models.Model):
                 rec.amount_office = 0.0
                 rec.is_deal_total = True
 
-    def _default_split_values(self):
-        """Los cuatro pasos del negocio con los porcentajes configurados.
+    def _guess_split_users(self):
+        """Quién hizo cada paso, con lo que el sistema ya sabe del negocio.
 
-        El asesor queda vacío a propósito: se asigna al momento de pagar, que es
-        cuando se sabe quién recibió, quién visitó y quién cerró.
+        Captación: el captador de la propiedad. Recepción: el asesor del lead.
+        Visita: quien hizo la última visita realizada con ese cliente a esta
+        propiedad. Cierre: el asesor responsable de la venta. Todo se puede
+        corregir en el reparto antes de pagar.
         """
+        self.ensure_one()
+        prop = self.property_id
+        lead = self.lead_id
+        Users = self.env['res.users']
+        capture = prop.exclusive_user_id or prop.user_id or self.user_id
+        reception = lead.user_id if lead else Users
+        visit = Users
+        Event = self.env['calendar.event']
+        if prop and {'property_id', 'visit_state', 'appointment_type'} <= set(Event._fields):
+            domain = [('property_id', '=', prop.id), ('appointment_type', '=', 'visit'),
+                      ('visit_state', '=', 'done')]
+            client = (lead.partner_id if lead else False) or prop.buyer_id
+            if lead and 'lead_id' in Event._fields:
+                visits = Event.sudo().search(domain + [('lead_id', '=', lead.id)],
+                                             order='start desc', limit=1)
+            else:
+                visits = Event
+            if not visits and client and 'client_id' in Event._fields:
+                visits = Event.sudo().search(domain + [('client_id', '=', client.id)],
+                                             order='start desc', limit=1)
+            visit = visits.user_id
+        closing = prop.user_id or self.user_id
+        return {'capture': capture, 'reception': reception or closing,
+                'visit': visit or reception or closing, 'closing': closing}
+
+    def _default_split_values(self):
+        """Los cuatro pasos del negocio con los porcentajes configurados y el
+        asesor que probablemente hizo cada uno (se puede cambiar)."""
         self.ensure_one()
         company = self.env.company
         pct_captacion = (company.estate_pct_capture_exclusive
                          if self.property_id.is_exclusive
                          else company.estate_pct_capture)
-        captador = (self.property_id.exclusive_user_id
-                    or self.property_id.user_id or self.user_id)
+        users = self._guess_split_users()
+        pcts = {'capture': pct_captacion, 'reception': company.estate_pct_reception,
+                'visit': company.estate_pct_visit, 'closing': company.estate_pct_closing}
         return [
-            {'sequence': 10, 'role': 'capture', 'percentage': pct_captacion,
-             'user_id': captador.id if captador else False},
-            {'sequence': 20, 'role': 'reception', 'percentage': company.estate_pct_reception},
-            {'sequence': 30, 'role': 'visit', 'percentage': company.estate_pct_visit},
-            {'sequence': 40, 'role': 'closing', 'percentage': company.estate_pct_closing},
+            {'sequence': seq, 'role': role, 'percentage': pcts[role],
+             'user_id': users[role].id if users[role] else False}
+            for seq, role in ((10, 'capture'), (20, 'reception'), (30, 'visit'), (40, 'closing'))
         ]
 
     def action_generate_split(self):
@@ -370,10 +399,6 @@ class EstateCommission(models.Model):
                 if prop.is_allied_property:
                     allied_ratio = (prop.allied_split_pct or 50.0) / 100.0
                     pct = pct * allied_ratio
-                if prop.co_user_id and lead.user_id == prop.co_user_id and 0 < prop.commission_split_pct < 100:
-                    pct = pct * (prop.commission_split_pct / 100.0)
-                elif prop.co_user_id and lead.user_id == prop.user_id and 0 < prop.commission_split_pct < 100:
-                    pct = pct * ((100.0 - prop.commission_split_pct) / 100.0)
                 self.commission_pct = pct
         else:
             if lead.client_budget:
