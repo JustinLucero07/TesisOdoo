@@ -2,6 +2,9 @@ import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { registry } from "@web/core/registry";
 import { STATIC_ACTIONS_GROUP_NUMBER } from "@web/search/action_menus/action_menus";
 import { Component } from "@odoo/owl";
+import { _t } from "@web/core/l10n/translation";
+import { patch } from "@web/core/utils/patch";
+import { ListController } from "@web/views/list/list_controller";
 
 const PRINTABLE_VIEWS = ["list", "pivot", "graph"];
 
@@ -87,69 +90,90 @@ const PRINT_STYLE = `
     @page { size: landscape; margin: 12mm; }
 `;
 
+function viewTitle(env) {
+    const breadcrumbs = env.config.breadcrumbs || [];
+    return breadcrumbs.map((b) => b.name).filter(Boolean).join(" / ") || document.title;
+}
+
+function viewFilters(env) {
+    return (env.searchModel?.facets || []).map((facet) =>
+        facet.values.join(` ${facet.separator || "o"} `)
+    );
+}
+
+function findViewRoot() {
+    const actions = document.querySelectorAll(".o_action_manager > .o_action");
+    return actions[actions.length - 1] || document.querySelector(".o_action_manager");
+}
+
+function buildContent(env) {
+    const root = findViewRoot();
+    const viewType = env.config.viewType;
+    if (viewType === "graph") {
+        const canvas = root?.querySelector(".o_graph_canvas_container canvas, canvas");
+        return canvas ? `<img class="chart" src="${canvas.toDataURL("image/png")}"/>` : "";
+    }
+    const selector = viewType === "pivot" ? ".o_pivot table" : "table.o_list_table";
+    const table = root?.querySelector(selector);
+    if (!table) {
+        return "";
+    }
+    const onlySelected = viewType === "list" && Boolean(env.model?.root?.selection?.length);
+    return tableToHtml(table, { onlySelected });
+}
+
+/** Imprime la vista actual (lista, pivote o gráfico) tal como se ve. */
+export function printCurrentView(env) {
+    const title = viewTitle(env);
+    const content = buildContent(env) || "<p>No hay datos para imprimir.</p>";
+    const now = new Date().toLocaleString();
+    const meta = [`<span>Impreso: ${escapeHtml(now)}</span>`]
+        .concat(viewFilters(env).map((f) => `<span>Filtro: ${escapeHtml(f)}</span>`))
+        .join("");
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+        <title>${escapeHtml(title)}</title><style>${PRINT_STYLE}</style></head>
+        <body><h1>${escapeHtml(title)}</h1><div class="meta">${meta}</div>${content}</body></html>`;
+
+    // Se imprime desde un iframe oculto para no depender de ventanas emergentes.
+    const iframe = document.createElement("iframe");
+    iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    iframe.contentWindow.addEventListener("afterprint", () => iframe.remove());
+    setTimeout(() => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(() => iframe.isConnected && iframe.remove(), 60000);
+    }, 300);
+}
+
 export class PrintViewItem extends Component {
     static template = "estate_management.PrintViewItem";
     static components = { DropdownItem };
     static props = {};
 
-    get title() {
-        const breadcrumbs = this.env.config.breadcrumbs || [];
-        return breadcrumbs.map((b) => b.name).filter(Boolean).join(" / ") || document.title;
-    }
-
-    get filters() {
-        return (this.env.searchModel?.facets || []).map((facet) =>
-            facet.values.join(` ${facet.separator || "o"} `)
-        );
-    }
-
-    findViewRoot() {
-        const actions = document.querySelectorAll(".o_action_manager > .o_action");
-        return actions[actions.length - 1] || document.querySelector(".o_action_manager");
-    }
-
-    buildContent() {
-        const root = this.findViewRoot();
-        const viewType = this.env.config.viewType;
-        if (viewType === "graph") {
-            const canvas = root?.querySelector(".o_graph_canvas_container canvas, canvas");
-            return canvas ? `<img class="chart" src="${canvas.toDataURL("image/png")}"/>` : "";
-        }
-        const selector = viewType === "pivot" ? ".o_pivot table" : "table.o_list_table";
-        const table = root?.querySelector(selector);
-        if (!table) {
-            return "";
-        }
-        const onlySelected = viewType === "list" && Boolean(this.env.model?.root?.selection?.length);
-        return tableToHtml(table, { onlySelected });
-    }
-
     onPrint() {
-        const content = this.buildContent() || "<p>No hay datos para imprimir.</p>";
-        const now = new Date().toLocaleString();
-        const meta = [`<span>Impreso: ${escapeHtml(now)}</span>`]
-            .concat(this.filters.map((f) => `<span>Filtro: ${escapeHtml(f)}</span>`))
-            .join("");
-        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
-            <title>${escapeHtml(this.title)}</title><style>${PRINT_STYLE}</style></head>
-            <body><h1>${escapeHtml(this.title)}</h1><div class="meta">${meta}</div>${content}</body></html>`;
-
-        // Se imprime desde un iframe oculto para no depender de ventanas emergentes.
-        const iframe = document.createElement("iframe");
-        iframe.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;";
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write(html);
-        doc.close();
-        iframe.contentWindow.addEventListener("afterprint", () => iframe.remove());
-        setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            setTimeout(() => iframe.isConnected && iframe.remove(), 60000);
-        }, 300);
+        printCurrentView(this.env);
     }
 }
+
+// Con filas seleccionadas Odoo cambia el engranaje por el menú "Acciones":
+// ahí también va "Imprimir" (imprime solo las filas marcadas).
+patch(ListController.prototype, {
+    getStaticActionMenuItems() {
+        const items = super.getStaticActionMenuItems(...arguments);
+        items.estate_print = {
+            sequence: 15,
+            icon: "fa fa-print",
+            description: _t("Imprimir"),
+            callback: () => printCurrentView(this.env),
+        };
+        return items;
+    },
+});
 
 registry.category("cogMenu").add(
     "estate-print-view",

@@ -19,6 +19,10 @@
                         invisible="not estate_collected_manual"
                         confirm="¿Quitar la marca de comisión cobrada?"/>
             </xpath>
+            <xpath expr="//sheet" position="inside">
+                <widget name="web_ribbon" title="Cobrada" bg_color="text-bg-success"
+                        invisible="not estate_commission_collected"/>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="string">Cliente (Propietario)</attribute>
             </xpath>
@@ -181,14 +185,21 @@
                 <field name="estate_sale_price" string="Valor de venta" sum="Total vendido" optional="hide"/>
                 <field name="estate_source" optional="hide"/>
                 <field name="name" string="Orden" optional="hide"/>
-                <field name="estate_commission_collected" string="Cobrada"/>
+                <field name="estate_commission_collected" column_invisible="1"/>
+                <field name="estate_collection_state" widget="badge"
+                       decoration-success="estate_collection_state == 'collected'"
+                       decoration-warning="estate_collection_state == 'pending'"/>
                 <field name="estate_collected_date" optional="show"/>
                 <button name="action_estate_mark_collected" type="object" icon="fa-check-circle"
                         title="Marcar comisión cobrada" string="Marcar cobrada"
                         invisible="estate_commission_collected"/>
+                <field name="estate_advisors_state" widget="badge"
+                       decoration-success="estate_advisors_state == 'paid'"
+                       decoration-warning="estate_advisors_state == 'pending'"
+                       decoration-muted="estate_advisors_state == 'none'"/>
                 <button name="action_estate_open_commission" type="object" icon="fa-users"
                         title="Repartir y pagar la comisión a los asesores" string="Pagar asesores"
-                        invisible="not estate_commission_collected"/>
+                        invisible="not estate_commission_collected or estate_advisors_state == 'paid'"/>
             </list>
         </field>
     </record>

@@ -177,7 +177,8 @@ class EstateCommission(models.Model):
         if not lineas:
             raise UserError(
                 'Asigna al menos un asesor con monto en el reparto antes de generarlo.')
-        if not self.payment_method:
+        cobrada = self.client_collection_state != 'pending'
+        if cobrada and not self.payment_method:
             raise UserError(
                 'Indica la Forma de Pago en "Pago al Asesor (Constancia)": al '
                 'generar el reparto se paga y factura a cada asesor.')
@@ -207,6 +208,13 @@ class EstateCommission(models.Model):
             '<b>Comisión repartida</b> en %d parte(s) — %s · Oficina ${:,.2f}'
             .format(self.amount_office) % (len(lineas), detalle)))
 
+        if not cobrada:
+            # Queda el reparto hecho; el pago espera a que pague el propietario.
+            self.message_post(body=(
+                'Reparto guardado <b>sin pagar</b>: el propietario todavía no ha '
+                'pagado la comisión. Cuando se marque como cobrada, usa "Pagar pendientes".'))
+            return self.action_view_children()
+
         # Repartir y pagar es un solo paso: no tiene sentido entrar a cada
         # comisión a repetir la misma forma de pago.
         self.action_pay_all_children()
@@ -222,6 +230,7 @@ class EstateCommission(models.Model):
         self.ensure_one()
         if self.state != 'split':
             raise UserError('Esta comisión no está repartida entre asesores.')
+        self._check_client_collected()
         if not self.payment_method:
             raise UserError(
                 'Indica la Forma de Pago en "Pago al Asesor (Constancia)" antes '
@@ -386,26 +395,56 @@ class EstateCommission(models.Model):
         string='Cobrada al propietario', compute='_compute_client_collected',
         search='_search_client_collected',
         help='La venta de esta propiedad ya tiene la comisión cobrada al propietario '
-             '(ver Ventas → Ventas cobradas). Recién ahí conviene pagar a los asesores.')
+             '(ver Ventas → Ventas cobradas). Recién ahí se puede pagar a los asesores.')
+    client_collection_state = fields.Selection([
+        ('none', 'Sin venta registrada'),
+        ('pending', 'Por cobrar al propietario'),
+        ('collected', 'Cobrada al propietario'),
+    ], string='Cobro al propietario', compute='_compute_client_collected')
 
-    def _collected_property_ids(self):
+    def _sale_orders_by_property(self):
         orders = self.env['sale.order'].sudo().search([
-            ('property_id', '!=', False), ('state', '=', 'sale'),
-            ('estate_commission_collected', '=', True),
-        ])
-        return set(orders.property_id.ids)
+            ('property_id', 'in', self.property_id.ids), ('state', '=', 'sale'),
+        ]) if self.property_id else self.env['sale.order']
+        result = {}
+        for order in orders:
+            result.setdefault(order.property_id.id, self.env['sale.order'])
+            result[order.property_id.id] |= order
+        return result
 
     def _compute_client_collected(self):
-        collected = self._collected_property_ids() if self.property_id else set()
+        by_property = self._sale_orders_by_property()
         for rec in self:
-            rec.client_collected = rec.property_id.id in collected
+            orders = by_property.get(rec.property_id.id)
+            if rec.type != 'sale' or not orders:
+                rec.client_collection_state = 'none'
+            elif any(orders.mapped('estate_commission_collected')):
+                rec.client_collection_state = 'collected'
+            else:
+                rec.client_collection_state = 'pending'
+            rec.client_collected = rec.client_collection_state == 'collected'
 
     def _search_client_collected(self, operator, value):
         if operator not in ('=', '!=') or not isinstance(value, bool):
             return NotImplemented
-        ids = list(self._collected_property_ids())
+        orders = self.env['sale.order'].sudo().search([
+            ('property_id', '!=', False), ('state', '=', 'sale'),
+            ('estate_commission_collected', '=', True),
+        ])
         positive = (operator == '=') == value
-        return [('property_id', 'in' if positive else 'not in', ids)]
+        return [('property_id', 'in' if positive else 'not in', orders.property_id.ids)]
+
+    def _check_client_collected(self):
+        """No se paga a los asesores lo que el propietario aún no ha pagado."""
+        self.invalidate_recordset(['client_collected', 'client_collection_state'])
+        pendientes = self.filtered(lambda c: c.client_collection_state == 'pending')
+        if pendientes:
+            raise UserError(
+                'Todavía no se ha cobrado al propietario la comisión de "%s", así que '
+                'no se puede pagar a los asesores.\n\nPuedes dejar listo el reparto '
+                '(quién hizo captación, recepción, visita y cierre). Cuando te paguen, '
+                'márcala en Ventas → Comisiones por cobrar y vuelve aquí a pagar.'
+                % pendientes[0].property_id.display_name)
 
     invoice_state = fields.Selection(
         related='invoice_id.payment_state', string='Estado de Factura', readonly=True)
@@ -461,6 +500,7 @@ class EstateCommission(models.Model):
             raise UserError('Esta comisión ya está pagada.')
         if self.state == 'cancelled':
             raise UserError('No se puede pagar una comisión cancelada.')
+        self._check_client_collected()
         return {
             'type': 'ir.actions.act_window',
             'name': 'Pagar comisión al asesor',
@@ -474,6 +514,7 @@ class EstateCommission(models.Model):
         """Registra el pago de la comisión al asesor y deja constancia.
         Si la factura de proveedor no ha sido creada, la genera automáticamente,
         la valida (action_post) y le registra el pago contable para dejarla en estado Pagado."""
+        self._check_client_collected()
         for rec in self:
             if rec.state == 'paid':
                 raise UserError('Esta comisión ya está marcada como Pagada.')

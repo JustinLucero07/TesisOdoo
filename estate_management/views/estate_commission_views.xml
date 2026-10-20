@@ -97,12 +97,16 @@
                             help="Carga los cuatro pasos del negocio con sus porcentajes para asignar quién hizo cada uno."/>
                     <button name="action_split_into_commissions" string="Generar y pagar a los asesores"
                             type="object" class="btn-success" icon="fa-check-circle"
-                            invisible="state in ('paid', 'cancelled', 'split') or split_count == 0"
+                            invisible="state in ('paid', 'cancelled', 'split') or split_count == 0 or client_collection_state == 'pending'"
                             confirm="Se creará la comisión de cada asesor, se generará su factura de proveedor y se registrará su pago. ¿Continuar?"/>
+                    <button name="action_split_into_commissions" string="Guardar reparto (sin pagar)"
+                            type="object" class="btn-primary" icon="fa-users"
+                            invisible="state in ('paid', 'cancelled', 'split') or split_count == 0 or client_collection_state != 'pending'"
+                            help="Deja registrado quién hizo cada paso. El pago queda pendiente hasta que el propietario pague."/>
                     <button name="action_pay_all_children" string="Pagar pendientes"
                             type="object" class="btn-warning" icon="fa-check-circle"
-                            invisible="state != 'split'"
-                            help="Solo si quedó alguna comisión del reparto sin pagar."
+                            invisible="state != 'split' or client_collection_state == 'pending'"
+                            help="Paga a los asesores del reparto que aún no han cobrado."
                             confirm="Se generará la factura de proveedor de cada asesor y se registrará su pago. ¿Continuar?"/>
                     <button name="action_undo_split" string="Deshacer reparto"
                             type="object" invisible="state != 'split'"
@@ -111,11 +115,11 @@
                          negocio se abre antes el desglose por rol. -->
                     <button name="action_register_payment" string="Pagar Comisión y Facturar"
                             type="object" class="btn-success" icon="fa-check-circle"
-                            invisible="state not in ('draft', 'approved') or not parent_commission_id"
+                            invisible="state not in ('draft', 'approved') or not parent_commission_id or client_collection_state == 'pending'"
                             confirm="Se generará/confirmará la factura de comisión y se registrará su pago contable en un solo paso. ¿Continuar?"/>
                     <button name="action_open_pay_wizard" string="Pagar Comisión y Facturar"
                             type="object" class="btn-success" icon="fa-check-circle"
-                            invisible="state not in ('draft', 'approved') or split_count &gt; 0 or parent_commission_id"
+                            invisible="state not in ('draft', 'approved') or split_count &gt; 0 or parent_commission_id or client_collection_state == 'pending'"
                             help="Un solo asesor hizo todo el negocio: muestra el desglose por rol antes de pagar."/>
                     <button name="action_reset_to_approved" string="Revertir Pago" type="object"
                             invisible="state != 'paid'"
@@ -128,15 +132,16 @@
                     <field name="split_count" invisible="1"/>
                     <field name="child_count" invisible="1"/>
                 </header>
-                <field name="client_collected" invisible="1"/>
+                <field name="client_collection_state" invisible="1"/>
                 <div class="alert alert-warning mb-0" role="alert"
-                     invisible="client_collected or not property_id or parent_commission_id or state in ('paid', 'split', 'cancelled')">
-                    <i class="fa fa-exclamation-triangle me-1" title="Atención"/>
-                    El propietario todavía no ha pagado la comisión de esta venta. Márcala en
-                    <b>Ventas → Comisiones por cobrar</b> cuando te paguen y luego reparte a los asesores.
+                     invisible="client_collection_state != 'pending' or state in ('paid', 'cancelled')">
+                    <i class="fa fa-lock me-1" title="Pago bloqueado"/>
+                    El propietario todavía no ha pagado la comisión de esta venta, así que <b>no se
+                    puede pagar a los asesores</b>. Sí puedes dejar listo el reparto (quién hizo cada
+                    paso). Cuando te paguen, márcala en <b>Ventas → Comisiones por cobrar</b>.
                 </div>
                 <div class="alert alert-success mb-0" role="status"
-                     invisible="not client_collected or parent_commission_id or state in ('paid', 'split', 'cancelled')">
+                     invisible="client_collection_state != 'collected' or state in ('paid', 'cancelled')">
                     <i class="fa fa-check-circle me-1" title="Cobrada"/>
                     Comisión ya cobrada al propietario: puedes repartir y pagar a los asesores.
                 </div>

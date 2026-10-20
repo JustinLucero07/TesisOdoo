@@ -60,6 +60,16 @@ class SaleOrder(models.Model):
              'cuando se marca a mano con "Marcar como cobrada".')
     estate_collected_date = fields.Date(
         string='Fecha de cobro', compute='_compute_estate_collected', store=True)
+    estate_collection_state = fields.Selection([
+        ('pending', 'Por cobrar'),
+        ('collected', 'Cobrada'),
+    ], string='Cobro', compute='_compute_estate_collected', store=True)
+    estate_advisors_state = fields.Selection([
+        ('none', 'Sin comisión'),
+        ('pending', 'Por pagar'),
+        ('paid', 'Pagados'),
+    ], string='Pago a asesores', compute='_compute_estate_advisors_state',
+        help='Si ya se pagó la comisión a los asesores de esta venta.')
     lead_id = fields.Many2one('crm.lead', string='Lead de Origen', tracking=True,
                               help='Lead CRM que originó esta orden de venta.')
     customer_signature = fields.Binary(
@@ -147,8 +157,27 @@ class SaleOrder(models.Model):
                 dates = receivable.matched_credit_ids.mapped('max_date')
                 date = max(dates) if dates else max(invoices.mapped('invoice_date'))
             order.estate_commission_collected = paid or order.estate_collected_manual
+            order.estate_collection_state = ('collected' if order.estate_commission_collected
+                                             else 'pending')
             order.estate_collected_date = (order.estate_collected_manual_date
                                            if order.estate_collected_manual else date)
+
+    def _compute_estate_advisors_state(self):
+        commissions = self.env['estate.commission'].sudo().search([
+            ('property_id', 'in', self.property_id.ids),
+            ('parent_commission_id', '=', False),
+            ('state', '!=', 'cancelled'),
+        ]) if self.property_id else self.env['estate.commission']
+        for order in self:
+            mine = commissions.filtered(lambda c: c.property_id == order.property_id)
+            if not mine:
+                order.estate_advisors_state = 'none'
+                continue
+            # Lo que se paga es la comisión suelta o, si se repartió, cada hija.
+            to_pay = mine.filtered(lambda c: c.state != 'split') | mine.child_commission_ids.filtered(
+                lambda c: c.state != 'cancelled')
+            order.estate_advisors_state = ('paid' if to_pay and all(c.state == 'paid' for c in to_pay)
+                                           else 'pending')
 
     def action_estate_mark_collected(self):
         """Pide la fecha real del cobro (las ventas antiguas se cobran tarde)."""
