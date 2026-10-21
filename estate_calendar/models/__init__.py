@@ -6,3 +6,4 @@ from . import crm_lead
 from . import estate_advisor_unavailability
 from . import estate_reminder
 from . import estate_reminder_sync
+from . import estate_my_day

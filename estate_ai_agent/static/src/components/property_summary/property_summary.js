@@ -9,11 +9,11 @@ export class PropertySummary extends Component {
         <div class="o-estate-PropertySummary">
 
             <!-- Loading inicial -->
-            <div t-if="state.loading and !state.data"
-                 class="d-flex align-items-center gap-2 px-3 py-3 text-muted small border-bottom"
-                 style="background:#f8f9fa;">
-                <i class="fa fa-circle-o-notch fa-spin text-primary"/>
-                <span>Cargando datos de la propiedad...</span>
+            <div t-if="state.loading and !state.data" class="px-3 py-3 border-bottom" aria-busy="true" aria-label="Cargando análisis">
+                <span class="o_ix_skel_line w-40"/>
+                <span class="o_ix_skel_line w-80"/>
+                <span class="o_ix_skel_line w-60"/>
+                <span class="o_ix_skel_line w-80"/>
             </div>
 
             <div t-if="state.data" class="border-bottom" style="background:#f8faff;">

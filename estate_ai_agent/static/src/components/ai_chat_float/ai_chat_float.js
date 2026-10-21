@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { Component, xml, useState, useRef, onMounted, markup } from "@odoo/owl";
+import { Component, xml, useState, useRef, onMounted, onWillUnmount, markup } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
 import { formatResponse as richFormat } from "../ai_format/ai_format";
 
@@ -154,6 +154,7 @@ export class AIChatFloatContainer extends Component {
             pageContext: {},
             msgFeedback: {},  // {msgId: 'up'|'down'}
             alertChips: [],   // chips con conteos reales del servidor
+            fabHidden: false, // el botón se esconde al bajar y vuelve al subir
         });
         this.chatBody = useRef("chatBody");
         this.textareaRef = useRef("textarea");
@@ -171,8 +172,24 @@ export class AIChatFloatContainer extends Component {
             }, 2000);
             // Pre-fetch alert chips (contextual counts from server)
             this._fetchAlertChips();
+            window.addEventListener("scroll", this._onAnyScroll, true);
         });
+        onWillUnmount(() => window.removeEventListener("scroll", this._onAnyScroll, true));
     }
+
+    /** Esconde el botón flotante al bajar en cualquier lista o formulario
+     * (para que no tape la última fila) y lo muestra de nuevo al subir. */
+    _onAnyScroll = (ev) => {
+        const el = ev.target === document ? document.scrollingElement : ev.target;
+        if (!el || this.state.isOpen) return;
+        const top = el.scrollTop || 0;
+        const last = this._lastScroll?.get(el) ?? top;
+        this._lastScroll = this._lastScroll || new WeakMap();
+        this._lastScroll.set(el, top);
+        if (Math.abs(top - last) < 6) return;
+        const hide = top > last && top > 40;
+        if (hide !== this.state.fabHidden) this.state.fabHidden = hide;
+    };
 
     async _fetchAlertChips() {
         try {
@@ -601,7 +618,7 @@ export class AIChatFloatContainer extends Component {
 AIChatFloatContainer.template = xml`
 <div>
   <!-- FLOATING BUTTON -->
-  <div t-on-click="toggleChat" class="ai-float-btn" t-att-class="state.isOpen ? 'ai-float-btn-active' : ''">
+  <div t-on-click="toggleChat" class="ai-float-btn" t-att-class="{'ai-float-btn-active': state.isOpen, 'ai-float-btn--hidden': state.fabHidden and !state.isOpen}" title="Asistente IA">
     <t t-if="state.isOpen">${SVG.close}</t>
     <t t-else="">${SVG.robot}</t>
     <t t-if="state.loading and state.isOpen">

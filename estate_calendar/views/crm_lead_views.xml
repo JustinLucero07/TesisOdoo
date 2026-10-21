@@ -8,18 +8,20 @@
             <xpath expr="//button[@name='action_view_lead_offers']" position="after">
                 <button name="action_view_lead_visits" type="object"
                     class="btn btn-outline-secondary"
-                    invisible="visit_count == 0 and not target_property_id">
+                    invisible="visit_count == 0">
                     <i class="fa fa-map-marker me-1"/>Visitas
                     <span class="badge text-bg-secondary ms-1"><field name="visit_count"/></span>
                 </button>
                 <button name="action_view_reminders" type="object"
                     class="btn btn-outline-secondary"
+                    invisible="reminder_count == 0"
                     title="Ver o crear recordatorios de este cliente">
                     <i class="fa fa-bell me-1"/>Recordatorios
                     <span class="badge text-bg-secondary ms-1"><field name="reminder_count"/></span>
                 </button>
                 <button name="action_create_reminder" type="object"
-                    class="btn btn-outline-secondary" icon="fa-plus"
+                    class="btn btn-outline-secondary" icon="fa-bell-o"
+                    string="Recordatorio"
                     title="Nuevo recordatorio" aria-label="Nuevo recordatorio"/>
             </xpath>
             <xpath expr="//page[@name='page_timeline']" position="before">
@@ -42,6 +44,64 @@
                     </field>
                 </page>
             </xpath>
+        </field>
+    </record>
+
+    <!-- Pestañas del lead agrupadas en 4 (Resumen · Actividad · Negociación ·
+         Documentos). Se mueve el contenido de las pestañas viejas, no se borra
+         nada. Va en este módulo porque aquí ya existen todas las pestañas. -->
+    <record id="crm_lead_view_form_grouped_tabs" model="ir.ui.view">
+        <field name="name">crm.lead.form.grouped.tabs</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="priority">200</field>
+        <field name="arch" type="xml">
+            <!-- Resumen = notas + contactos + búsqueda del cliente -->
+            <xpath expr="//page[@name='lead']/group" position="attributes">
+                <attribute name="invisible">type == 'lead'</attribute>
+            </xpath>
+            <xpath expr="//page[@name='internal_notes']" position="attributes">
+                <attribute name="string">Resumen</attribute>
+            </xpath>
+            <xpath expr="//page[@name='internal_notes']/field[@name='description']" position="before">
+                <separator string="Notas internas"/>
+            </xpath>
+            <xpath expr="//page[@name='internal_notes']" position="inside">
+                <separator string="Contactos" invisible="type == 'lead'"/>
+                <xpath expr="//page[@name='lead']/group" position="move"/>
+                <separator string="Búsqueda del cliente"/>
+                <xpath expr="//page[@name='page_search']/group" position="move"/>
+            </xpath>
+
+            <!-- Actividad = visitas + interacciones -->
+            <xpath expr="//page[@name='page_visits']" position="attributes">
+                <attribute name="string">Actividad</attribute>
+            </xpath>
+            <xpath expr="//page[@name='page_visits']/field[@name='visit_ids']" position="before">
+                <separator string="Propiedades visitadas"/>
+            </xpath>
+            <xpath expr="//page[@name='page_visits']" position="inside">
+                <separator string="Interacciones"/>
+                <xpath expr="//page[@name='page_timeline']/field[@name='interaction_ids']" position="move"/>
+            </xpath>
+
+            <!-- Negociación = cierre + ubicación de la propiedad -->
+            <xpath expr="//page[@name='page_closing']" position="attributes">
+                <attribute name="string">Negociación</attribute>
+            </xpath>
+            <xpath expr="//page[@name='page_gps']/group" position="attributes">
+                <attribute name="invisible">not target_property_id</attribute>
+            </xpath>
+            <xpath expr="//page[@name='page_closing']" position="inside">
+                <separator string="Ubicación de la propiedad" invisible="not target_property_id"/>
+                <xpath expr="//page[@name='page_gps']/group" position="move"/>
+            </xpath>
+
+            <!-- Pestañas que quedaron vacías -->
+            <xpath expr="//page[@name='lead']" position="replace"/>
+            <xpath expr="//page[@name='page_search']" position="replace"/>
+            <xpath expr="//page[@name='page_timeline']" position="replace"/>
+            <xpath expr="//page[@name='page_gps']" position="replace"/>
         </field>
     </record>
 </odoo>

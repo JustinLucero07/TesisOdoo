@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Contador en 0: se marca para mostrarlo atenuado (sigue sirviendo de
+         acceso para crear el primero, pero no compite con los que tienen datos). -->
+    <t t-name="estate_theme.StatInfoField" t-inherit="web.StatInfoField" t-inherit-mode="extension">
+        <xpath expr="//span[hasclass('o_stat_value')]" position="attributes">
+            <attribute name="t-att-class">{'o_ix_stat_zero': !props.record.data[props.name]}</attribute>
+        </xpath>
+    </t>
+</templates>

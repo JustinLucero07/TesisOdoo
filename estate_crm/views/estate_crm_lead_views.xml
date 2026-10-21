@@ -34,7 +34,7 @@
                 <widget name="web_ribbon" title="GOLDEN" bg_color="bg-warning" invisible="not is_golden_opportunity" />
                 <!-- Barra de accesos inmobiliarios: fila propia bajo el título,
                      como botones espaciados (no apretados). -->
-                <div class="d-flex flex-wrap gap-2 mb-3 mt-2" name="button_box_estate" invisible="type == 'lead'">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3 mt-2 o_ix_lead_counters" name="button_box_estate" invisible="type == 'lead'">
                     <button name="action_schedule_meeting" type="object"
                         class="btn btn-outline-primary" invisible="not target_property_id">
                         <i class="fa fa-calendar me-1"/>Agendar Visita
@@ -46,7 +46,8 @@
                         <span class="badge text-bg-secondary ms-1"><field name="offer_count"/></span>
                     </button>
                     <button name="action_view_lead_contracts" type="object"
-                        class="btn btn-outline-secondary">
+                        class="btn btn-outline-secondary"
+                        invisible="contract_count == 0">
                         <i class="fa fa-file-text me-1"/>Contratos
                         <span class="badge text-bg-secondary ms-1"><field name="contract_count"/></span>
                     </button>
@@ -63,7 +64,8 @@
                         <span class="badge text-bg-secondary ms-1"><field name="estate_document_count"/></span>
                     </button>
                     <button name="action_view_lead_interactions" type="object"
-                        class="btn btn-outline-secondary">
+                        class="btn btn-outline-secondary"
+                        invisible="interaction_count == 0">
                         <i class="fa fa-comments-o me-1"/>Interacciones
                         <span class="badge text-bg-secondary ms-1"><field name="interaction_count"/></span>
                     </button>
@@ -292,29 +294,34 @@
                 <a t-if="record.won_status.raw_value != 'lost'" role="menuitem" type="action"
                    name="%(crm.crm_lead_lost_action)d" class="dropdown-item">Marcar como perdido</a>
             </xpath>
+            <xpath expr="//kanban" position="inside">
+                <field name="target_property_id"/>
+            </xpath>
+            <!-- Tarjeta limpia: a la vista solo lo que decide la acción (propiedad y
+                 temperatura); el resto aparece al pasar el mouse. -->
             <xpath expr="//footer" position="before">
-                <div class="o_kanban_record_subtitle mt-1 mb-1">
+                <div t-if="record.target_property_id.raw_value" class="o_ix_lead_property text-truncate">
+                    <i class="fa fa-home me-1" title="Propiedad de interés"/>
+                    <field name="target_property_id"/>
+                </div>
+                <div class="o_ix_lead_chips">
+                    <span t-if="record.lead_temperature.raw_value"
+                          t-attf-class="o_ix_temp o_ix_temp--{{ record.lead_temperature.raw_value }}">
+                        <span class="o_ix_temp__dot"/><field name="lead_temperature"/>
+                    </span>
+                    <span t-if="record.match_percentage.raw_value &gt; 0"
+                          t-attf-class="o_ix_match {{ record.match_percentage.raw_value &gt;= 80 ? 'is-high' : (record.match_percentage.raw_value &gt;= 50 ? 'is-mid' : 'is-low') }}"
+                          title="Coincidencia con la propiedad">
+                        <field name="match_percentage"/>%
+                    </span>
+                </div>
+                <div class="o_ix_card_more">
                     <field name="lead_score" widget="badge" decoration-danger="lead_score == 'high'" decoration-warning="lead_score == 'medium'" decoration-info="lead_score == 'low'"/>
-                    <span class="ms-2 fw-bold text-primary" t-if="record.expected_revenue.raw_value > 0">
-                        <i class="fa fa-money" title="Ingreso esperado"/> $<field name="expected_revenue"/>
+                    <span t-if="record.lead_source_id.value" class="o_ix_card_more__item">
+                        <i class="fa fa-bullhorn me-1" title="Fuente"/><field name="lead_source_id"/>
                     </span>
-                    <span class="ms-2 badge text-bg-secondary small" t-if="record.lead_source_id.value">
-                        <field name="lead_source_id"/>
-                    </span>
-                </div>
-                <div class="text-muted small mt-1">
-                    <i class="fa fa-calendar-o me-1" title="Fecha de creación"/>Creado el
-                    <field name="create_date" widget="date"/>
-                </div>
-                <div t-if="record.match_percentage.raw_value > 0" class="mt-1">
-                    <span class="badge rounded-pill text-bg-success" t-if="record.match_percentage.raw_value &gt;= 80">
-                        <i class="fa fa-star" title="Match alto"/> Match: <field name="match_percentage"/>%
-                    </span>
-                    <span class="badge rounded-pill text-bg-warning" t-if="record.match_percentage.raw_value &lt; 80 and record.match_percentage.raw_value &gt;= 50">
-                        <i class="fa fa-star-half-o" title="Match medio"/> Match: <field name="match_percentage"/>%
-                    </span>
-                    <span class="badge rounded-pill text-bg-danger" t-if="record.match_percentage.raw_value &lt; 50">
-                        <i class="fa fa-star-o" title="Match bajo"/> Match: <field name="match_percentage"/>%
+                    <span class="o_ix_card_more__item">
+                        <i class="fa fa-calendar-o me-1" title="Fecha de creación"/><field name="create_date" widget="date"/>
                     </span>
                 </div>
             </xpath>

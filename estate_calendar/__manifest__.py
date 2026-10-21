@@ -1,6 +1,6 @@
 {
     'name': 'Agenda Inmobiliaria',
-    'version': '19.0.1.0.5',
+    'version': '19.0.1.0.6',
     'category': 'Real Estate',
     'summary': 'Agenda de citas integrada en el calendario estándar de Odoo',
     'description': """
@@ -29,7 +29,13 @@
         'views/estate_advisor_unavailability_views.xml',
         'views/estate_reminder_views.xml',
         'views/estate_calendar_menus.xml',
+        'views/estate_my_day_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'estate_calendar/static/src/my_day/*',
+        ],
+    },
     'demo': [
     ],
     'external_dependencies': {

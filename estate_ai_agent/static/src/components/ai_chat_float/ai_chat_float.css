@@ -7,27 +7,35 @@
 /* ── Floating button ──────────────────────────────────────────── */
 .ai-float-btn {
     position: fixed;
-    bottom: 28px;
-    right: 28px;
+    bottom: 22px;
+    right: 22px;
     z-index: 9999;
-    width: 58px;
-    height: 58px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
-    background: #004274;
+    background: var(--ix-primary, #142559);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 6px 24px rgba(0, 66, 116, 0.45);
-    transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    box-shadow: 0 8px 22px -6px rgba(13, 25, 64, 0.55);
+    transition: transform 0.25s cubic-bezier(.2,.8,.2,1), opacity 0.2s, box-shadow 0.2s, background 0.2s;
     user-select: none;
 }
 .ai-float-btn:hover {
-    transform: scale(1.1);
-    box-shadow: 0 8px 32px rgba(0, 66, 116, 0.6);
+    transform: scale(1.06);
+    box-shadow: 0 10px 26px -6px rgba(13, 25, 64, 0.65);
 }
-.ai-float-btn-active { background: #E53935; }
-.ai-float-btn svg { width: 28px; height: 28px; fill: white; }
+.ai-float-btn--hidden {
+    transform: translateY(90px);
+    opacity: 0;
+    pointer-events: none;
+}
+.ai-float-btn-active { background: #D9042B; }
+.ai-float-btn svg { width: 22px; height: 22px; fill: white; }
+@media (prefers-reduced-motion: reduce) {
+    .ai-float-btn { transition: none; }
+}
 .ai-float-pulse {
     position: absolute;
     top: -3px; right: -3px;

@@ -1,0 +1,78 @@
+// "Mi día"
+.o_ix_myday {
+    height: 100%;
+    overflow-y: auto;
+    background: var(--ix-canvas, #f5f6f8);
+    color: var(--ix-text, #1d2433);
+
+    &__inner { max-width: 1240px; margin: 0 auto; padding: 28px 28px 48px; display: flex; flex-direction: column; gap: 20px; }
+    &__head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+    &__date { margin: 0 0 4px; font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ix-faint, #9aa1ad); }
+    &__title { margin: 0; font-size: 1.9rem; font-weight: 350; letter-spacing: -0.025em; }
+    &__quick { display: flex; gap: 8px; flex-wrap: wrap; .btn { border-radius: 10px; } }
+    &__stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+    &__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+}
+.o_ix_stat {
+    display: flex; flex-direction: column; gap: 2px; text-align: left;
+    padding: 14px 16px; border-radius: 14px; color: inherit;
+    background: var(--ix-surface, #fff); border: 1px solid var(--ix-line, #e7e9ee);
+    &__value { font-size: 1.6rem; font-weight: 400; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    &__label { font-size: .8rem; color: var(--ix-muted, #6b7280); }
+    &.is-hot .o_ix_stat__value { color: #d9042b; }
+    &.is-late .o_ix_stat__value { color: #c26a04; }
+    &--link { cursor: pointer; transition: border-color .15s, transform .15s; &:hover { border-color: var(--ix-line-strong, #d9dde4); transform: translateY(-1px); } }
+}
+.o_ix_panel {
+    background: var(--ix-surface, #fff); border: 1px solid var(--ix-line, #e7e9ee); border-radius: 14px; padding: 16px 18px;
+    &__title {
+        display: flex; align-items: center; gap: 8px; margin: 0 0 10px;
+        font-size: .78rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ix-faint, #9aa1ad);
+        .fa { color: var(--ix-primary, #142559); font-size: .9rem; }
+    }
+}
+.o_ix_list {
+    list-style: none; margin: 0; padding: 0;
+    li {
+        display: flex; align-items: center; gap: 12px; padding: 9px 8px; margin: 0 -8px;
+        border-radius: 10px; cursor: pointer; transition: background-color .12s;
+        &:hover { background: var(--ix-primary-soft, #eef1f8); }
+    }
+    &__time { flex-shrink: 0; width: 52px; font-size: .82rem; font-weight: 600; color: var(--ix-primary, #142559); font-variant-numeric: tabular-nums; }
+    &__main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    &__name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    &__sub { font-size: .8rem; color: var(--ix-muted, #6b7280); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    &__meta { font-size: .76rem; color: var(--ix-muted, #6b7280); flex-shrink: 0; }
+}
+.o_ix_dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin: 0 4px;
+    &--boiling { background: #d9042b; } &--hot { background: #ea580c; } &--warm { background: #f59e0b; } &--cold { background: #3b82f6; }
+}
+.o_ix_pill {
+    flex-shrink: 0; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600;
+    background: #f1f2f5; color: #4b5563;
+    &--scheduled, &--later { background: #e8f1fb; color: #2563a8; }
+    &--done { background: #dcf7e7; color: #0b7a3b; }
+    &--cancelled { background: #f1f2f5; color: #6b7280; }
+    &--overdue { background: #ffe4ea; color: #be123c; }
+    &--today, &--soon { background: #fff1d6; color: #b45309; }
+}
+.o_ix_empty { margin: 6px 0 2px; color: var(--ix-faint, #9aa1ad); font-size: .88rem; }
+.o_ix_skeleton {
+    display: block; height: 170px; border-radius: 14px;
+    background: linear-gradient(90deg, #eef0f3 0%, #f6f7f9 50%, #eef0f3 100%);
+    background-size: 200% 100%; animation: o-ix-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes o-ix-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+html.ix-dark {
+    .o_ix_skeleton { background: linear-gradient(90deg, #141c2e 0%, #1b2438 50%, #141c2e 100%); background-size: 200% 100%; }
+    .o_ix_pill { background: rgba(255, 255, 255, .08); color: #c9cfdc; }
+    .o_ix_pill--done { color: #5ee08f; } .o_ix_pill--overdue { color: #fb7185; }
+    .o_ix_pill--today, .o_ix_pill--soon { color: #fbbf24; } .o_ix_pill--scheduled, .o_ix_pill--later { color: #93c5fd; }
+}
+@media (max-width: 767.98px) {
+    .o_ix_myday__inner { padding: 18px 14px 32px; }
+    .o_ix_myday__grid { grid-template-columns: 1fr; }
+    .o_ix_myday__quick { width: 100%; .btn { flex: 1; } }
+}
+@media (prefers-reduced-motion: reduce) { .o_ix_skeleton { animation: none; } }

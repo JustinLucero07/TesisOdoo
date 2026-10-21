@@ -8,7 +8,8 @@
         <field name="arch" type="xml">
             <xpath expr="//button[@name='action_view_price_history']" position="after">
                 <button name="action_view_lead_matches" type="object"
-                        class="oe_stat_button" icon="fa-users">
+                        class="oe_stat_button" icon="fa-users"
+                        invisible="crm_match_count == 0">
                     <field name="crm_match_count" string="Leads Interesados" widget="statinfo"/>
                 </button>
             </xpath>

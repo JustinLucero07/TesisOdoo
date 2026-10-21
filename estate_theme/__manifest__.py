@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Inmobi — Tema visual',
-    'version': '19.0.1.0.0',
+    'version': '19.0.1.0.1',
     'category': 'Hidden/Theme',
     'summary': 'Diseño minimalista y elegante para el backend de Inmobi',
     'description': """
@@ -37,6 +37,7 @@ Odoo vuelve a verse como antes.
             'estate_theme/static/src/scss/login.scss',
         ],
     },
+    'post_init_hook': 'post_init_hook',
     'installable': True,
     'application': False,
     'auto_install': False,
