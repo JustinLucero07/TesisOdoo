@@ -1,0 +1,25 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Límite de logs para TODOS los contenedores.
+# Docker Compose une este archivo automáticamente con docker-compose.yml, así
+# que se puede copiar a /opt/inmobi/ sin tocar el compose del servidor.
+# Cada servicio guarda como máximo 3 archivos de 10 MB (30 MB) y rota solo.
+# ─────────────────────────────────────────────────────────────────────────────
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  db:
+    logging: *default-logging
+  odoo:
+    logging: *default-logging
+  db-backup:
+    logging: *default-logging
+  n8n:
+    logging: *default-logging
+  nginx:
+    logging: *default-logging
+  certbot:
+    logging: *default-logging
