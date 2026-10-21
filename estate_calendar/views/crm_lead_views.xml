@@ -47,42 +47,39 @@
         </field>
     </record>
 
-    <!-- Pestañas del lead agrupadas en 4 (Resumen · Actividad · Negociación ·
-         Documentos). Se mueve el contenido de las pestañas viejas, no se borra
-         nada. Va en este módulo porque aquí ya existen todas las pestañas. -->
+    <!-- Pestañas del lead: Notas · Resumen · Propiedades visitadas ·
+         Interacciones · Negociación · Documentos. Se mueve el contenido de las
+         pestañas viejas, no se borra nada. Va en este módulo porque aquí ya
+         existen todas las pestañas. -->
     <record id="crm_lead_view_form_grouped_tabs" model="ir.ui.view">
         <field name="name">crm.lead.form.grouped.tabs</field>
         <field name="model">crm.lead</field>
         <field name="inherit_id" ref="crm.crm_lead_view_form"/>
         <field name="priority">200</field>
         <field name="arch" type="xml">
-            <!-- Resumen = notas + contactos + búsqueda del cliente -->
-            <xpath expr="//page[@name='lead']/group" position="attributes">
-                <attribute name="invisible">type == 'lead'</attribute>
-            </xpath>
+            <!-- Notas: solo las notas internas -->
             <xpath expr="//page[@name='internal_notes']" position="attributes">
+                <attribute name="string">Notas</attribute>
+            </xpath>
+
+            <!-- Resumen = contactos + búsqueda del cliente -->
+            <xpath expr="//page[@name='lead']" position="attributes">
                 <attribute name="string">Resumen</attribute>
             </xpath>
-            <xpath expr="//page[@name='internal_notes']/field[@name='description']" position="before">
-                <separator string="Notas internas"/>
+            <xpath expr="//page[@name='lead']/group" position="before">
+                <separator string="Contactos"/>
             </xpath>
-            <xpath expr="//page[@name='internal_notes']" position="inside">
-                <separator string="Contactos" invisible="type == 'lead'"/>
-                <xpath expr="//page[@name='lead']/group" position="move"/>
+            <xpath expr="//page[@name='lead']" position="inside">
                 <separator string="Búsqueda del cliente"/>
                 <xpath expr="//page[@name='page_search']/group" position="move"/>
             </xpath>
 
-            <!-- Actividad = visitas + interacciones -->
+            <!-- Pestañas con su propio nombre -->
             <xpath expr="//page[@name='page_visits']" position="attributes">
-                <attribute name="string">Actividad</attribute>
+                <attribute name="string">Propiedades visitadas</attribute>
             </xpath>
-            <xpath expr="//page[@name='page_visits']/field[@name='visit_ids']" position="before">
-                <separator string="Propiedades visitadas"/>
-            </xpath>
-            <xpath expr="//page[@name='page_visits']" position="inside">
-                <separator string="Interacciones"/>
-                <xpath expr="//page[@name='page_timeline']/field[@name='interaction_ids']" position="move"/>
+            <xpath expr="//page[@name='page_timeline']" position="attributes">
+                <attribute name="string">Interacciones</attribute>
             </xpath>
 
             <!-- Negociación = cierre + ubicación de la propiedad -->
@@ -98,9 +95,7 @@
             </xpath>
 
             <!-- Pestañas que quedaron vacías -->
-            <xpath expr="//page[@name='lead']" position="replace"/>
             <xpath expr="//page[@name='page_search']" position="replace"/>
-            <xpath expr="//page[@name='page_timeline']" position="replace"/>
             <xpath expr="//page[@name='page_gps']" position="replace"/>
         </field>
     </record>
