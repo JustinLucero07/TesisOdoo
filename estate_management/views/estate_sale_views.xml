@@ -62,7 +62,6 @@
                                 <button name="action_estate_mark_collected" type="object"
                                         string="Marcar comisión cobrada" icon="fa-check-circle"
                                         class="btn-primary btn-sm"/>
-                                <span class="text-muted small ms-2">o registra el pago en la factura.</span>
                             </div>
                         </group>
                         <group string="③ Pago a los asesores">
@@ -287,8 +286,8 @@
         <field name="context">{'search_default_estate_collected': 1, 'search_default_estate_group_date_sold': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Aún no hay ventas con la comisión cobrada.</p>
-            <p>La comisión se marca como cobrada sola cuando la factura al propietario queda
-               pagada, o a mano con el botón "Marcar cobrada".</p>
+            <p>Una venta pasa aquí cuando la marcas con "Marcar cobrada" en
+               Comisiones por cobrar, con la fecha y la forma de pago reales.</p>
         </field>
     </record>
 

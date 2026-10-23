@@ -72,8 +72,8 @@ class SaleOrder(models.Model):
     ], string='Factura', compute='_compute_estate_collected', store=True)
     estate_commission_collected = fields.Boolean(
         string='Comisión cobrada', compute='_compute_estate_collected', store=True,
-        help='Se marca sola cuando la factura de la comisión queda pagada, o '
-             'cuando se marca a mano con "Marcar como cobrada".')
+        help='Se marca cuando el propietario pagó la comisión y lo registras con '
+             '"Marcar cobrada" (con la fecha y la forma de pago reales).')
     estate_collected_date = fields.Date(
         string='Fecha de cobro', compute='_compute_estate_collected', store=True)
     estate_collection_state = fields.Selection([
@@ -183,37 +183,19 @@ class SaleOrder(models.Model):
                 ('deposit', 'Depósito'), ('check', 'Cheque'), ('other', 'Otro')]
 
     @api.depends('estate_collected_manual', 'estate_collected_manual_date',
-                 'estate_collected_method_manual', 'estate_collected_invoice_manual',
-                 'order_line.invoice_lines.move_id.payment_state',
-                 'order_line.invoice_lines.move_id.state')
+                 'estate_collected_method_manual', 'estate_collected_invoice_manual')
     def _compute_estate_collected(self):
+        """Una venta queda "Cobrada" SOLO cuando el usuario la marca con
+        "Marcar cobrada". El pago de la factura en Facturación ya no la marca
+        sola: así todas las ventas pasan por "Comisiones por cobrar" y el
+        control del cobro lo lleva la oficina."""
         for order in self:
-            invoices = order.order_line.invoice_lines.move_id.filtered(
-                lambda m: m.move_type == 'out_invoice' and m.state == 'posted')
-            paid = bool(invoices) and all(
-                m.payment_state in ('paid', 'in_payment') for m in invoices)
-            date = False
-            auto_method = False
-            if paid:
-                receivable = invoices.line_ids.filtered(
-                    lambda l: l.account_id.account_type == 'asset_receivable')
-                dates = receivable.matched_credit_ids.mapped('max_date')
-                date = max(dates) if dates else max(invoices.mapped('invoice_date'))
-                journals = receivable.matched_credit_ids.credit_move_id.journal_id
-                if journals:
-                    auto_method = 'cash' if journals[0].type == 'cash' else 'transfer'
-            order.estate_commission_collected = paid or order.estate_collected_manual
-            order.estate_collection_state = ('collected' if order.estate_commission_collected
-                                             else 'pending')
-            order.estate_collected_date = (order.estate_collected_manual_date
-                                           if order.estate_collected_manual else date)
-            if order.estate_commission_collected:
-                order.estate_collected_method = order.estate_collected_method_manual or auto_method
-                order.estate_collected_invoice = order.estate_collected_invoice_manual or (
-                    'with' if paid else False)
-            else:
-                order.estate_collected_method = False
-                order.estate_collected_invoice = False
+            collected = bool(order.estate_collected_manual)
+            order.estate_commission_collected = collected
+            order.estate_collection_state = 'collected' if collected else 'pending'
+            order.estate_collected_date = order.estate_collected_manual_date if collected else False
+            order.estate_collected_method = order.estate_collected_method_manual if collected else False
+            order.estate_collected_invoice = order.estate_collected_invoice_manual if collected else False
 
     def _compute_estate_deal_stage(self):
         for order in self:
