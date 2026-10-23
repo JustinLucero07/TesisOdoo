@@ -78,6 +78,10 @@ class SaleOrder(models.Model):
     estate_collection_payment_ids = fields.One2many(
         'account.payment', 'estate_sale_order_id', string='Pagos del cobro',
         domain=[('estate_kind', '=', 'collection')])
+    # --- Accesos directos (botones de arriba del formulario) ---
+    estate_link_commission_count = fields.Integer(compute='_compute_estate_links')
+    estate_link_collection_count = fields.Integer(compute='_compute_estate_links')
+    estate_link_advisor_payment_count = fields.Integer(compute='_compute_estate_links')
     estate_commission_collected = fields.Boolean(
         string='Comisión cobrada', compute='_compute_estate_collected', store=True,
         help='Se marca cuando el propietario pagó la comisión y lo registras con '
@@ -350,6 +354,54 @@ class SaleOrder(models.Model):
                 payments.action_post()
         payments.write(estate_vals)
         return payments
+
+    def _estate_advisor_payments(self):
+        self.ensure_one()
+        if not self.property_id:
+            return self.env['account.payment']
+        return self.env['account.payment'].search([
+            ('estate_kind', '=', 'advisor'),
+            ('estate_property_id', '=', self.property_id.id),
+            ('state', '!=', 'canceled'),
+        ])
+
+    def _compute_estate_links(self):
+        Commission = self.env['estate.commission']
+        for order in self:
+            if not order.property_id:
+                order.estate_link_commission_count = 0
+                order.estate_link_collection_count = 0
+                order.estate_link_advisor_payment_count = 0
+                continue
+            order.estate_link_commission_count = Commission.search_count([
+                ('property_id', '=', order.property_id.id),
+                ('parent_commission_id', '=', False),
+                ('state', '!=', 'cancelled'),
+            ])
+            order.estate_link_collection_count = len(order.estate_collection_payment_ids.filtered(
+                lambda p: p.state != 'canceled'))
+            order.estate_link_advisor_payment_count = len(order._estate_advisor_payments())
+
+    def action_estate_view_advisor_payments(self):
+        self.ensure_one()
+        payments = self._estate_advisor_payments()
+        action = self.env['ir.actions.act_window']._for_xml_id(
+            'estate_management.action_estate_payments_advisor')
+        action['domain'] = [('id', 'in', payments.ids)]
+        action['context'] = {}
+        if len(payments) == 1:
+            action.update(view_mode='form', res_id=payments.id,
+                          views=[(False, 'form')])
+        return action
+
+    def action_estate_view_property(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.property',
+            'res_id': self.property_id.id,
+            'view_mode': 'form',
+        }
 
     def _estate_collection_payments(self):
         """Pagos del cobro. Las ventas marcadas como cobradas antes de que el

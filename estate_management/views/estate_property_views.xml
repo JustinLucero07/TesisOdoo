@@ -126,6 +126,14 @@
                         <button name="action_view_meetings" type="object" class="oe_stat_button" icon="fa-calendar">
                             <field name="meeting_count" string="Citas" widget="statinfo"/>
                         </button>
+                        <button name="action_view_sale_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart"
+                                invisible="estate_link_sale_count == 0">
+                            <field name="estate_link_sale_count" string="Venta" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_estate_payments" type="object" class="oe_stat_button" icon="fa-exchange"
+                                invisible="estate_link_payment_count == 0">
+                            <field name="estate_link_payment_count" string="Cobros y pagos" widget="statinfo"/>
+                        </button>
                         <button name="action_view_offers" type="object" class="oe_stat_button" icon="fa-handshake-o"
                                 invisible="offer_count == 0">
                             <field name="offer_count" string="Ofertas" widget="statinfo"/>

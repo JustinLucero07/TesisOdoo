@@ -29,6 +29,50 @@ class AccountPayment(models.Model):
     estate_method_label = fields.Char(string='Forma de pago', copy=False)
     estate_bank_from = fields.Char(string='Banco de origen', copy=False)
     estate_bank_to = fields.Char(string='Banco de destino', copy=False)
+    estate_link_order_id = fields.Many2one(
+        'sale.order', string='Venta vinculada', compute='_compute_estate_link_order')
+    estate_link_commission_count = fields.Integer(compute='_compute_estate_link_order')
+
+    def _compute_estate_link_order(self):
+        SaleOrder = self.env['sale.order']
+        for pay in self:
+            order = pay.estate_sale_order_id
+            if not order and pay.estate_property_id:
+                order = SaleOrder.search([('property_id', '=', pay.estate_property_id.id),
+                                          ('state', '!=', 'cancel')], order='id desc', limit=1)
+            pay.estate_link_order_id = order
+            pay.estate_link_commission_count = len(pay._estate_commissions())
+
+    def _estate_commissions(self):
+        self.ensure_one()
+        if self.estate_kind == 'advisor':
+            return self.estate_commission_ids or self.estate_commission_id
+        if self.estate_property_id:
+            return self.env['estate.commission'].search([
+                ('property_id', '=', self.estate_property_id.id),
+                ('parent_commission_id', '=', False), ('state', '!=', 'cancelled')])
+        return self.env['estate.commission']
+
+    def action_estate_view_order(self):
+        self.ensure_one()
+        return {'type': 'ir.actions.act_window', 'res_model': 'sale.order',
+                'res_id': self.estate_link_order_id.id, 'view_mode': 'form'}
+
+    def action_estate_view_property(self):
+        self.ensure_one()
+        return {'type': 'ir.actions.act_window', 'res_model': 'estate.property',
+                'res_id': self.estate_property_id.id, 'view_mode': 'form'}
+
+    def action_estate_view_commissions(self):
+        self.ensure_one()
+        coms = self._estate_commissions()
+        action = {'type': 'ir.actions.act_window', 'name': 'Comisiones',
+                  'res_model': 'estate.commission'}
+        if len(coms) == 1:
+            action.update(view_mode='form', res_id=coms.id)
+        else:
+            action.update(view_mode='list,form', domain=[('id', 'in', coms.ids)])
+        return action
 
     def action_estate_correct(self):
         self.ensure_one()

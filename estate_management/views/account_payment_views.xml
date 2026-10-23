@@ -14,6 +14,21 @@
                 <button name="action_estate_print" type="object" string="Imprimir comprobante"
                         icon="fa-print" invisible="not estate_kind or state == 'canceled'"/>
             </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="estate_link_order_id" invisible="1"/>
+                <button class="oe_stat_button" icon="fa-home" type="object"
+                        name="action_estate_view_property" invisible="not estate_property_id">
+                    <div class="o_stat_info"><span class="o_stat_text">Propiedad</span></div>
+                </button>
+                <button class="oe_stat_button" icon="fa-shopping-cart" type="object"
+                        name="action_estate_view_order" invisible="not estate_link_order_id">
+                    <div class="o_stat_info"><span class="o_stat_text">Venta</span></div>
+                </button>
+                <button class="oe_stat_button" icon="fa-percent" type="object"
+                        name="action_estate_view_commissions" invisible="estate_link_commission_count == 0">
+                    <field name="estate_link_commission_count" string="Comisiones" widget="statinfo"/>
+                </button>
+            </xpath>
             <xpath expr="//group[@name='group2']" position="after">
                 <group name="estate_info" string="Inmobiliaria" invisible="not estate_kind">
                     <group>

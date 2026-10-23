@@ -30,6 +30,33 @@
                 <widget name="web_ribbon" title="Cobrada" bg_color="text-bg-success"
                         invisible="not estate_commission_collected"/>
             </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button class="oe_stat_button" icon="fa-home" type="object"
+                        name="action_estate_view_property" invisible="not property_id">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Propiedad</span>
+                    </div>
+                </button>
+                <button class="oe_stat_button" icon="fa-percent" type="object"
+                        name="action_estate_open_commission" invisible="not property_id">
+                    <field name="estate_link_commission_count" string="Comisión" widget="statinfo"/>
+                </button>
+                <button class="oe_stat_button" icon="fa-download" type="object"
+                        name="action_estate_view_collection"
+                        invisible="estate_link_collection_count == 0 and not estate_commission_collected">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Cobro</span>
+                        <span class="o_stat_value">
+                            <field name="estate_collection_state" readonly="1"/>
+                        </span>
+                    </div>
+                </button>
+                <button class="oe_stat_button" icon="fa-upload" type="object"
+                        name="action_estate_view_advisor_payments"
+                        invisible="estate_link_advisor_payment_count == 0">
+                    <field name="estate_link_advisor_payment_count" string="Pagos a asesores" widget="statinfo"/>
+                </button>
+            </xpath>
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="string">Cliente (Propietario)</attribute>
             </xpath>

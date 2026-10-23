@@ -539,6 +539,10 @@ class EstateCommission(models.Model):
     payment_id = fields.Many2one(
         'account.payment', string='Pago contable', readonly=True, copy=False,
         help='El pago registrado en Facturación (con o sin factura).')
+    # --- Accesos directos ---
+    link_sale_order_id = fields.Many2one('sale.order', string='Venta', compute='_compute_link_sale')
+    link_collection_count = fields.Integer(compute='_compute_link_sale')
+    link_advisor_payment_count = fields.Integer(compute='_compute_link_sale')
     amount_total = fields.Monetary(
         string='Total pagado', currency_field='company_currency', copy=False)
 
@@ -821,6 +825,45 @@ class EstateCommission(models.Model):
             for c in group:
                 c.paid_by_id = paid_by[c.id]
         return True
+
+    def _compute_link_sale(self):
+        SaleOrder = self.env['sale.order']
+        for rec in self:
+            order = SaleOrder.search([
+                ('property_id', '=', rec.property_id.id), ('state', '!=', 'cancel'),
+            ], order='id desc', limit=1) if rec.property_id else SaleOrder
+            rec.link_sale_order_id = order
+            rec.link_collection_count = len(order.estate_collection_payment_ids.filtered(
+                lambda p: p.state != 'canceled')) if order else 0
+            rec.link_advisor_payment_count = len(order._estate_advisor_payments()) if order else 0
+
+    def action_view_sale(self):
+        self.ensure_one()
+        if not self.link_sale_order_id:
+            raise UserError('Esta comisión no tiene una venta vinculada.')
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'sale.order',
+            'res_id': self.link_sale_order_id.id,
+            'view_mode': 'form',
+        }
+
+    def action_view_collection(self):
+        self.ensure_one()
+        return self.link_sale_order_id.action_estate_view_collection()
+
+    def action_view_advisor_payments(self):
+        self.ensure_one()
+        return self.link_sale_order_id.action_estate_view_advisor_payments()
+
+    def action_view_property(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'estate.property',
+            'res_id': self.property_id.id,
+            'view_mode': 'form',
+        }
 
     def action_view_payment(self):
         self.ensure_one()

@@ -567,6 +567,34 @@ class EstateProperty(models.Model):
         for rec in self:
             rec.commission_count = len(rec.commission_ids)
 
+    def _compute_estate_money_links(self):
+        Payment = self.env['account.payment']
+        for prop in self:
+            prop.estate_link_sale_count = len(prop.sale_order_ids.filtered(lambda o: o.state != 'cancel'))
+            prop.estate_link_payment_count = Payment.search_count([
+                ('estate_property_id', '=', prop.id), ('estate_kind', '!=', False),
+                ('state', '!=', 'canceled')]) if prop.id else 0
+
+    def action_view_sale_orders(self):
+        self.ensure_one()
+        orders = self.sale_order_ids.filtered(lambda o: o.state != 'cancel')
+        action = {'type': 'ir.actions.act_window', 'name': 'Venta', 'res_model': 'sale.order'}
+        if len(orders) == 1:
+            action.update(view_mode='form', res_id=orders.id)
+        else:
+            action.update(view_mode='list,form', domain=[('id', 'in', orders.ids)])
+        return action
+
+    def action_view_estate_payments(self):
+        """Cobros al propietario y pagos a asesores de esta propiedad."""
+        self.ensure_one()
+        action = self.env['ir.actions.act_window']._for_xml_id(
+            'estate_management.action_estate_payments_advisor')
+        action.update(name='Cobros y pagos', domain=[
+            ('estate_property_id', '=', self.id), ('estate_kind', '!=', False)],
+            context={'search_default_not_canceled': 1})
+        return action
+
     def action_view_commissions(self):
         self.ensure_one()
         return {
@@ -683,6 +711,8 @@ class EstateProperty(models.Model):
 
     # --- Órdenes de Venta ---
     sale_order_ids = fields.One2many('sale.order', 'property_id', string='Órdenes de Venta')
+    estate_link_sale_count = fields.Integer(compute='_compute_estate_money_links')
+    estate_link_payment_count = fields.Integer(compute='_compute_estate_money_links')
     sale_count = fields.Integer(string='Ventas', compute='_compute_sale_count')
 
     def _compute_sale_count(self):

@@ -175,6 +175,27 @@
                                 </span>
                             </div>
                         </button>
+                        <field name="link_sale_order_id" invisible="1"/>
+                        <button class="oe_stat_button" icon="fa-home" type="object"
+                                name="action_view_property" invisible="not property_id">
+                            <div class="o_stat_info"><span class="o_stat_text">Propiedad</span></div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-shopping-cart" type="object"
+                                name="action_view_sale" invisible="not link_sale_order_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Venta</span>
+                                <span class="o_stat_value"><field name="client_collection_state" readonly="1"/></span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-download" type="object"
+                                name="action_view_collection" invisible="link_collection_count == 0">
+                            <field name="link_collection_count" string="Cobro" widget="statinfo"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-upload" type="object"
+                                name="action_view_advisor_payments"
+                                invisible="link_advisor_payment_count == 0 or parent_commission_id">
+                            <field name="link_advisor_payment_count" string="Pagos a asesores" widget="statinfo"/>
+                        </button>
                         <button class="oe_stat_button" icon="fa-money"
                                 type="object" name="action_view_payment"
                                 invisible="not payment_id">

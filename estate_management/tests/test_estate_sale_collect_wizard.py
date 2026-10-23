@@ -168,3 +168,15 @@ class TestEstateSaleCollectWizard(TransactionCase):
         self.assertEqual(nuevo.estate_bank_to, 'Banco Pichincha')
         self.assertAlmostEqual(nuevo.amount, 2000.0, places=2)
         self.assertTrue(self.order.estate_commission_collected)
+
+    def test_accesos_directos(self):
+        self._collect('with')
+        self.assertEqual(self.order.estate_link_collection_count, 1)
+        self.assertEqual(self.order.action_estate_view_property()['res_id'], self.property.id)
+        pay = self.order.estate_collection_payment_ids
+        self.assertEqual(pay.estate_link_order_id, self.order)
+        self.assertEqual(pay.action_estate_view_order()['res_id'], self.order.id)
+        self.assertEqual(self.property.estate_link_sale_count, 1)
+        self.assertEqual(self.property.estate_link_payment_count, 1)
+        self.property.action_view_estate_payments()
+        self.property.action_view_sale_orders()
