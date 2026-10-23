@@ -5,7 +5,7 @@ from odoo import models, fields, api
 from odoo.exceptions import UserError
 from markupsafe import Markup
 
-from ..tools.invoice_modes import INVOICE_MODES, is_invoiced, payment_journal, vat_amount
+from ..tools.invoice_modes import INVOICE_MODES, find_tax, is_invoiced, payment_journal, vat_amount
 
 
 class SaleOrder(models.Model):
@@ -342,9 +342,44 @@ class SaleOrder(models.Model):
         payments.write(estate_vals)
         return payments
 
-    def action_estate_view_collection(self):
+    def _estate_collection_payments(self):
+        """Pagos del cobro. Las ventas marcadas como cobradas antes de que el
+        cobro se registrara en Facturación no tienen pago: se registra ahora
+        con los datos que se pusieron al marcarla (fecha, forma, factura y
+        referencia). Si la factura ya se había pagado en Facturación, se usa
+        ese pago."""
         self.ensure_one()
         payments = self.estate_collection_payment_ids.filtered(lambda p: p.state != 'canceled')
+        if payments or not self.estate_commission_collected:
+            return payments
+        mode = self.estate_collected_invoice_manual or 'with'
+        invoices = self.invoice_ids.filtered(
+            lambda m: m.move_type == 'out_invoice' and m.state == 'posted')
+        paid = invoices._get_reconciled_payments().filtered(lambda p: p.state != 'canceled')
+        method = self.estate_collected_method_manual
+        method_label = dict(self._estate_collect_methods()).get(method, '')
+        if paid:
+            base = self.amount_untaxed or self.amount_total
+            paid.write({
+                'estate_kind': 'collection',
+                'estate_invoice_mode': mode,
+                'estate_property_id': self.property_id.id,
+                'estate_sale_order_id': self.id,
+                'estate_base_amount': base,
+                'estate_vat_amount': vat_amount(base, mode),
+                'estate_method_label': method_label,
+            })
+            return paid
+        return self._estate_register_collection(
+            mode, find_tax(self.env, 'sale', mode),
+            self.estate_collected_manual_date or self.estate_collected_date or fields.Date.context_today(self),
+            method, method_label, self.estate_collected_reference)
+
+    def action_estate_view_collection(self):
+        self.ensure_one()
+        payments = self._estate_collection_payments()
+        if not payments:
+            raise UserError('Esta venta todavía no tiene un cobro registrado.')
         action = {
             'type': 'ir.actions.act_window',
             'name': 'Cobro de la comisión',
@@ -357,7 +392,9 @@ class SaleOrder(models.Model):
         return action
 
     def action_estate_print_collection(self):
-        payments = self.estate_collection_payment_ids.filtered(lambda p: p.state != 'canceled')
+        payments = self.env['account.payment']
+        for order in self:
+            payments |= order._estate_collection_payments()
         if not payments:
             raise UserError('Esta venta todavía no tiene un cobro registrado.')
         return self.env.ref('estate_management.action_report_estate_payment_receipt').report_action(payments)

@@ -132,3 +132,23 @@ class TestEstateSaleCollectWizard(TransactionCase):
         self.order.action_estate_unmark_collected()
         self.assertFalse(self.order.estate_commission_collected)
         self.assertEqual(pays.state, 'canceled')
+
+    def test_venta_cobrada_antes_del_cambio_registra_el_cobro_al_verlo(self):
+        """Ventas marcadas cobradas sin pago en Facturación (versión anterior):
+        Ver cobro / Imprimir recibo lo registran con los datos guardados."""
+        self.order.write({
+            'estate_collected_manual': True,
+            'estate_collected_manual_date': '2026-10-23',
+            'estate_collected_method_manual': 'transfer',
+            'estate_collected_invoice_manual': 'without',
+            'estate_collected_reference': 'BANCO-1',
+        })
+        self.assertFalse(self.order.estate_collection_payment_ids)
+        action = self.order.action_estate_view_collection()
+        pay = self.env['account.payment'].browse(action['res_id'])
+        self.assertEqual(pay.estate_kind, 'collection')
+        self.assertAlmostEqual(pay.amount, 2000.0, places=2)
+        self.assertEqual(str(pay.date), '2026-10-23')
+        # La segunda vez no duplica
+        self.order.action_estate_print_collection()
+        self.assertEqual(len(self.order.estate_collection_payment_ids), 1)
