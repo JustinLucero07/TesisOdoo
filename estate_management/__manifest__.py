@@ -1,6 +1,6 @@
 {
     'name': 'Gestión Inmobiliaria',
-    'version': '19.0.1.0.2',
+    'version': '19.0.1.0.3',
     'category': 'Real Estate',
     'summary': 'Módulo base para gestión de propiedades inmobiliarias',
     'description': """
@@ -26,6 +26,7 @@
         'data/estate_sequence_data.xml',
         'data/estate_property_type_data.xml',
         'data/res_partner_category_data.xml',
+        'wizards/estate_payment_correct_wizard_views.xml',
         'views/estate_property_views.xml',
         'views/estate_property_image_views.xml',
         'views/estate_commission_views.xml',

@@ -63,6 +63,10 @@
                 <t t-set="reference" t-value="(com.payment_reference if com else pay.estate_sale_order_id.estate_collected_reference) or pay.memo"/>
                 <t t-set="invoices" t-value="', '.join((pay.reconciled_bill_ids | pay.reconciled_invoice_ids).mapped('name'))"/>
                 <t t-set="currency" t-value="pay.currency_id"/>
+                <t t-set="bank_from" t-value="pay.estate_bank_from"/>
+                <t t-set="bank_to" t-value="pay.estate_bank_to"/>
+                <t t-set="role_names" t-value="dict(coms._fields['role'].selection)"/>
+                <t t-set="lines" t-value="[(role_names.get(c.role) or c.name, c.amount, c.amount_tax, c.amount_total or c.amount) for c in coms]"/>
                 <t t-call="estate_management.report_estate_receipt_body"/>
             </t>
         </t>
@@ -71,22 +75,27 @@
     <!-- Desde la comisión (también sirve para pagos anteriores a este cambio) -->
     <template id="report_commission_receipt">
         <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="com">
+            <t t-foreach="groups" t-as="coms">
+                <t t-set="com" t-value="coms[:1]"/>
                 <t t-set="pay" t-value="com.payment_id"/>
                 <t t-set="kind" t-value="'advisor'"/>
-                <t t-set="number" t-value="pay.name or com.name"/>
+                <t t-set="number" t-value="pay.name or ', '.join(coms.mapped('name'))"/>
                 <t t-set="date" t-value="com.payment_date or pay.date"/>
                 <t t-set="partner" t-value="com.user_id.partner_id"/>
                 <t t-set="prop" t-value="com.property_id"/>
-                <t t-set="role" t-value="com.role and dict(com._fields['role'].selection).get(com.role)"/>
-                <t t-set="base" t-value="com.amount"/>
-                <t t-set="vat" t-value="com.amount_tax"/>
-                <t t-set="total" t-value="com.amount_total or com.amount"/>
+                <t t-set="role_names" t-value="dict(com._fields['role'].selection)"/>
+                <t t-set="role" t-value="', '.join(role_names.get(c.role) for c in coms if c.role)"/>
+                <t t-set="base" t-value="sum(coms.mapped('amount'))"/>
+                <t t-set="vat" t-value="sum(coms.mapped('amount_tax'))"/>
+                <t t-set="total" t-value="sum((c.amount_total or c.amount) for c in coms)"/>
                 <t t-set="mode" t-value="com.has_invoice and dict(com._fields['has_invoice'].selection).get(com.has_invoice)"/>
                 <t t-set="method" t-value="com.payment_method and dict(com._fields['payment_method'].selection).get(com.payment_method)"/>
                 <t t-set="reference" t-value="com.payment_reference"/>
-                <t t-set="invoices" t-value="com.invoice_id.name or ''"/>
+                <t t-set="invoices" t-value="', '.join(coms.mapped('invoice_id.name'))"/>
                 <t t-set="currency" t-value="com.company_currency"/>
+                <t t-set="bank_from" t-value="com.payment_bank_from"/>
+                <t t-set="bank_to" t-value="com.payment_bank_to"/>
+                <t t-set="lines" t-value="[(role_names.get(c.role) or c.name, c.amount, c.amount_tax, c.amount_total or c.amount) for c in coms]"/>
                 <t t-call="estate_management.report_estate_receipt_body"/>
             </t>
         </t>
@@ -169,12 +178,38 @@
                         <td style="padding:6px 10px; color:#6b7280;">Forma de pago</td>
                         <td style="padding:6px 10px;" t-esc="method or '—'"/>
                     </tr>
+                    <tr t-if="bank_from">
+                        <td style="padding:6px 10px; color:#6b7280;">Banco de origen</td>
+                        <td style="padding:6px 10px;" t-esc="bank_from"/>
+                    </tr>
+                    <tr t-if="bank_to">
+                        <td style="padding:6px 10px; color:#6b7280;">Banco de destino</td>
+                        <td style="padding:6px 10px;" t-esc="bank_to"/>
+                    </tr>
                     <tr>
                         <td style="padding:6px 10px; color:#6b7280;">Referencia</td>
                         <td style="padding:6px 10px;" t-esc="reference or '—'"/>
                     </tr>
-                    <tr style="border-top:1px solid #d6dbe8;">
-                        <td style="padding:6px 10px; color:#6b7280;">Subtotal</td>
+                </table>
+
+                <table t-if="lines and len(lines) &gt; 1" style="width:100%; border-collapse:collapse; margin-top:14px; font-size:12px;">
+                    <tr style="background:#eef1f8; color:#142559;">
+                        <th style="text-align:left; padding:7px 10px;">Desglose por rol</th>
+                        <th style="text-align:right; padding:7px 10px;">Base</th>
+                        <th style="text-align:right; padding:7px 10px;">IVA</th>
+                        <th style="text-align:right; padding:7px 10px;">Total</th>
+                    </tr>
+                    <tr t-foreach="lines" t-as="ln" style="border-bottom:1px solid #eef1f8;">
+                        <td style="padding:6px 10px;" t-esc="ln[0]"/>
+                        <td style="padding:6px 10px; text-align:right;"><span t-out="ln[1] or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                        <td style="padding:6px 10px; text-align:right;"><span t-out="ln[2] or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                        <td style="padding:6px 10px; text-align:right;"><span t-out="ln[3] or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                    </tr>
+                </table>
+
+                <table style="width:100%; border-collapse:collapse; margin-top:14px; font-size:12px;">
+                    <tr>
+                        <td style="padding:6px 10px; color:#6b7280; width:35%;">Subtotal</td>
                         <td style="padding:6px 10px; text-align:right;"><span t-out="base or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
                     </tr>
                     <tr>

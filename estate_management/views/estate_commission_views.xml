@@ -44,6 +44,10 @@
                   decoration-success="state == 'paid'"
                   decoration-warning="state == 'approved'"
                   decoration-danger="state == 'cancelled'">
+                <header>
+                    <button name="action_print_receipt" type="object" string="Imprimir comprobante"
+                            icon="fa-print"/>
+                </header>
                 <field name="date"/>
                 <field name="name"/>
                 <field name="user_id" widget="many2one_avatar_user"/>
@@ -131,6 +135,10 @@
                             help="Comprobante de pago para que el asesor lo firme."/>
                     <button name="action_view_payment" string="Ver pago" type="object"
                             icon="fa-money" invisible="not payment_id"/>
+                    <button name="%(estate_management.action_estate_payment_correct_wizard)d"
+                            string="Corregir pago" type="action" icon="fa-pencil"
+                            invisible="state != 'paid'"
+                            help="Cambiar fecha, forma de pago, factura, referencia o bancos."/>
                     <button name="action_reset_to_approved" string="Revertir Pago" type="object"
                             invisible="state != 'paid'"
                             confirm="¿Revertir el pago registrado? Se anulan el pago y la factura en Facturación y la comisión vuelve a Aprobada."/>
@@ -269,6 +277,10 @@
                                    required="state == 'paid'"/>
                             <field name="payment_reference" readonly="state == 'paid'"
                                    placeholder="Nº transferencia, recibo, cheque..."/>
+                            <field name="payment_bank_from" readonly="state == 'paid'"
+                                   invisible="payment_method == 'cash'"/>
+                            <field name="payment_bank_to" readonly="state == 'paid'"
+                                   invisible="payment_method == 'cash'"/>
                         </group>
                         <group>
                             <field name="payment_date" readonly="state == 'paid'"/>

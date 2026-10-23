@@ -59,6 +59,8 @@ class EstateCommissionPayWizard(models.TransientModel):
         string='Forma de Pago')
     payment_date = fields.Date(string='Fecha de Pago', default=fields.Date.context_today)
     payment_reference = fields.Char(string='Comprobante / Referencia')
+    payment_bank_from = fields.Char(string='Banco de origen', help='Banco desde el que paga la oficina.')
+    payment_bank_to = fields.Char(string='Banco de destino', help='Banco del asesor.')
 
     @api.depends('commission_id.amount')
     def _compute_deal_total(self):
@@ -137,6 +139,8 @@ class EstateCommissionPayWizard(models.TransientModel):
             'payment_method': self.payment_method,
             'payment_date': self.payment_date,
             'payment_reference': self.payment_reference,
+            'payment_bank_from': self.payment_bank_from,
+            'payment_bank_to': self.payment_bank_to,
         })
         comision.state = 'split'
         comision.message_post(body=(

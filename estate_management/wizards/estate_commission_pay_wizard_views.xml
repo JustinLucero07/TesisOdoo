@@ -49,6 +49,10 @@
                                class="oe_subtotal_footer_separator fw-bold"/>
                         <field name="payment_reference"
                                placeholder="N&#186; transferencia, recibo, cheque..."/>
+                        <field name="payment_bank_from" placeholder="Ej. Banco Pichincha"
+                               invisible="payment_method == 'cash'"/>
+                        <field name="payment_bank_to" placeholder="Ej. Banco Guayaquil"
+                               invisible="payment_method == 'cash'"/>
                     </group>
                 </group>
                 <p class="text-muted small">

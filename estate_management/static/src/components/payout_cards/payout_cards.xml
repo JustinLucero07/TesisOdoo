@@ -48,6 +48,18 @@
                                placeholder="Nº transferencia, recibo, cheque..."
                                t-att-value="rec.data.payment_reference or ''" t-att-disabled="readonly"
                                t-on-change="(ev) => this.set(rec, 'payment_reference', ev.target.value)"/>
+                        <t t-if="rec.data.payment_method !== 'cash'">
+                            <div class="o_estate_payout_label mt-2">Banco de origen</div>
+                            <input type="text" class="form-control form-control-sm"
+                                   placeholder="Desde qué banco paga la oficina"
+                                   t-att-value="rec.data.payment_bank_from or ''" t-att-disabled="readonly"
+                                   t-on-change="(ev) => this.set(rec, 'payment_bank_from', ev.target.value)"/>
+                            <div class="o_estate_payout_label mt-2">Banco de destino</div>
+                            <input type="text" class="form-control form-control-sm"
+                                   placeholder="Banco del asesor"
+                                   t-att-value="rec.data.payment_bank_to or ''" t-att-disabled="readonly"
+                                   t-on-change="(ev) => this.set(rec, 'payment_bank_to', ev.target.value)"/>
+                        </t>
                         <table class="o_estate_payout_sum mt-3">
                             <tr><td>Monto base</td><td t-esc="money(rec, rec.data.amount_base)"/></tr>
                             <tr><td>IVA</td><td t-esc="money(rec, rec.data.amount_vat)"/></tr>

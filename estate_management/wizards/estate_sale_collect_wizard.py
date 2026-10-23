@@ -24,6 +24,8 @@ class EstateSaleCollectWizard(models.TransientModel):
         INVOICE_MODES, string='¿Con factura?', required=True, default='with')
     reference = fields.Char(string='Comprobante / Referencia',
                             help='Nº de transferencia, recibo o depósito.')
+    bank_from = fields.Char(string='Banco de origen', help='Banco desde el que pagó el propietario.')
+    bank_to = fields.Char(string='Banco de destino', help='Banco de la oficina donde entró el pago.')
     order_count = fields.Integer(compute='_compute_order_count')
     amount_untaxed = fields.Float(string='Subtotal comisión', compute='_compute_order_count')
     amount_vat = fields.Float(string='IVA', compute='_compute_order_count')
@@ -55,6 +57,9 @@ class EstateSaleCollectWizard(models.TransientModel):
         self._compute_order_count()
 
     def action_confirm(self):
+        return self._estate_register(follow_up=True)
+
+    def _estate_register(self, follow_up=True):
         if not self.order_ids:
             raise UserError('No hay ventas por cobrar en la selección (solo cuentan las '
                             'órdenes de venta confirmadas con propiedad y sin cobrar).')
@@ -69,16 +74,21 @@ class EstateSaleCollectWizard(models.TransientModel):
             'estate_collected_method_manual': self.method,
             'estate_collected_invoice_manual': self.invoice,
             'estate_collected_reference': self.reference,
+            'estate_collected_bank_from': self.bank_from,
+            'estate_collected_bank_to': self.bank_to,
         })
         metodo = dict(self.env['sale.order']._estate_collect_methods()).get(self.method)
         factura = dict(INVOICE_MODES).get(self.invoice)
         for order in self.order_ids:
             payments = order._estate_register_collection(
-                self.invoice, tax, self.date, self.method, metodo, self.reference)
+                self.invoice, tax, self.date, self.method, metodo, self.reference,
+                self.bank_from, self.bank_to)
             total_str = '{:,.2f}'.format(sum(payments.mapped('amount')) or order.amount_total)
             order.message_post(body='Comisión cobrada el %s · %s · %s · Total cobrado: $%s%s.' % (
                 self.date.strftime('%d/%m/%Y'), metodo, factura, total_str,
                 ' · Comprobante %s' % self.reference if self.reference else ''))
+        if not follow_up:
+            return True
         # Una sola venta con el reparto ya listo: seguir directo al pago de los
         # asesores, con la misma forma de pago propuesta.
         if len(self.order_ids) == 1:

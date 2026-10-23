@@ -194,3 +194,49 @@ class TestEstateCommissionPayout(TransactionCase):
         # Revertir una comisión de Camila revierte su pago completo
         de_camila[:1].action_reset_to_approved()
         self.assertEqual(set(de_camila.mapped('state')), {'approved'})
+
+    def test_comprobante_unico_bancos_y_correccion(self):
+        """Un comprobante por asesor con su desglose, bancos en el pago y
+        corrección de la fecha después de pagar."""
+        wizard = self.env['estate.commission.payout.wizard'].with_context(
+            default_commission_id=self.commission.id, default_mode='split').create({})
+        camila = wizard.line_ids.filtered(lambda l: l.user_id == self.user_advisor2)
+        camila.write({'payment_method': 'transfer', 'invoice': 'without',
+                      'payment_bank_from': 'Banco Pichincha', 'payment_bank_to': 'Banco Guayaquil'})
+        wizard.action_confirm()
+        de_camila = self.commission.child_commission_ids.filtered(lambda c: c.user_id == self.user_advisor2)
+        pay = de_camila.payment_id
+        self.assertEqual(pay.estate_bank_from, 'Banco Pichincha')
+        self.assertEqual(pay.estate_bank_to, 'Banco Guayaquil')
+
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'estate_management.action_report_commission_receipt', de_camila.ids)
+        self.assertEqual(html.count(b'Comprobante de pago'), 1, 'Una sola hoja para Camila')
+        self.assertIn(b'Desglose por rol', html)
+        self.assertIn(b'Banco Guayaquil', html)
+
+        correct = self.env['estate.payment.correct.wizard'].with_context(
+            active_model='estate.commission', active_ids=de_camila[:1].ids).create({})
+        self.assertEqual(len(correct.commission_ids), 3, 'Se corrigen juntas las del mismo pago')
+        correct.write({'date': '2026-10-01', 'reference': 'TRF-CORREGIDA'})
+        correct.action_confirm()
+        self.assertEqual(pay.state, 'canceled')
+        nuevo = de_camila.payment_id
+        self.assertEqual(len(nuevo), 1)
+        self.assertNotEqual(nuevo, pay)
+        self.assertEqual(str(nuevo.date), '2026-10-01')
+        self.assertEqual(set(de_camila.mapped('state')), {'paid'})
+
+    def test_registrar_pagos_anteriores_sin_factura(self):
+        com = self.env['estate.commission'].create({
+            'property_id': self.property.id, 'user_id': self.user_advisor1.id,
+            'amount': 300.0, 'state': 'paid', 'has_invoice': 'without',
+            'payment_method': 'cash', 'payment_date': '2026-09-14',
+        })
+        wiz = self.env['estate.payment.backfill.wizard'].create({})
+        self.assertGreaterEqual(wiz.commission_count, 1)
+        wiz.action_confirm()
+        self.assertTrue(com.payment_id)
+        self.assertEqual(com.payment_id.estate_kind, 'advisor')
+        self.assertEqual(str(com.payment_id.date), '2026-09-14')
+        self.assertAlmostEqual(com.payment_id.amount, 300.0)

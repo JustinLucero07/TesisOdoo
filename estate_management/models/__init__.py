@@ -23,3 +23,4 @@ from . import estate_advisor_fb_post
 from . import res_config_settings
 from . import mail_thread
 from . import account_payment
+from . import report_commission_receipt

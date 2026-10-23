@@ -18,6 +18,8 @@
                     <group>
                         <field name="invoice" widget="radio"/>
                         <field name="reference" placeholder="Nº transferencia, recibo..."/>
+                        <field name="bank_from" placeholder="Ej. Banco Pichincha" invisible="method == 'cash'"/>
+                        <field name="bank_to" placeholder="Ej. Banco Guayaquil" invisible="method == 'cash'"/>
                         <field name="amount_untaxed" widget="monetary" readonly="1"
                                invisible="invoice == 'without'"/>
                         <field name="amount_vat" widget="monetary" readonly="1"

@@ -26,6 +26,8 @@
                         <field name="payment_method"/>
                         <field name="payment_date"/>
                         <field name="payment_reference"/>
+                        <field name="payment_bank_from"/>
+                        <field name="payment_bank_to"/>
                         <field name="amount_vat"/>
                         <field name="amount_total"/>
                         <field name="company_currency"/>

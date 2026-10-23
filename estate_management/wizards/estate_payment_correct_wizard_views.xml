@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_estate_payment_correct_wizard_form" model="ir.ui.view">
+        <field name="name">estate.payment.correct.wizard.form</field>
+        <field name="model">estate.payment.correct.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Corregir">
+                <field name="kind" invisible="1"/>
+                <field name="commission_ids" invisible="1"/>
+                <field name="order_id" invisible="1"/>
+                <p class="text-muted">
+                    Corrige lo que se llenó mal. El registro anterior queda <b>anulado</b> en
+                    Facturación como constancia y se vuelve a registrar con estos datos.
+                </p>
+                <group>
+                    <group>
+                        <field name="partner_name" string="Asesor" invisible="kind != 'advisor'"/>
+                        <field name="partner_name" string="Propietario" invisible="kind != 'collection'"/>
+                        <field name="date"/>
+                        <field name="method" widget="radio"/>
+                    </group>
+                    <group>
+                        <field name="invoice" widget="radio"/>
+                        <field name="reference" placeholder="Nº transferencia, recibo, cheque..."/>
+                        <field name="bank_from" placeholder="Ej. Banco Pichincha" invisible="method == 'cash'"/>
+                        <field name="bank_to" placeholder="Ej. Banco Guayaquil" invisible="method == 'cash'"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Guardar corrección"
+                            class="btn-primary" icon="fa-check"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_estate_payment_correct_wizard" model="ir.actions.act_window">
+        <field name="name">Corregir pago</field>
+        <field name="res_model">estate.payment.correct.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="view_estate_payment_backfill_wizard_form" model="ir.ui.view">
+        <field name="name">estate.payment.backfill.wizard.form</field>
+        <field name="model">estate.payment.backfill.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Registrar cobros y pagos anteriores">
+                <p>
+                    Antes, al marcar una comisión como pagada <b>sin factura</b> o una venta como
+                    cobrada, no se guardaba el pago en Facturación. Esto los registra ahora con la
+                    fecha, la forma de pago y la referencia que se pusieron en su momento.
+                </p>
+                <group>
+                    <field name="commission_count"/>
+                    <field name="order_count"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Registrar ahora"
+                            class="btn-primary" icon="fa-check"
+                            invisible="commission_count == 0 and order_count == 0"/>
+                    <button string="Cerrar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

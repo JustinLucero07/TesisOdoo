@@ -114,6 +114,8 @@ class EstateCommissionPayoutWizard(models.TransientModel):
             'payment_method': line.payment_method,
             'payment_date': line.payment_date or fields.Date.context_today(self),
             'payment_reference': line.payment_reference,
+            'payment_bank_from': line.payment_bank_from,
+            'payment_bank_to': line.payment_bank_to,
         }
 
     def action_confirm(self):
@@ -180,6 +182,8 @@ class EstateCommissionPayoutLine(models.TransientModel):
         string='¿Cómo se le paga?', default='transfer')
     payment_date = fields.Date(string='Fecha de pago', default=fields.Date.context_today)
     payment_reference = fields.Char(string='Comprobante / Referencia')
+    payment_bank_from = fields.Char(string='Banco de origen')
+    payment_bank_to = fields.Char(string='Banco de destino')
 
     @api.depends('invoice', 'amount_base')
     def _compute_amounts(self):

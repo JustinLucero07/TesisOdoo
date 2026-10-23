@@ -527,6 +527,10 @@ class EstateCommission(models.Model):
     payment_reference = fields.Char(string='Comprobante / Referencia', copy=False,
         help='Nº de transferencia, recibo o comprobante del pago.')
     paid_by_id = fields.Many2one('res.users', string='Pagado por', readonly=True, copy=False)
+    payment_bank_from = fields.Char(string='Banco de origen', copy=False,
+        help='Banco desde el que paga la oficina.')
+    payment_bank_to = fields.Char(string='Banco de destino', copy=False,
+        help='Banco del asesor que recibe el pago.')
 
     has_invoice = fields.Selection(
         INVOICE_MODES, string='Factura', default='without', copy=False)
@@ -662,7 +666,8 @@ class EstateCommission(models.Model):
         groups = {}
         for rec in self:
             key = (rec.user_id.id, rec.has_invoice or 'without', rec.payment_method,
-                   rec.payment_date, rec.payment_reference or '', rec.property_id.id)
+                   rec.payment_date, rec.payment_reference or '', rec.property_id.id,
+                   rec.payment_bank_from or '', rec.payment_bank_to or '')
             groups.setdefault(key, self.browse())
             groups[key] |= rec
         for group in groups.values():
@@ -693,6 +698,8 @@ class EstateCommission(models.Model):
             'estate_base_amount': base,
             'estate_vat_amount': iva,
             'estate_method_label': metodo,
+            'estate_bank_from': first.payment_bank_from,
+            'estate_bank_to': first.payment_bank_to,
         }
 
         if is_invoiced(mode):
@@ -753,6 +760,8 @@ class EstateCommission(models.Model):
             detalle = 'Pago sin factura <b>%s</b>.' % payment.name
 
         self.write({'state': 'paid', 'payment_date': fecha, 'paid_by_id': self.env.user.id})
+        if self.env.context.get('estate_backfill'):
+            return
         ref = ' (Ref: %s)' % first.payment_reference if first.payment_reference else ''
         for rec in self:
             rec.message_post(body=Markup(
@@ -761,6 +770,57 @@ class EstateCommission(models.Model):
                 Markup(' (base $%s + IVA $%s)') % ('{:,.2f}'.format(rec.amount), '{:,.2f}'.format(rec.amount_tax))
                 if rec.amount_tax else '',
                 fecha.strftime('%d/%m/%Y'), metodo, ref, Markup(detalle), self.env.user.name))
+
+    def _estate_link_existing_payments(self):
+        """Vincula a la comisión el pago que ya existe en Facturación (factura
+        del asesor pagada antes de que el pago se marcara como inmobiliario)."""
+        linked = self.browse()
+        for rec in self.filtered(lambda c: not c.payment_id and c.invoice_id):
+            pays = rec.invoice_id._get_reconciled_payments().filtered(lambda p: p.state != 'canceled')
+            if not pays:
+                continue
+            base = rec.invoice_id.amount_untaxed
+            pays.write({
+                'estate_kind': 'advisor',
+                'estate_invoice_mode': rec.has_invoice if rec.has_invoice != 'without' else (
+                    'with' if rec.invoice_id.amount_tax else 'with_0'),
+                'estate_property_id': rec.property_id.id,
+                'estate_commission_id': rec.id,
+                'estate_base_amount': base,
+                'estate_vat_amount': rec.invoice_id.amount_tax,
+                'estate_method_label': dict(self._fields['payment_method'].selection).get(
+                    rec.payment_method, ''),
+            })
+            rec.payment_id = pays[:1]
+            linked |= rec
+        return linked
+
+    def _estate_backfill_payment(self):
+        """Registra en Facturación las comisiones pagadas antes de que el pago
+        se registrara solo. Conserva la fecha y quién pagó."""
+        pending = self.filtered(lambda c: c.state == 'paid' and not c.payment_id)
+        pending -= pending._estate_link_existing_payments()
+        for rec in pending:
+            if not rec.payment_method:
+                rec.payment_method = 'other'
+            if rec.invoice_id.state == 'cancel':
+                rec.invoice_id = False
+            if not rec.invoice_id:
+                rec.has_invoice = 'without'
+            elif rec.has_invoice == 'without':
+                rec.has_invoice = 'with' if rec.invoice_id.amount_tax else 'with_0'
+        groups = {}
+        for rec in pending:
+            key = (rec.user_id.id, rec.has_invoice, rec.payment_method, rec.payment_date,
+                   rec.payment_reference or '', rec.property_id.id)
+            groups.setdefault(key, self.browse())
+            groups[key] |= rec
+        for group in groups.values():
+            paid_by = {c.id: c.paid_by_id.id for c in group}
+            group.with_context(estate_backfill=True)._register_payment_group()
+            for c in group:
+                c.paid_by_id = paid_by[c.id]
+        return True
 
     def action_view_payment(self):
         self.ensure_one()
@@ -779,9 +839,7 @@ class EstateCommission(models.Model):
         paid = self.filtered(lambda c: c.state == 'paid')
         if not paid:
             raise UserError('Solo se puede imprimir el comprobante de comisiones pagadas.')
-        if all(paid.mapped('payment_id')):
-            return self.env.ref('estate_management.action_report_estate_payment_receipt').report_action(
-                paid.mapped('payment_id'))
+        # Una hoja por asesor: sus roles van juntos con el desglose.
         return self.env.ref('estate_management.action_report_commission_receipt').report_action(paid)
 
     def action_reset_to_approved(self):
@@ -807,6 +865,7 @@ class EstateCommission(models.Model):
             rec.write({'state': 'approved', 'payment_date': False,
                        'payment_method': False, 'payment_reference': False,
                        'paid_by_id': False, 'payment_id': False,
+                       'payment_bank_from': False, 'payment_bank_to': False,
                        'invoice_id': False, 'amount_tax': 0.0, 'amount_total': 0.0})
             rec.message_post(body=f"Pago de comisión REVERTIDO por {self.env.user.name}.")
         return True

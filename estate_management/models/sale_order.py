@@ -64,6 +64,12 @@ class SaleOrder(models.Model):
     estate_collected_reference = fields.Char(
         string='Comprobante del cobro', copy=False,
         help='Nº de transferencia, recibo o depósito con el que pagó el propietario.')
+    estate_collected_bank_from = fields.Char(
+        string='Banco de origen (cobro)', copy=False,
+        help='Banco desde el que pagó el propietario.')
+    estate_collected_bank_to = fields.Char(
+        string='Banco de destino (cobro)', copy=False,
+        help='Banco de la oficina donde entró el pago.')
     estate_collected_method = fields.Selection(
         selection='_estate_collect_methods', string='Forma de cobro',
         compute='_compute_estate_collected', store=True)
@@ -279,7 +285,8 @@ class SaleOrder(models.Model):
             action.update(view_mode='list,form', domain=[('property_id', '=', self.property_id.id)])
         return action
 
-    def _estate_register_collection(self, mode, tax, date, method, method_label, reference):
+    def _estate_register_collection(self, mode, tax, date, method, method_label, reference,
+                                    bank_from=False, bank_to=False):
         """Deja el cobro de la comisión en Facturación.
 
         Con factura (15% o 0%) la factura del cliente queda con ese IVA y se le
@@ -298,6 +305,8 @@ class SaleOrder(models.Model):
             'estate_base_amount': base,
             'estate_vat_amount': vat_amount(base, mode),
             'estate_method_label': method_label,
+            'estate_bank_from': bank_from,
+            'estate_bank_to': bank_to,
         }
         payments = self.env['account.payment']
         if is_invoiced(mode):
@@ -308,7 +317,7 @@ class SaleOrder(models.Model):
             for inv in invoices:
                 if inv.payment_state in ('paid', 'in_payment'):
                     continue
-                lines = inv.invoice_line_ids.filtered(lambda l: not l.display_type)
+                lines = inv.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
                 if any(l.tax_ids != tax for l in lines):
                     if inv.state == 'posted':
                         inv.button_draft()
@@ -368,12 +377,15 @@ class SaleOrder(models.Model):
                 'estate_base_amount': base,
                 'estate_vat_amount': vat_amount(base, mode),
                 'estate_method_label': method_label,
+                'estate_bank_from': self.estate_collected_bank_from,
+                'estate_bank_to': self.estate_collected_bank_to,
             })
             return paid
         return self._estate_register_collection(
             mode, find_tax(self.env, 'sale', mode),
             self.estate_collected_manual_date or self.estate_collected_date or fields.Date.context_today(self),
-            method, method_label, self.estate_collected_reference)
+            method, method_label, self.estate_collected_reference,
+            self.estate_collected_bank_from, self.estate_collected_bank_to)
 
     def action_estate_view_collection(self):
         self.ensure_one()
@@ -416,7 +428,9 @@ class SaleOrder(models.Model):
                     'estate_collected_manual_date': False,
                     'estate_collected_method_manual': False,
                     'estate_collected_invoice_manual': False,
-                    'estate_collected_reference': False})
+                    'estate_collected_reference': False,
+                    'estate_collected_bank_from': False,
+                    'estate_collected_bank_to': False})
 
     @api.onchange('customer_signature')
     def _onchange_customer_signature(self):

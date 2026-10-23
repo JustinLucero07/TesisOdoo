@@ -21,6 +21,10 @@
                 <button name="action_estate_print_collection" type="object"
                         string="Imprimir recibo de cobro" icon="fa-print"
                         invisible="not estate_commission_collected"/>
+                <button name="%(estate_management.action_estate_payment_correct_wizard)d" type="action"
+                        string="Corregir cobro" icon="fa-pencil"
+                        invisible="not estate_commission_collected"
+                        context="{'default_kind': 'collection'}"/>
             </xpath>
             <xpath expr="//sheet" position="inside">
                 <widget name="web_ribbon" title="Cobrada" bg_color="text-bg-success"
@@ -61,6 +65,8 @@
                             <field name="estate_collected_method" invisible="not estate_commission_collected"/>
                             <field name="estate_collected_invoice" invisible="not estate_commission_collected"/>
                             <field name="estate_collected_reference" invisible="not estate_collected_reference"/>
+                            <field name="estate_collected_bank_from" string="Banco de origen" invisible="not estate_collected_bank_from"/>
+                            <field name="estate_collected_bank_to" string="Banco de destino" invisible="not estate_collected_bank_to"/>
                             <div colspan="2" invisible="not estate_commission_collected">
                                 <button name="action_estate_view_collection" type="object"
                                         string="Ver cobro" icon="fa-money"

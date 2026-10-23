@@ -152,3 +152,19 @@ class TestEstateSaleCollectWizard(TransactionCase):
         # La segunda vez no duplica
         self.order.action_estate_print_collection()
         self.assertEqual(len(self.order.estate_collection_payment_ids), 1)
+
+    def test_corregir_cobro(self):
+        pays = self._collect('with')
+        correct = self.env['estate.payment.correct.wizard'].with_context(
+            active_model='sale.order', active_ids=self.order.ids).create({})
+        self.assertEqual(correct.kind, 'collection')
+        correct.write({'date': '2026-10-02', 'invoice': 'with_0', 'bank_to': 'Banco Pichincha'})
+        correct.action_confirm()
+        self.assertEqual(pays.state, 'canceled')
+        nuevo = self.order.estate_collection_payment_ids.filtered(lambda p: p.state != 'canceled')
+        self.assertEqual(len(nuevo), 1)
+        self.assertEqual(str(nuevo.date), '2026-10-02')
+        self.assertEqual(nuevo.estate_invoice_mode, 'with_0')
+        self.assertEqual(nuevo.estate_bank_to, 'Banco Pichincha')
+        self.assertAlmostEqual(nuevo.amount, 2000.0, places=2)
+        self.assertTrue(self.order.estate_commission_collected)

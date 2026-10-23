@@ -7,6 +7,13 @@
         <field name="model">account.payment</field>
         <field name="inherit_id" ref="account.view_account_payment_form"/>
         <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_estate_correct" type="object" string="Corregir datos"
+                        icon="fa-pencil" invisible="not estate_kind or state == 'canceled'"
+                        help="Cambiar fecha, forma de pago, factura, referencia o bancos."/>
+                <button name="action_estate_print" type="object" string="Imprimir comprobante"
+                        icon="fa-print" invisible="not estate_kind or state == 'canceled'"/>
+            </xpath>
             <xpath expr="//group[@name='group2']" position="after">
                 <group name="estate_info" string="Inmobiliaria" invisible="not estate_kind">
                     <group>
@@ -18,6 +25,8 @@
                     <group>
                         <field name="estate_invoice_mode" readonly="1"/>
                         <field name="estate_method_label" readonly="1"/>
+                        <field name="estate_bank_from" readonly="1" invisible="not estate_bank_from"/>
+                        <field name="estate_bank_to" readonly="1" invisible="not estate_bank_to"/>
                         <field name="estate_base_amount" readonly="1"/>
                         <field name="estate_vat_amount" readonly="1"/>
                     </group>
@@ -33,6 +42,10 @@
         <field name="arch" type="xml">
             <list string="Movimientos inmobiliarios" create="0"
                   decoration-muted="state == 'canceled'">
+                <header>
+                    <button name="action_estate_print" type="object" string="Imprimir comprobantes"
+                            icon="fa-print"/>
+                </header>
                 <field name="date" string="Fecha"/>
                 <field name="name" string="N.º"/>
                 <field name="partner_id" string="Propietario / Asesor"/>
@@ -43,6 +56,8 @@
                        decoration-warning="estate_invoice_mode == 'without'"/>
                 <field name="estate_method_label"/>
                 <field name="memo" string="Referencia"/>
+                <field name="estate_bank_from" optional="show"/>
+                <field name="estate_bank_to" optional="show"/>
                 <field name="estate_base_amount" sum="Total base"/>
                 <field name="estate_vat_amount" sum="Total IVA"/>
                 <field name="amount" string="Total" sum="Total"/>
@@ -112,12 +127,81 @@
         </field>
     </record>
 
+    <!-- Facturas de la inmobiliaria, separadas de las demás -->
+    <record id="action_estate_invoices_collection" model="ir.actions.act_window">
+        <field name="name">Facturas de cobro (propietarios)</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('move_type', 'in', ('out_invoice', 'out_refund')),
+                              ('invoice_line_ids.sale_line_ids.order_id.property_id', '!=', False)]</field>
+        <field name="context">{'default_move_type': 'out_invoice', 'search_default_posted': 1}</field>
+        <field name="search_view_id" ref="account.view_account_invoice_filter"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('account.view_out_invoice_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('account.view_move_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay facturas de comisiones a propietarios.</p>
+        </field>
+    </record>
+
+    <record id="action_estate_invoices_advisor" model="ir.actions.act_window">
+        <field name="name">Facturas de asesores</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('move_type', 'in', ('in_invoice', 'in_refund')),
+                              ('estate_transaction_type', '=', 'commission')]</field>
+        <field name="context">{'default_move_type': 'in_invoice', 'default_estate_transaction_type': 'commission'}</field>
+        <field name="search_view_id" ref="account.view_account_invoice_filter"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('account.view_in_invoice_bill_tree')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('account.view_move_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay facturas de asesores.</p>
+            <p>Se crean solas al pagar una comisión "Con factura 15%" o "Con factura 0%".</p>
+        </field>
+    </record>
+
+    <record id="action_estate_payments_other" model="ir.actions.act_window">
+        <field name="name">Otros pagos y cobros</field>
+        <field name="res_model">account.payment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('estate_kind', '=', False)]</field>
+        <field name="context">{'search_default_not_canceled': 1}</field>
+        <field name="search_view_id" ref="view_account_payment_estate_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay otros pagos.</p>
+            <p>Pagos que no son cobros de comisiones ni pagos a asesores (gastos, arriendos, etc.).</p>
+        </field>
+    </record>
+
+    <record id="action_estate_payment_backfill" model="ir.actions.act_window">
+        <field name="name">Registrar cobros y pagos anteriores</field>
+        <field name="res_model">estate.payment.backfill.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Facturación → Inmobiliaria -->
     <menuitem id="menu_account_estate_root" name="Inmobiliaria"
               parent="account.menu_finance" sequence="4"/>
+    <menuitem id="menu_account_estate_sec_in" name="Lo que me pagan (propietarios)"
+              parent="menu_account_estate_root" sequence="10"/>
     <menuitem id="menu_account_estate_collections" name="Cobros de comisiones"
-              parent="menu_account_estate_root" action="action_estate_payments_collection" sequence="10"/>
+              parent="menu_account_estate_sec_in" action="action_estate_payments_collection" sequence="10"/>
+    <menuitem id="menu_account_estate_invoices_in" name="Facturas de cobro"
+              parent="menu_account_estate_sec_in" action="action_estate_invoices_collection" sequence="20"/>
+    <menuitem id="menu_account_estate_sec_out" name="Lo que pago (asesores)"
+              parent="menu_account_estate_root" sequence="20"/>
     <menuitem id="menu_account_estate_advisors" name="Pagos a asesores"
-              parent="menu_account_estate_root" action="action_estate_payments_advisor" sequence="20"/>
+              parent="menu_account_estate_sec_out" action="action_estate_payments_advisor" sequence="10"/>
+    <menuitem id="menu_account_estate_invoices_out" name="Facturas de asesores"
+              parent="menu_account_estate_sec_out" action="action_estate_invoices_advisor" sequence="20"/>
+    <menuitem id="menu_account_estate_sec_other" name="Otros"
+              parent="menu_account_estate_root" sequence="30"/>
+    <menuitem id="menu_account_estate_other" name="Otros pagos y cobros"
+              parent="menu_account_estate_sec_other" action="action_estate_payments_other" sequence="10"/>
+    <menuitem id="menu_account_estate_backfill" name="Registrar cobros y pagos anteriores"
+              parent="menu_account_estate_sec_other" action="action_estate_payment_backfill" sequence="20"/>
 
     <!-- Los mismos listados desde Inmobiliaria → Finanzas -->
     <menuitem id="estate_menu_finance_collections_acc" name="Cobros registrados"
