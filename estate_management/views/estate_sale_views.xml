@@ -17,7 +17,10 @@
                 <button name="action_estate_unmark_collected" type="object"
                         string="Quitar cobro manual" icon="fa-undo"
                         invisible="not estate_collected_manual"
-                        confirm="¿Quitar la marca de comisión cobrada?"/>
+                        confirm="¿Quitar la marca de comisión cobrada? Se anula el cobro registrado en Facturación."/>
+                <button name="action_estate_print_collection" type="object"
+                        string="Imprimir recibo de cobro" icon="fa-print"
+                        invisible="not estate_commission_collected"/>
             </xpath>
             <xpath expr="//sheet" position="inside">
                 <widget name="web_ribbon" title="Cobrada" bg_color="text-bg-success"
@@ -58,6 +61,14 @@
                             <field name="estate_collected_method" invisible="not estate_commission_collected"/>
                             <field name="estate_collected_invoice" invisible="not estate_commission_collected"/>
                             <field name="estate_collected_reference" invisible="not estate_collected_reference"/>
+                            <div colspan="2" invisible="not estate_commission_collected">
+                                <button name="action_estate_view_collection" type="object"
+                                        string="Ver cobro" icon="fa-money"
+                                        class="btn-secondary btn-sm me-2"/>
+                                <button name="action_estate_print_collection" type="object"
+                                        string="Imprimir recibo" icon="fa-print"
+                                        class="btn-secondary btn-sm"/>
+                            </div>
                             <div colspan="2" invisible="estate_commission_collected">
                                 <button name="action_estate_mark_collected" type="object"
                                         string="Marcar comisión cobrada" icon="fa-check-circle"

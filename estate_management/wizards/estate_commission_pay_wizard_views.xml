@@ -21,34 +21,46 @@
                     </group>
                     <group string="Desglose por rol">
                         <field name="pct_capture"
-                               help="La única que cambia según haya exclusividad o no."/>
-                        <field name="pct_reception" readonly="1"/>
-                        <field name="pct_visit" readonly="1"/>
-                        <field name="pct_closing" readonly="1"/>
+                               help="Porcentaje por captación de la propiedad."/>
+                        <field name="pct_reception"/>
+                        <field name="pct_visit"/>
+                        <field name="pct_closing"/>
                     </group>
                 </group>
                 <group class="oe_subtotal_footer">
                     <field name="pct_total"/>
                     <field name="amount_advisor" widget="monetary"
-                           options="{'currency_field': 'company_currency'}"
-                           class="oe_subtotal_footer_separator"/>
+                           options="{'currency_field': 'company_currency'}"/>
                     <field name="amount_office" widget="monetary"
                            options="{'currency_field': 'company_currency'}"/>
                 </group>
                 <group string="Pago">
                     <group>
+                        <field name="invoice"/>
                         <field name="payment_method"/>
                         <field name="payment_date"/>
                     </group>
                     <group>
+                        <field name="amount_vat" widget="monetary"
+                               options="{'currency_field': 'company_currency'}"
+                               invisible="invoice != 'with'"/>
+                        <field name="amount_total" widget="monetary"
+                               options="{'currency_field': 'company_currency'}"
+                               class="oe_subtotal_footer_separator fw-bold"/>
                         <field name="payment_reference"
                                placeholder="N&#186; transferencia, recibo, cheque..."/>
                     </group>
                 </group>
+                <p class="text-muted small">
+                    <b>Con factura 15%:</b> se suma el 15% de IVA y se registra la factura de proveedor del asesor, ya pagada.<br/>
+                    <b>Con factura 0%:</b> se registra la factura del asesor con IVA 0%, ya pagada.<br/>
+                    <b>Sin factura:</b> se paga el monto neto, sin factura; el pago igual queda en Facturación.<br/>
+                    Después del pago puedes imprimir el <b>comprobante</b> para que el asesor lo firme.
+                </p>
                 <footer>
-                    <button name="action_confirm" string="Pagar y facturar" type="object"
+                    <button name="action_confirm" string="Confirmar y Pagar" type="object"
                             class="btn-primary"
-                            confirm="Se generará la factura de proveedor del asesor y se registrará su pago. ¿Continuar?"/>
+                            confirm="¿Confirmar el registro del pago de la comisión al asesor?"/>
                     <button string="Cancelar" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>

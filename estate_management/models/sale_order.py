@@ -2,7 +2,10 @@
 import re
 
 from odoo import models, fields, api
+from odoo.exceptions import UserError
 from markupsafe import Markup
+
+from ..tools.invoice_modes import INVOICE_MODES, is_invoiced, payment_journal, vat_amount
 
 
 class SaleOrder(models.Model):
@@ -56,20 +59,19 @@ class SaleOrder(models.Model):
         string='Fecha de cobro (manual)', copy=False)
     estate_collected_method_manual = fields.Selection(
         selection='_estate_collect_methods', string='Forma de cobro (manual)', copy=False)
-    estate_collected_invoice_manual = fields.Selection([
-        ('with', 'Con factura'),
-        ('without', 'Sin factura'),
-    ], string='Factura del cobro (manual)', copy=False)
+    estate_collected_invoice_manual = fields.Selection(
+        INVOICE_MODES, string='Factura del cobro (manual)', copy=False)
     estate_collected_reference = fields.Char(
         string='Comprobante del cobro', copy=False,
         help='Nº de transferencia, recibo o depósito con el que pagó el propietario.')
     estate_collected_method = fields.Selection(
         selection='_estate_collect_methods', string='Forma de cobro',
         compute='_compute_estate_collected', store=True)
-    estate_collected_invoice = fields.Selection([
-        ('with', 'Con factura'),
-        ('without', 'Sin factura'),
-    ], string='Factura', compute='_compute_estate_collected', store=True)
+    estate_collected_invoice = fields.Selection(
+        INVOICE_MODES, string='Factura', compute='_compute_estate_collected', store=True)
+    estate_collection_payment_ids = fields.One2many(
+        'account.payment', 'estate_sale_order_id', string='Pagos del cobro',
+        domain=[('estate_kind', '=', 'collection')])
     estate_commission_collected = fields.Boolean(
         string='Comisión cobrada', compute='_compute_estate_collected', store=True,
         help='Se marca cuando el propietario pagó la comisión y lo registras con '
@@ -277,7 +279,102 @@ class SaleOrder(models.Model):
             action.update(view_mode='list,form', domain=[('property_id', '=', self.property_id.id)])
         return action
 
+    def _estate_register_collection(self, mode, tax, date, method, method_label, reference):
+        """Deja el cobro de la comisión en Facturación.
+
+        Con factura (15% o 0%) la factura del cliente queda con ese IVA y se le
+        registra el pago. Sin factura se anula la factura pendiente y se
+        registra un recibo de cobro directo por el monto de la comisión."""
+        self.ensure_one()
+        journal = payment_journal(self.env, method)
+        invoices = self.invoice_ids.filtered(
+            lambda m: m.move_type == 'out_invoice' and m.state != 'cancel')
+        base = self.amount_untaxed or self.amount_total
+        estate_vals = {
+            'estate_kind': 'collection',
+            'estate_invoice_mode': mode,
+            'estate_property_id': self.property_id.id,
+            'estate_sale_order_id': self.id,
+            'estate_base_amount': base,
+            'estate_vat_amount': vat_amount(base, mode),
+            'estate_method_label': method_label,
+        }
+        payments = self.env['account.payment']
+        if is_invoiced(mode):
+            if not invoices:
+                for line in self.order_line.filtered(lambda l: not l.display_type):
+                    line.qty_delivered = line.product_uom_qty
+                invoices = self._create_invoices()
+            for inv in invoices:
+                if inv.payment_state in ('paid', 'in_payment'):
+                    continue
+                lines = inv.invoice_line_ids.filtered(lambda l: not l.display_type)
+                if any(l.tax_ids != tax for l in lines):
+                    if inv.state == 'posted':
+                        inv.button_draft()
+                    lines.write({'tax_ids': [(6, 0, tax.ids)]})
+                if inv.state == 'draft':
+                    inv.invoice_date = inv.invoice_date or date
+                    inv.action_post()
+                payments |= self.env['account.payment.register'].with_context(
+                    active_model='account.move', active_ids=inv.ids,
+                ).create({
+                    'payment_date': date,
+                    'journal_id': journal.id,
+                    'communication': reference or inv.name,
+                })._create_payments()
+        else:
+            for inv in invoices.filtered(lambda m: m.payment_state not in ('paid', 'in_payment')):
+                if inv.state == 'posted':
+                    inv.button_draft()
+                inv.button_cancel()
+            if base > 0:
+                payments = self.env['account.payment'].create(dict(estate_vals, **{
+                    'payment_type': 'inbound',
+                    'partner_type': 'customer',
+                    'partner_id': self.partner_id.id,
+                    'amount': base,
+                    'date': date,
+                    'journal_id': journal.id,
+                    'memo': '%s · %s' % (self.name, reference or 'Comisión sin factura'),
+                }))
+                payments.action_post()
+        payments.write(estate_vals)
+        return payments
+
+    def action_estate_view_collection(self):
+        self.ensure_one()
+        payments = self.estate_collection_payment_ids.filtered(lambda p: p.state != 'canceled')
+        action = {
+            'type': 'ir.actions.act_window',
+            'name': 'Cobro de la comisión',
+            'res_model': 'account.payment',
+        }
+        if len(payments) == 1:
+            action.update(view_mode='form', res_id=payments.id)
+        else:
+            action.update(view_mode='list,form', domain=[('id', 'in', payments.ids)])
+        return action
+
+    def action_estate_print_collection(self):
+        payments = self.estate_collection_payment_ids.filtered(lambda p: p.state != 'canceled')
+        if not payments:
+            raise UserError('Esta venta todavía no tiene un cobro registrado.')
+        return self.env.ref('estate_management.action_report_estate_payment_receipt').report_action(payments)
+
     def action_estate_unmark_collected(self):
+        # Se anula lo contable del cobro: el pago y, si se anuló la factura por
+        # cobrar sin factura, vuelve a quedar pendiente.
+        for order in self:
+            payments = order.estate_collection_payment_ids.filtered(lambda p: p.state != 'canceled')
+            for pay in payments:
+                pay.action_draft()
+                pay.action_cancel()
+            if order.estate_collected_invoice_manual == 'without':
+                for inv in order.invoice_ids.filtered(
+                        lambda m: m.move_type == 'out_invoice' and m.state == 'cancel'):
+                    inv.button_draft()
+                    inv.action_post()
         self.write({'estate_collected_manual': False,
                     'estate_collected_manual_date': False,
                     'estate_collected_method_manual': False,

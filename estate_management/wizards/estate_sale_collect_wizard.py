@@ -2,12 +2,17 @@
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
+from ..tools.invoice_modes import INVOICE_MODES, find_tax, is_invoiced, vat_amount
+
 
 class EstateSaleCollectWizard(models.TransientModel):
     _name = 'estate.sale.collect.wizard'
     _description = 'Marcar comisión de venta como cobrada'
 
     order_ids = fields.Many2many('sale.order', string='Ventas')
+    currency_id = fields.Many2one(
+        'res.currency', string='Moneda',
+        default=lambda self: self.env.company.currency_id)
     date = fields.Date(string='Fecha de cobro', required=True,
                        default=fields.Date.context_today,
                        help='Día en que el propietario pagó la comisión. Para ventas '
@@ -15,13 +20,13 @@ class EstateSaleCollectWizard(models.TransientModel):
     method = fields.Selection(
         selection=lambda self: self.env['sale.order']._estate_collect_methods(),
         string='¿Cómo te pagaron?', required=True, default='transfer')
-    invoice = fields.Selection([
-        ('with', 'Con factura'),
-        ('without', 'Sin factura'),
-    ], string='¿Con factura?', required=True, default='with')
+    invoice = fields.Selection(
+        INVOICE_MODES, string='¿Con factura?', required=True, default='with')
     reference = fields.Char(string='Comprobante / Referencia',
                             help='Nº de transferencia, recibo o depósito.')
     order_count = fields.Integer(compute='_compute_order_count')
+    amount_untaxed = fields.Float(string='Subtotal comisión', compute='_compute_order_count')
+    amount_vat = fields.Float(string='IVA', compute='_compute_order_count')
     amount_total = fields.Float(string='Total a marcar', compute='_compute_order_count')
 
     @api.model
@@ -34,16 +39,30 @@ class EstateSaleCollectWizard(models.TransientModel):
             vals['order_ids'] = [(6, 0, orders.ids)]
         return vals
 
-    @api.depends('order_ids')
+    @api.depends('order_ids', 'invoice')
     def _compute_order_count(self):
         for wiz in self:
             wiz.order_count = len(wiz.order_ids)
-            wiz.amount_total = sum(wiz.order_ids.mapped('amount_total'))
+            base = sum(wiz.order_ids.mapped('amount_untaxed'))
+            if not base:
+                base = sum(wiz.order_ids.mapped('amount_total'))
+            wiz.amount_untaxed = round(base, 2)
+            wiz.amount_vat = vat_amount(base, wiz.invoice)
+            wiz.amount_total = round(base + wiz.amount_vat, 2)
+
+    @api.onchange('invoice', 'order_ids')
+    def _onchange_invoice(self):
+        self._compute_order_count()
 
     def action_confirm(self):
         if not self.order_ids:
             raise UserError('No hay ventas por cobrar en la selección (solo cuentan las '
                             'órdenes de venta confirmadas con propiedad y sin cobrar).')
+        tax = find_tax(self.env, 'sale', self.invoice)
+        for order in self.order_ids:
+            lines = order.order_line.filtered(lambda l: not l.display_type)
+            lines.write({'tax_ids': [(6, 0, tax.ids)]})
+
         self.order_ids.write({
             'estate_collected_manual': True,
             'estate_collected_manual_date': self.date,
@@ -52,10 +71,13 @@ class EstateSaleCollectWizard(models.TransientModel):
             'estate_collected_reference': self.reference,
         })
         metodo = dict(self.env['sale.order']._estate_collect_methods()).get(self.method)
-        factura = dict(self._fields['invoice'].selection).get(self.invoice)
+        factura = dict(INVOICE_MODES).get(self.invoice)
         for order in self.order_ids:
-            order.message_post(body='Comisión cobrada el %s · %s · %s%s.' % (
-                self.date.strftime('%d/%m/%Y'), metodo, factura,
+            payments = order._estate_register_collection(
+                self.invoice, tax, self.date, self.method, metodo, self.reference)
+            total_str = '{:,.2f}'.format(sum(payments.mapped('amount')) or order.amount_total)
+            order.message_post(body='Comisión cobrada el %s · %s · %s · Total cobrado: $%s%s.' % (
+                self.date.strftime('%d/%m/%Y'), metodo, factura, total_str,
                 ' · Comprobante %s' % self.reference if self.reference else ''))
         # Una sola venta con el reparto ya listo: seguir directo al pago de los
         # asesores, con la misma forma de pago propuesta.

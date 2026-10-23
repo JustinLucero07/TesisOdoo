@@ -1,6 +1,11 @@
+from markupsafe import Markup
+
 from odoo import models, fields, api
 from odoo.tools.misc import clean_context
 from odoo.exceptions import UserError, ValidationError
+
+from ..tools.invoice_modes import (
+    INVOICE_MODES, find_tax, is_invoiced, payment_journal, vat_amount)
 
 # Los pasos del negocio que pueden cobrar comisión. Se definen aquí porque los
 # usan tanto la comisión como sus líneas de reparto.
@@ -523,6 +528,16 @@ class EstateCommission(models.Model):
         help='Nº de transferencia, recibo o comprobante del pago.')
     paid_by_id = fields.Many2one('res.users', string='Pagado por', readonly=True, copy=False)
 
+    has_invoice = fields.Selection(
+        INVOICE_MODES, string='Factura', default='without', copy=False)
+    amount_tax = fields.Monetary(
+        string='IVA', currency_field='company_currency', copy=False)
+    payment_id = fields.Many2one(
+        'account.payment', string='Pago contable', readonly=True, copy=False,
+        help='El pago registrado en Facturación (con o sin factura).')
+    amount_total = fields.Monetary(
+        string='Total pagado', currency_field='company_currency', copy=False)
+
     @api.constrains('amount', 'sale_amount')
     def _check_positive_amounts(self):
         for rec in self:
@@ -537,6 +552,52 @@ class EstateCommission(models.Model):
             if vals.get('name', 'NUEVO') == 'NUEVO':
                 vals['name'] = self.env['ir.sequence'].next_by_code('estate.commission') or 'COM'
         return super().create(vals_list)
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'split_line_ids' in vals:
+            for rec in self.filtered(lambda c: c.state == 'split'):
+                rec._sync_split_to_children()
+        return res
+
+    def _sync_split_to_children(self):
+        """Sincroniza los cambios hechos en el reparto (porcentajes o asesores)
+        con las comisiones hijas correspondientes."""
+        for rec in self:
+            roles_in_split = []
+            for line in rec.split_line_ids:
+                if not line.user_id or line.amount <= 0:
+                    continue
+                roles_in_split.append(line.role)
+                child = rec.child_commission_ids.filtered(lambda c: c.role == line.role)
+                if child:
+                    if any(c.state == 'paid' for c in child):
+                        continue
+                    child.write({
+                        'user_id': line.user_id.id,
+                        'amount': line.amount,
+                        'role_pct': line.percentage,
+                        'commission_pct': rec.commission_pct * ((line.percentage or 0.0) / 100.0),
+                    })
+                else:
+                    self.create({
+                        'property_id': rec.property_id.id,
+                        'lead_id': rec.lead_id.id,
+                        'user_id': line.user_id.id,
+                        'sale_amount': rec.sale_amount,
+                        'commission_pct': rec.commission_pct * ((line.percentage or 0.0) / 100.0),
+                        'amount': line.amount,
+                        'role': line.role,
+                        'role_pct': line.percentage,
+                        'type': rec.type,
+                        'date': rec.date,
+                        'state': 'approved',
+                        'parent_commission_id': rec.id,
+                    })
+            orphan_children = rec.child_commission_ids.filtered(
+                lambda c: c.role not in roles_in_split and c.state in ('draft', 'approved'))
+            if orphan_children:
+                orphan_children.unlink()
 
     def action_approve(self):
         for rec in self:
@@ -572,9 +633,13 @@ class EstateCommission(models.Model):
         }
 
     def action_register_payment(self):
-        """Registra el pago de la comisión al asesor y deja constancia.
-        Si la factura de proveedor no ha sido creada, la genera automáticamente,
-        la valida (action_post) y le registra el pago contable para dejarla en estado Pagado."""
+        """Paga la comisión al asesor y deja todo registrado en Facturación.
+
+        - Con factura 15% / 0%: factura de proveedor del asesor con ese IVA,
+          validada y pagada (el pago queda conciliado con la factura).
+        - Sin factura: pago directo al asesor por el monto neto, sin factura.
+        En todos los casos el pago aparece en Facturación → Inmobiliaria →
+        Pagos a asesores con la fecha, la forma de pago y el comprobante."""
         self._check_client_collected()
         for rec in self:
             if rec.state == 'paid':
@@ -590,82 +655,130 @@ class EstateCommission(models.Model):
             if not rec.payment_method:
                 raise UserError(
                     'Indica la Forma de Pago en la sección "Pago al Asesor (Constancia)" antes de registrar el pago.')
+            partner = rec.user_id.partner_id
+            if not partner:
+                raise UserError('El asesor no tiene un contacto (partner) asociado.')
 
-            # 1. Generar factura de comisión si no existe
-            if not rec.invoice_id:
-                partner = rec.user_id.partner_id
-                if not partner:
-                    raise UserError('El asesor no tiene un contacto (partner) asociado.')
-                commission_account = self.env['account.account'].search([
-                    ('account_type', '=', 'expense'),
-                    ('company_ids', 'in', self.env.company.id),
-                ], limit=1)
-                invoice_vals = {
-                    'move_type': 'in_invoice',
-                    'partner_id': partner.id,
-                    'invoice_date': rec.payment_date or fields.Date.context_today(rec),
-                    'estate_transaction_type': 'commission',
-                    'invoice_line_ids': [(0, 0, {
-                        'name': f'Comisión {dict(rec._fields["type"].selection)[rec.type]} — {rec.property_id.title or rec.name}',
-                        'quantity': 1.0,
-                        'price_unit': rec.amount,
-                        'account_id': commission_account.id if commission_account else False,
-                    })],
-                    'narration': f'Comisión generada desde {rec.name} para {partner.name}',
-                }
-                invoice = self.env['account.move'].create(invoice_vals)
-                rec.invoice_id = invoice.id
+            mode = rec.has_invoice or 'without'
+            fecha = rec.payment_date or fields.Date.context_today(rec)
+            journal = payment_journal(self.env, rec.payment_method)
+            if not journal:
+                raise UserError('No hay un diario de Banco o Caja configurado en Facturación.')
+            metodo = dict(rec._fields['payment_method'].selection).get(rec.payment_method, '')
+            iva = vat_amount(rec.amount, mode)
+            rec.amount_tax = iva
+            rec.amount_total = round(rec.amount + iva, 2)
+            estate_vals = {
+                'estate_kind': 'advisor',
+                'estate_invoice_mode': mode,
+                'estate_property_id': rec.property_id.id,
+                'estate_commission_id': rec.id,
+                'estate_base_amount': rec.amount,
+                'estate_vat_amount': iva,
+                'estate_method_label': metodo,
+            }
 
-            # 2. Confirmar / Publicar la factura contable si está en borrador
-            if rec.invoice_id.state == 'draft':
-                rec.invoice_id.action_post()
-
-            # 3. Registrar el pago contable en la factura (si no está ya pagada)
-            if rec.invoice_id.payment_state not in ('paid', 'in_payment'):
-                journal_type = 'bank' if rec.payment_method in ('transfer', 'check') else 'cash'
-                journal = self.env['account.journal'].search([
-                    ('type', '=', journal_type),
-                    ('company_id', '=', self.env.company.id),
-                ], limit=1)
-                if not journal:
-                    journal = self.env['account.journal'].search([
-                        ('type', 'in', ('bank', 'cash')),
-                        ('company_id', '=', self.env.company.id),
+            if is_invoiced(mode):
+                if not rec.invoice_id:
+                    account = self.env['account.account'].search([
+                        ('account_type', '=', 'expense'),
+                        ('company_ids', 'in', self.env.company.id),
                     ], limit=1)
-                if journal:
-                    payment_register = self.env['account.payment.register'].with_context(
-                        active_model='account.move',
-                        active_ids=[rec.invoice_id.id]
+                    tax = find_tax(self.env, 'purchase', mode)
+                    rec.invoice_id = self.env['account.move'].create({
+                        'move_type': 'in_invoice',
+                        'partner_id': partner.id,
+                        'invoice_date': fecha,
+                        'ref': rec.payment_reference or rec.name,
+                        'estate_transaction_type': 'commission',
+                        'property_id': rec.property_id.id,
+                        'invoice_line_ids': [(0, 0, {
+                            'name': 'Comisión %s — %s' % (
+                                dict(rec._fields['type'].selection)[rec.type],
+                                rec.property_id.title or rec.name),
+                            'quantity': 1.0,
+                            'price_unit': rec.amount,
+                            'account_id': account.id or False,
+                            'tax_ids': [(6, 0, tax.ids)],
+                        })],
+                        'narration': 'Comisión %s para %s' % (rec.name, partner.name),
+                    })
+                if rec.invoice_id.state == 'draft':
+                    rec.invoice_id.action_post()
+                payments = self.env['account.payment']
+                if rec.invoice_id.payment_state not in ('paid', 'in_payment'):
+                    payments = self.env['account.payment.register'].with_context(
+                        active_model='account.move', active_ids=rec.invoice_id.ids,
                     ).create({
-                        'payment_date': rec.payment_date or fields.Date.context_today(rec),
+                        'payment_date': fecha,
                         'journal_id': journal.id,
                         'communication': rec.payment_reference or rec.name,
-                    })
-                    payment_register._create_payments()
+                    })._create_payments()
+                if payments:
+                    payments.write(estate_vals)
+                    rec.payment_id = payments[:1]
+                detalle = 'Factura <b>%s</b> (%s) pagada.' % (
+                    rec.invoice_id.name, dict(INVOICE_MODES)[mode])
+            else:
+                payment = self.env['account.payment'].create(dict(estate_vals, **{
+                    'payment_type': 'outbound',
+                    'partner_type': 'supplier',
+                    'partner_id': partner.id,
+                    'amount': rec.amount,
+                    'date': fecha,
+                    'journal_id': journal.id,
+                    'memo': '%s · %s' % (rec.name, rec.payment_reference or 'Comisión sin factura'),
+                }))
+                payment.action_post()
+                rec.payment_id = payment
+                detalle = 'Pago sin factura <b>%s</b>.' % payment.name
 
-            # 4. Actualizar estado y constancia de la comisión
-            rec.write({
-                'state': 'paid',
-                'payment_date': rec.payment_date or fields.Date.context_today(rec),
-                'paid_by_id': self.env.user.id,
-            })
-            metodo = dict(rec._fields['payment_method'].selection).get(rec.payment_method, '')
-            ref = f" (Ref: {rec.payment_reference})" if rec.payment_reference else ''
-            rec.message_post(
-                body=(f"<b>Comisión PAGADA</b> al asesor <b>{rec.user_id.name}</b> "
-                      f"por <b>${rec.amount:,.2f}</b> el {rec.payment_date} "
-                      f"vía {metodo}{ref}. Factura contable <b>{rec.invoice_id.name}</b> autogenerada y conciliada. "
-                      f"Registrado por {self.env.user.name}."))
+            rec.write({'state': 'paid', 'payment_date': fecha, 'paid_by_id': self.env.user.id})
+            ref = ' (Ref: %s)' % rec.payment_reference if rec.payment_reference else ''
+            rec.message_post(body=Markup(
+                '<b>Comisión PAGADA</b> a <b>%s</b>: $%s%s el %s vía %s%s. %s Registrado por %s.') % (
+                rec.user_id.name, '{:,.2f}'.format(rec.amount_total),
+                Markup(' (base $%s + IVA $%s)') % ('{:,.2f}'.format(rec.amount), '{:,.2f}'.format(iva)) if iva else '',
+                fecha.strftime('%d/%m/%Y'), metodo, ref, Markup(detalle), self.env.user.name))
         return True
+
+    def action_view_payment(self):
+        self.ensure_one()
+        if not self.payment_id:
+            raise UserError('Esta comisión todavía no tiene un pago registrado.')
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.payment',
+            'res_id': self.payment_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
+    def action_print_receipt(self):
+        """Comprobante de pago para que el asesor lo firme."""
+        paid = self.filtered(lambda c: c.state == 'paid')
+        if not paid:
+            raise UserError('Solo se puede imprimir el comprobante de comisiones pagadas.')
+        return self.env.ref('estate_management.action_report_commission_receipt').report_action(paid)
 
     def action_reset_to_approved(self):
         """Revierte un pago registrado por error (vuelve a Aprobada)."""
         for rec in self:
             if rec.state != 'paid':
                 raise UserError('Solo se pueden revertir comisiones Pagadas.')
+            # Se anula también lo contable, para que en Facturación no quede
+            # un pago que ya no existe.
+            if rec.payment_id and rec.payment_id.state != 'canceled':
+                rec.payment_id.action_draft()
+                rec.payment_id.action_cancel()
+            if rec.invoice_id and rec.invoice_id.state != 'cancel':
+                if rec.invoice_id.state == 'posted':
+                    rec.invoice_id.button_draft()
+                rec.invoice_id.button_cancel()
             rec.write({'state': 'approved', 'payment_date': False,
                        'payment_method': False, 'payment_reference': False,
-                       'paid_by_id': False})
+                       'paid_by_id': False, 'payment_id': False,
+                       'invoice_id': False, 'amount_tax': 0.0, 'amount_total': 0.0})
             rec.message_post(body=f"Pago de comisión REVERTIDO por {self.env.user.name}.")
         return True
 
@@ -771,3 +884,25 @@ class EstateCommissionSplit(models.Model):
         for line in self:
             if not (0.0 <= line.percentage <= 100.0):
                 raise ValidationError('El porcentaje del rol debe estar entre 0 y 100.')
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        for com in records.mapped('commission_id').filtered(lambda c: c.state == 'split'):
+            com._sync_split_to_children()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if any(f in vals for f in ('percentage', 'user_id', 'amount', 'role')):
+            for com in self.mapped('commission_id').filtered(lambda c: c.state == 'split'):
+                com._sync_split_to_children()
+        return res
+
+    def unlink(self):
+        comms = self.mapped('commission_id').filtered(lambda c: c.state == 'split')
+        res = super().unlink()
+        for com in comms:
+            com._sync_split_to_children()
+        return res
+

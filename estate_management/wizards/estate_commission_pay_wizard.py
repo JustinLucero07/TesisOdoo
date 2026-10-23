@@ -9,6 +9,8 @@ captación, que es la única que cambia según haya exclusividad o no.
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
+from ..tools.invoice_modes import INVOICE_MODES, vat_amount
+
 
 class EstateCommissionPayWizard(models.TransientModel):
     _name = 'estate.commission.pay.wizard'
@@ -37,10 +39,19 @@ class EstateCommissionPayWizard(models.TransientModel):
     pct_total = fields.Float(
         string='Total para el asesor (%)', compute='_compute_totals')
     amount_advisor = fields.Monetary(
-        string='A pagar al asesor', compute='_compute_totals',
+        string='Monto base asesor', compute='_compute_totals',
         currency_field='company_currency')
     amount_office = fields.Monetary(
         string='Queda en la oficina', compute='_compute_totals',
+        currency_field='company_currency')
+
+    invoice = fields.Selection(
+        INVOICE_MODES, string='¿Factura?', default='without', required=True)
+    amount_vat = fields.Monetary(
+        string='IVA', compute='_compute_totals',
+        currency_field='company_currency')
+    amount_total = fields.Monetary(
+        string='Total a pagar', compute='_compute_totals',
         currency_field='company_currency')
 
     payment_method = fields.Selection(
@@ -54,13 +65,17 @@ class EstateCommissionPayWizard(models.TransientModel):
         for w in self:
             w.deal_total = w.commission_id.amount or 0.0
 
-    @api.depends('pct_capture', 'pct_reception', 'pct_visit', 'pct_closing', 'deal_total')
+    @api.depends('pct_capture', 'pct_reception', 'pct_visit', 'pct_closing', 'deal_total', 'invoice')
     def _compute_totals(self):
         for w in self:
             total = (w.pct_capture + w.pct_reception + w.pct_visit + w.pct_closing)
             w.pct_total = total
-            w.amount_advisor = (w.deal_total or 0.0) * (total / 100.0)
-            w.amount_office = (w.deal_total or 0.0) - w.amount_advisor
+            base = (w.deal_total or 0.0) * (total / 100.0)
+            w.amount_advisor = base
+            w.amount_office = (w.deal_total or 0.0) - base
+            w.amount_vat = vat_amount(base, w.invoice)
+            w.amount_total = round(base + w.amount_vat, 2)
+
 
     @api.model
     def default_get(self, fields_list):
@@ -112,6 +127,7 @@ class EstateCommissionPayWizard(models.TransientModel):
             'sale_amount': comision.sale_amount,
             'commission_pct': comision.commission_pct * (self.pct_total / 100.0),
             'amount': self.amount_advisor,
+            'has_invoice': self.invoice,
             'role': 'all',
             'role_pct': self.pct_total,
             'type': comision.type,

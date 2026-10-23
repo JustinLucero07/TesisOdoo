@@ -11,13 +11,18 @@
                 </p>
                 <group>
                     <group>
+                        <field name="currency_id" invisible="1"/>
                         <field name="date"/>
                         <field name="method" widget="radio"/>
                     </group>
                     <group>
                         <field name="invoice" widget="radio"/>
                         <field name="reference" placeholder="Nº transferencia, recibo..."/>
-                        <field name="amount_total" widget="monetary" readonly="1"/>
+                        <field name="amount_untaxed" widget="monetary" readonly="1"
+                               invisible="invoice == 'without'"/>
+                        <field name="amount_vat" widget="monetary" readonly="1"
+                               invisible="invoice == 'without'"/>
+                        <field name="amount_total" widget="monetary" readonly="1" class="fw-bold fs-5"/>
                     </group>
                 </group>
                 <field name="order_ids" readonly="1">
@@ -26,7 +31,8 @@
                         <field name="estate_buyer_id"/>
                         <field name="partner_id" string="Propietario"/>
                         <field name="property_id"/>
-                        <field name="amount_total" string="Comisión" sum="Total"/>
+                        <field name="amount_untaxed" string="Comisión" sum="Total comisión"/>
+                        <field name="currency_id" column_invisible="1"/>
                     </list>
                 </field>
                 <footer>

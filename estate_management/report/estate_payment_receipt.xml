@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="paperformat_estate_receipt" model="report.paperformat">
+        <field name="name">Inmobi comprobante (A4 vertical)</field>
+        <field name="default">False</field>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">14</field>
+        <field name="margin_right">14</field>
+        <field name="header_line">False</field>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- ============================================================
+         Comprobante de pago / recibo de cobro (para firmar)
+         - Pago a asesor: firma el asesor que recibe y la oficina que entrega.
+         - Cobro al propietario: firma la oficina que recibe y quien paga.
+    ============================================================ -->
+    <record id="action_report_estate_payment_receipt" model="ir.actions.report">
+        <field name="name">Comprobante de pago (Inmobi)</field>
+        <field name="model">account.payment</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_management.report_estate_payment_receipt</field>
+        <field name="report_file">estate_management.report_estate_payment_receipt</field>
+        <field name="print_report_name">'Comprobante_' + (object.name or 'PAGO').replace('/', '-')</field>
+        <field name="binding_model_id" ref="account.model_account_payment"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="estate_management.paperformat_estate_receipt"/>
+    </record>
+
+    <record id="action_report_commission_receipt" model="ir.actions.report">
+        <field name="name">Comprobante de pago al asesor</field>
+        <field name="model">estate.commission</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_management.report_commission_receipt</field>
+        <field name="report_file">estate_management.report_commission_receipt</field>
+        <field name="print_report_name">'Comprobante_' + (object.name or 'COM').replace('/', '-')</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_commission"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="estate_management.paperformat_estate_receipt"/>
+    </record>
+
+    <!-- Desde el pago contable -->
+    <template id="report_estate_payment_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="pay">
+                <t t-set="com" t-value="pay.estate_commission_id"/>
+                <t t-set="kind" t-value="pay.estate_kind or ('advisor' if pay.payment_type == 'outbound' else 'collection')"/>
+                <t t-set="number" t-value="pay.name"/>
+                <t t-set="date" t-value="pay.date"/>
+                <t t-set="partner" t-value="pay.partner_id"/>
+                <t t-set="prop" t-value="pay.estate_property_id or com.property_id"/>
+                <t t-set="role" t-value="com.role and dict(com._fields['role'].selection).get(com.role)"/>
+                <t t-set="total" t-value="pay.amount"/>
+                <t t-set="vat" t-value="pay.estate_vat_amount"/>
+                <t t-set="base" t-value="pay.estate_base_amount or (pay.amount - pay.estate_vat_amount)"/>
+                <t t-set="mode" t-value="pay.estate_invoice_mode and dict(pay._fields['estate_invoice_mode'].selection).get(pay.estate_invoice_mode)"/>
+                <t t-set="method" t-value="pay.estate_method_label or pay.journal_id.name"/>
+                <t t-set="reference" t-value="(com.payment_reference if com else pay.estate_sale_order_id.estate_collected_reference) or pay.memo"/>
+                <t t-set="invoices" t-value="', '.join((pay.reconciled_bill_ids | pay.reconciled_invoice_ids).mapped('name'))"/>
+                <t t-set="currency" t-value="pay.currency_id"/>
+                <t t-call="estate_management.report_estate_receipt_body"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- Desde la comisión (también sirve para pagos anteriores a este cambio) -->
+    <template id="report_commission_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="com">
+                <t t-set="pay" t-value="com.payment_id"/>
+                <t t-set="kind" t-value="'advisor'"/>
+                <t t-set="number" t-value="pay.name or com.name"/>
+                <t t-set="date" t-value="com.payment_date or pay.date"/>
+                <t t-set="partner" t-value="com.user_id.partner_id"/>
+                <t t-set="prop" t-value="com.property_id"/>
+                <t t-set="role" t-value="com.role and dict(com._fields['role'].selection).get(com.role)"/>
+                <t t-set="base" t-value="com.amount"/>
+                <t t-set="vat" t-value="com.amount_tax"/>
+                <t t-set="total" t-value="com.amount_total or com.amount"/>
+                <t t-set="mode" t-value="com.has_invoice and dict(com._fields['has_invoice'].selection).get(com.has_invoice)"/>
+                <t t-set="method" t-value="com.payment_method and dict(com._fields['payment_method'].selection).get(com.payment_method)"/>
+                <t t-set="reference" t-value="com.payment_reference"/>
+                <t t-set="invoices" t-value="com.invoice_id.name or ''"/>
+                <t t-set="currency" t-value="com.company_currency"/>
+                <t t-call="estate_management.report_estate_receipt_body"/>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_estate_receipt_body">
+        <t t-set="company" t-value="env.company"/>
+        <t t-set="is_advisor" t-value="kind == 'advisor'"/>
+        <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#1f2430; font-size:12px;">
+            <div class="page">
+                <!-- Encabezado -->
+                <table style="width:100%; border-collapse:collapse; border-bottom:3px solid #142559;">
+                    <tr>
+                        <td style="padding:6px 0 12px; vertical-align:middle; width:55%;">
+                            <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
+                                 style="height:44px; max-width:170px;"/>
+                            <span t-else="" style="font-size:17px; font-weight:bold; color:#142559; letter-spacing:3px;"
+                                  t-esc="company.name"/>
+                        </td>
+                        <td style="padding:6px 0 12px; vertical-align:middle; text-align:right; color:#142559;">
+                            <div style="font-size:15px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">
+                                <t t-if="is_advisor">Comprobante de pago</t>
+                                <t t-else="">Recibo de cobro</t>
+                            </div>
+                            <div style="font-size:11px; color:#6b7280; margin-top:3px;">
+                                N.º <t t-esc="number"/> · <t t-esc="date and date.strftime('%d/%m/%Y')"/>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+                <div style="height:4px; background:#D9042B;"/>
+
+                <!-- Monto -->
+                <table style="width:100%; border-collapse:collapse; margin-top:18px;">
+                    <tr>
+                        <td style="vertical-align:top; width:60%; padding-right:16px;">
+                            <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:1px;">
+                                <t t-if="is_advisor">Pagado a</t>
+                                <t t-else="">Recibido de</t>
+                            </div>
+                            <div style="font-size:16px; font-weight:bold; color:#142559; margin-top:2px;" t-esc="partner.name"/>
+                            <div t-if="partner.vat" style="color:#4b5563;">C.I. / RUC: <t t-esc="partner.vat"/></div>
+                            <div t-if="is_advisor and role" style="color:#4b5563;">Rol en el negocio: <t t-esc="role"/></div>
+                        </td>
+                        <td style="vertical-align:top; text-align:right; border:1px solid #d6dbe8; border-radius:6px; padding:10px 14px;">
+                            <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:1px;">Total</div>
+                            <div style="font-size:22px; font-weight:bold; color:#142559;">
+                                <span t-out="total or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                            </div>
+                            <t t-set="words" t-value="currency.amount_to_text(total)"/>
+                            <div t-if="words" style="font-size:10px; color:#4b5563;" t-esc="words"/>
+                        </td>
+                    </tr>
+                </table>
+
+                <!-- Detalle -->
+                <table style="width:100%; border-collapse:collapse; margin-top:18px; font-size:12px;">
+                    <tr style="background:#eef1f8;">
+                        <th style="text-align:left; padding:7px 10px; color:#142559;" colspan="2">Detalle</th>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 10px; color:#6b7280; width:35%;">Concepto</td>
+                        <td style="padding:6px 10px;">
+                            <t t-if="is_advisor">Comisión por la venta de</t>
+                            <t t-else="">Comisión inmobiliaria por la venta de</t>
+                            <b t-esc="prop.title or prop.display_name or '—'"/>
+                        </td>
+                    </tr>
+                    <tr t-if="prop and prop.name">
+                        <td style="padding:6px 10px; color:#6b7280;">Código de propiedad</td>
+                        <td style="padding:6px 10px;" t-esc="prop.name"/>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 10px; color:#6b7280;">Factura</td>
+                        <td style="padding:6px 10px;">
+                            <t t-esc="mode or '—'"/><t t-if="invoices"> · <t t-esc="invoices"/></t>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 10px; color:#6b7280;">Forma de pago</td>
+                        <td style="padding:6px 10px;" t-esc="method or '—'"/>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 10px; color:#6b7280;">Referencia</td>
+                        <td style="padding:6px 10px;" t-esc="reference or '—'"/>
+                    </tr>
+                    <tr style="border-top:1px solid #d6dbe8;">
+                        <td style="padding:6px 10px; color:#6b7280;">Subtotal</td>
+                        <td style="padding:6px 10px; text-align:right;"><span t-out="base or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                    </tr>
+                    <tr>
+                        <td style="padding:6px 10px; color:#6b7280;">IVA</td>
+                        <td style="padding:6px 10px; text-align:right;"><span t-out="vat or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/></td>
+                    </tr>
+                    <tr style="border-top:2px solid #142559;">
+                        <td style="padding:7px 10px; font-weight:bold; color:#142559;">Total</td>
+                        <td style="padding:7px 10px; text-align:right; font-weight:bold; color:#142559;">
+                            <span t-out="total or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                        </td>
+                    </tr>
+                </table>
+
+                <p style="margin-top:18px; color:#4b5563; font-size:11px;">
+                    <t t-if="is_advisor">
+                        Declaro haber recibido de <b t-esc="company.name"/> el valor indicado por concepto de
+                        comisión del negocio detallado, a mi entera satisfacción.
+                    </t>
+                    <t t-else="">
+                        <b t-esc="company.name"/> declara haber recibido el valor indicado por concepto de
+                        comisión inmobiliaria del negocio detallado.
+                    </t>
+                </p>
+
+                <!-- Firmas -->
+                <table style="width:100%; border-collapse:collapse; margin-top:70px; font-size:11px;">
+                    <tr>
+                        <td style="width:45%; text-align:center; border-top:1px solid #1f2430; padding-top:6px;">
+                            <b t-esc="partner.name if is_advisor else company.name"/><br/>
+                            <span style="color:#6b7280;">Recibí conforme<t t-if="is_advisor"> · C.I. ____________</t></span>
+                        </td>
+                        <td style="width:10%;"/>
+                        <td style="width:45%; text-align:center; border-top:1px solid #1f2430; padding-top:6px;">
+                            <b t-esc="company.name if is_advisor else partner.name"/><br/>
+                            <span style="color:#6b7280;">Entregué conforme</span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </template>
+</odoo>

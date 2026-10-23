@@ -64,6 +64,13 @@
                 <field name="amount" sum="Total Comisiones" widget="monetary"
                        options="{'currency_field': 'company_currency'}"/>
                 <field name="company_currency" column_invisible="1"/>
+                <field name="has_invoice" optional="show"/>
+                <field name="amount_tax" string="IVA" sum="Total IVA" widget="monetary"
+                       options="{'currency_field': 'company_currency'}" optional="hide"/>
+                <field name="amount_total" string="Total pagado" sum="Total pagado" widget="monetary"
+                       options="{'currency_field': 'company_currency'}" optional="show"/>
+                <field name="payment_date" string="Pagada el" optional="show"/>
+                <field name="payment_reference" optional="hide"/>
                 <field name="invoice_id" optional="show"/>
                 <field name="state" widget="badge"
                        decoration-success="state == 'paid'"
@@ -119,9 +126,14 @@
                             type="object" class="btn-success" icon="fa-check-circle"
                             invisible="state not in ('draft', 'approved') or split_count &gt; 0 or parent_commission_id or client_collection_state == 'pending'"
                             help="Un solo asesor hizo todo el negocio: muestra el desglose por rol antes de pagar."/>
+                    <button name="action_print_receipt" string="Imprimir comprobante" type="object"
+                            class="btn-primary" icon="fa-print" invisible="state != 'paid'"
+                            help="Comprobante de pago para que el asesor lo firme."/>
+                    <button name="action_view_payment" string="Ver pago" type="object"
+                            icon="fa-money" invisible="not payment_id"/>
                     <button name="action_reset_to_approved" string="Revertir Pago" type="object"
                             invisible="state != 'paid'"
-                            confirm="¿Revertir el pago registrado? La comisión volverá a Aprobada."/>
+                            confirm="¿Revertir el pago registrado? Se anulan el pago y la factura en Facturación y la comisión vuelve a Aprobada."/>
                     <button name="action_cancel" string="Cancelar" type="object"
                             invisible="state in ('paid', 'cancelled')"
                             confirm="¿Está seguro de cancelar esta comisión?"/>
@@ -153,6 +165,14 @@
                                 <span class="o_stat_value">
                                     <field name="invoice_state" readonly="1"/>
                                 </span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-money"
+                                type="object" name="action_view_payment"
+                                invisible="not payment_id">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Pago</span>
+                                <span class="o_stat_value"><field name="has_invoice" readonly="1"/></span>
                             </div>
                         </button>
                         <button class="oe_stat_button" icon="fa-users"
@@ -199,7 +219,7 @@
                                 captaci&#243;n puede ser de un cuarto. Los porcentajes vienen de
                                 Configuraci&#243;n &gt; Ajustes y se pueden ajustar aqu&#237; caso por caso.
                             </p>
-                            <field name="split_line_ids" readonly="state in ('paid', 'split', 'cancelled')">
+                            <field name="split_line_ids" readonly="state in ('paid', 'cancelled')">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="role"/>
@@ -229,7 +249,10 @@
                                     <field name="role"/>
                                     <field name="user_id" widget="many2one_avatar_user"/>
                                     <field name="role_pct"/>
-                                    <field name="amount" widget="monetary"
+                                    <field name="amount" widget="monetary" string="Base"
+                                           options="{'currency_field': 'company_currency'}"/>
+                                    <field name="has_invoice" optional="show"/>
+                                    <field name="amount_total" widget="monetary" string="Total Pagado" optional="show"
                                            options="{'currency_field': 'company_currency'}"/>
                                     <field name="state" widget="badge"
                                            decoration-success="state == 'paid'"
@@ -250,6 +273,18 @@
                         <group>
                             <field name="payment_date" readonly="state == 'paid'"/>
                             <field name="paid_by_id" invisible="state != 'paid'"/>
+                        </group>
+                        <group invisible="state != 'paid'">
+                            <field name="has_invoice" readonly="1"/>
+                            <field name="amount_tax" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'company_currency'}"
+                                   invisible="not amount_tax"/>
+                            <field name="amount_total" readonly="1" widget="monetary"
+                                   options="{'currency_field': 'company_currency'}"/>
+                        </group>
+                        <group invisible="state != 'paid'">
+                            <field name="payment_id" readonly="1"/>
+                            <field name="invoice_id" readonly="1" invisible="not invoice_id"/>
                         </group>
                     </group>
                 </sheet>
@@ -278,7 +313,9 @@
                 <filter string="Alquiler" name="type_rental" domain="[('type','=','rental')]"/>
                 <filter string="Bono" name="type_bonus" domain="[('type','=','bonus')]"/>
                 <separator/>
-                <filter string="Sin Factura" name="no_invoice" domain="[('invoice_id','=',False)]"/>
+                <filter string="Pagada con factura 15%" name="inv_with" domain="[('state','=','paid'),('has_invoice','=','with')]"/>
+                <filter string="Pagada con factura 0%" name="inv_with_0" domain="[('state','=','paid'),('has_invoice','=','with_0')]"/>
+                <filter string="Pagada sin factura" name="no_invoice" domain="[('state','=','paid'),('has_invoice','=','without')]"/>
                 <separator/>
                 <filter string="Cobrada al propietario" name="client_collected"
                         domain="[('client_collected', '=', True)]"
