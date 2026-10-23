@@ -17,8 +17,9 @@ class EstateCommissionPayoutWizard(models.TransientModel):
     ], required=True, readonly=True)
     payment_method = fields.Selection(
         selection=lambda self: self.env['estate.commission']._fields['payment_method'].selection,
-        string='¿Cómo se les paga?', required=True, default='transfer')
-    payment_date = fields.Date(string='Fecha de pago', required=True,
+        string='¿Cómo se les paga?', default='transfer',
+        help='Forma de pago propuesta; cada asesor puede tener la suya.')
+    payment_date = fields.Date(string='Fecha de pago',
                                default=fields.Date.context_today)
     payment_reference = fields.Char(string='Comprobante / Referencia',
                                     help='Nº de transferencia, recibo o cheque.')
@@ -84,6 +85,8 @@ class EstateCommissionPayoutWizard(models.TransientModel):
                 r_name = role_labels.get(com.role, com.role) if com.role else 'Comisión'
                 user_data[uid] = {'user_id': uid, 'roles': [r_name], 'amount': com.amount}
 
+        method = (vals.get('payment_method') or self.env.context.get('default_payment_method')
+                  or 'transfer')
         lines = []
         for uid, data in user_data.items():
             base = round(data['amount'], 2)
@@ -92,21 +95,30 @@ class EstateCommissionPayoutWizard(models.TransientModel):
                 'roles': ', '.join(data['roles']),
                 'amount_base': base,
                 'invoice': 'without',
-                'amount_vat': 0.0,
-                'amount_total': base,
+                'payment_method': method,
+                'payment_date': fields.Date.context_today(self),
             }))
         vals['line_ids'] = lines
         return vals
 
+    def _line_vals(self, user):
+        """Cómo se le paga a `user`: lo que se puso en su recuadro."""
+        line = self.line_ids.filtered(lambda l: l.user_id == user)[:1]
+        if not line:
+            return {'has_invoice': 'without', 'payment_method': self.payment_method or 'transfer',
+                    'payment_date': self.payment_date, 'payment_reference': self.payment_reference}
+        if not line.payment_method:
+            raise UserError('Indica cómo se le paga a %s.' % user.name)
+        return {
+            'has_invoice': line.invoice,
+            'payment_method': line.payment_method,
+            'payment_date': line.payment_date or fields.Date.context_today(self),
+            'payment_reference': line.payment_reference,
+        }
+
     def action_confirm(self):
         self.ensure_one()
         com = self.commission_id
-        com.write({
-            'payment_method': self.payment_method,
-            'payment_date': self.payment_date,
-            'payment_reference': self.payment_reference,
-        })
-        invoice_by_user = {line.user_id.id: line.invoice for line in self.line_ids}
 
         if self.mode == 'split':
             lineas = com.split_line_ids.filtered(lambda l: l.user_id and l.amount > 0)
@@ -114,8 +126,7 @@ class EstateCommissionPayoutWizard(models.TransientModel):
                 raise UserError('Asigna al menos un asesor con monto en el reparto antes de pagar.')
             creadas = self.env['estate.commission']
             for linea in lineas:
-                inv_choice = invoice_by_user.get(linea.user_id.id, 'without')
-                creadas |= self.env['estate.commission'].create({
+                creadas |= self.env['estate.commission'].create(dict(self._line_vals(linea.user_id), **{
                     'property_id': com.property_id.id,
                     'lead_id': com.lead_id.id,
                     'user_id': linea.user_id.id,
@@ -128,14 +139,9 @@ class EstateCommissionPayoutWizard(models.TransientModel):
                     'date': com.date,
                     'state': 'approved',
                     'parent_commission_id': com.id,
-                    'has_invoice': inv_choice,
-                    'payment_method': self.payment_method,
-                    'payment_date': self.payment_date,
-                    'payment_reference': self.payment_reference,
-                })
+                }))
             com.state = 'split'
-            for hija in creadas:
-                hija.action_register_payment()
+            creadas.action_register_payment()
             return com.action_view_children()
 
         if self.mode == 'pending':
@@ -144,23 +150,11 @@ class EstateCommissionPayoutWizard(models.TransientModel):
             if not pendientes:
                 raise UserError('Todas las comisiones de este reparto ya están pagadas.')
             for hija in pendientes:
-                inv_choice = invoice_by_user.get(hija.user_id.id, 'without')
-                hija.write({
-                    'has_invoice': inv_choice,
-                    'payment_method': self.payment_method,
-                    'payment_date': self.payment_date,
-                    'payment_reference': self.payment_reference,
-                })
-                hija.action_register_payment()
+                hija.write(self._line_vals(hija.user_id))
+            pendientes.action_register_payment()
             return com.action_view_children()
 
-        inv_choice = invoice_by_user.get(com.user_id.id, 'without')
-        com.write({
-            'has_invoice': inv_choice,
-            'payment_method': self.payment_method,
-            'payment_date': self.payment_date,
-            'payment_reference': self.payment_reference,
-        })
+        com.write(self._line_vals(com.user_id))
         com.action_register_payment()
         return {'type': 'ir.actions.act_window_close'}
 
@@ -181,6 +175,11 @@ class EstateCommissionPayoutLine(models.TransientModel):
     amount_total = fields.Monetary(
         string='Total a pagar', currency_field='company_currency', compute='_compute_amounts')
     company_currency = fields.Many2one(related='wizard_id.company_currency')
+    payment_method = fields.Selection(
+        selection=lambda self: self.env['estate.commission']._fields['payment_method'].selection,
+        string='¿Cómo se le paga?', default='transfer')
+    payment_date = fields.Date(string='Fecha de pago', default=fields.Date.context_today)
+    payment_reference = fields.Char(string='Comprobante / Referencia')
 
     @api.depends('invoice', 'amount_base')
     def _compute_amounts(self):

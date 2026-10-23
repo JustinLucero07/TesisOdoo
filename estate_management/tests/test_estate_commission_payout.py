@@ -134,7 +134,8 @@ class TestEstateCommissionPayout(TransactionCase):
             self.assertEqual(pay.estate_kind, 'advisor')
             self.assertEqual(pay.estate_invoice_mode, child.has_invoice)
             self.assertEqual(pay.partner_id, child.user_id.partner_id)
-            self.assertAlmostEqual(pay.amount, child.amount_total, places=2)
+            hermanas = self.commission.child_commission_ids.filtered(lambda c: c.payment_id == pay)
+            self.assertAlmostEqual(pay.amount, sum(hermanas.mapped('amount_total')), places=2)
             if child.has_invoice == 'without':
                 self.assertFalse(child.invoice_id)
             else:
@@ -164,3 +165,32 @@ class TestEstateCommissionPayout(TransactionCase):
         self.assertEqual(com.state, 'approved')
         self.assertEqual(pay.state, 'canceled')
         self.assertEqual(bill.state, 'cancel')
+
+    def test_cada_asesor_con_su_forma_de_pago_y_un_solo_pago(self):
+        """Cada recuadro guarda su propia forma de pago, fecha y referencia, y
+        las tres comisiones de Camila se pagan con un solo pago."""
+        wizard = self.env['estate.commission.payout.wizard'].with_context(
+            default_commission_id=self.commission.id,
+            default_mode='split'
+        ).create({})
+        ufredo = wizard.line_ids.filtered(lambda l: l.user_id == self.user_advisor1)
+        camila = wizard.line_ids.filtered(lambda l: l.user_id == self.user_advisor2)
+        ufredo.write({'payment_method': 'cash', 'payment_reference': 'REC-1', 'invoice': 'without'})
+        camila.write({'payment_method': 'transfer', 'payment_reference': 'TRF-2', 'invoice': 'with'})
+        wizard.action_confirm()
+
+        hijos = self.commission.child_commission_ids
+        de_ufredo = hijos.filtered(lambda c: c.user_id == self.user_advisor1)
+        de_camila = hijos.filtered(lambda c: c.user_id == self.user_advisor2)
+        self.assertEqual(de_ufredo.payment_method, 'cash')
+        self.assertEqual(de_ufredo.payment_reference, 'REC-1')
+        self.assertEqual(set(de_camila.mapped('payment_method')), {'transfer'})
+        self.assertEqual(len(de_camila.payment_id), 1, 'Camila recibe un solo pago')
+        self.assertEqual(len(de_camila.invoice_id), 1, 'y una sola factura con una línea por rol')
+        self.assertEqual(len(de_camila.invoice_id.invoice_line_ids), 3)
+        self.assertAlmostEqual(de_camila.payment_id.amount, 1055.70, places=2)
+        self.assertAlmostEqual(de_ufredo.payment_id.amount, 183.60, places=2)
+
+        # Revertir una comisión de Camila revierte su pago completo
+        de_camila[:1].action_reset_to_approved()
+        self.assertEqual(set(de_camila.mapped('state')), {'approved'})

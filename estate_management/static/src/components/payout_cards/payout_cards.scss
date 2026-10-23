@@ -1,0 +1,47 @@
+.o_estate_payout_cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.o_estate_payout_card {
+    border: 1px solid $border-color;
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: $o-view-background-color;
+}
+
+.o_estate_payout_head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid $border-color;
+}
+
+.o_estate_payout_avatar {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+}
+
+.o_estate_payout_label {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: $text-muted;
+    margin-bottom: 4px;
+}
+
+.o_estate_payout_sum {
+    width: 100%;
+    td { padding: 2px 0; }
+    td:last-child { text-align: right; }
+}
+
+.o_form_view .o_field_widget.o_field_estate_payout_cards,
+.o_field_widget.o_field_estate_payout_cards {
+    display: block;
+    width: 100%;
+}

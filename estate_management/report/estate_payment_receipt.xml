@@ -47,13 +47,14 @@
     <template id="report_estate_payment_receipt">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="pay">
-                <t t-set="com" t-value="pay.estate_commission_id"/>
+                <t t-set="coms" t-value="pay.estate_commission_ids or pay.estate_commission_id"/>
+                <t t-set="com" t-value="coms[:1]"/>
                 <t t-set="kind" t-value="pay.estate_kind or ('advisor' if pay.payment_type == 'outbound' else 'collection')"/>
                 <t t-set="number" t-value="pay.name"/>
                 <t t-set="date" t-value="pay.date"/>
                 <t t-set="partner" t-value="pay.partner_id"/>
                 <t t-set="prop" t-value="pay.estate_property_id or com.property_id"/>
-                <t t-set="role" t-value="com.role and dict(com._fields['role'].selection).get(com.role)"/>
+                <t t-set="role" t-value="', '.join(dict(coms._fields['role'].selection).get(c.role) for c in coms if c.role)"/>
                 <t t-set="total" t-value="pay.amount"/>
                 <t t-set="vat" t-value="pay.estate_vat_amount"/>
                 <t t-set="base" t-value="pay.estate_base_amount or (pay.amount - pay.estate_vat_amount)"/>

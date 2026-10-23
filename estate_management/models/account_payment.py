@@ -20,6 +20,8 @@ class AccountPayment(models.Model):
         'sale.order', string='Venta', copy=False)
     estate_commission_id = fields.Many2one(
         'estate.commission', string='Comisión', copy=False)
+    estate_commission_ids = fields.One2many(
+        'estate.commission', 'payment_id', string='Comisiones pagadas')
     estate_base_amount = fields.Monetary(
         string='Base (sin IVA)', currency_field='currency_id', copy=False)
     estate_vat_amount = fields.Monetary(
