@@ -250,3 +250,37 @@ class TestEstateCommissionPayout(TransactionCase):
         wizard.line_ids.filtered(lambda l: l.user_id == self.user_advisor2).user_id = False
         with self.assertRaises(UserError):
             wizard.action_confirm()
+
+    def test_cuatro_asesores_distintos_cuatro_recuadros(self):
+        """Captación, recepción, visita y cierre con cuatro personas distintas:
+        cuatro recuadros, y cada uno se paga con sus propios datos."""
+        Users = self.env['res.users']
+        u3 = Users.create({'name': 'Asesor Visita', 'login': 'visita@test.com'})
+        u4 = Users.create({'name': 'Asesor Cierre', 'login': 'cierre@test.com'})
+        self.commission.split_line_ids.filtered(lambda l: l.role == 'visit').user_id = u3
+        self.commission.split_line_ids.filtered(lambda l: l.role == 'closing').user_id = u4
+
+        wizard = self.env['estate.commission.payout.wizard'].with_context(
+            default_commission_id=self.commission.id, default_mode='split').create({})
+        self.assertEqual(len(wizard.line_ids), 4)
+        datos = {
+            self.user_advisor1: ('cash', 'without', 'R-1'),
+            self.user_advisor2: ('transfer', 'with', 'T-2'),
+            u3: ('deposit', 'with_0', 'D-3'),
+            u4: ('check', 'without', 'C-4'),
+        }
+        for line in wizard.line_ids:
+            metodo, factura, ref = datos[line.user_id]
+            line.write({'payment_method': metodo, 'invoice': factura, 'payment_reference': ref})
+        wizard.action_confirm()
+
+        hijos = self.commission.child_commission_ids
+        self.assertEqual(len(hijos), 4)
+        self.assertEqual(len(hijos.mapped('payment_id')), 4, 'Un pago por asesor')
+        for h in hijos:
+            metodo, factura, ref = datos[h.user_id]
+            self.assertEqual((h.payment_method, h.has_invoice, h.payment_reference), (metodo, factura, ref))
+            self.assertEqual(h.payment_id.estate_invoice_mode, factura)
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'estate_management.action_report_commission_receipt', hijos.ids)
+        self.assertEqual(html.count(b'Comprobante de pago'), 4, 'Un comprobante por asesor')
