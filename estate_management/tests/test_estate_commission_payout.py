@@ -240,3 +240,13 @@ class TestEstateCommissionPayout(TransactionCase):
         self.assertEqual(com.payment_id.estate_kind, 'advisor')
         self.assertEqual(str(com.payment_id.date), '2026-09-14')
         self.assertAlmostEqual(com.payment_id.amount, 300.0)
+
+    def test_sin_recuadro_del_asesor_no_paga_con_datos_por_defecto(self):
+        """Si el recuadro de un asesor llega sin asesor, se avisa en vez de
+        pagarle a todos con los mismos datos."""
+        from odoo.exceptions import UserError
+        wizard = self.env['estate.commission.payout.wizard'].with_context(
+            default_commission_id=self.commission.id, default_mode='split').create({})
+        wizard.line_ids.filtered(lambda l: l.user_id == self.user_advisor2).user_id = False
+        with self.assertRaises(UserError):
+            wizard.action_confirm()

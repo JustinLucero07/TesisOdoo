@@ -105,8 +105,10 @@ class EstateCommissionPayoutWizard(models.TransientModel):
         """Cómo se le paga a `user`: lo que se puso en su recuadro."""
         line = self.line_ids.filtered(lambda l: l.user_id == user)[:1]
         if not line:
-            return {'has_invoice': 'without', 'payment_method': self.payment_method or 'transfer',
-                    'payment_date': self.payment_date, 'payment_reference': self.payment_reference}
+            # Nunca pagar con datos inventados: si falta el recuadro del
+            # asesor, se avisa en vez de usar valores por defecto.
+            raise UserError('No llegaron los datos de pago de %s. Cierra la ventana y '
+                            'vuelve a intentarlo.' % user.name)
         if not line.payment_method:
             raise UserError('Indica cómo se le paga a %s.' % user.name)
         return {
