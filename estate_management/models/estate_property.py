@@ -177,6 +177,9 @@ class EstateProperty(models.Model):
     co_capture_user_id = fields.Many2one(
         'res.users', string='Asesor Responsable (Co-Captador)', tracking=True,
         help='Segundo asesor que participó en la captación, si la hicieron entre dos.')
+    has_sign = fields.Boolean(
+        string='Letrero puesto', default=False, tracking=True,
+        help='Marca si ya se colocó el letrero de "Se vende / Se arrienda" en la propiedad.')
     capture_user_ids = fields.Many2many(
         'res.users', 'estate_property_capture_user_rel', 'property_id', 'user_id',
         string='Captadores', compute='_compute_capture_user_ids', store=True,

@@ -32,6 +32,7 @@
                        string="Captador"/>
                 <field name="co_capture_user_id" widget="many2one_avatar_user" optional="hide"
                        string="Co-captador"/>
+                <field name="has_sign" string="Letrero" widget="boolean_toggle" optional="show"/>
                 <field name="days_on_market" optional="show" string="Días"
                        decoration-warning="days_on_market &gt; 60"
                        decoration-danger="days_on_market &gt; 120"/>
@@ -232,6 +233,7 @@
                                  saber quién captó en los dos casos. -->
                             <field name="exclusive_user_id" widget="many2one_avatar_user"/>
                             <field name="co_capture_user_id" widget="many2one_avatar_user"/>
+                            <field name="has_sign" widget="boolean_toggle"/>
                             <field name="capture_user_ids" widget="many2many_tags" invisible="1"/>
                         </group>
                         <field name="is_land_type" invisible="1"/>
@@ -646,6 +648,9 @@
                 <filter name="filter_cancelled" string="Retiradas del Catálogo" domain="[('state', '=', 'cancelled')]"/>
                 <filter name="filter_stagnant" string="Estancadas (+60 días)"
                         domain="[('state', '=', 'available'), ('date_listed', '&lt;=', (context_today() - datetime.timedelta(days=60)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter name="filter_has_sign" string="Con letrero" domain="[('has_sign', '=', True)]"/>
+                <filter name="filter_no_sign" string="Sin letrero" domain="[('has_sign', '=', False)]"/>
                 <separator/>
                 <filter name="filter_wp_linked" string="Enlazadas con WordPress" domain="[('wp_published', '=', True)]"/>
                 <filter name="filter_wp_unlinked" string="Desvinculadas de WordPress" domain="[('wp_unlinked', '=', True)]"/>
