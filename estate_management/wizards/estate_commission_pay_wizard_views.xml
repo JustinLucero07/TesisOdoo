@@ -43,7 +43,7 @@
                     <group>
                         <field name="amount_vat" widget="monetary"
                                options="{'currency_field': 'company_currency'}"
-                               invisible="invoice != 'with'"/>
+                               invisible="invoice == 'without'"/>
                         <field name="amount_total" widget="monetary"
                                options="{'currency_field': 'company_currency'}"
                                class="oe_subtotal_footer_separator fw-bold"/>
@@ -53,10 +53,16 @@
                                invisible="payment_method == 'cash'"/>
                         <field name="payment_bank_to" placeholder="Ej. Banco Guayaquil"
                                invisible="payment_method == 'cash'"/>
+                        <field name="advisor_invoice_number" placeholder="Ej. 001-001-000001234"
+                               invisible="invoice == 'without'"/>
+                    </group>
+                    <group colspan="2">
+                        <field name="payment_note" placeholder="Observaciones del pago..."/>
                     </group>
                 </group>
                 <p class="text-muted small">
                     <b>Con factura 15%:</b> se suma el 15% de IVA y se registra la factura de proveedor del asesor, ya pagada.<br/>
+                    <b>Con factura 15% (IVA incluido):</b> el monto no cambia; el IVA se desglosa de adentro.<br/>
                     <b>Con factura 0%:</b> se registra la factura del asesor con IVA 0%, ya pagada.<br/>
                     <b>Sin factura:</b> se paga el monto neto, sin factura; el pago igual queda en Facturación.<br/>
                     Después del pago puedes imprimir el <b>comprobante</b> para que el asesor lo firme.

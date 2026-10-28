@@ -51,6 +51,11 @@
                         </span>
                     </div>
                 </button>
+                <button class="oe_stat_button" icon="fa-user-plus" type="object"
+                        name="action_estate_view_third_payments"
+                        invisible="estate_link_third_count == 0">
+                    <field name="estate_link_third_count" string="Pagos a terceros" widget="statinfo"/>
+                </button>
                 <button class="oe_stat_button" icon="fa-upload" type="object"
                         name="action_estate_view_advisor_payments"
                         invisible="estate_link_advisor_payment_count == 0">
@@ -94,6 +99,14 @@
                             <field name="estate_collected_reference" invisible="not estate_collected_reference"/>
                             <field name="estate_collected_bank_from" string="Banco de origen" invisible="not estate_collected_bank_from"/>
                             <field name="estate_collected_bank_to" string="Banco de destino" invisible="not estate_collected_bank_to"/>
+                            <field name="estate_is_allied" invisible="1"/>
+                            <field name="estate_commission_gross" string="Comisión total" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   invisible="not estate_is_allied or not estate_commission_gross"/>
+                            <field name="estate_allied_agency_id" string="Agencia aliada" invisible="not estate_is_allied"/>
+                            <field name="estate_allied_pct" invisible="not estate_is_allied"/>
+                            <field name="estate_collect_full" invisible="not estate_is_allied or not estate_commission_collected"/>
+                            <field name="estate_collected_note" string="Observaciones" invisible="not estate_collected_note"/>
                             <div colspan="2" invisible="not estate_commission_collected">
                                 <button name="action_estate_view_collection" type="object"
                                         string="Ver cobro" icon="fa-money"
@@ -122,6 +135,45 @@
                                 </span>
                             </div>
                         </group>
+                    </group>
+                    <group string="④ Pagos a terceros (colaboradores, referidos, aliado)">
+                        <div colspan="2">
+                            <field name="estate_third_payment_ids" readonly="1" nolabel="1"
+                                   invisible="not estate_third_payment_ids">
+                                <list decoration-muted="state == 'canceled'">
+                                    <field name="date"/>
+                                    <field name="partner_id" string="A quién"/>
+                                    <field name="estate_concept"/>
+                                    <field name="estate_method_label"/>
+                                    <field name="estate_invoice_number" optional="show"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="currency_id" column_invisible="1"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                            <button name="action_estate_third_payment" type="object"
+                                    string="Registrar pago a tercero" icon="fa-plus"
+                                    class="btn-secondary btn-sm mt-2"
+                                    help="Para alguien que ayudó en el negocio. Se descuenta de la ganancia de la oficina."/>
+                        </div>
+                    </group>
+                    <group string="Negocio cerrado (datos del cierre)">
+                        <group>
+                            <field name="estate_deal_deadline"/>
+                            <field name="estate_deal_payment_type"/>
+                            <field name="estate_deal_credit_institution"
+                                   invisible="not estate_deal_credit_institution"/>
+                            <field name="estate_deal_earnest_amount" invisible="not estate_deal_earnest_amount"/>
+                        </group>
+                        <group>
+                            <field name="estate_deal_payment_details"/>
+                            <field name="estate_deal_observations"/>
+                        </group>
+                        <div colspan="2">
+                            <button name="action_estate_edit_deal" type="object"
+                                    string="Modificar cierre / observaciones" icon="fa-pencil"
+                                    class="btn-secondary btn-sm"/>
+                        </div>
                     </group>
                 </page>
             </xpath>

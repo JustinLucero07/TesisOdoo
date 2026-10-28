@@ -63,6 +63,9 @@
                 <t t-set="reference" t-value="(com.payment_reference if com else pay.estate_sale_order_id.estate_collected_reference) or pay.memo"/>
                 <t t-set="invoices" t-value="', '.join((pay.reconciled_bill_ids | pay.reconciled_invoice_ids).mapped('name'))"/>
                 <t t-set="currency" t-value="pay.currency_id"/>
+                <t t-set="concept" t-value="pay.estate_concept"/>
+                <t t-set="invoice_number" t-value="pay.estate_invoice_number"/>
+                <t t-set="note" t-value="pay.estate_note"/>
                 <t t-set="bank_from" t-value="pay.estate_bank_from"/>
                 <t t-set="bank_to" t-value="pay.estate_bank_to"/>
                 <t t-set="role_names" t-value="dict(coms._fields['role'].selection)"/>
@@ -93,6 +96,9 @@
                 <t t-set="reference" t-value="com.payment_reference"/>
                 <t t-set="invoices" t-value="', '.join(coms.mapped('invoice_id.name'))"/>
                 <t t-set="currency" t-value="com.company_currency"/>
+                <t t-set="concept" t-value="False"/>
+                <t t-set="invoice_number" t-value="com.advisor_invoice_number"/>
+                <t t-set="note" t-value="com.payment_note"/>
                 <t t-set="bank_from" t-value="com.payment_bank_from"/>
                 <t t-set="bank_to" t-value="com.payment_bank_to"/>
                 <t t-set="lines" t-value="[(role_names.get(c.role) or c.name, c.amount, c.amount_tax, c.amount_total or c.amount) for c in coms]"/>
@@ -103,7 +109,7 @@
 
     <template id="report_estate_receipt_body">
         <t t-set="company" t-value="env.company"/>
-        <t t-set="is_advisor" t-value="kind == 'advisor'"/>
+        <t t-set="is_advisor" t-value="kind in ('advisor', 'third')"/>
         <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#1f2430; font-size:12px;">
             <div class="page">
                 <!-- Encabezado -->
@@ -138,7 +144,7 @@
                             </div>
                             <div style="font-size:16px; font-weight:bold; color:#142559; margin-top:2px;" t-esc="partner.name"/>
                             <div t-if="partner.vat" style="color:#4b5563;">C.I. / RUC: <t t-esc="partner.vat"/></div>
-                            <div t-if="is_advisor and role" style="color:#4b5563;">Rol en el negocio: <t t-esc="role"/></div>
+                            <div t-if="kind == 'advisor' and role" style="color:#4b5563;">Rol en el negocio: <t t-esc="role"/></div>
                         </td>
                         <td style="vertical-align:top; text-align:right; border:1px solid #d6dbe8; border-radius:6px; padding:10px 14px;">
                             <div style="font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:1px;">Total</div>
@@ -159,7 +165,8 @@
                     <tr>
                         <td style="padding:6px 10px; color:#6b7280; width:35%;">Concepto</td>
                         <td style="padding:6px 10px;">
-                            <t t-if="is_advisor">Comisión por la venta de</t>
+                            <t t-if="concept"><t t-esc="concept"/> —</t>
+                            <t t-elif="is_advisor">Comisión por la venta de</t>
                             <t t-else="">Comisión inmobiliaria por la venta de</t>
                             <b t-esc="prop.title or prop.display_name or '—'"/>
                         </td>
@@ -173,6 +180,10 @@
                         <td style="padding:6px 10px;">
                             <t t-esc="mode or '—'"/><t t-if="invoices"> · <t t-esc="invoices"/></t>
                         </td>
+                    </tr>
+                    <tr t-if="invoice_number">
+                        <td style="padding:6px 10px; color:#6b7280;">Nº de factura recibida</td>
+                        <td style="padding:6px 10px;" t-esc="invoice_number"/>
                     </tr>
                     <tr>
                         <td style="padding:6px 10px; color:#6b7280;">Forma de pago</td>
@@ -189,6 +200,10 @@
                     <tr>
                         <td style="padding:6px 10px; color:#6b7280;">Referencia</td>
                         <td style="padding:6px 10px;" t-esc="reference or '—'"/>
+                    </tr>
+                    <tr t-if="note">
+                        <td style="padding:6px 10px; color:#6b7280;">Observaciones</td>
+                        <td style="padding:6px 10px; white-space:pre-line;" t-esc="note"/>
                     </tr>
                 </table>
 
@@ -227,7 +242,8 @@
                 <p style="margin-top:18px; color:#4b5563; font-size:11px;">
                     <t t-if="is_advisor">
                         Declaro haber recibido de <b t-esc="company.name"/> el valor indicado por concepto de
-                        comisión del negocio detallado, a mi entera satisfacción.
+                        <t t-if="concept"><t t-esc="concept.lower()"/> en el</t><t t-else="">comisión del</t>
+                        negocio detallado, a mi entera satisfacción.
                     </t>
                     <t t-else="">
                         <b t-esc="company.name"/> declara haber recibido el valor indicado por concepto de

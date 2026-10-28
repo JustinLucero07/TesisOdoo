@@ -9,7 +9,7 @@
         <field name="arch" type="xml">
             <xpath expr="//header" position="inside">
                 <button name="action_estate_correct" type="object" string="Corregir datos"
-                        icon="fa-pencil" invisible="not estate_kind or state == 'canceled'"
+                        icon="fa-pencil" invisible="estate_kind not in ('advisor', 'collection') or state == 'canceled'"
                         help="Cambiar fecha, forma de pago, factura, referencia o bancos."/>
                 <button name="action_estate_print" type="object" string="Imprimir comprobante"
                         icon="fa-print" invisible="not estate_kind or state == 'canceled'"/>
@@ -42,9 +42,12 @@
                         <field name="estate_method_label" readonly="1"/>
                         <field name="estate_bank_from" readonly="1" invisible="not estate_bank_from"/>
                         <field name="estate_bank_to" readonly="1" invisible="not estate_bank_to"/>
+                        <field name="estate_invoice_number" readonly="1" invisible="not estate_invoice_number"/>
+                        <field name="estate_concept" readonly="1" invisible="not estate_concept"/>
                         <field name="estate_base_amount" readonly="1"/>
                         <field name="estate_vat_amount" readonly="1"/>
                     </group>
+                    <field name="estate_note" readonly="1" colspan="2" invisible="not estate_note"/>
                 </group>
             </xpath>
         </field>
@@ -71,6 +74,8 @@
                        decoration-warning="estate_invoice_mode == 'without'"/>
                 <field name="estate_method_label"/>
                 <field name="memo" string="Referencia"/>
+                <field name="estate_concept" optional="hide"/>
+                <field name="estate_invoice_number" optional="show"/>
                 <field name="estate_bank_from" optional="show"/>
                 <field name="estate_bank_to" optional="show"/>
                 <field name="estate_base_amount" sum="Total base"/>
@@ -176,6 +181,22 @@
         </field>
     </record>
 
+    <record id="action_estate_payments_third" model="ir.actions.act_window">
+        <field name="name">Pagos a terceros</field>
+        <field name="res_model">account.payment</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('estate_kind', '=', 'third')]</field>
+        <field name="context">{'search_default_not_canceled': 1}</field>
+        <field name="search_view_id" ref="view_account_payment_estate_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_account_payment_estate_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('account.view_account_payment_form')})]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No hay pagos a terceros.</p>
+            <p>Colaboradores, referidos o la parte del aliado. Se registran desde la venta, en "Proceso de la venta".</p>
+        </field>
+    </record>
+
     <record id="action_estate_payments_other" model="ir.actions.act_window">
         <field name="name">Otros pagos y cobros</field>
         <field name="res_model">account.payment</field>
@@ -205,12 +226,14 @@
               parent="menu_account_estate_sec_in" action="action_estate_payments_collection" sequence="10"/>
     <menuitem id="menu_account_estate_invoices_in" name="Facturas de cobro"
               parent="menu_account_estate_sec_in" action="action_estate_invoices_collection" sequence="20"/>
-    <menuitem id="menu_account_estate_sec_out" name="Lo que pago (asesores)"
+    <menuitem id="menu_account_estate_sec_out" name="Lo que pago (asesores y terceros)"
               parent="menu_account_estate_root" sequence="20"/>
     <menuitem id="menu_account_estate_advisors" name="Pagos a asesores"
               parent="menu_account_estate_sec_out" action="action_estate_payments_advisor" sequence="10"/>
     <menuitem id="menu_account_estate_invoices_out" name="Facturas de asesores"
               parent="menu_account_estate_sec_out" action="action_estate_invoices_advisor" sequence="20"/>
+    <menuitem id="menu_account_estate_third" name="Pagos a terceros"
+              parent="menu_account_estate_sec_out" action="action_estate_payments_third" sequence="30"/>
     <menuitem id="menu_account_estate_sec_other" name="Otros"
               parent="menu_account_estate_root" sequence="30"/>
     <menuitem id="menu_account_estate_other" name="Otros pagos y cobros"

@@ -180,3 +180,72 @@ class TestEstateSaleCollectWizard(TransactionCase):
         self.assertEqual(self.property.estate_link_payment_count, 1)
         self.property.action_view_estate_payments()
         self.property.action_view_sale_orders()
+
+    def test_cobro_con_iva_incluido(self):
+        """3.000 con IVA incluido: el total no cambia y se desglosa el IVA."""
+        self.order.order_line.price_unit = 3000.0
+        wiz = self.env['estate.sale.collect.wizard'].with_context(
+            active_model='sale.order', active_ids=self.order.ids).create({'invoice': 'with_incl'})
+        self.assertAlmostEqual(wiz.amount_total, 3000.0, places=2)
+        self.assertAlmostEqual(wiz.amount_untaxed, 2608.70, places=2)
+        self.assertAlmostEqual(wiz.amount_vat, 391.30, places=2)
+        wiz.action_confirm()
+        pay = self.order.estate_collection_payment_ids
+        self.assertAlmostEqual(pay.amount, 3000.0, places=2)
+        inv = self.order.invoice_ids.filtered(lambda m: m.state == 'posted')
+        self.assertAlmostEqual(inv.amount_total, 3000.0, places=2)
+        self.assertAlmostEqual(inv.amount_untaxed, 2608.70, places=1)
+
+    def _make_allied(self):
+        agency = self.Partner.create({'name': 'Agencia Aliada Test', 'is_allied_agency': True})
+        self.property.write({'is_allied_property': True, 'allied_agency_id': agency.id,
+                             'allied_split_pct': 50.0})
+        return agency
+
+    def test_aliado_solo_nuestra_parte(self):
+        self._make_allied()
+        wiz = self.env['estate.sale.collect.wizard'].with_context(
+            active_model='sale.order', active_ids=self.order.ids).create(
+            {'invoice': 'without', 'note': 'Pagó en dos partes'})
+        self.assertTrue(wiz.has_allied)
+        self.assertAlmostEqual(wiz.allied_share, 1000.0)
+        self.assertAlmostEqual(wiz.amount_total, 1000.0)
+        wiz.action_confirm()
+        pay = self.order.estate_collection_payment_ids
+        self.assertAlmostEqual(pay.amount, 1000.0)
+        self.assertEqual(pay.estate_note, 'Pagó en dos partes')
+        self.assertFalse(self.order.estate_third_payment_ids)
+        self.assertAlmostEqual(self.order.estate_commission_gross, 2000.0)
+
+    def test_aliado_cobramos_total_y_pagamos_al_aliado(self):
+        agency = self._make_allied()
+        wiz = self.env['estate.sale.collect.wizard'].with_context(
+            active_model='sale.order', active_ids=self.order.ids).create(
+            {'invoice': 'without', 'collect_full': True})
+        self.assertAlmostEqual(wiz.amount_total, 2000.0)
+        wiz.action_confirm()
+        self.assertAlmostEqual(self.order.estate_collection_payment_ids.amount, 2000.0)
+        third = self.order.estate_third_payment_ids
+        self.assertEqual(third.partner_id, agency)
+        self.assertAlmostEqual(third.amount, 1000.0)
+        self.assertAlmostEqual(self.order.estate_office_amount, 1000.0)
+        # Quitar el cobro anula también el pago al aliado
+        self.order.action_estate_unmark_collected()
+        self.assertEqual(third.state, 'canceled')
+
+    def test_pago_a_tercero_descuenta_de_la_oficina(self):
+        self._collect('without')
+        helper = self.Partner.create({'name': 'Colaborador Test'})
+        action = self.env['estate.third.payment.wizard'].create({
+            'order_id': self.order.id, 'partner_id': helper.id, 'amount': 500.0,
+            'concept': 'Referido', 'method': 'cash', 'invoice_number': '001-001-55',
+        }).action_confirm()
+        pay = self.order.estate_third_payment_ids
+        self.assertEqual(pay.estate_kind, 'third')
+        self.assertAlmostEqual(pay.amount, 500.0)
+        self.assertAlmostEqual(self.order.estate_office_amount, 1500.0)
+        self.assertEqual(action['type'], 'ir.actions.report')
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'estate_management.action_report_estate_payment_receipt', pay.ids)
+        self.assertIn(b'Referido', html)
+        self.assertIn(b'001-001-55', html)

@@ -284,3 +284,22 @@ class TestEstateCommissionPayout(TransactionCase):
         html, _ = self.env['ir.actions.report']._render_qweb_html(
             'estate_management.action_report_commission_receipt', hijos.ids)
         self.assertEqual(html.count(b'Comprobante de pago'), 4, 'Un comprobante por asesor')
+
+    def test_asesor_iva_incluido_y_numero_de_factura(self):
+        com = self.env['estate.commission'].create({
+            'property_id': self.property.id, 'user_id': self.user_advisor1.id,
+            'amount': 1150.0, 'state': 'approved', 'has_invoice': 'with_incl',
+            'payment_method': 'transfer', 'advisor_invoice_number': '001-002-000123',
+            'payment_note': 'Factura entregada en oficina',
+        })
+        com.action_register_payment()
+        self.assertAlmostEqual(com.amount_total, 1150.0, places=2)
+        self.assertAlmostEqual(com.amount_tax, 150.0, places=2)
+        self.assertAlmostEqual(com.payment_id.amount, 1150.0, places=2)
+        self.assertEqual(com.invoice_id.ref, '001-002-000123')
+        self.assertAlmostEqual(com.invoice_id.amount_total, 1150.0, places=2)
+        self.assertEqual(com.payment_id.estate_invoice_number, '001-002-000123')
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'estate_management.action_report_commission_receipt', com.ids)
+        self.assertIn(b'001-002-000123', html)
+        self.assertIn(b'Factura entregada en oficina', html)

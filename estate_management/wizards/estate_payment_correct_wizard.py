@@ -30,6 +30,10 @@ class EstatePaymentCorrectWizard(models.TransientModel):
     reference = fields.Char(string='Comprobante / Referencia')
     bank_from = fields.Char(string='Banco de origen')
     bank_to = fields.Char(string='Banco de destino')
+    invoice_number = fields.Char(string='Nº de factura del asesor')
+    note = fields.Text(string='Observaciones')
+    has_allied = fields.Boolean(readonly=True)
+    collect_full = fields.Boolean(string='Cobramos el total y le pagamos al aliado')
 
     @api.model
     def default_get(self, fields_list):
@@ -62,6 +66,8 @@ class EstatePaymentCorrectWizard(models.TransientModel):
                 'reference': com.payment_reference,
                 'bank_from': com.payment_bank_from,
                 'bank_to': com.payment_bank_to,
+                'invoice_number': com.advisor_invoice_number,
+                'note': com.payment_note,
             })
         elif order:
             vals.update({
@@ -74,6 +80,9 @@ class EstatePaymentCorrectWizard(models.TransientModel):
                 'reference': order.estate_collected_reference,
                 'bank_from': order.estate_collected_bank_from,
                 'bank_to': order.estate_collected_bank_to,
+                'note': order.estate_collected_note,
+                'has_allied': order.estate_is_allied,
+                'collect_full': order.estate_collect_full,
             })
         return vals
 
@@ -91,6 +100,8 @@ class EstatePaymentCorrectWizard(models.TransientModel):
                 'payment_reference': self.reference,
                 'payment_bank_from': self.bank_from,
                 'payment_bank_to': self.bank_to,
+                'advisor_invoice_number': self.invoice_number,
+                'payment_note': self.note,
             })
             coms.action_register_payment()
             for com in coms:
@@ -110,6 +121,8 @@ class EstatePaymentCorrectWizard(models.TransientModel):
             'reference': self.reference,
             'bank_from': self.bank_from,
             'bank_to': self.bank_to,
+            'note': self.note,
+            'collect_full': self.collect_full,
         })._estate_register(follow_up=False)
         order.message_post(body='Cobro corregido por %s.' % self.env.user.name)
         return {'type': 'ir.actions.act_window_close'}

@@ -5,7 +5,7 @@ from odoo.tools.misc import clean_context
 from odoo.exceptions import UserError, ValidationError
 
 from ..tools.invoice_modes import (
-    INVOICE_MODES, find_tax, is_invoiced, payment_journal, vat_amount)
+    INVOICE_MODES, find_tax, is_invoiced, payment_journal, split_amounts)
 
 # Los pasos del negocio que pueden cobrar comisión. Se definen aquí porque los
 # usan tanto la comisión como sus líneas de reparto.
@@ -531,6 +531,10 @@ class EstateCommission(models.Model):
         help='Banco desde el que paga la oficina.')
     payment_bank_to = fields.Char(string='Banco de destino', copy=False,
         help='Banco del asesor que recibe el pago.')
+    advisor_invoice_number = fields.Char(
+        string='Nº de factura del asesor', copy=False,
+        help='Número de la factura que entregó el asesor, como constancia.')
+    payment_note = fields.Text(string='Observaciones del pago', copy=False)
 
     has_invoice = fields.Selection(
         INVOICE_MODES, string='Factura', default='without', copy=False)
@@ -671,7 +675,8 @@ class EstateCommission(models.Model):
         for rec in self:
             key = (rec.user_id.id, rec.has_invoice or 'without', rec.payment_method,
                    rec.payment_date, rec.payment_reference or '', rec.property_id.id,
-                   rec.payment_bank_from or '', rec.payment_bank_to or '')
+                   rec.payment_bank_from or '', rec.payment_bank_to or '',
+                   rec.advisor_invoice_number or '', rec.payment_note or '')
             groups.setdefault(key, self.browse())
             groups[key] |= rec
         for group in groups.values():
@@ -688,10 +693,11 @@ class EstateCommission(models.Model):
             raise UserError('No hay un diario de Banco o Caja configurado en Facturación.')
         metodo = dict(self._fields['payment_method'].selection).get(first.payment_method, '')
         roles = dict(self._fields['role'].selection)
-        base = round(sum(self.mapped('amount')), 2)
+        bases = {}
         for rec in self:
-            rec.amount_tax = vat_amount(rec.amount, mode)
-            rec.amount_total = round(rec.amount + rec.amount_tax, 2)
+            rec_base, rec.amount_tax, rec.amount_total = split_amounts(rec.amount, mode)
+            bases[rec.id] = rec_base
+        base = round(sum(bases.values()), 2)
         iva = round(sum(self.mapped('amount_tax')), 2)
         nombres = ', '.join(self.mapped('name'))
         estate_vals = {
@@ -704,6 +710,8 @@ class EstateCommission(models.Model):
             'estate_method_label': metodo,
             'estate_bank_from': first.payment_bank_from,
             'estate_bank_to': first.payment_bank_to,
+            'estate_invoice_number': first.advisor_invoice_number,
+            'estate_note': first.payment_note,
         }
 
         if is_invoiced(mode):
@@ -718,7 +726,7 @@ class EstateCommission(models.Model):
                     'move_type': 'in_invoice',
                     'partner_id': partner.id,
                     'invoice_date': fecha,
-                    'ref': first.payment_reference or nombres,
+                    'ref': first.advisor_invoice_number or first.payment_reference or nombres,
                     'estate_transaction_type': 'commission',
                     'property_id': first.property_id.id,
                     'invoice_line_ids': [(0, 0, {
@@ -754,7 +762,7 @@ class EstateCommission(models.Model):
                 'payment_type': 'outbound',
                 'partner_type': 'supplier',
                 'partner_id': partner.id,
-                'amount': base,
+                'amount': round(sum(self.mapped('amount_total')), 2),
                 'date': fecha,
                 'journal_id': journal.id,
                 'memo': '%s · %s' % (nombres, first.payment_reference or 'Comisión sin factura'),
@@ -771,7 +779,7 @@ class EstateCommission(models.Model):
             rec.message_post(body=Markup(
                 '<b>Comisión PAGADA</b> a <b>%s</b>: $%s%s el %s vía %s%s. %s Registrado por %s.') % (
                 rec.user_id.name, '{:,.2f}'.format(rec.amount_total),
-                Markup(' (base $%s + IVA $%s)') % ('{:,.2f}'.format(rec.amount), '{:,.2f}'.format(rec.amount_tax))
+                Markup(' (base $%s + IVA $%s)') % ('{:,.2f}'.format(bases[rec.id]), '{:,.2f}'.format(rec.amount_tax))
                 if rec.amount_tax else '',
                 fecha.strftime('%d/%m/%Y'), metodo, ref, Markup(detalle), self.env.user.name))
 
@@ -909,6 +917,7 @@ class EstateCommission(models.Model):
                        'payment_method': False, 'payment_reference': False,
                        'paid_by_id': False, 'payment_id': False,
                        'payment_bank_from': False, 'payment_bank_to': False,
+                       'advisor_invoice_number': False, 'payment_note': False,
                        'invoice_id': False, 'amount_tax': 0.0, 'amount_total': 0.0})
             rec.message_post(body=f"Pago de comisión REVERTIDO por {self.env.user.name}.")
         return True

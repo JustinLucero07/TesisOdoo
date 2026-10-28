@@ -27,6 +27,27 @@
                         <field name="amount_total" widget="monetary" readonly="1" class="fw-bold fs-5"/>
                     </group>
                 </group>
+                <field name="has_allied" invisible="1"/>
+                <div class="alert alert-info" role="status" invisible="not has_allied">
+                    <i class="fa fa-handshake-o me-1" title="Aliado"/>
+                    <b>Negocio con agencia aliada:</b> <field name="allied_label" readonly="1" class="d-inline"/>.
+                    Comisión total <b><field name="allied_gross" widget="monetary" readonly="1" class="d-inline"/></b> ·
+                    parte del aliado <field name="allied_share" widget="monetary" readonly="1" class="d-inline"/> ·
+                    nuestra parte <b><field name="our_share" widget="monetary" readonly="1" class="d-inline"/></b>.
+                    <div class="mt-2">
+                        <field name="collect_full" nolabel="1" class="d-inline"/>
+                        <label for="collect_full" class="d-inline ms-1"/>
+                    </div>
+                    <div class="small text-muted" invisible="collect_full">
+                        Se registra solo nuestra parte; el aliado cobra la suya por su lado.
+                    </div>
+                    <div class="small text-muted" invisible="not collect_full">
+                        Se registra el cobro total y, aparte, el pago al aliado por su parte.
+                    </div>
+                </div>
+                <group>
+                    <field name="note" placeholder="Observaciones del cobro..."/>
+                </group>
                 <field name="order_ids" readonly="1">
                     <list>
                         <field name="estate_date_sold" string="Fecha venta"/>

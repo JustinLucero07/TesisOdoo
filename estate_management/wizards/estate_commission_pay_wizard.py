@@ -9,7 +9,7 @@ captación, que es la única que cambia según haya exclusividad o no.
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
-from ..tools.invoice_modes import INVOICE_MODES, vat_amount
+from ..tools.invoice_modes import INVOICE_MODES, split_amounts
 
 
 class EstateCommissionPayWizard(models.TransientModel):
@@ -61,6 +61,8 @@ class EstateCommissionPayWizard(models.TransientModel):
     payment_reference = fields.Char(string='Comprobante / Referencia')
     payment_bank_from = fields.Char(string='Banco de origen', help='Banco desde el que paga la oficina.')
     payment_bank_to = fields.Char(string='Banco de destino', help='Banco del asesor.')
+    advisor_invoice_number = fields.Char(string='Nº de factura del asesor')
+    payment_note = fields.Text(string='Observaciones')
 
     @api.depends('commission_id.amount')
     def _compute_deal_total(self):
@@ -75,8 +77,7 @@ class EstateCommissionPayWizard(models.TransientModel):
             base = (w.deal_total or 0.0) * (total / 100.0)
             w.amount_advisor = base
             w.amount_office = (w.deal_total or 0.0) - base
-            w.amount_vat = vat_amount(base, w.invoice)
-            w.amount_total = round(base + w.amount_vat, 2)
+            _base, w.amount_vat, w.amount_total = split_amounts(base, w.invoice)
 
 
     @api.model
@@ -141,6 +142,8 @@ class EstateCommissionPayWizard(models.TransientModel):
             'payment_reference': self.payment_reference,
             'payment_bank_from': self.payment_bank_from,
             'payment_bank_to': self.payment_bank_to,
+            'advisor_invoice_number': self.advisor_invoice_number,
+            'payment_note': self.payment_note,
         })
         comision.state = 'split'
         comision.message_post(body=(

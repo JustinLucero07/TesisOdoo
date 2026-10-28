@@ -2,7 +2,7 @@
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
-from ..tools.invoice_modes import INVOICE_MODES, vat_amount
+from ..tools.invoice_modes import INVOICE_MODES, split_amounts
 
 
 class EstateCommissionPayoutWizard(models.TransientModel):
@@ -118,6 +118,8 @@ class EstateCommissionPayoutWizard(models.TransientModel):
             'payment_reference': line.payment_reference,
             'payment_bank_from': line.payment_bank_from,
             'payment_bank_to': line.payment_bank_to,
+            'advisor_invoice_number': line.advisor_invoice_number,
+            'payment_note': line.payment_note,
         }
 
     def action_confirm(self):
@@ -186,12 +188,13 @@ class EstateCommissionPayoutLine(models.TransientModel):
     payment_reference = fields.Char(string='Comprobante / Referencia')
     payment_bank_from = fields.Char(string='Banco de origen')
     payment_bank_to = fields.Char(string='Banco de destino')
+    advisor_invoice_number = fields.Char(string='Nº de factura del asesor')
+    payment_note = fields.Text(string='Observaciones')
 
     @api.depends('invoice', 'amount_base')
     def _compute_amounts(self):
         for line in self:
-            line.amount_vat = vat_amount(line.amount_base, line.invoice)
-            line.amount_total = round(line.amount_base + line.amount_vat, 2)
+            _base, line.amount_vat, line.amount_total = split_amounts(line.amount_base, line.invoice)
 
     @api.onchange('invoice')
     def _onchange_invoice(self):

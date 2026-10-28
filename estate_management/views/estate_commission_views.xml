@@ -302,6 +302,9 @@
                                    invisible="payment_method == 'cash'"/>
                             <field name="payment_bank_to" readonly="state == 'paid'"
                                    invisible="payment_method == 'cash'"/>
+                            <field name="advisor_invoice_number" readonly="state == 'paid'"
+                                   invisible="has_invoice == 'without'"/>
+                            <field name="payment_note" readonly="state == 'paid'"/>
                         </group>
                         <group>
                             <field name="payment_date" readonly="state == 'paid'"/>

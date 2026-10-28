@@ -11,6 +11,7 @@ class AccountPayment(models.Model):
     estate_kind = fields.Selection([
         ('collection', 'Cobro de comisión (propietario)'),
         ('advisor', 'Pago a asesor'),
+        ('third', 'Pago a tercero'),
     ], string='Movimiento inmobiliario', index=True, copy=False)
     estate_invoice_mode = fields.Selection(
         INVOICE_MODES, string='Factura', copy=False)
@@ -29,6 +30,14 @@ class AccountPayment(models.Model):
     estate_method_label = fields.Char(string='Forma de pago', copy=False)
     estate_bank_from = fields.Char(string='Banco de origen', copy=False)
     estate_bank_to = fields.Char(string='Banco de destino', copy=False)
+    estate_invoice_number = fields.Char(
+        string='Nº de factura recibida', copy=False,
+        help='Número de la factura que nos entregó el asesor o el tercero.')
+    estate_note = fields.Text(string='Observaciones', copy=False)
+    estate_concept = fields.Char(string='Concepto', copy=False)
+    estate_auto_allied = fields.Boolean(
+        string='Parte del aliado', copy=False,
+        help='Pago automático al aliado por su parte de la comisión.')
     estate_link_order_id = fields.Many2one(
         'sale.order', string='Venta vinculada', compute='_compute_estate_link_order')
     estate_link_commission_count = fields.Integer(compute='_compute_estate_link_order')

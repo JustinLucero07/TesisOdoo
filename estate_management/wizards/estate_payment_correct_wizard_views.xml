@@ -24,7 +24,15 @@
                         <field name="reference" placeholder="Nº transferencia, recibo, cheque..."/>
                         <field name="bank_from" placeholder="Ej. Banco Pichincha" invisible="method == 'cash'"/>
                         <field name="bank_to" placeholder="Ej. Banco Guayaquil" invisible="method == 'cash'"/>
+                        <field name="invoice_number" invisible="kind != 'advisor' or invoice == 'without'"/>
                     </group>
+                </group>
+                <field name="has_allied" invisible="1"/>
+                <group invisible="kind != 'collection' or not has_allied">
+                    <field name="collect_full"/>
+                </group>
+                <group>
+                    <field name="note" placeholder="Observaciones..."/>
                 </group>
                 <footer>
                     <button name="action_confirm" type="object" string="Guardar corrección"

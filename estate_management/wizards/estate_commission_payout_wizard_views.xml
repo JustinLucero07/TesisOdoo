@@ -28,6 +28,8 @@
                         <field name="payment_reference"/>
                         <field name="payment_bank_from"/>
                         <field name="payment_bank_to"/>
+                        <field name="advisor_invoice_number"/>
+                        <field name="payment_note"/>
                         <field name="amount_vat"/>
                         <field name="amount_total"/>
                         <field name="company_currency"/>
@@ -42,6 +44,7 @@
 
                 <p class="text-muted small">
                     <b>Con factura 15%:</b> se suma el 15% de IVA y se registra la factura de proveedor del asesor, ya pagada.<br/>
+                    <b>Con factura 15% (IVA incluido):</b> el monto no cambia; el IVA se desglosa de adentro.<br/>
                     <b>Con factura 0%:</b> se registra la factura del asesor con IVA 0%, ya pagada.<br/>
                     <b>Sin factura:</b> se paga el monto neto, sin factura; el pago igual queda en Facturación.<br/>
                     Después del pago puedes imprimir el <b>comprobante</b> para que el asesor lo firme.

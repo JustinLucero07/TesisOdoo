@@ -5,7 +5,7 @@ from odoo import models, fields, api
 from odoo.exceptions import UserError
 from markupsafe import Markup
 
-from ..tools.invoice_modes import INVOICE_MODES, find_tax, is_invoiced, payment_journal, vat_amount
+from ..tools.invoice_modes import INVOICE_MODES, find_tax, is_invoiced, payment_journal
 
 
 class SaleOrder(models.Model):
@@ -78,10 +78,36 @@ class SaleOrder(models.Model):
     estate_collection_payment_ids = fields.One2many(
         'account.payment', 'estate_sale_order_id', string='Pagos del cobro',
         domain=[('estate_kind', '=', 'collection')])
+    estate_collected_note = fields.Text(string='Observaciones del cobro', copy=False)
+    # --- Comisión con agencia aliada ---
+    estate_commission_gross = fields.Monetary(
+        string='Comisión total del negocio', copy=False,
+        help='La comisión completa acordada, antes de repartir con la agencia aliada.')
+    estate_is_allied = fields.Boolean(related='property_id.is_allied_property', string='Con aliado')
+    estate_allied_agency_id = fields.Many2one(related='property_id.allied_agency_id')
+    estate_allied_pct = fields.Float(related='property_id.allied_split_pct', string='Nuestra parte (%)')
+    estate_collect_full = fields.Boolean(
+        string='Cobramos el total', copy=False,
+        help='Cobramos la comisión completa y le pagamos al aliado su parte. Si no, '
+             'cada agencia cobra su parte y aquí solo se registra la nuestra.')
+    # --- Pagos a terceros (colaboradores, referidos, aliado) ---
+    estate_third_payment_ids = fields.One2many(
+        'account.payment', 'estate_sale_order_id', string='Pagos a terceros',
+        domain=[('estate_kind', '=', 'third')])
+    estate_third_amount = fields.Monetary(
+        string='Pagado a terceros', compute='_compute_estate_office', store=True)
+    # --- Negocio cerrado (datos que se llenaron al vender la propiedad) ---
+    estate_deal_deadline = fields.Date(related='property_id.deal_deadline', string='Fecha máxima de cumplimiento')
+    estate_deal_payment_type = fields.Selection(related='property_id.deal_payment_type', string='Forma de pago del comprador')
+    estate_deal_credit_institution = fields.Char(related='property_id.deal_credit_institution', string='Institución de crédito')
+    estate_deal_earnest_amount = fields.Float(related='property_id.deal_earnest_amount', string='Seña / Arras ($)')
+    estate_deal_payment_details = fields.Text(related='property_id.deal_payment_details', string='Detalles del pago')
+    estate_deal_observations = fields.Text(related='property_id.deal_observations', string='Observaciones del negocio')
     # --- Accesos directos (botones de arriba del formulario) ---
     estate_link_commission_count = fields.Integer(compute='_compute_estate_links')
     estate_link_collection_count = fields.Integer(compute='_compute_estate_links')
     estate_link_advisor_payment_count = fields.Integer(compute='_compute_estate_links')
+    estate_link_third_count = fields.Integer(compute='_compute_estate_links')
     estate_commission_collected = fields.Boolean(
         string='Comisión cobrada', compute='_compute_estate_collected', store=True,
         help='Se marca cuando el propietario pagó la comisión y lo registras con '
@@ -221,7 +247,8 @@ class SaleOrder(models.Model):
     @api.depends('amount_untaxed', 'property_id.commission_ids.amount',
                  'property_id.commission_ids.state',
                  'property_id.commission_ids.parent_commission_id',
-                 'property_id.commission_ids.split_line_ids.amount')
+                 'property_id.commission_ids.split_line_ids.amount',
+                 'estate_third_payment_ids.amount', 'estate_third_payment_ids.state')
     def _compute_estate_office(self):
         for order in self:
             asesores = 0.0
@@ -237,9 +264,12 @@ class SaleOrder(models.Model):
                 elif com.state == 'paid':
                     asesores += com.amount
             base = order.amount_untaxed
+            terceros = sum(order.estate_third_payment_ids.filtered(
+                lambda p: p.state != 'canceled').mapped('amount'))
+            order.estate_third_amount = terceros
             order.estate_advisors_amount = asesores
             order.estate_advisors_pct = (asesores / base * 100.0) if base else 0.0
-            order.estate_office_amount = base - asesores
+            order.estate_office_amount = base - asesores - terceros
 
     def _compute_estate_advisors_state(self):
         commissions = self.env['estate.commission'].sudo().search([
@@ -289,28 +319,65 @@ class SaleOrder(models.Model):
             action.update(view_mode='list,form', domain=[('property_id', '=', self.property_id.id)])
         return action
 
+    def _estate_gross(self):
+        """Comisión completa del negocio (se guarda la primera vez, porque el
+        precio de la línea cambia si solo se cobra nuestra parte)."""
+        self.ensure_one()
+        if not self.estate_commission_gross:
+            lines = self.order_line.filtered(lambda l: not l.display_type)
+            self.estate_commission_gross = sum(l.price_unit * l.product_uom_qty for l in lines)
+        return self.estate_commission_gross
+
+    def _estate_collect_amount(self, collect_full=None):
+        """Lo que cobra la oficina: con aliado, solo nuestra parte salvo que
+        cobremos el total para después pagarle al aliado."""
+        self.ensure_one()
+        gross = self._estate_gross()
+        full = self.estate_collect_full if collect_full is None else collect_full
+        if self.estate_is_allied and not full:
+            return round(gross * (self.estate_allied_pct or 50.0) / 100.0, 2)
+        return round(gross, 2)
+
+    def _estate_allied_share(self):
+        self.ensure_one()
+        if not self.estate_is_allied:
+            return 0.0
+        gross = self._estate_gross()
+        return round(gross - gross * (self.estate_allied_pct or 50.0) / 100.0, 2)
+
+    def _estate_set_collect_lines(self, amount, tax):
+        """Deja las líneas de la orden por `amount` con el impuesto elegido."""
+        self.ensure_one()
+        lines = self.order_line.filtered(lambda l: not l.display_type)
+        current = sum(l.price_unit * l.product_uom_qty for l in lines)
+        for line in lines:
+            vals = {'tax_ids': [(6, 0, tax.ids)]}
+            if current and abs(current - amount) > 0.005:
+                vals['price_unit'] = round(line.price_unit * amount / current, 2)
+            line.write(vals)
+
     def _estate_register_collection(self, mode, tax, date, method, method_label, reference,
-                                    bank_from=False, bank_to=False):
+                                    bank_from=False, bank_to=False, note=False):
         """Deja el cobro de la comisión en Facturación.
 
-        Con factura (15% o 0%) la factura del cliente queda con ese IVA y se le
-        registra el pago. Sin factura se anula la factura pendiente y se
-        registra un recibo de cobro directo por el monto de la comisión."""
+        Con factura (15%, IVA incluido o 0%) la factura del cliente queda con
+        ese IVA y el monto de la orden, y se le registra el pago. Sin factura se
+        anula la factura pendiente y se registra un recibo de cobro directo."""
         self.ensure_one()
         journal = payment_journal(self.env, method)
         invoices = self.invoice_ids.filtered(
             lambda m: m.move_type == 'out_invoice' and m.state != 'cancel')
-        base = self.amount_untaxed or self.amount_total
         estate_vals = {
             'estate_kind': 'collection',
             'estate_invoice_mode': mode,
             'estate_property_id': self.property_id.id,
             'estate_sale_order_id': self.id,
-            'estate_base_amount': base,
-            'estate_vat_amount': vat_amount(base, mode),
+            'estate_base_amount': self.amount_untaxed,
+            'estate_vat_amount': self.amount_tax,
             'estate_method_label': method_label,
             'estate_bank_from': bank_from,
             'estate_bank_to': bank_to,
+            'estate_note': note,
         }
         payments = self.env['account.payment']
         if is_invoiced(mode):
@@ -322,10 +389,21 @@ class SaleOrder(models.Model):
                 if inv.payment_state in ('paid', 'in_payment'):
                     continue
                 lines = inv.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
-                if any(l.tax_ids != tax for l in lines):
+                changes = []
+                for line in lines:
+                    vals = {}
+                    if line.tax_ids != tax:
+                        vals['tax_ids'] = [(6, 0, tax.ids)]
+                    so_line = line.sale_line_ids[:1]
+                    if so_line and abs(line.price_unit - so_line.price_unit) > 0.005:
+                        vals['price_unit'] = so_line.price_unit
+                    if vals:
+                        changes.append((line, vals))
+                if changes:
                     if inv.state == 'posted':
                         inv.button_draft()
-                    lines.write({'tax_ids': [(6, 0, tax.ids)]})
+                    for line, vals in changes:
+                        line.write(vals)
                 if inv.state == 'draft':
                     inv.invoice_date = inv.invoice_date or date
                     inv.action_post()
@@ -341,6 +419,7 @@ class SaleOrder(models.Model):
                 if inv.state == 'posted':
                     inv.button_draft()
                 inv.button_cancel()
+            base = self.amount_untaxed or self.amount_total
             if base > 0:
                 payments = self.env['account.payment'].create(dict(estate_vals, **{
                     'payment_type': 'inbound',
@@ -354,6 +433,72 @@ class SaleOrder(models.Model):
                 payments.action_post()
         payments.write(estate_vals)
         return payments
+
+    def _estate_pay_allied(self, date, method, method_label, reference=False):
+        """Cobramos el total: se registra el pago al aliado por su parte."""
+        self.ensure_one()
+        amount = self._estate_allied_share()
+        if amount <= 0:
+            return self.env['account.payment']
+        agency = self.estate_allied_agency_id
+        if not agency:
+            raise UserError('Indica la Agencia Aliada en la propiedad para registrarle su parte.')
+        return self._estate_create_third_payment(
+            agency, amount, date, method, method_label,
+            concept='Parte de la agencia aliada (%.0f%%)' % (100.0 - (self.estate_allied_pct or 50.0)),
+            reference=reference, auto_allied=True)
+
+    def _estate_create_third_payment(self, partner, amount, date, method, method_label, concept,
+                                     reference=False, bank_from=False, bank_to=False,
+                                     invoice_number=False, note=False, auto_allied=False):
+        self.ensure_one()
+        journal = payment_journal(self.env, method)
+        if not journal:
+            raise UserError('No hay un diario de Banco o Caja configurado en Facturación.')
+        payment = self.env['account.payment'].create({
+            'payment_type': 'outbound',
+            'partner_type': 'supplier',
+            'partner_id': partner.id,
+            'amount': amount,
+            'date': date,
+            'journal_id': journal.id,
+            'memo': '%s · %s' % (self.name, reference or concept),
+            'estate_kind': 'third',
+            'estate_invoice_mode': 'with' if invoice_number else 'without',
+            'estate_property_id': self.property_id.id,
+            'estate_sale_order_id': self.id,
+            'estate_base_amount': amount,
+            'estate_method_label': method_label,
+            'estate_bank_from': bank_from,
+            'estate_bank_to': bank_to,
+            'estate_invoice_number': invoice_number,
+            'estate_note': note,
+            'estate_concept': concept,
+            'estate_auto_allied': auto_allied,
+        })
+        payment.action_post()
+        self.message_post(body='Pago a tercero: %s · $%s · %s.' % (
+            partner.name, '{:,.2f}'.format(amount), concept))
+        return payment
+
+    def action_estate_third_payment(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Registrar pago a tercero',
+            'res_model': 'estate.third.payment.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_order_id': self.id},
+        }
+
+    def action_estate_view_third_payments(self):
+        self.ensure_one()
+        action = self.env['ir.actions.act_window']._for_xml_id(
+            'estate_management.action_estate_payments_third')
+        action['domain'] = [('estate_sale_order_id', '=', self.id), ('estate_kind', '=', 'third')]
+        action['context'] = {'search_default_not_canceled': 1}
+        return action
 
     def _estate_advisor_payments(self):
         self.ensure_one()
@@ -372,6 +517,7 @@ class SaleOrder(models.Model):
                 order.estate_link_commission_count = 0
                 order.estate_link_collection_count = 0
                 order.estate_link_advisor_payment_count = 0
+                order.estate_link_third_count = 0
                 continue
             order.estate_link_commission_count = Commission.search_count([
                 ('property_id', '=', order.property_id.id),
@@ -381,6 +527,8 @@ class SaleOrder(models.Model):
             order.estate_link_collection_count = len(order.estate_collection_payment_ids.filtered(
                 lambda p: p.state != 'canceled'))
             order.estate_link_advisor_payment_count = len(order._estate_advisor_payments())
+            order.estate_link_third_count = len(order.estate_third_payment_ids.filtered(
+                lambda p: p.state != 'canceled'))
 
     def action_estate_view_advisor_payments(self):
         self.ensure_one()
@@ -393,6 +541,10 @@ class SaleOrder(models.Model):
             action.update(view_mode='form', res_id=payments.id,
                           views=[(False, 'form')])
         return action
+
+    def action_estate_edit_deal(self):
+        self.ensure_one()
+        return self.property_id.action_edit_deal()
 
     def action_estate_view_property(self):
         self.ensure_one()
@@ -420,14 +572,13 @@ class SaleOrder(models.Model):
         method = self.estate_collected_method_manual
         method_label = dict(self._estate_collect_methods()).get(method, '')
         if paid:
-            base = self.amount_untaxed or self.amount_total
             paid.write({
                 'estate_kind': 'collection',
                 'estate_invoice_mode': mode,
                 'estate_property_id': self.property_id.id,
                 'estate_sale_order_id': self.id,
-                'estate_base_amount': base,
-                'estate_vat_amount': vat_amount(base, mode),
+                'estate_base_amount': self.amount_untaxed,
+                'estate_vat_amount': self.amount_tax,
                 'estate_method_label': method_label,
                 'estate_bank_from': self.estate_collected_bank_from,
                 'estate_bank_to': self.estate_collected_bank_to,
@@ -437,7 +588,8 @@ class SaleOrder(models.Model):
             mode, find_tax(self.env, 'sale', mode),
             self.estate_collected_manual_date or self.estate_collected_date or fields.Date.context_today(self),
             method, method_label, self.estate_collected_reference,
-            self.estate_collected_bank_from, self.estate_collected_bank_to)
+            self.estate_collected_bank_from, self.estate_collected_bank_to,
+            self.estate_collected_note)
 
     def action_estate_view_collection(self):
         self.ensure_one()
@@ -468,6 +620,8 @@ class SaleOrder(models.Model):
         # cobrar sin factura, vuelve a quedar pendiente.
         for order in self:
             payments = order.estate_collection_payment_ids.filtered(lambda p: p.state != 'canceled')
+            payments |= order.estate_third_payment_ids.filtered(
+                lambda p: p.estate_auto_allied and p.state != 'canceled')
             for pay in payments:
                 pay.action_draft()
                 pay.action_cancel()
@@ -482,7 +636,9 @@ class SaleOrder(models.Model):
                     'estate_collected_invoice_manual': False,
                     'estate_collected_reference': False,
                     'estate_collected_bank_from': False,
-                    'estate_collected_bank_to': False})
+                    'estate_collected_bank_to': False,
+                    'estate_collected_note': False,
+                    'estate_collect_full': False})
 
     @api.onchange('customer_signature')
     def _onchange_customer_signature(self):
