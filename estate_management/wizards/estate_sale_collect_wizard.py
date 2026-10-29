@@ -38,6 +38,12 @@ class EstateSaleCollectWizard(models.TransientModel):
     allied_share = fields.Float(string='Parte del aliado', compute='_compute_order_count')
     our_share = fields.Float(string='Nuestra parte', compute='_compute_order_count')
     allied_label = fields.Char(compute='_compute_order_count')
+    has_referral = fields.Boolean(compute='_compute_order_count')
+    referral_label = fields.Char(compute='_compute_order_count')
+    pay_referral = fields.Boolean(
+        string='Registrar el pago al referido', default=True,
+        help='Registra el pago al tercero o referido anotado en el negocio cerrado. '
+             'Se descuenta de la ganancia de la oficina.')
     order_count = fields.Integer(compute='_compute_order_count')
     amount_untaxed = fields.Float(string='Subtotal comisión', compute='_compute_order_count')
     amount_vat = fields.Float(string='IVA', compute='_compute_order_count')
@@ -66,14 +72,18 @@ class EstateSaleCollectWizard(models.TransientModel):
             wiz.order_count = len(wiz.order_ids)
             untaxed = vat = total = gross = allied = 0.0
             agencies = []
+            referrals = []
             for order in wiz.order_ids:
+                if order.estate_referral_partner_id and order.estate_referral_amount:
+                    referrals.append('%s $%s' % (order.estate_referral_partner_id.name,
+                                                 '{:,.2f}'.format(order.estate_referral_amount)))
                 order_gross = self._order_gross(order)
                 share = order_gross
                 if order.estate_is_allied:
                     ours = round(order_gross * (order.estate_allied_pct or 50.0) / 100.0, 2)
                     allied += order_gross - ours
                     agencies.append('%s (%.0f%%)' % (
-                        order.estate_allied_agency_id.name or 'agencia aliada',
+                        order.estate_allied_agency_id.name or 'aliado / colega',
                         100.0 - (order.estate_allied_pct or 50.0)))
                     share = order_gross if wiz.collect_full else ours
                 gross += order_gross
@@ -82,6 +92,8 @@ class EstateSaleCollectWizard(models.TransientModel):
                 vat += v
                 total += t
             wiz.has_allied = bool(agencies)
+            wiz.has_referral = bool(referrals)
+            wiz.referral_label = ', '.join(referrals)
             wiz.allied_gross = round(gross, 2)
             wiz.allied_share = round(allied, 2)
             wiz.our_share = round(gross - allied, 2)
@@ -105,6 +117,7 @@ class EstateSaleCollectWizard(models.TransientModel):
         for order in self.order_ids:
             order._estate_gross()
             order.estate_collect_full = self.collect_full and order.estate_is_allied
+            order.estate_pay_referral = self.pay_referral and bool(order.estate_referral_partner_id)
             order._estate_set_collect_lines(order._estate_collect_amount(), tax)
 
         self.order_ids.write({
@@ -125,6 +138,8 @@ class EstateSaleCollectWizard(models.TransientModel):
                 self.bank_from, self.bank_to, self.note)
             if order.estate_collect_full:
                 order._estate_pay_allied(self.date, self.method, metodo, self.reference)
+            if order.estate_pay_referral:
+                order._estate_pay_referral(self.date, self.method, metodo, self.reference)
             total_str = '{:,.2f}'.format(sum(payments.mapped('amount')) or order.amount_total)
             order.message_post(body='Comisión cobrada el %s · %s · %s · Total cobrado: $%s%s.' % (
                 self.date.strftime('%d/%m/%Y'), metodo, factura, total_str,

@@ -255,10 +255,22 @@ class EstateProperty(models.Model):
         help='Cantidad de días que la propiedad estuvo disponible antes de venderse.')
     sold_by = fields.Selection([
         ('agency', 'Agencia'),
+        ('colleague', 'Colega'),
+        ('referral', 'Pago a terceros / referido'),
         ('owner', 'Propietario'),
         ('external', 'Externo'),
     ], string='¿Quién Vendió?', tracking=True,
-        help='Mismas 3 opciones que "Cerrado por" en el asistente Vender Propiedad.')
+        help='Mismas opciones que "Cerrado por" en el asistente Vender Propiedad. '
+             'Colega: otra persona o agencia vendió nuestra propiedad y la comisión se '
+             'reparte como con un aliado. Pago a terceros / referido: se le paga un monto '
+             'fijo a alguien y la comisión se calcula sobre el precio menos ese monto.')
+    deal_partner_id = fields.Many2one(
+        'res.partner', string='Colega / Referido', tracking=True,
+        help='Quién vendió con nosotros (colega) o a quién se le paga por referir.')
+    deal_partner_amount = fields.Float(
+        string='Monto al referido ($)', tracking=True,
+        help='Lo que se le paga al tercero o referido. Se resta del precio antes de '
+             'calcular la comisión (ej. 140.000 − 1.000 = 139.000 × 3%).')
 
     # --- Arriendo ---
     date_rented = fields.Date(string='Fecha de Arrendamiento', tracking=True)
@@ -1409,8 +1421,9 @@ class EstateProperty(models.Model):
             ], limit=1)
             lead_id = active_lead.id if active_lead else False
 
-        # Si es inmueble de aliado, nuestra agencia solo cobra nuestra porción de la comisión total
-        if self.is_allied_property:
+        # Inmueble de aliado o vendido por un colega: nuestra agencia solo cobra
+        # nuestra porción de la comisión total.
+        if self.is_allied_property or self.sold_by == 'colleague':
             allied_ratio = (self.allied_split_pct or 50.0) / 100.0
             total_amount = total_amount * allied_ratio
             pct = pct * allied_ratio

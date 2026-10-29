@@ -531,6 +531,8 @@
                             <separator string="Negocio Cerrado" invisible="state != 'sold'"/>
                             <group string="Negocio Cerrado" invisible="state != 'sold'">
                                 <group>
+                                    <field name="deal_partner_id" invisible="sold_by not in ('colleague', 'referral')"/>
+                                    <field name="deal_partner_amount" widget="monetary" invisible="sold_by != 'referral'"/>
                                     <field name="deal_deadline"/>
                                     <field name="deal_earnest_amount" widget="monetary"/>
                                     <field name="deal_earnest_received_by_agency"/>

@@ -17,9 +17,20 @@ class EstateSaleWizard(models.TransientModel):
     date_sold = fields.Date(string='Fecha de Cierre', default=fields.Date.today, required=True)
     sold_by = fields.Selection([
         ('agency', 'Agencia'),
+        ('colleague', 'Colega'),
+        ('referral', 'Pago a terceros / referido'),
         ('owner', 'Propietario'),
         ('external', 'Externo'),
     ], string='Cerrado por', default='agency', required=True)
+    deal_partner_id = fields.Many2one(
+        'res.partner', string='Colega / Referido',
+        help='Colega: quien vendió nuestra propiedad. Referido: a quien se le paga.')
+    deal_partner_amount = fields.Float(
+        string='Monto al referido',
+        help='Se resta del precio antes de calcular la comisión.')
+    our_share_pct = fields.Float(
+        string='Nuestra parte de la comisión (%)', default=50.0,
+        help='Con un colega la comisión se reparte igual que con un aliado.')
     user_id = fields.Many2one(
         'res.users', string='Asesor a Cargo (Vendedor)',
         default=lambda self: self._default_user_id(),
@@ -55,6 +66,9 @@ class EstateSaleWizard(models.TransientModel):
                 'commission_pct': prop.commission_percentage,
                 'date_sold': prop.date_sold or fields.Date.today(),
                 'sold_by': prop.sold_by or 'agency',
+                'deal_partner_id': prop.deal_partner_id.id,
+                'deal_partner_amount': prop.deal_partner_amount,
+                'our_share_pct': prop.allied_split_pct or 50.0,
                 'buyer_proxy_id': prop.proxy_id.id if prop.proxy_id else False,
                 'deal_deadline': prop.deal_deadline,
                 'deal_earnest_amount': prop.deal_earnest_amount,
@@ -180,7 +194,7 @@ class EstateSaleWizard(models.TransientModel):
             if lead.user_id:
                 rec.user_id = lead.user_id
 
-    @api.depends('sale_price', 'commission_pct', 'sold_by')
+    @api.depends('sale_price', 'commission_pct', 'sold_by', 'deal_partner_amount')
     def _compute_commission_amount(self):
         for rec in self:
             # "Externo" se trata igual que "Propietario": la agencia no
@@ -188,9 +202,19 @@ class EstateSaleWizard(models.TransientModel):
             if rec.sold_by in ('owner', 'external'):
                 rec.commission_amount = 0.0
             elif rec.sale_price and rec.commission_pct:
-                rec.commission_amount = rec.sale_price * (rec.commission_pct / 100.0)
+                base = rec.sale_price
+                if rec.sold_by == 'referral':
+                    # 140.000 − 1.000 al referido = 139.000 × 3%
+                    base = max(base - (rec.deal_partner_amount or 0.0), 0.0)
+                rec.commission_amount = base * (rec.commission_pct / 100.0)
             else:
                 rec.commission_amount = 0.0
+
+    @api.onchange('property_id', 'sold_by')
+    def _onchange_our_share(self):
+        for rec in self:
+            if rec.sold_by == 'colleague' and rec.property_id.allied_split_pct:
+                rec.our_share_pct = rec.property_id.allied_split_pct
 
     def action_confirm_sale(self):
         """
@@ -212,6 +236,12 @@ class EstateSaleWizard(models.TransientModel):
                 raise UserError('El precio de cierre de la propiedad debe ser mayor a 0.')
             if not (0 < self.commission_pct <= 100):
                 raise UserError('El porcentaje de comisión debe estar entre 0.1% y 100%.')
+        if self.sold_by in ('colleague', 'referral') and not self.deal_partner_id:
+            raise UserError('Indica quién es el colega o el referido.')
+        if self.sold_by == 'referral' and self.deal_partner_amount <= 0:
+            raise UserError('Indica el monto que se le paga al referido.')
+        if self.sold_by == 'colleague' and not (0 < self.our_share_pct <= 100):
+            raise UserError('Nuestra parte de la comisión debe estar entre 1% y 100%.')
         if prop.owner_id and self.buyer_id and self.buyer_id == prop.owner_id:
             raise UserError('El comprador no puede ser el mismo propietario del inmueble.')
 
@@ -235,6 +265,8 @@ class EstateSaleWizard(models.TransientModel):
                 'commission_percentage': self.commission_pct,
                 'date_sold': self.date_sold,
                 'sold_by': self.sold_by,
+                'deal_partner_id': self.deal_partner_id.id,
+                'deal_partner_amount': self.deal_partner_amount if self.sold_by == 'referral' else 0.0,
                 'user_id': self.user_id.id if self.user_id else False,
                 'deal_deadline': self.deal_deadline,
                 'deal_earnest_amount': self.deal_earnest_amount,
@@ -304,6 +336,8 @@ class EstateSaleWizard(models.TransientModel):
             'commission_percentage': self.commission_pct,
             'date_sold': self.date_sold,
             'sold_by': self.sold_by,
+            'deal_partner_id': self.deal_partner_id.id,
+            'deal_partner_amount': self.deal_partner_amount if self.sold_by == 'referral' else 0.0,
             'user_id': self.user_id.id if self.user_id else False,
             'deal_deadline': self.deal_deadline,
             'deal_earnest_amount': self.deal_earnest_amount,
@@ -322,6 +356,8 @@ class EstateSaleWizard(models.TransientModel):
             'deal_credit_advisor_phone': self.deal_credit_advisor_phone,
             'deal_observations': self.deal_observations,
         }
+        if self.sold_by == 'colleague':
+            prop_vals['allied_split_pct'] = self.our_share_pct
         if lead_origin:
             prop_vals['deal_lead_origin'] = lead_origin
         if self.buyer_proxy_id:

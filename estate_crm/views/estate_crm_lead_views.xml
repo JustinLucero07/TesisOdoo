@@ -20,6 +20,18 @@
                 <!-- El Match se muestra una sola vez (barra en "Operación Inmobiliaria"). -->
                 <field name="lead_score" widget="priority" invisible="type == 'lead'"/>
             </xpath>
+            <!-- Embudo Postventa: junto a la comisión, el precio de la propiedad -->
+            <xpath expr="//field[@name='expected_revenue']/../.." position="after">
+                <field name="estate_is_postventa" invisible="1"/>
+                <field name="estate_deal_price_sold" invisible="1"/>
+                <div class="col-auto pb-2 pb-md-0 ms-sm-4 me-sm-4 border-start ps-sm-4"
+                     invisible="not estate_is_postventa or type == 'lead'">
+                    <span class="d-block text-muted small" invisible="not estate_deal_price_sold">Precio de venta</span>
+                    <span class="d-block text-muted small" invisible="estate_deal_price_sold">Precio en negociación</span>
+                    <field name="estate_deal_price" widget="monetary" readonly="1"
+                           options="{'currency_field': 'company_currency'}"/>
+                </div>
+            </xpath>
             <xpath expr="//div[@id='probability']" position="after">
                 <div class="col-auto ms-4 border-start ps-4" invisible="type == 'lead'">
                     <label for="lead_temperature" class="d-block text-muted small mb-0">Temperatura</label>

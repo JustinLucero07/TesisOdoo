@@ -28,8 +28,10 @@
                     </group>
                 </group>
                 <field name="has_allied" invisible="1"/>
-                <group invisible="kind != 'collection' or not has_allied">
-                    <field name="collect_full"/>
+                <field name="has_referral" invisible="1"/>
+                <group invisible="kind != 'collection' or (not has_allied and not has_referral)">
+                    <field name="collect_full" invisible="not has_allied"/>
+                    <field name="pay_referral" invisible="not has_referral"/>
                 </group>
                 <group>
                     <field name="note" placeholder="Observaciones..."/>

@@ -8,3 +8,4 @@ from . import test_client_import
 from . import test_agent_crm_scope
 from . import test_lost_stage
 from . import test_foreign_stages
+from . import test_postventa_deal_price

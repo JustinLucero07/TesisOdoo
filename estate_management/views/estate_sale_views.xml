@@ -103,7 +103,7 @@
                             <field name="estate_commission_gross" string="Comisión total" widget="monetary"
                                    options="{'currency_field': 'currency_id'}"
                                    invisible="not estate_is_allied or not estate_commission_gross"/>
-                            <field name="estate_allied_agency_id" string="Agencia aliada" invisible="not estate_is_allied"/>
+                            <field name="estate_allied_agency_id" string="Aliado / colega" invisible="not estate_is_allied"/>
                             <field name="estate_allied_pct" invisible="not estate_is_allied"/>
                             <field name="estate_collect_full" invisible="not estate_is_allied or not estate_commission_collected"/>
                             <field name="estate_collected_note" string="Observaciones" invisible="not estate_collected_note"/>
@@ -136,29 +136,15 @@
                             </div>
                         </group>
                     </group>
-                    <group string="④ Pagos a terceros (colaboradores, referidos, aliado)">
-                        <div colspan="2">
-                            <field name="estate_third_payment_ids" readonly="1" nolabel="1"
-                                   invisible="not estate_third_payment_ids">
-                                <list decoration-muted="state == 'canceled'">
-                                    <field name="date"/>
-                                    <field name="partner_id" string="A quién"/>
-                                    <field name="estate_concept"/>
-                                    <field name="estate_method_label"/>
-                                    <field name="estate_invoice_number" optional="show"/>
-                                    <field name="amount" sum="Total"/>
-                                    <field name="currency_id" column_invisible="1"/>
-                                    <field name="state" widget="badge"/>
-                                </list>
-                            </field>
-                            <button name="action_estate_third_payment" type="object"
-                                    string="Registrar pago a tercero" icon="fa-plus"
-                                    class="btn-secondary btn-sm mt-2"
-                                    help="Para alguien que ayudó en el negocio. Se descuenta de la ganancia de la oficina."/>
-                        </div>
-                    </group>
                     <group string="Negocio cerrado (datos del cierre)">
                         <group>
+                            <field name="property_sold_by" string="Cerrado por"/>
+                            <field name="estate_allied_agency_id" string="Colega"
+                                   invisible="property_sold_by != 'colleague'"/>
+                            <field name="estate_referral_partner_id" invisible="property_sold_by != 'referral'"/>
+                            <field name="estate_referral_amount" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   invisible="property_sold_by != 'referral'"/>
                             <field name="estate_deal_deadline"/>
                             <field name="estate_deal_payment_type"/>
                             <field name="estate_deal_credit_institution"
@@ -290,6 +276,10 @@
                 <separator/>
                 <filter name="estate_closed_agency" string="Cerrado por: Agencia"
                         domain="[('property_sold_by', '=', 'agency')]"/>
+                <filter name="estate_closed_colleague" string="Cerrado por: Colega"
+                        domain="[('property_sold_by', '=', 'colleague')]"/>
+                <filter name="estate_closed_referral" string="Cerrado por: Pago a terceros / referido"
+                        domain="[('property_sold_by', '=', 'referral')]"/>
                 <filter name="estate_closed_owner" string="Cerrado por: Propietario"
                         domain="[('property_sold_by', '=', 'owner')]"/>
                 <filter name="estate_closed_external" string="Cerrado por: Externo"

@@ -34,6 +34,8 @@ class EstatePaymentCorrectWizard(models.TransientModel):
     note = fields.Text(string='Observaciones')
     has_allied = fields.Boolean(readonly=True)
     collect_full = fields.Boolean(string='Cobramos el total y le pagamos al aliado')
+    has_referral = fields.Boolean(readonly=True)
+    pay_referral = fields.Boolean(string='Registrar el pago al referido')
 
     @api.model
     def default_get(self, fields_list):
@@ -83,6 +85,8 @@ class EstatePaymentCorrectWizard(models.TransientModel):
                 'note': order.estate_collected_note,
                 'has_allied': order.estate_is_allied,
                 'collect_full': order.estate_collect_full,
+                'has_referral': bool(order.estate_referral_partner_id),
+                'pay_referral': order.estate_pay_referral,
             })
         return vals
 
@@ -123,6 +127,7 @@ class EstatePaymentCorrectWizard(models.TransientModel):
             'bank_to': self.bank_to,
             'note': self.note,
             'collect_full': self.collect_full,
+            'pay_referral': self.pay_referral,
         })._estate_register(follow_up=False)
         order.message_post(body='Cobro corregido por %s.' % self.env.user.name)
         return {'type': 'ir.actions.act_window_close'}

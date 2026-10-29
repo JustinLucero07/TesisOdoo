@@ -2633,6 +2633,8 @@ INSTRUCCIONES DE RESPUESTA:
                     SELECT
                         CASE sold_by
                             WHEN 'agency' THEN 'Agencia'
+                            WHEN 'colleague' THEN 'Colega'
+                            WHEN 'referral' THEN 'Pago a terceros / referido'
                             WHEN 'owner' THEN 'Propietario'
                             WHEN 'external' THEN 'Externo'
                             ELSE 'Sin especificar'

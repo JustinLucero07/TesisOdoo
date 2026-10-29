@@ -83,8 +83,18 @@ class SaleOrder(models.Model):
     estate_commission_gross = fields.Monetary(
         string='Comisión total del negocio', copy=False,
         help='La comisión completa acordada, antes de repartir con la agencia aliada.')
-    estate_is_allied = fields.Boolean(related='property_id.is_allied_property', string='Con aliado')
-    estate_allied_agency_id = fields.Many2one(related='property_id.allied_agency_id')
+    estate_is_allied = fields.Boolean(
+        string='Comisión compartida', compute='_compute_estate_shared',
+        help='Inmueble de aliado o vendido por un colega: la comisión se reparte.')
+    estate_allied_agency_id = fields.Many2one(
+        'res.partner', string='Aliado / colega', compute='_compute_estate_shared')
+    estate_referral_partner_id = fields.Many2one(
+        'res.partner', string='Referido', compute='_compute_estate_shared')
+    estate_referral_amount = fields.Float(
+        string='Monto al referido', compute='_compute_estate_shared')
+    estate_pay_referral = fields.Boolean(
+        string='Pagamos al referido', copy=False,
+        help='Al cobrar se registró el pago al referido.')
     estate_allied_pct = fields.Float(related='property_id.allied_split_pct', string='Nuestra parte (%)')
     estate_collect_full = fields.Boolean(
         string='Cobramos el total', copy=False,
@@ -319,6 +329,29 @@ class SaleOrder(models.Model):
             action.update(view_mode='list,form', domain=[('property_id', '=', self.property_id.id)])
         return action
 
+    @api.depends('property_id.is_allied_property', 'property_id.sold_by',
+                 'property_id.allied_agency_id', 'property_id.deal_partner_id',
+                 'property_id.deal_partner_amount')
+    def _compute_estate_shared(self):
+        for order in self:
+            prop = order.property_id
+            colleague = prop.sold_by == 'colleague'
+            order.estate_is_allied = bool(prop.is_allied_property or colleague)
+            order.estate_allied_agency_id = (prop.deal_partner_id if colleague
+                                             else prop.allied_agency_id)
+            referral = prop.sold_by == 'referral'
+            order.estate_referral_partner_id = prop.deal_partner_id if referral else False
+            order.estate_referral_amount = prop.deal_partner_amount if referral else 0.0
+
+    def _estate_pay_referral(self, date, method, method_label, reference=False):
+        """Pago al tercero o referido que se anotó en el negocio cerrado."""
+        self.ensure_one()
+        if not (self.estate_referral_partner_id and self.estate_referral_amount > 0):
+            return self.env['account.payment']
+        return self._estate_create_third_payment(
+            self.estate_referral_partner_id, self.estate_referral_amount, date, method,
+            method_label, concept='Pago a referido', reference=reference, auto_allied=True)
+
     def _estate_gross(self):
         """Comisión completa del negocio (se guarda la primera vez, porque el
         precio de la línea cambia si solo se cobra nuestra parte)."""
@@ -442,10 +475,12 @@ class SaleOrder(models.Model):
             return self.env['account.payment']
         agency = self.estate_allied_agency_id
         if not agency:
-            raise UserError('Indica la Agencia Aliada en la propiedad para registrarle su parte.')
+            raise UserError('Indica la Agencia Aliada (o el colega) en la propiedad para '
+                            'registrarle su parte.')
+        quien = 'del colega' if self.property_id.sold_by == 'colleague' else 'de la agencia aliada'
         return self._estate_create_third_payment(
             agency, amount, date, method, method_label,
-            concept='Parte de la agencia aliada (%.0f%%)' % (100.0 - (self.estate_allied_pct or 50.0)),
+            concept='Parte %s (%.0f%%)' % (quien, 100.0 - (self.estate_allied_pct or 50.0)),
             reference=reference, auto_allied=True)
 
     def _estate_create_third_payment(self, partner, amount, date, method, method_label, concept,
@@ -638,7 +673,8 @@ class SaleOrder(models.Model):
                     'estate_collected_bank_from': False,
                     'estate_collected_bank_to': False,
                     'estate_collected_note': False,
-                    'estate_collect_full': False})
+                    'estate_collect_full': False,
+                    'estate_pay_referral': False})
 
     @api.onchange('customer_signature')
     def _onchange_customer_signature(self):

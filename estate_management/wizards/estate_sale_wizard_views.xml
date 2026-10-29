@@ -24,6 +24,15 @@
                         <group string="Fecha y Cierre">
                             <field name="date_sold"/>
                             <field name="sold_by"/>
+                            <field name="deal_partner_id" string="Colega"
+                                   invisible="sold_by != 'colleague'" required="sold_by == 'colleague'"
+                                   placeholder="Quién vendió nuestra propiedad"/>
+                            <field name="our_share_pct" invisible="sold_by != 'colleague'"/>
+                            <field name="deal_partner_id" string="Tercero / referido"
+                                   invisible="sold_by != 'referral'" required="sold_by == 'referral'"
+                                   placeholder="A quién se le paga"/>
+                            <field name="deal_partner_amount" widget="monetary"
+                                   invisible="sold_by != 'referral'" required="sold_by == 'referral'"/>
                             <field name="user_id" widget="many2one_avatar_user" options="{'no_create': True}"/>
                         </group>
                     </group>
@@ -36,6 +45,12 @@
                         <group string="Comisión" invisible="sold_by in ('owner', 'external')">
                             <field name="commission_pct" required="sold_by not in ('owner', 'external')"/>
                             <field name="commission_amount" widget="monetary" readonly="1"/>
+                            <div colspan="2" class="text-muted small" invisible="sold_by != 'referral'">
+                                La comisión se calcula sobre el precio menos lo del referido.
+                            </div>
+                            <div colspan="2" class="text-muted small" invisible="sold_by != 'colleague'">
+                                Al cobrar, se reparte con el colega igual que con un aliado.
+                            </div>
                             <field name="apply_vat" widget="boolean_toggle"/>
                         </group>
                     </group>

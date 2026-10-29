@@ -30,7 +30,7 @@
                 <field name="has_allied" invisible="1"/>
                 <div class="alert alert-info" role="status" invisible="not has_allied">
                     <i class="fa fa-handshake-o me-1" title="Aliado"/>
-                    <b>Negocio con agencia aliada:</b> <field name="allied_label" readonly="1" class="d-inline"/>.
+                    <b>Comisión compartida (aliado o colega):</b> <field name="allied_label" readonly="1" class="d-inline"/>.
                     Comisión total <b><field name="allied_gross" widget="monetary" readonly="1" class="d-inline"/></b> ·
                     parte del aliado <field name="allied_share" widget="monetary" readonly="1" class="d-inline"/> ·
                     nuestra parte <b><field name="our_share" widget="monetary" readonly="1" class="d-inline"/></b>.
@@ -43,6 +43,16 @@
                     </div>
                     <div class="small text-muted" invisible="not collect_full">
                         Se registra el cobro total y, aparte, el pago al aliado por su parte.
+                    </div>
+                </div>
+                <field name="has_referral" invisible="1"/>
+                <div class="alert alert-warning" role="status" invisible="not has_referral">
+                    <i class="fa fa-user-plus me-1" title="Referido"/>
+                    <b>Pago a terceros / referido:</b> <field name="referral_label" readonly="1" class="d-inline"/>.
+                    La comisión ya se calculó sobre el precio menos este monto.
+                    <div class="mt-2">
+                        <field name="pay_referral" nolabel="1" class="d-inline"/>
+                        <label for="pay_referral" class="d-inline ms-1"/>
                     </div>
                 </div>
                 <group>

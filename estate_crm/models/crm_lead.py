@@ -231,6 +231,34 @@ class CrmLead(models.Model):
                 domain = [('partner_id', '=', lead.partner_id.id)]
             lead.contract_count = Contract.search_count(domain) if domain else 0
 
+    estate_is_postventa = fields.Boolean(
+        compute='_compute_estate_deal_price',
+        help='El lead está en una etapa del embudo Postventa.')
+    estate_deal_price = fields.Monetary(
+        string='Precio de la propiedad', currency_field='company_currency',
+        compute='_compute_estate_deal_price',
+        help='Precio en el que se vendió la propiedad (o, si aún no, la oferta '
+             'aceptada o el precio en el que se está negociando).')
+    estate_deal_price_sold = fields.Boolean(compute='_compute_estate_deal_price')
+
+    @api.depends('stage_id', 'target_property_id', 'target_property_id.price',
+                 'target_property_id.state')
+    def _compute_estate_deal_price(self):
+        team = self.env.ref('estate_crm.crm_team_postventa', raise_if_not_found=False)
+        Offer = self.env['estate.property.offer']
+        for lead in self:
+            lead.estate_is_postventa = bool(team and team in lead.stage_id.team_ids)
+            prop = lead.target_property_id
+            price, sold = 0.0, False
+            if prop and prop.state == 'sold':
+                price, sold = prop.price, True
+            elif prop:
+                offer = Offer.search([('property_id', '=', prop.id), ('state', '=', 'accepted'),
+                                      ('lead_id', '=', lead.id)], limit=1) if lead.id else Offer
+                price = offer.offer_amount if offer else prop.price
+            lead.estate_deal_price = price
+            lead.estate_deal_price_sold = sold
+
     def _compute_sale_data(self):
         super()._compute_sale_data()
         SaleOrder = self.env['sale.order']
