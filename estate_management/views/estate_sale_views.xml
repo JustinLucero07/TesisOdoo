@@ -86,8 +86,11 @@
                             <field name="estate_buyer_id" string="Comprador"/>
                             <field name="estate_sale_price" string="Valor" widget="monetary"
                                    options="{'currency_field': 'currency_id'}"/>
-                            <field name="amount_total" string="Comisión" widget="monetary"
+                            <field name="amount_untaxed" string="Comisión (sin IVA)" widget="monetary"
                                    options="{'currency_field': 'currency_id'}"/>
+                            <field name="amount_total" string="Total con IVA" widget="monetary"
+                                   options="{'currency_field': 'currency_id'}"
+                                   invisible="amount_total == amount_untaxed"/>
                         </group>
                         <group string="② Cobro de la comisión al propietario">
                             <field name="estate_collection_state" string="Estado" widget="badge"
@@ -328,7 +331,9 @@
                 <field name="partner_id" string="Vendedor (Propietario)" width="190px"/>
                 <field name="property_id" string="Propiedad"/>
                 <field name="currency_id" column_invisible="1"/>
-                <field name="amount_total" string="Comisión" sum="Total comisión"
+                <field name="amount_untaxed" string="Comisión" sum="Total comisión"
+                       widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="amount_total" string="Total con IVA" sum="Total con IVA" optional="show"
                        widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 <field name="estate_capture_initials"/>
                 <field name="estate_reception_initials"/>
