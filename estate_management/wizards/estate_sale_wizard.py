@@ -107,6 +107,10 @@ class EstateSaleWizard(models.TransientModel):
 
     commission_pct = fields.Float(string='Comisión (%)')
     commission_amount = fields.Float(string='Monto Comisión', compute='_compute_commission_amount')
+    is_shared = fields.Boolean(compute='_compute_commission_amount')
+    our_commission_amount = fields.Float(
+        string='Nuestra parte de la comisión', compute='_compute_commission_amount',
+        help='Con un colega o un inmueble de aliado, lo que le queda a la oficina.')
     lead_id = fields.Many2one(
         'crm.lead', string='Lead de Origen (CRM)',
         domain="[('type', '=', 'opportunity')]",
@@ -194,9 +198,27 @@ class EstateSaleWizard(models.TransientModel):
             if lead.user_id:
                 rec.user_id = lead.user_id
 
-    @api.depends('sale_price', 'commission_pct', 'sold_by', 'deal_partner_amount')
+    def _our_ratio(self):
+        """Parte de la comisión que le queda a la oficina (aliado o colega)."""
+        self.ensure_one()
+        if self.sold_by == 'colleague':
+            return (self.our_share_pct or 50.0) / 100.0
+        if self.property_id.is_allied_property:
+            return (self.property_id.allied_split_pct or 50.0) / 100.0
+        return 1.0
+
+    def _commission_base(self):
+        self.ensure_one()
+        base = self.sale_price or 0.0
+        if self.sold_by == 'referral':
+            base = max(base - (self.deal_partner_amount or 0.0), 0.0)
+        return base
+
+    @api.depends('sale_price', 'commission_pct', 'sold_by', 'deal_partner_amount',
+                 'our_share_pct', 'property_id.is_allied_property', 'property_id.allied_split_pct')
     def _compute_commission_amount(self):
         for rec in self:
+            rec.is_shared = rec.sold_by == 'colleague' or bool(rec.property_id.is_allied_property)
             # "Externo" se trata igual que "Propietario": la agencia no
             # intermedió en el cierre, así que no genera comisión propia.
             if rec.sold_by in ('owner', 'external'):
@@ -209,12 +231,59 @@ class EstateSaleWizard(models.TransientModel):
                 rec.commission_amount = base * (rec.commission_pct / 100.0)
             else:
                 rec.commission_amount = 0.0
+            rec.our_commission_amount = round(rec.commission_amount * rec._our_ratio(), 2)
 
     @api.onchange('property_id', 'sold_by')
     def _onchange_our_share(self):
         for rec in self:
             if rec.sold_by == 'colleague' and rec.property_id.allied_split_pct:
                 rec.our_share_pct = rec.property_id.allied_split_pct
+
+    def _sync_closed_deal_amounts(self, prop):
+        """Al modificar el negocio cerrado, la venta y las comisiones toman los
+        montos nuevos (precio, %, colega, referido). Lo ya cobrado o pagado no
+        se toca: se avisa para corregirlo desde "Corregir cobro"/"Corregir pago"."""
+        avisos = []
+        if self.sold_by in ('owner', 'external'):
+            return
+        # 1. Venta: la comisión completa que se le cobra al propietario.
+        orders = self.env['sale.order'].search([
+            ('property_id', '=', prop.id), ('state', '=', 'sale')])
+        for order in orders:
+            order.estate_commission_gross = self.commission_amount
+            if order.estate_commission_collected:
+                avisos.append('La venta %s ya está cobrada: si el monto cambió, usa '
+                              '"Corregir cobro" en la venta.' % order.name)
+                continue
+            lines = order.order_line.filtered(lambda l: not l.display_type)
+            current = sum(l.price_unit * l.product_uom_qty for l in lines)
+            if current and abs(current - self.commission_amount) > 0.005:
+                for line in lines:
+                    line.price_unit = round(line.price_unit * self.commission_amount / current, 2)
+
+        # 2. Comisiones de los asesores: sobre nuestra parte.
+        Commission = self.env['estate.commission']
+        tops = Commission.search([
+            ('property_id', '=', prop.id), ('parent_commission_id', '=', False),
+            ('state', '!=', 'cancelled')])
+        paid = tops.filtered(lambda c: c.state == 'paid') | tops.child_commission_ids.filtered(
+            lambda c: c.state == 'paid')
+        if tops and paid:
+            avisos.append('Hay comisiones de asesores ya pagadas: no se cambiaron. Usa '
+                          '"Corregir pago" si el monto cambió.')
+        elif tops:
+            base = self._commission_base()
+            pct = self.commission_pct * self._our_ratio()
+            old_total = sum(tops.mapped('amount')) or 0.0
+            for com in tops:
+                share = (com.amount / old_total) if old_total else 1.0 / len(tops)
+                vals = {'sale_amount': base, 'commission_pct': pct * share}
+                if len(tops) == 1 and self.user_id:
+                    vals['user_id'] = self.user_id.id
+                com.write(vals)
+            tops.filtered(lambda c: c.state == 'split')._sync_split_to_children()
+        if avisos:
+            prop.message_post(body=Markup('<b>Aviso:</b> %s') % ' '.join(avisos))
 
     def action_confirm_sale(self):
         """
@@ -291,27 +360,9 @@ class EstateSaleWizard(models.TransientModel):
                 prop_vals['proxy_id'] = self.buyer_proxy_id.id
             prop.with_context(no_wp_sync=True).write(prop_vals)
 
-            # Sincronizar la comisión ya generada con los datos corregidos: el
-            # asesor pudo cambiar, o el precio/porcentaje pudo corregirse
-            # después de la venta original. No se tocan comisiones ya pagadas
-            # (son un registro histórico de un pago que ya se hizo).
-            commissions = self.env['estate.commission'].search([
-                ('property_id', '=', prop.id),
-                ('state', 'in', ('draft', 'approved')),
-            ])
-            if len(commissions) == 1:
-                commissions.write({
-                    'user_id': self.user_id.id,
-                    'sale_amount': self.sale_price,
-                    'commission_pct': self.commission_pct,
-                })
-            elif len(commissions) > 1:
-                prop.message_post(
-                    body='<b>Aviso:</b> hay varias comisiones (reparto con co-asesor) vinculadas '
-                         'a este negocio y no se sincronizaron automáticamente al editar — revísalas '
-                         'manualmente en el menú Comisiones si el asesor o el monto cambiaron.')
+            self._sync_closed_deal_amounts(prop)
 
-            # Actualizar también las notas en la orden de venta (sale.order) y factura si existen
+            # Actualizar también las notas en la orden de venta (sale.order)
             orders = self.env['sale.order'].search([('property_id', '=', prop.id)])
             for ord in orders:
                 ord_vals = {}
