@@ -1261,24 +1261,10 @@ class EstateProperty(models.Model):
         self.ensure_one()
         if self.state != 'sold':
             raise UserError('Solo se pueden editar los datos de cierre en propiedades vendidas.')
-        wizard = self.env['estate.sale.wizard'].create({
-            'property_id': self.id,
-            'buyer_id': self.buyer_id.id if self.buyer_id else (self.owner_id.id if self.owner_id else False),
-            'sale_price': self.price,
-            'date_sold': self.date_sold or fields.Date.today(),
-            'sold_by': self.sold_by or 'agency',
-            'commission_pct': self.commission_percentage,
-            'user_id': self.user_id.id if self.user_id else self.env.user.id,
-            'buyer_proxy_id': self.proxy_id.id if self.proxy_id else False,
-            'deal_deadline': self.deal_deadline,
-            'deal_earnest_amount': self.deal_earnest_amount,
-            'deal_payment_type': self.deal_payment_type or 'cash',
-            'deal_payment_details': self.deal_payment_details,
-            'deal_credit_institution': self.deal_credit_institution,
-            'deal_credit_advisor': self.deal_credit_advisor,
-            'deal_credit_advisor_phone': self.deal_credit_advisor_phone,
-            'deal_observations': self.deal_observations,
-        })
+        # Se cargan TODOS los datos del cierre: lo que no se cargue aquí se
+        # guardaría vacío al confirmar y borraría lo que ya estaba.
+        Wizard = self.env['estate.sale.wizard'].with_context(edit_deal_mode=True)
+        wizard = Wizard.create(Wizard._edit_values_from_property(self))
         return {
             'name': 'Modificar Datos del Negocio Cerrado',
             'type': 'ir.actions.act_window',

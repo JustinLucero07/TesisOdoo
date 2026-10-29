@@ -103,3 +103,28 @@ class TestEstateSaleClosedBy(TransactionCase):
         wiz = self.env['estate.sale.collect.wizard'].with_context(
             active_model='sale.order', active_ids=order.ids).create({'invoice': 'without'})
         self.assertAlmostEqual(wiz.amount_total, 2085.0, places=2)
+
+    def test_modificar_cierre_no_borra_los_demas_datos(self):
+        _wiz, _c, order = self._sell(
+            deal_earnest_amount=5000.0, deal_earnest_received_by_agency=True,
+            deal_earnest_payment_transfer=True, deal_earnest_payment_other='Pichincha 123',
+            deal_payment_type='mortgage', deal_credit_institution='BIESS',
+            deal_observations='Firmar en notaría 5')
+        action = self.prop.action_edit_deal()
+        wiz = self.env['estate.sale.wizard'].browse(action['res_id'])
+        self.assertTrue(wiz.deal_earnest_received_by_agency)
+        self.assertEqual(wiz.deal_earnest_payment_other, 'Pichincha 123')
+        wiz.sale_price = 139000.0
+        wiz.with_context(edit_deal_mode=True).action_confirm_sale()
+        p = self.prop
+        self.assertAlmostEqual(p.price, 139000.0)
+        self.assertTrue(p.deal_earnest_received_by_agency)
+        self.assertTrue(p.deal_earnest_payment_transfer)
+        self.assertEqual(p.deal_earnest_payment_other, 'Pichincha 123')
+        self.assertEqual(p.deal_payment_type, 'mortgage')
+        self.assertEqual(p.deal_credit_institution, 'BIESS')
+        self.assertEqual(p.deal_observations, 'Firmar en notaría 5')
+        self.assertAlmostEqual(p.deal_earnest_amount, 5000.0)
+        self.assertEqual(p.buyer_id, self.buyer)
+        # Y la comisión por cobrar toma el precio nuevo
+        self.assertAlmostEqual(order.amount_untaxed, 4170.0, places=2)

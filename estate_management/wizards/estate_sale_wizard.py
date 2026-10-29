@@ -48,45 +48,7 @@ class EstateSaleWizard(models.TransientModel):
         res = super().default_get(fields_list)
         if res.get('property_id') and self.env.context.get('edit_deal_mode'):
             prop = self.env['estate.property'].browse(res['property_id'])
-            lead = self.env['crm.lead'].search([
-                ('target_property_id', '=', prop.id), ('type', '=', 'opportunity'),
-            ], limit=1)
-            if not lead and prop.buyer_id:
-                lead = self.env['crm.lead'].search([
-                    ('partner_id', '=', prop.buyer_id.id), ('type', '=', 'opportunity'),
-                ], limit=1)
-            if not lead:
-                order = self.env['sale.order'].search([('property_id', '=', prop.id), ('lead_id', '!=', False)], limit=1)
-                if order:
-                    lead = order.lead_id
-            res.update({
-                'lead_id': lead.id if lead else False,
-                'buyer_id': prop.buyer_id.id if prop.buyer_id else False,
-                'sale_price': prop.price,
-                'commission_pct': prop.commission_percentage,
-                'date_sold': prop.date_sold or fields.Date.today(),
-                'sold_by': prop.sold_by or 'agency',
-                'deal_partner_id': prop.deal_partner_id.id,
-                'deal_partner_amount': prop.deal_partner_amount,
-                'our_share_pct': prop.allied_split_pct or 50.0,
-                'buyer_proxy_id': prop.proxy_id.id if prop.proxy_id else False,
-                'deal_deadline': prop.deal_deadline,
-                'deal_earnest_amount': prop.deal_earnest_amount,
-                'deal_earnest_received_by_agency': prop.deal_earnest_received_by_agency,
-                'deal_earnest_received_by_owner': prop.deal_earnest_received_by_owner,
-                'deal_earnest_received_by_proxy': prop.deal_earnest_received_by_proxy,
-                'deal_earnest_payment_cash': prop.deal_earnest_payment_cash,
-                'deal_earnest_payment_transfer': prop.deal_earnest_payment_transfer,
-                'deal_earnest_payment_deposit': prop.deal_earnest_payment_deposit,
-                'deal_earnest_payment_other_check': prop.deal_earnest_payment_other_check,
-                'deal_earnest_payment_other': prop.deal_earnest_payment_other,
-                'deal_payment_type': prop.deal_payment_type,
-                'deal_payment_details': prop.deal_payment_details,
-                'deal_credit_institution': prop.deal_credit_institution,
-                'deal_credit_advisor': prop.deal_credit_advisor,
-                'deal_credit_advisor_phone': prop.deal_credit_advisor_phone,
-                'deal_observations': prop.deal_observations,
-            })
+            res.update(self._edit_values_from_property(prop))
             return res
 
         if 'lead_id' in fields_list and not res.get('lead_id') and res.get('property_id'):
@@ -100,6 +62,53 @@ class EstateSaleWizard(models.TransientModel):
                 if 'sale_price' in fields_list and not res.get('sale_price') and lead.client_budget:
                     res['sale_price'] = lead.client_budget
         return res
+
+    @api.model
+    def _edit_values_from_property(self, prop):
+        """Todos los datos del negocio cerrado de la propiedad, para editarlos
+        sin perder ninguno."""
+        lead = self.env['crm.lead'].search([
+            ('target_property_id', '=', prop.id), ('type', '=', 'opportunity'),
+        ], limit=1)
+        if not lead and prop.buyer_id:
+            lead = self.env['crm.lead'].search([
+                ('partner_id', '=', prop.buyer_id.id), ('type', '=', 'opportunity'),
+            ], limit=1)
+        if not lead:
+            order = self.env['sale.order'].search(
+                [('property_id', '=', prop.id), ('lead_id', '!=', False)], limit=1)
+            lead = order.lead_id
+        return {
+            'property_id': prop.id,
+            'is_edit_mode': True,
+            'lead_id': lead.id or False,
+            'buyer_id': prop.buyer_id.id or prop.owner_id.id or False,
+            'sale_price': prop.price,
+            'commission_pct': prop.commission_percentage,
+            'date_sold': prop.date_sold or fields.Date.today(),
+            'sold_by': prop.sold_by or 'agency',
+            'deal_partner_id': prop.deal_partner_id.id or False,
+            'deal_partner_amount': prop.deal_partner_amount,
+            'our_share_pct': prop.allied_split_pct or 50.0,
+            'user_id': prop.user_id.id or self.env.user.id,
+            'buyer_proxy_id': prop.proxy_id.id or False,
+            'deal_deadline': prop.deal_deadline,
+            'deal_earnest_amount': prop.deal_earnest_amount,
+            'deal_earnest_received_by_agency': prop.deal_earnest_received_by_agency,
+            'deal_earnest_received_by_owner': prop.deal_earnest_received_by_owner,
+            'deal_earnest_received_by_proxy': prop.deal_earnest_received_by_proxy,
+            'deal_earnest_payment_cash': prop.deal_earnest_payment_cash,
+            'deal_earnest_payment_transfer': prop.deal_earnest_payment_transfer,
+            'deal_earnest_payment_deposit': prop.deal_earnest_payment_deposit,
+            'deal_earnest_payment_other_check': prop.deal_earnest_payment_other_check,
+            'deal_earnest_payment_other': prop.deal_earnest_payment_other,
+            'deal_payment_type': prop.deal_payment_type or 'cash',
+            'deal_payment_details': prop.deal_payment_details,
+            'deal_credit_institution': prop.deal_credit_institution,
+            'deal_credit_advisor': prop.deal_credit_advisor,
+            'deal_credit_advisor_phone': prop.deal_credit_advisor_phone,
+            'deal_observations': prop.deal_observations,
+        }
 
     is_edit_mode = fields.Boolean(
         string='Modo Edición',
@@ -188,7 +197,9 @@ class EstateSaleWizard(models.TransientModel):
     @api.onchange('lead_id')
     def _onchange_lead_id(self):
         for rec in self:
-            if not rec.lead_id:
+            # Al modificar un cierre ya hecho, el lead no pisa el precio ni el
+            # comprador que se registraron.
+            if not rec.lead_id or rec.is_edit_mode:
                 continue
             lead = rec.lead_id
             if lead.partner_id:
