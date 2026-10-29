@@ -363,13 +363,38 @@
         </field>
     </record>
 
+    <!-- Ventas cobradas: ordenadas y agrupadas por la fecha en que se cobró la
+         comisión (no por la fecha de la venta). -->
+    <record id="view_sale_order_estate_collected_by_date_list" model="ir.ui.view">
+        <field name="name">sale.order.list.estate.collected.by.date</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="view_sale_order_estate_collected_list"/>
+        <field name="mode">primary</field>
+        <field name="priority">91</field>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="default_order">estate_collected_date desc, estate_date_sold desc</attribute>
+            </xpath>
+            <xpath expr="//field[@name='estate_date_sold']" position="before">
+                <field name="estate_collected_date" position="move"/>
+            </xpath>
+            <xpath expr="//field[@name='estate_collected_date']" position="attributes">
+                <attribute name="string">Fecha de cobro</attribute>
+                <attribute name="optional"/>
+            </xpath>
+            <xpath expr="//field[@name='estate_date_sold']" position="attributes">
+                <attribute name="string">Fecha de venta</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="action_sale_order_estate_collected" model="ir.actions.act_window">
         <field name="name">Ventas cobradas</field>
         <field name="res_model">sale.order</field>
         <field name="view_mode">list,pivot,graph,form</field>
-        <field name="view_id" ref="view_sale_order_estate_collected_list"/>
+        <field name="view_id" ref="view_sale_order_estate_collected_by_date_list"/>
         <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale'), ('amount_total', '>', 0)]</field>
-        <field name="context">{'search_default_estate_collected': 1, 'search_default_estate_group_date_sold': 1}</field>
+        <field name="context">{'search_default_estate_collected': 1, 'search_default_estate_group_collected_date': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">Aún no hay ventas con la comisión cobrada.</p>
             <p>Una venta pasa aquí cuando la marcas con "Marcar cobrada" en

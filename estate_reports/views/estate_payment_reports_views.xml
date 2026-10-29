@@ -34,7 +34,7 @@
         <field name="domain">[('property_id', '!=', False), ('state', '=', 'sale'), ('amount_total', '>', 0)]</field>
         <field name="context">{'search_default_estate_collected': 1, 'search_default_estate_group_collected_date': 1}</field>
         <field name="view_ids" eval="[(5, 0, 0),
-            (0, 0, {'view_mode': 'list', 'view_id': ref('estate_management.view_sale_order_estate_collected_list')}),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('estate_management.view_sale_order_estate_collected_by_date_list')}),
             (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_sale_order_estate_collections_pivot')}),
             (0, 0, {'view_mode': 'graph', 'view_id': ref('view_sale_order_estate_collections_graph')})]"/>
         <field name="help" type="html">
