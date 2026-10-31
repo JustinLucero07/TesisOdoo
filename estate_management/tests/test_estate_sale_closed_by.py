@@ -159,3 +159,41 @@ class TestEstateSaleClosedBy(TransactionCase):
         self.assertAlmostEqual(local.rental_price, 7000.0)
         com = self.env['estate.commission'].search([('property_id', '=', local.id)])
         self.assertAlmostEqual(sum(com.mapped('amount')), 7000.0, places=2)
+
+    def test_ventana_de_arriendo_y_modificar(self):
+        ptype = self.env['estate.property.type'].create({'name': 'Local Renta'})
+        tenant = self.env['res.partner'].create({'name': 'Inquilino Test'})
+        local = self.env['estate.property'].create({
+            'title': 'Local para arrendar', 'price': 800.0, 'offer_type': 'rent',
+            'commission_percentage': 100.0, 'property_type_id': ptype.id, 'state': 'available'})
+        local.user_id = False  # sin asesor responsable: no debe fallar
+        wiz = self.env['estate.rent.wizard'].with_context(default_property_id=local.id).create({})
+        self.assertAlmostEqual(wiz.rental_price, 800.0)
+        self.assertAlmostEqual(wiz.commission_amount, 800.0)
+        self.assertTrue(wiz.user_id)
+        wiz.write({'tenant_id': tenant.id, 'rent_months': 12, 'rent_deposit': 1600.0,
+                   'commission_amount': 400.0, 'rent_observations': 'Paga los 5'})
+        wiz._onchange_commission_amount()
+        self.assertAlmostEqual(wiz.commission_pct, 50.0)
+        action = wiz.action_confirm()
+        self.assertEqual(action['type'], 'ir.actions.report')
+        self.assertEqual(local.state, 'rented')
+        self.assertEqual(local.tenant_id, tenant)
+        self.assertTrue(local.contract_end_date)
+        com = self.env['estate.commission'].search([('property_id', '=', local.id)])
+        self.assertAlmostEqual(sum(com.mapped('amount')), 400.0, places=2)
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'estate_management.action_report_estate_rent', local.ids)
+        self.assertIn(b'Inquilino Test', html)
+        self.assertIn(b'Paga los 5', html)
+
+        # Modificar: sube el arriendo y la comisión se actualiza
+        edit = self.env['estate.rent.wizard'].with_context(
+            default_property_id=local.id, default_is_edit_mode=True).create({})
+        self.assertEqual(edit.tenant_id, tenant)
+        self.assertAlmostEqual(edit.rent_deposit, 1600.0)
+        edit.write({'rental_price': 900.0})
+        edit.action_confirm()
+        self.assertAlmostEqual(local.rental_price, 900.0)
+        self.assertEqual(local.rent_observations, 'Paga los 5')
+        self.assertAlmostEqual(sum(com.mapped('amount')), 450.0, places=2)

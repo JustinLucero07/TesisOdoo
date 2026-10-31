@@ -6,3 +6,4 @@ from . import estate_commission_payout_wizard
 from . import estate_payment_correct_wizard
 from . import estate_payment_backfill_wizard
 from . import estate_third_payment_wizard
+from . import estate_rent_wizard

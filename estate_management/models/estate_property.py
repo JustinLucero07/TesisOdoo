@@ -275,8 +275,12 @@ class EstateProperty(models.Model):
     # --- Arriendo ---
     date_rented = fields.Date(string='Fecha de Arrendamiento', tracking=True)
     tenant_id = fields.Many2one('res.partner', string='Arrendatario', tracking=True)
-    rental_price = fields.Float(string='Canon Mensual de Arriendo ($)', tracking=True,
-        help='Valor mensual del arriendo. La comisión se cobra solo sobre el primer mes.')
+    rental_price = fields.Float(string='Valor del arriendo mensual ($)', tracking=True,
+        help='Lo que paga el inquilino cada mes. La comisión se cobra solo sobre el primer mes.')
+    rent_months = fields.Integer(string='Duración del contrato (meses)', tracking=True)
+    rent_deposit = fields.Float(string='Garantía / depósito ($)', tracking=True,
+        help='Dinero que deja el inquilino como garantía al empezar el arriendo.')
+    rent_observations = fields.Text(string='Observaciones del arriendo')
 
     # --- Contratos ---
     contract_end_date = fields.Date(string='Vencimiento de Contrato', tracking=True,
@@ -1226,6 +1230,9 @@ class EstateProperty(models.Model):
             'sold_by': False,
             'tenant_id': False,
             'date_rented': False,
+            'rent_months': 0,
+            'rent_deposit': 0.0,
+            'rent_observations': False,
         })
         self.message_post(
             body='Propiedad re-listada en el mercado. Datos de venta anteriores archivados.',
@@ -1276,15 +1283,56 @@ class EstateProperty(models.Model):
         }
 
     def action_set_rented(self):
+        """Arriendo directo (sin ventana): mismo cálculo que la ventana con los
+        valores de la ficha. La usa el asistente de IA."""
         self.ensure_one()
         if self.state not in ('available', 'reserved'):
             raise UserError('Solo se puede arrendar una propiedad Disponible o Reservada.')
-        if not self.rental_price and self.offer_type == 'rent' and self.price:
-            # En las propiedades de arriendo el canon suele estar en "Precio".
+        return self._estate_do_rent()
+
+    def action_open_rent_wizard(self):
+        self.ensure_one()
+        if self.state not in ('available', 'reserved'):
+            raise UserError('Solo se puede arrendar una propiedad Disponible o Reservada.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Arrendar Propiedad',
+            'res_model': 'estate.rent.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_property_id': self.id},
+        }
+
+    def action_edit_rent(self):
+        self.ensure_one()
+        if self.state != 'rented':
+            raise UserError('Solo se puede modificar el arriendo de una propiedad Arrendada.')
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Modificar Arriendo',
+            'res_model': 'estate.rent.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_property_id': self.id, 'default_is_edit_mode': True},
+        }
+
+    def action_print_rent(self):
+        self.ensure_one()
+        return self.env.ref('estate_management.action_report_estate_rent').report_action(self)
+
+    def _estate_rent_advisor(self):
+        """Asesor de la comisión: el responsable, o el captador, o quien registra."""
+        self.ensure_one()
+        return self.user_id or self.exclusive_user_id or self.env.user
+
+    def _estate_do_rent(self):
+        if not self.rental_price and self.price:
+            # En las propiedades de arriendo el valor mensual suele estar en "Precio".
             self.rental_price = self.price
         if not self.rental_price:
-            raise UserError('Ingresa el Canon Mensual de Arriendo (o el Precio, si la propiedad '
-                            'es de arriendo) antes de continuar.')
+            raise UserError('Ingresa el Valor del arriendo mensual (o el Precio) antes de continuar.')
+        if not self.user_id:
+            self.user_id = self._estate_rent_advisor()
 
         if (self.wp_published or self.wp_post_id) and hasattr(self, 'action_unpublish_wordpress'):
             try:
@@ -1300,6 +1348,7 @@ class EstateProperty(models.Model):
         # Comisión solo del PRIMER mes de arriendo
         first_month_commission = self.rental_price * (self.commission_percentage / 100.0)
         self._create_commission_records('rent', first_month_commission, self.rental_price, self.commission_percentage)
+        return True
 
     def _get_iva_tax(self):
         """Busca el impuesto de venta IVA 15% por monto/tipo (no por ID fijo,

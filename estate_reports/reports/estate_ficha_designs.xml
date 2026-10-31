@@ -128,7 +128,7 @@
                 </t>
                 <div style="position:absolute; left:0; bottom:0; padding:14px 24px; background:#d81f26; color:#fff; line-height:normal;">
                     <div style="font-size:10.5px; letter-spacing:2.1px; text-transform:uppercase; color:#f6d5d6;">
-                        <t t-esc="'Precio de oportunidad' if f['es_venta'] else 'Canon mensual'"/>
+                        <t t-esc="'Precio de oportunidad' if f['es_venta'] else 'Arriendo mensual'"/>
                     </div>
                     <div style="font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-size:34px; font-weight:600; line-height:1;">US$ <t t-esc="f['precio_fmt']"/></div>
                 </div>
@@ -307,7 +307,7 @@
                         </div>
                         <div style="font-family:'Ficha Serif','Cormorant Garamond',Georgia,serif; font-size:46px; font-weight:700; line-height:1; color:#28235d;">$<t t-esc="f['precio_fmt']"/></div>
                         <div style="font-size:11px; color:#d81f26; letter-spacing:.6px; font-weight:600;">
-                            <t t-esc="'Precio de oportunidad' if f['es_venta'] else 'Canon de arriendo'"/>
+                            <t t-esc="'Precio de oportunidad' if f['es_venta'] else 'Arriendo mensual'"/>
                         </div>
                     </td>
                 </tr>

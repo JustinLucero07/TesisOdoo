@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Constancia de arriendo: los datos del arriendo para imprimir y firmar -->
+    <record id="action_report_estate_rent" model="ir.actions.report">
+        <field name="name">Constancia de arriendo</field>
+        <field name="model">estate.property</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">estate_management.report_estate_rent</field>
+        <field name="report_file">estate_management.report_estate_rent</field>
+        <field name="print_report_name">'Arriendo_' + (object.name or 'PROP')</field>
+        <field name="binding_model_id" ref="estate_management.model_estate_property"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="estate_management.paperformat_estate_receipt"/>
+    </record>
+
+    <template id="report_estate_rent">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="prop">
+                <t t-set="company" t-value="env.company"/>
+                <t t-set="currency" t-value="company.currency_id"/>
+                <t t-set="date_end" t-value="prop.contract_end_date"/>
+                <t t-set="commission" t-value="(prop.rental_price or 0.0) * (prop.commission_percentage or 0.0) / 100.0"/>
+                <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#1f2430; font-size:12px;">
+                    <div class="page">
+                        <table style="width:100%; border-collapse:collapse; border-bottom:3px solid #142559;">
+                            <tr>
+                                <td style="padding:6px 0 12px; vertical-align:middle; width:55%;">
+                                    <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
+                                         style="height:44px; max-width:170px;"/>
+                                    <span t-else="" style="font-size:17px; font-weight:bold; color:#142559;" t-esc="company.name"/>
+                                </td>
+                                <td style="padding:6px 0 12px; vertical-align:middle; text-align:right; color:#142559;">
+                                    <div style="font-size:15px; font-weight:bold; letter-spacing:2px; text-transform:uppercase;">Constancia de arriendo</div>
+                                    <div style="font-size:11px; color:#6b7280; margin-top:3px;">
+                                        <t t-esc="prop.name"/> · <t t-esc="prop.date_rented and prop.date_rented.strftime('%d/%m/%Y')"/>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="height:4px; background:#D9042B;"/>
+
+                        <div style="margin-top:16px; font-size:16px; font-weight:bold; color:#142559;" t-esc="prop.title"/>
+                        <div style="color:#4b5563;">
+                            <t t-esc="prop.street or ''"/><t t-if="prop.street and prop.city">, </t><t t-esc="prop.city or ''"/>
+                        </div>
+
+                        <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:12px;">
+                            <tr style="background:#eef1f8;">
+                                <th style="text-align:left; padding:7px 10px; color:#142559;" colspan="2">Datos del arriendo</th>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280; width:38%;">Propietario (arrendador)</td>
+                                <td style="padding:6px 10px;" t-esc="prop.owner_id.name or '—'"/>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280;">Arrendatario (inquilino)</td>
+                                <td style="padding:6px 10px;">
+                                    <t t-esc="prop.tenant_id.name or '—'"/>
+                                    <t t-if="prop.tenant_id.vat"> · C.I./RUC <t t-esc="prop.tenant_id.vat"/></t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280;">Fecha de inicio</td>
+                                <td style="padding:6px 10px;" t-esc="prop.date_rented and prop.date_rented.strftime('%d/%m/%Y') or '—'"/>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280;">Duración</td>
+                                <td style="padding:6px 10px;">
+                                    <t t-if="prop.rent_months"><t t-esc="prop.rent_months"/> meses</t><t t-else="">—</t>
+                                    <t t-if="date_end"> · termina el <t t-esc="date_end.strftime('%d/%m/%Y')"/></t>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280;">Valor del arriendo mensual</td>
+                                <td style="padding:6px 10px; font-weight:bold;">
+                                    <span t-out="prop.rental_price or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280;">Garantía / depósito</td>
+                                <td style="padding:6px 10px;">
+                                    <span t-out="prop.rent_deposit or 0.0" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280;">Comisión de la inmobiliaria (primer mes)</td>
+                                <td style="padding:6px 10px;">
+                                    <span t-out="commission" t-options='{"widget": "monetary", "display_currency": currency}'/>
+                                    <span style="color:#6b7280;"> (<t t-esc="'%g' % (prop.commission_percentage or 0.0)"/>%)</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px 10px; color:#6b7280;">Asesor a cargo</td>
+                                <td style="padding:6px 10px;" t-esc="prop.user_id.name or '—'"/>
+                            </tr>
+                            <tr t-if="prop.rent_observations">
+                                <td style="padding:6px 10px; color:#6b7280;">Observaciones</td>
+                                <td style="padding:6px 10px; white-space:pre-line;" t-esc="prop.rent_observations"/>
+                            </tr>
+                        </table>
+
+                        <table style="width:100%; border-collapse:collapse; margin-top:80px; font-size:11px;">
+                            <tr>
+                                <td style="width:30%; text-align:center; border-top:1px solid #1f2430; padding-top:6px;">
+                                    <b t-esc="prop.owner_id.name or 'Propietario'"/><br/>
+                                    <span style="color:#6b7280;">Propietario</span>
+                                </td>
+                                <td style="width:5%;"/>
+                                <td style="width:30%; text-align:center; border-top:1px solid #1f2430; padding-top:6px;">
+                                    <b t-esc="prop.tenant_id.name or 'Arrendatario'"/><br/>
+                                    <span style="color:#6b7280;">Arrendatario · C.I. __________</span>
+                                </td>
+                                <td style="width:5%;"/>
+                                <td style="width:30%; text-align:center; border-top:1px solid #1f2430; padding-top:6px;">
+                                    <b t-esc="company.name"/><br/>
+                                    <span style="color:#6b7280;">Inmobiliaria</span>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

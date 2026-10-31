@@ -78,10 +78,15 @@
                             class="btn-success oe_highlight" icon="fa-handshake-o"
                             invisible="state not in ('available', 'reserved') or offer_type == 'rent'"
                             confirm="¿Iniciar el proceso de venta para esta propiedad?"/>
-                    <button name="action_set_rented" string="Arrendar Propiedad" type="object"
+                    <button name="action_open_rent_wizard" string="Arrendar Propiedad" type="object"
                             class="btn-success oe_highlight" icon="fa-key"
-                            invisible="state not in ('available', 'reserved') or offer_type == 'sale'"
-                            confirm="¿Confirmar arriendo? Se registrará la comisión del primer mes."/>
+                            invisible="state not in ('available', 'reserved') or offer_type == 'sale'"/>
+                    <button name="action_edit_rent" string="Modificar Arriendo" type="object"
+                            class="btn-secondary" icon="fa-pencil-square-o"
+                            invisible="state != 'rented'"/>
+                    <button name="action_print_rent" string="Imprimir arriendo" type="object"
+                            class="btn-secondary" icon="fa-print"
+                            invisible="state != 'rented'"/>
                     <button name="action_relist" string="Re-listar en Mercado" type="object"
                             class="btn-warning"
                             invisible="state not in ('sold', 'rented')"
@@ -572,6 +577,10 @@
                                     <field name="rental_price" widget="monetary"/>
                                     <field name="tenant_id"/>
                                     <field name="date_rented"/>
+                                    <field name="rent_months" invisible="not rent_months"/>
+                                    <field name="contract_end_date" invisible="state != 'rented'"/>
+                                    <field name="rent_deposit" widget="monetary" invisible="not rent_deposit"/>
+                                    <field name="rent_observations" invisible="not rent_observations"/>
                                 </group>
                                 <group string="Métricas de Venta">
                                     <field name="date_listed"/>

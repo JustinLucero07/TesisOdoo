@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_estate_rent_wizard_form" model="ir.ui.view">
+        <field name="name">estate.rent.wizard.form</field>
+        <field name="model">estate.rent.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Arrendar Propiedad">
+                <field name="currency_id" invisible="1"/>
+                <field name="is_edit_mode" invisible="1"/>
+                <div class="oe_title">
+                    <h3 invisible="is_edit_mode">Arrendar propiedad</h3>
+                    <h3 invisible="not is_edit_mode">Modificar arriendo</h3>
+                    <h4><field name="property_id" readonly="1"/></h4>
+                </div>
+                <group>
+                    <group string="Quién arrienda">
+                        <field name="owner_id" readonly="1"/>
+                        <field name="tenant_id" placeholder="Nombre del inquilino"/>
+                        <field name="user_id" widget="many2one_avatar_user" options="{'no_create': True}"/>
+                    </group>
+                    <group string="Plazo">
+                        <field name="date_rented"/>
+                        <field name="rent_months"/>
+                        <field name="date_end"/>
+                    </group>
+                </group>
+                <group>
+                    <group string="Valores">
+                        <field name="rental_price"/>
+                        <field name="rent_deposit"/>
+                    </group>
+                    <group string="Comisión (sobre el primer mes)">
+                        <field name="commission_pct"/>
+                        <field name="commission_amount"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="rent_observations" placeholder="Ej. Incluye parqueadero; paga los 5 de cada mes..."/>
+                </group>
+                <footer>
+                    <button name="action_confirm" type="object" string="Confirmar arriendo e imprimir"
+                            class="btn-success" icon="fa-key" invisible="is_edit_mode"/>
+                    <button name="action_confirm" type="object" string="Guardar cambios"
+                            class="btn-primary" icon="fa-save" invisible="not is_edit_mode"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
