@@ -197,11 +197,18 @@
                             <field name="offer_type" invisible="1"/>
                             <field name="price" widget="monetary" readonly="state == 'sold'"
                                    placeholder="Ej: 125000"/>
+                            <field name="rental_price" widget="monetary"
+                                   invisible="offer_type != 'rent'" readonly="state == 'rented'"
+                                   placeholder="Si lo dejas vacío se usa el Precio"/>
                             <field name="bottom_price" widget="monetary" readonly="state == 'sold'"
                                    placeholder="Precio mínimo aceptable"
                                    groups="estate_management.estate_group_manager"/>
                             <field name="commission_percentage" readonly="state == 'sold'"/>
                             <field name="commission_amount" widget="monetary" readonly="state == 'sold'"/>
+                            <div colspan="2" class="text-muted small" invisible="state != 'sold'">
+                                Para cambiar el precio o la comisión de una propiedad vendida usa
+                                <b>Modificar Cierre / Observaciones</b>: así se actualizan también la venta y las comisiones.
+                            </div>
                             <field name="area" readonly="state == 'sold'" placeholder="m² construidos"/>
                             <field name="land_area" readonly="state == 'sold'" placeholder="m² de terreno"/>
                             <field name="owner_id" readonly="state == 'sold'"

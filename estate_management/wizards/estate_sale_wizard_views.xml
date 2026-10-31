@@ -44,7 +44,7 @@
                         </group>
                         <group string="Comisión" invisible="sold_by in ('owner', 'external')">
                             <field name="commission_pct" required="sold_by not in ('owner', 'external')"/>
-                            <field name="commission_amount" widget="monetary" readonly="1"/>
+                            <field name="commission_amount" widget="monetary"/>
                             <field name="is_shared" invisible="1"/>
                             <field name="our_commission_amount" widget="monetary" readonly="1"
                                    invisible="not is_shared" class="fw-bold"/>

@@ -128,3 +128,34 @@ class TestEstateSaleClosedBy(TransactionCase):
         self.assertEqual(p.buyer_id, self.buyer)
         # Y la comisión por cobrar toma el precio nuevo
         self.assertAlmostEqual(order.amount_untaxed, 4170.0, places=2)
+
+    def test_monto_y_porcentaje_de_comision_en_los_dos_sentidos(self):
+        from odoo.tests import Form
+        with Form(self.env['estate.sale.wizard'].with_context(
+                active_id=self.prop.id, default_property_id=self.prop.id)) as f:
+            f.buyer_id = self.buyer
+            f.sale_price = 100000.0
+            f.commission_pct = 4.0
+            self.assertAlmostEqual(f.commission_amount, 4000.0, places=2)
+            f.commission_amount = 3000.0
+            self.assertAlmostEqual(f.commission_pct, 3.0, places=4)
+            self.assertAlmostEqual(f.commission_amount, 3000.0, places=2)
+            f.commission_amount = 2500.0
+            self.assertAlmostEqual(f.commission_pct, 2.5, places=4)
+            wiz = f.save()
+        wiz.action_confirm_sale()
+        self.assertAlmostEqual(self.prop.commission_percentage, 2.5, places=4)
+        order = self.env['sale.order'].search([('property_id', '=', self.prop.id)], limit=1)
+        self.assertAlmostEqual(order.amount_untaxed, 2500.0, places=2)
+
+    def test_arrendar_usa_el_precio_como_canon(self):
+        ptype = self.env['estate.property.type'].create({'name': 'Local Test'})
+        local = self.env['estate.property'].create({
+            'title': 'Local en renta', 'price': 7000.0, 'offer_type': 'rent',
+            'commission_percentage': 100.0, 'property_type_id': ptype.id,
+            'state': 'available', 'user_id': self.advisor.id})
+        local.action_set_rented()
+        self.assertEqual(local.state, 'rented')
+        self.assertAlmostEqual(local.rental_price, 7000.0)
+        com = self.env['estate.commission'].search([('property_id', '=', local.id)])
+        self.assertAlmostEqual(sum(com.mapped('amount')), 7000.0, places=2)

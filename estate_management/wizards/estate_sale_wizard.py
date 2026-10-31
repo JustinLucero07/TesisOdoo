@@ -115,7 +115,10 @@ class EstateSaleWizard(models.TransientModel):
         default=lambda self: self.env.context.get('edit_deal_mode', False))
 
     commission_pct = fields.Float(string='Comisión (%)')
-    commission_amount = fields.Float(string='Monto Comisión', compute='_compute_commission_amount')
+    commission_amount = fields.Float(
+        string='Monto Comisión', compute='_compute_commission_amount', store=True, readonly=False,
+        help='Puedes escribir el monto: el porcentaje se calcula solo. Y si cambias el '
+             'porcentaje, se recalcula el monto.')
     is_shared = fields.Boolean(compute='_compute_commission_amount')
     our_commission_amount = fields.Float(
         string='Nuestra parte de la comisión', compute='_compute_commission_amount',
@@ -243,6 +246,17 @@ class EstateSaleWizard(models.TransientModel):
             else:
                 rec.commission_amount = 0.0
             rec.our_commission_amount = round(rec.commission_amount * rec._our_ratio(), 2)
+
+    @api.onchange('commission_amount')
+    def _onchange_commission_amount(self):
+        """Escribieron el monto: se calcula el porcentaje (3.000 sobre 100.000 = 3%)."""
+        for rec in self:
+            base = rec._commission_base()
+            if rec.sold_by in ('owner', 'external') or not base:
+                continue
+            pct = rec.commission_amount / base * 100.0
+            if abs(pct - (rec.commission_pct or 0.0)) > 0.00005:
+                rec.commission_pct = pct
 
     @api.onchange('property_id', 'sold_by')
     def _onchange_our_share(self):

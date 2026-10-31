@@ -1279,8 +1279,12 @@ class EstateProperty(models.Model):
         self.ensure_one()
         if self.state not in ('available', 'reserved'):
             raise UserError('Solo se puede arrendar una propiedad Disponible o Reservada.')
+        if not self.rental_price and self.offer_type == 'rent' and self.price:
+            # En las propiedades de arriendo el canon suele estar en "Precio".
+            self.rental_price = self.price
         if not self.rental_price:
-            raise UserError('Debes ingresar el Canon Mensual de Arriendo antes de continuar.')
+            raise UserError('Ingresa el Canon Mensual de Arriendo (o el Precio, si la propiedad '
+                            'es de arriendo) antes de continuar.')
 
         if (self.wp_published or self.wp_post_id) and hasattr(self, 'action_unpublish_wordpress'):
             try:
