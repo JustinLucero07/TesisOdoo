@@ -119,9 +119,9 @@ class EstateSaleWizard(models.TransientModel):
         string='Monto Comisión', compute='_compute_commission_amount', store=True, readonly=False,
         help='Puedes escribir el monto: el porcentaje se calcula solo. Y si cambias el '
              'porcentaje, se recalcula el monto.')
-    is_shared = fields.Boolean(compute='_compute_commission_amount')
+    is_shared = fields.Boolean(compute='_compute_our_commission')
     our_commission_amount = fields.Float(
-        string='Nuestra parte de la comisión', compute='_compute_commission_amount',
+        string='Nuestra parte de la comisión', compute='_compute_our_commission',
         help='Con un colega o un inmueble de aliado, lo que le queda a la oficina.')
     lead_id = fields.Many2one(
         'crm.lead', string='Lead de Origen (CRM)',
@@ -228,11 +228,9 @@ class EstateSaleWizard(models.TransientModel):
             base = max(base - (self.deal_partner_amount or 0.0), 0.0)
         return base
 
-    @api.depends('sale_price', 'commission_pct', 'sold_by', 'deal_partner_amount',
-                 'our_share_pct', 'property_id.is_allied_property', 'property_id.allied_split_pct')
+    @api.depends('sale_price', 'commission_pct', 'sold_by', 'deal_partner_amount')
     def _compute_commission_amount(self):
         for rec in self:
-            rec.is_shared = rec.sold_by == 'colleague' or bool(rec.property_id.is_allied_property)
             # "Externo" se trata igual que "Propietario": la agencia no
             # intermedió en el cierre, así que no genera comisión propia.
             if rec.sold_by in ('owner', 'external'):
@@ -245,6 +243,12 @@ class EstateSaleWizard(models.TransientModel):
                 rec.commission_amount = base * (rec.commission_pct / 100.0)
             else:
                 rec.commission_amount = 0.0
+
+    @api.depends('commission_amount', 'sold_by', 'our_share_pct',
+                 'property_id.is_allied_property', 'property_id.allied_split_pct')
+    def _compute_our_commission(self):
+        for rec in self:
+            rec.is_shared = rec.sold_by == 'colleague' or bool(rec.property_id.is_allied_property)
             rec.our_commission_amount = round(rec.commission_amount * rec._our_ratio(), 2)
 
     @api.onchange('commission_amount')
