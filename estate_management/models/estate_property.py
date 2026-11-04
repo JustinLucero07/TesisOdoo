@@ -281,6 +281,16 @@ class EstateProperty(models.Model):
     rent_deposit = fields.Float(string='Garantía / depósito ($)', tracking=True,
         help='Dinero que deja el inquilino como garantía al empezar el arriendo.')
     rent_observations = fields.Text(string='Observaciones del arriendo')
+    rented_by = fields.Selection([
+        ('agency', 'Agencia'),
+        ('colleague', 'Colega'),
+        ('referral', 'Pago a terceros / referido'),
+        ('owner', 'Propietario'),
+        ('external', 'Externo'),
+    ], string='Arrendado por', tracking=True,
+        help='Mismas opciones que "Cerrado por" en una venta. Propietario y Externo no '
+             'generan comisión; Colega reparte como con un aliado; con Referido la '
+             'comisión se calcula sobre el arriendo menos lo del referido.')
 
     # --- Contratos ---
     contract_end_date = fields.Date(string='Vencimiento de Contrato', tracking=True,
@@ -1233,6 +1243,9 @@ class EstateProperty(models.Model):
             'rent_months': 0,
             'rent_deposit': 0.0,
             'rent_observations': False,
+            'rented_by': False,
+            'deal_partner_id': False,
+            'deal_partner_amount': 0.0,
         })
         self.message_post(
             body='Propiedad re-listada en el mercado. Datos de venta anteriores archivados.',
@@ -1325,6 +1338,14 @@ class EstateProperty(models.Model):
         self.ensure_one()
         return self.user_id or self.exclusive_user_id or self.env.user
 
+    def _estate_rent_commission_base(self):
+        """Valor mensual sobre el que se calcula la comisión (menos el referido)."""
+        self.ensure_one()
+        base = self.rental_price or 0.0
+        if self.rented_by == 'referral':
+            base = max(base - (self.deal_partner_amount or 0.0), 0.0)
+        return base
+
     def _estate_do_rent(self):
         if not self.rental_price and self.price:
             # En las propiedades de arriendo el valor mensual suele estar en "Precio".
@@ -1346,8 +1367,12 @@ class EstateProperty(models.Model):
         self.with_context(no_wp_sync=True).write(vals)
 
         # Comisión solo del PRIMER mes de arriendo
-        first_month_commission = self.rental_price * (self.commission_percentage / 100.0)
-        self._create_commission_records('rent', first_month_commission, self.rental_price, self.commission_percentage)
+        if self.rented_by in ('owner', 'external'):
+            # Lo arrendó el propietario o un externo: no hay comisión para la oficina.
+            return True
+        base = self._estate_rent_commission_base()
+        first_month_commission = base * (self.commission_percentage / 100.0)
+        self._create_commission_records('rent', first_month_commission, base, self.commission_percentage)
         return True
 
     def _get_iva_tax(self):
@@ -1462,7 +1487,8 @@ class EstateProperty(models.Model):
 
         # Inmueble de aliado o vendido por un colega: nuestra agencia solo cobra
         # nuestra porción de la comisión total.
-        if self.is_allied_property or self.sold_by == 'colleague':
+        closed_by = self.rented_by if commission_type == 'rent' else self.sold_by
+        if self.is_allied_property or closed_by == 'colleague':
             allied_ratio = (self.allied_split_pct or 50.0) / 100.0
             total_amount = total_amount * allied_ratio
             pct = pct * allied_ratio

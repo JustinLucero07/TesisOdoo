@@ -577,6 +577,11 @@
                                     <field name="rental_price" widget="monetary"/>
                                     <field name="tenant_id"/>
                                     <field name="date_rented"/>
+                                    <field name="rented_by" invisible="not rented_by"/>
+                                    <field name="deal_partner_id" string="Colega / referido"
+                                           invisible="rented_by not in ('colleague', 'referral')"/>
+                                    <field name="deal_partner_amount" widget="monetary"
+                                           invisible="rented_by != 'referral'"/>
                                     <field name="rent_months" invisible="not rent_months"/>
                                     <field name="contract_end_date" invisible="state != 'rented'"/>
                                     <field name="rent_deposit" widget="monetary" invisible="not rent_deposit"/>

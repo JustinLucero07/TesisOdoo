@@ -19,7 +19,7 @@
                 <t t-set="company" t-value="env.company"/>
                 <t t-set="currency" t-value="company.currency_id"/>
                 <t t-set="date_end" t-value="prop.contract_end_date"/>
-                <t t-set="commission" t-value="(prop.rental_price or 0.0) * (prop.commission_percentage or 0.0) / 100.0"/>
+                <t t-set="commission" t-value="0.0 if prop.rented_by in ('owner', 'external') else prop._estate_rent_commission_base() * (prop.commission_percentage or 0.0) / 100.0"/>
                 <div class="article" style="font-family:Arial,Helvetica,sans-serif; color:#1f2430; font-size:12px;">
                     <div class="page">
                         <table style="width:100%; border-collapse:collapse; border-bottom:3px solid #142559;">
@@ -87,6 +87,14 @@
                                 <td style="padding:6px 10px;">
                                     <span t-out="commission" t-options='{"widget": "monetary", "display_currency": currency}'/>
                                     <span style="color:#6b7280;"> (<t t-esc="'%g' % (prop.commission_percentage or 0.0)"/>%)</span>
+                                </td>
+                            </tr>
+                            <tr t-if="prop.rented_by">
+                                <td style="padding:6px 10px; color:#6b7280;">Arrendado por</td>
+                                <td style="padding:6px 10px;">
+                                    <t t-esc="dict(prop._fields['rented_by'].selection).get(prop.rented_by)"/>
+                                    <t t-if="prop.rented_by in ('colleague', 'referral') and prop.deal_partner_id"> · <t t-esc="prop.deal_partner_id.name"/></t>
+                                    <t t-if="prop.rented_by == 'referral' and prop.deal_partner_amount"> ($<t t-esc="'{:,.2f}'.format(prop.deal_partner_amount)"/>)</t>
                                 </td>
                             </tr>
                             <tr>

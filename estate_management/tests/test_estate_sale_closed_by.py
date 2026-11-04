@@ -197,3 +197,45 @@ class TestEstateSaleClosedBy(TransactionCase):
         self.assertAlmostEqual(local.rental_price, 900.0)
         self.assertEqual(local.rent_observations, 'Paga los 5')
         self.assertAlmostEqual(sum(com.mapped('amount')), 450.0, places=2)
+
+    def _local_en_renta(self, name):
+        ptype = self.env['estate.property.type'].create({'name': 'Tipo %s' % name})
+        return self.env['estate.property'].create({
+            'title': name, 'price': 1000.0, 'offer_type': 'rent',
+            'commission_percentage': 100.0, 'property_type_id': ptype.id,
+            'state': 'available', 'user_id': self.advisor.id})
+
+    def _arrendar(self, local, **vals):
+        wiz = self.env['estate.rent.wizard'].with_context(default_property_id=local.id).create(vals)
+        wiz.action_confirm()
+        return wiz, self.env['estate.commission'].search([('property_id', '=', local.id)])
+
+    def test_arriendo_por_propietario_sin_comision(self):
+        local = self._local_en_renta('Local propietario')
+        wiz, com = self._arrendar(local, rented_by='owner')
+        self.assertEqual(wiz.commission_amount, 0.0)
+        self.assertEqual(local.state, 'rented')
+        self.assertEqual(local.rented_by, 'owner')
+        self.assertFalse(com)
+
+    def test_arriendo_por_colega_reparte(self):
+        local = self._local_en_renta('Local colega')
+        wiz, com = self._arrendar(local, rented_by='colleague',
+                                  deal_partner_id=self.colleague.id, our_share_pct=50.0)
+        self.assertAlmostEqual(wiz.our_commission_amount, 500.0)
+        self.assertAlmostEqual(sum(com.mapped('amount')), 500.0, places=2)
+
+    def test_arriendo_con_referido_resta_del_arriendo(self):
+        local = self._local_en_renta('Local referido')
+        wiz, com = self._arrendar(local, rented_by='referral',
+                                  deal_partner_id=self.referral.id, deal_partner_amount=200.0)
+        self.assertAlmostEqual(wiz.commission_amount, 800.0)
+        self.assertAlmostEqual(sum(com.mapped('amount')), 800.0, places=2)
+        html, _ = self.env['ir.actions.report']._render_qweb_html(
+            'estate_management.action_report_estate_rent', local.ids)
+        self.assertIn(b'Referido Test', html)
+        # Al modificar y pasarlo a Propietario, la comisión pendiente se cancela
+        edit = self.env['estate.rent.wizard'].with_context(
+            default_property_id=local.id, default_is_edit_mode=True).create({'rented_by': 'owner'})
+        edit.action_confirm()
+        self.assertEqual(set(com.mapped('state')), {'cancelled'})

@@ -17,6 +17,14 @@
                         <field name="owner_id" readonly="1"/>
                         <field name="tenant_id" placeholder="Nombre del inquilino"/>
                         <field name="user_id" widget="many2one_avatar_user" options="{'no_create': True}"/>
+                        <field name="rented_by"/>
+                        <field name="deal_partner_id" string="Colega" invisible="rented_by != 'colleague'"
+                               required="rented_by == 'colleague'" placeholder="Quién arrendó nuestra propiedad"/>
+                        <field name="our_share_pct" invisible="rented_by != 'colleague'"/>
+                        <field name="deal_partner_id" string="Tercero / referido" invisible="rented_by != 'referral'"
+                               required="rented_by == 'referral'" placeholder="A quién se le paga"/>
+                        <field name="deal_partner_amount" invisible="rented_by != 'referral'"
+                               required="rented_by == 'referral'"/>
                     </group>
                     <group string="Plazo">
                         <field name="date_rented"/>
@@ -29,9 +37,19 @@
                         <field name="rental_price"/>
                         <field name="rent_deposit"/>
                     </group>
-                    <group string="Comisión (sobre el primer mes)">
+                    <group string="Comisión (sobre el primer mes)" invisible="rented_by in ('owner', 'external')">
                         <field name="commission_pct"/>
                         <field name="commission_amount"/>
+                        <field name="is_shared" invisible="1"/>
+                        <field name="our_commission_amount" invisible="not is_shared" class="fw-bold"/>
+                        <div colspan="2" class="text-muted small" invisible="rented_by != 'referral'">
+                            La comisión se calcula sobre el arriendo menos lo del referido.
+                        </div>
+                    </group>
+                    <group string="Comisión" invisible="rented_by not in ('owner', 'external')">
+                        <div colspan="2" class="text-muted">
+                            Lo arrendó el propietario o un externo: no se genera comisión.
+                        </div>
                     </group>
                 </group>
                 <group>
