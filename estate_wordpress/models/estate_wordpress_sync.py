@@ -14,6 +14,8 @@ _WP_TRACKED_FIELDS = {
     'title', 'name', 'price', 'description', 'state', 'offer_type',
     'bedrooms', 'bathrooms', 'area', 'city', 'street',
     'property_type_id', 'latitude', 'longitude',
+    # Asesor que aparece en la web (captador, o el responsable si no hay)
+    'exclusive_user_id', 'user_id',
 }
 
 # =============================================================================
@@ -346,6 +348,12 @@ class EstatePropertyWordPress(models.Model):
     # -------------------------------------------------------------------------
     # AGENT SYNC
     # -------------------------------------------------------------------------
+    def _wp_agent_user(self):
+        """Asesor que aparece en la página web: el captador de la propiedad.
+        Si no tiene captador, el asesor responsable."""
+        self.ensure_one()
+        return self.exclusive_user_id or self.user_id
+
     def _wp_find_agent_id(self, cfg, email):
         """Find Houzez Agent ID by email or name in WordPress using Search API."""
         if not email:
@@ -364,7 +372,7 @@ class EstatePropertyWordPress(models.Model):
                     return agent_id
 
             # Fallback 2: Buscar por nombre real del asesor en lugar del correo (las Plantillas a veces ocultan el correo al buscador)
-            agent_name = self.user_id.name
+            agent_name = self._wp_agent_user().name
             _logger.info(f"WP Agent not found by email. Try mapping exactly Name: '{agent_name}'")
             params = {'type': 'post', 'subtype': 'houzez_agent', 'search': agent_name, 'per_page': 10}
             resp = requests.get(agent_url, params=params, auth=cfg['auth'], headers=cfg['headers'], timeout=15)
@@ -504,13 +512,14 @@ class EstatePropertyWordPress(models.Model):
         }
 
         # Agent Sync: Dynamic search or hardcoded map
-        if getattr(self.user_id, 'wp_agent_id', False):
-            wp_agent_id = self.user_id.wp_agent_id.wp_id
+        agent_user = self._wp_agent_user()
+        if getattr(agent_user, 'wp_agent_id', False):
+            wp_agent_id = agent_user.wp_agent_id.wp_id
             _logger.info(f"Using explicitly mapped WP Agent ID: {wp_agent_id}")
             meta['fave_agents'] = str(wp_agent_id)
             meta['fave_agents_list'] = [str(wp_agent_id)]
         else:
-            agent_email = (self.user_id.login or self.user_id.email or '').strip()
+            agent_email = (agent_user.login or agent_user.email or '').strip()
             _logger.info(f"Searching WP Agent for Odoo User: {agent_email}")
             wp_agent_id = self._wp_find_agent_id(cfg, agent_email)
             

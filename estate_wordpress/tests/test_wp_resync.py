@@ -57,3 +57,23 @@ class TestWpResync(TransactionCase):
         self.assertFalse(self.prop.wp_published,
                          "El cron debe limpiar wp_published en propiedades vendidas")
 
+
+    def test_asesor_de_la_web_es_el_captador(self):
+        Users = self.env['res.users']
+        responsable = Users.create({'name': 'Responsable WP', 'login': 'resp_wp@test.com'})
+        captador = Users.create({'name': 'Captador WP', 'login': 'capt_wp@test.com'})
+        agente = self.env['estate.wp.agent'].create({'wp_id': '9911', 'name': 'Captador WP'})
+        captador.wp_agent_id = agente
+        self.prop.write({'user_id': responsable.id, 'exclusive_user_id': captador.id})
+        self.assertEqual(self.prop._wp_agent_user(), captador)
+        meta = self.prop._build_houzez_meta(self.prop._get_wp_config(), False, [])
+        self.assertEqual(meta.get('fave_agents'), '9911')
+        # Sin captador, sale el responsable
+        self.prop.exclusive_user_id = False
+        self.assertEqual(self.prop._wp_agent_user(), responsable)
+
+    def test_cambiar_captador_marca_re_sync(self):
+        self.prop.with_context(no_wp_sync=True).write({'wp_published': True})
+        otro = self.env['res.users'].create({'name': 'Otro captador', 'login': 'otro_wp@test.com'})
+        self.prop.write({'exclusive_user_id': otro.id})
+        self.assertTrue(self.prop.wp_needs_sync)
