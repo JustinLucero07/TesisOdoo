@@ -31,9 +31,7 @@ class SettingsScreen extends StatelessWidget {
             child: const Text('Cancelar'),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.accent,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Cerrar sesión'),
           ),
@@ -362,9 +360,7 @@ class _GroupCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark ? AppColors.darkLine : colors.line,
-        ),
+        border: Border.all(color: isDark ? AppColors.darkLine : colors.line),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
       child: Column(children: children),
@@ -545,9 +541,7 @@ class _ThemeSelectorCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark ? AppColors.darkLine : colors.line,
-        ),
+        border: Border.all(color: isDark ? AppColors.darkLine : colors.line),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
       child: Row(
@@ -577,9 +571,7 @@ class _ThemeSelectorCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: selected
-                        ? (isDark
-                              ? AppColors.darkNavy
-                              : AppColors.navy)
+                        ? (isDark ? AppColors.darkNavy : AppColors.navy)
                         : Colors.transparent,
                     width: 1.5,
                   ),
@@ -590,9 +582,7 @@ class _ThemeSelectorCard extends StatelessWidget {
                       o.$3,
                       size: 22,
                       color: selected
-                          ? (isDark
-                                ? AppColors.darkNavy
-                                : AppColors.navy)
+                          ? (isDark ? AppColors.darkNavy : AppColors.navy)
                           : const Color(0xFF64748B),
                     ),
                     const SizedBox(height: 6),
@@ -668,40 +658,42 @@ class _NotificationsCardState extends State<_NotificationsCard> {
       decoration: BoxDecoration(
         color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark ? AppColors.darkLine : colors.line,
-        ),
+        border: Border.all(color: isDark ? AppColors.darkLine : colors.line),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
-      child: SwitchListTile.adaptive(
-        secondary: Container(
-          padding: const EdgeInsets.all(9),
-          decoration: BoxDecoration(
-            color: const Color(
-              0xFFF59E0B,
-            ).withValues(alpha: isDark ? 0.22 : 0.1),
-            borderRadius: BorderRadius.circular(12),
+      // Material propio: sin él, el efecto al tocar quedaba debajo del fondo.
+      child: Material(
+        type: MaterialType.transparency,
+        child: SwitchListTile.adaptive(
+          secondary: Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: const Color(
+                0xFFF59E0B,
+              ).withValues(alpha: isDark ? 0.22 : 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.notifications_active_outlined,
+              color: Color(0xFFF59E0B),
+              size: 20,
+            ),
           ),
-          child: const Icon(
-            Icons.notifications_active_outlined,
-            color: Color(0xFFF59E0B),
-            size: 20,
+          title: const Text(
+            'Avisos de citas y Push FCM',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
           ),
+          subtitle: Text(
+            _enabled
+                ? (_pending > 0
+                      ? '$_pending cita${_pending == 1 ? '' : 's'} programada${_pending == 1 ? '' : 's'}'
+                      : 'Alertas en tiempo real activas')
+                : 'Desactivado',
+            style: TextStyle(fontSize: 12, color: colors.muted),
+          ),
+          value: _enabled,
+          onChanged: _toggle,
         ),
-        title: const Text(
-          'Avisos de citas y Push FCM',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-        ),
-        subtitle: Text(
-          _enabled
-              ? (_pending > 0
-                    ? '$_pending cita${_pending == 1 ? '' : 's'} programada${_pending == 1 ? '' : 's'}'
-                    : 'Alertas en tiempo real activas')
-              : 'Desactivado',
-          style: TextStyle(fontSize: 12, color: colors.muted),
-        ),
-        value: _enabled,
-        onChanged: _toggle,
       ),
     );
   }

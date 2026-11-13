@@ -22,6 +22,8 @@ import '../visits/visit_model.dart';
 import '../visits/visit_service.dart';
 import '../../core/api/odoo_json.dart';
 import '../../core/widgets/inmobi_logo.dart';
+import '../../core/app_startup.dart';
+import '../../core/widgets/skeleton.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ValueChanged<int>? onNavigate;
@@ -96,6 +98,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         setState(() => _error = 'No se pudieron cargar los indicadores.');
     } finally {
       if (mounted) setState(() => _loading = false);
+      AppStartup.homeReady.value = true;
     }
   }
 
@@ -104,7 +107,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final userName = context.watch<AuthService>().userName ?? '';
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (_loading) return const LoadingView();
+    // Mientras carga: la cabecera y tarjetas grises, no una pantalla en
+    // blanco con un círculo.
+    if (_loading) {
+      return Column(
+        children: [
+          _DashboardHeader(userName: userName),
+          const Expanded(child: SkeletonList()),
+        ],
+      );
+    }
     if (_error != null) {
       return MessageView(
         icon: Icons.error_outline,

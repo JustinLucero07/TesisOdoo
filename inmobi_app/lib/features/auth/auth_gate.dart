@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/app_startup.dart';
 import '../../core/theme/app_motion.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/widgets/inmobi_logo.dart';
 import '../home/home_shell.dart';
 import 'auth_service.dart';
@@ -17,57 +21,92 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   bool? _loggedIn;
   bool _animationDone = false;
+  bool _homeReady = false;
+  Timer? _timeout;
+
+  // Si el inicio tarda demasiado (internet muy lento) se entra igual: el
+  // panel muestra su propio estado de carga.
+  static const _maxWait = Duration(seconds: 12);
 
   @override
   void initState() {
     super.initState();
+    AppStartup.homeReady.addListener(_onHomeReady);
+    _homeReady = AppStartup.homeReady.value;
     final auth = context.read<AuthService>();
     final check = auth.isAuthenticated
         ? Future.value(true)
         : auth.tryAutoLogin();
     check.then((ok) {
-      if (mounted) setState(() => _loggedIn = ok);
+      if (!mounted) return;
+      setState(() => _loggedIn = ok);
+      if (ok) {
+        _timeout = Timer(_maxWait, () {
+          if (mounted) setState(() => _homeReady = true);
+        });
+      }
     });
+  }
+
+  void _onHomeReady() {
+    if (AppStartup.homeReady.value && mounted) {
+      setState(() => _homeReady = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    AppStartup.homeReady.removeListener(_onHomeReady);
+    _timeout?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Se queda en la pantalla de carga hasta que termine la animación del
-    // logo Y se sepa si hay sesión: así la animación nunca se corta a medias.
-    final ready = _loggedIn != null && _animationDone;
-    final Widget child;
-    if (!ready) {
-      child = _SplashScreen(
-        key: const ValueKey('splash'),
-        waiting: _animationDone,
-        onAnimationDone: () {
-          if (mounted) setState(() => _animationDone = true);
-        },
-      );
-    } else if (_loggedIn == true) {
-      child = const HomeShell(key: ValueKey('home'));
-    } else {
-      child = const LoginScreen(key: ValueKey('login'));
-    }
+    // La pantalla del logo se queda mientras: corre la animación, se revisa
+    // la sesión y, si hay sesión, el inicio trae sus datos (el inicio se va
+    // armando detrás). Así nunca queda una pantalla en blanco con un círculo.
+    final sessionKnown = _loggedIn != null;
+    final showSplash =
+        !_animationDone ||
+        !sessionKnown ||
+        (_loggedIn == true && !_homeReady);
 
-    return AnimatedSwitcher(
-      duration: AppMotion.duration(context, const Duration(milliseconds: 450)),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      child: child,
+    final Widget base = !sessionKnown
+        ? const SizedBox.shrink()
+        : (_loggedIn == true
+              ? const HomeShell(key: ValueKey('home'))
+              : const LoginScreen(key: ValueKey('login')));
+
+    return Stack(
+      children: [
+        Positioned.fill(child: base),
+        Positioned.fill(
+          child: IgnorePointer(
+            ignoring: !showSplash,
+            child: AnimatedOpacity(
+              opacity: showSplash ? 1 : 0,
+              duration: AppMotion.duration(
+                context,
+                const Duration(milliseconds: 450),
+              ),
+              curve: Curves.easeOutCubic,
+              child: _SplashScreen(
+                onAnimationDone: () {
+                  if (mounted) setState(() => _animationDone = true);
+                },
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
 class _SplashScreen extends StatefulWidget {
-  const _SplashScreen({
-    super.key,
-    required this.waiting,
-    required this.onAnimationDone,
-  });
+  const _SplashScreen({required this.onAnimationDone});
 
-  /// La animación ya terminó pero todavía se está iniciando sesión.
-  final bool waiting;
   final VoidCallback onAnimationDone;
 
   @override
@@ -102,6 +141,7 @@ class _SplashScreenState extends State<_SplashScreen>
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     return Scaffold(
+      backgroundColor: AppColors.navy,
       body: AnimatedBuilder(
         animation: _bg,
         builder: (context, child) =>
@@ -116,11 +156,16 @@ class _SplashScreenState extends State<_SplashScreen>
                 duration: const Duration(milliseconds: 1500),
                 onFinished: widget.onAnimationDone,
               ),
-              const SizedBox(height: 44),
-              AnimatedOpacity(
-                opacity: widget.waiting ? 1 : 0,
-                duration: const Duration(milliseconds: 300),
-                child: const InmobiLoadingBar(width: 110),
+              const SizedBox(height: 48),
+              // Círculo de carga desde el inicio, mientras todo se prepara.
+              const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.6,
+                  color: AppColors.accent,
+                  backgroundColor: Color(0x24FFFFFF),
+                ),
               ),
             ],
           ),
