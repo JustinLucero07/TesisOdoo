@@ -29,6 +29,7 @@ import 'property_model.dart';
 import 'property_service.dart';
 import 'wordpress_section.dart';
 import '../../core/api/odoo_json.dart';
+import '../../core/utils/formats.dart';
 
 class PropertyDetailScreen extends StatefulWidget {
   final int propertyId;
@@ -307,11 +308,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
 
     return Scaffold(
       appBar: AppBar(
@@ -358,7 +355,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       Icon(
                         Icons.assignment_outlined,
                         size: 18,
-                        color: Color(0xFFD81F26),
+                        color: AppColors.accent,
                       ),
                       SizedBox(width: 10),
                       Text('Hoja de Captación (PDF)'),
@@ -372,7 +369,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       Icon(
                         Icons.picture_as_pdf_outlined,
                         size: 18,
-                        color: Color(0xFF28235D),
+                        color: AppColors.navy,
                       ),
                       SizedBox(width: 10),
                       Text('Ficha Comercial (PDF)'),
@@ -415,7 +412,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1C1938) : Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         border: Border(
           top: BorderSide(color: isDark ? Colors.white12 : colors.line),
         ),
@@ -454,7 +451,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 builder: (btnCtx) => ElevatedButton.icon(
                   onPressed: () => _shareCommercialWhatsapp(btnCtx),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF25D366),
+                    backgroundColor: AppColors.whatsapp,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(
@@ -677,9 +674,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                 children: [
                   Expanded(
                     child: _QuickAction(
-                      icon: Icons.picture_as_pdf_outlined,
-                      label: 'Ficha PDF',
-                      onTap: () => FichaDownloader.start(
+                      icon: Icons.assignment_outlined,
+                      label: 'Captación',
+                      onTap: () => FichaDownloader.openCaptureSheet(
                         context: context,
                         odoo: _odoo,
                         property: p,
@@ -778,23 +775,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _QuickAction(
-                      icon: Icons.assignment_outlined,
-                      label: 'Hoja de Captación (PDF)',
-                      onTap: () => FichaDownloader.openCaptureSheet(
-                        context: context,
-                        odoo: _odoo,
-                        property: p,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
 
               if (p.userName.isNotEmpty) ...[
                 const SizedBox(height: 18),
@@ -873,7 +853,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                             icon: const Icon(
                               Icons.map_outlined,
                               size: 18,
-                              color: Color(0xFF28235D),
+                              color: AppColors.navy,
                             ),
                             label: const Text(
                               'Apple Maps',
@@ -962,7 +942,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       ('Precio tope (mínimo)', currency.format(p.bottomPrice)),
                     (
                       'Comisión',
-                      '${p.commissionPercentage.toStringAsFixed(1)}%',
+                      '${Fmt.percent(p.commissionPercentage)}',
                     ),
                     if (p.dateListed != null)
                       ('Publicada desde', dateFmt.format(p.dateListed!)),
@@ -1008,7 +988,6 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
               const SizedBox(height: 18),
               _CaptureSheetSection(odoo: _odoo, property: p, onChanged: _load),
 
-              const _SectionTitle('Documentos'),
               const SizedBox(height: 8),
               DocumentsSection(
                 odoo: _odoo,
@@ -1135,7 +1114,7 @@ class _PeopleInfoCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       _SmallContactIcon(
                         icon: Icons.chat,
-                        color: const Color(0xFF25D366),
+                        color: AppColors.whatsapp,
                         onTap: () => onWhatsapp(rows[i].phone!),
                       ),
                     ],
@@ -1329,7 +1308,7 @@ class _AdvisorCard extends StatelessWidget {
             const SizedBox(width: 8),
             _ContactIconButton(
               icon: Icons.chat,
-              background: const Color(0xFF25D366),
+              background: AppColors.whatsapp,
               onTap: () => onWhatsapp(phone!),
             ),
           ],
@@ -1415,7 +1394,7 @@ class _CaptureSheetSection extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -1431,13 +1410,13 @@ class _CaptureSheetSection extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD81F26).withValues(alpha: 0.1),
+                  color: AppColors.accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.assignment_outlined,
                   size: 20,
-                  color: Color(0xFFD81F26),
+                  color: AppColors.accent,
                 ),
               ),
               const SizedBox(width: 10),
@@ -1466,7 +1445,7 @@ class _CaptureSheetSection extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF28235D).withValues(alpha: 0.5)
+                    ? AppColors.navy.withValues(alpha: 0.5)
                     : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
@@ -1478,7 +1457,7 @@ class _CaptureSheetSection extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.picture_as_pdf_rounded,
-                    color: Color(0xFFD81F26),
+                    color: AppColors.accent,
                     size: 26,
                   ),
                   const SizedBox(width: 10),
@@ -1499,7 +1478,7 @@ class _CaptureSheetSection extends StatelessWidget {
                     icon: const Icon(
                       Icons.edit_outlined,
                       size: 20,
-                      color: Color(0xFF28235D),
+                      color: AppColors.navy,
                     ),
                     onPressed: () async {
                       final ok = await FichaDownloader.uploadCaptureSheet(
@@ -1516,7 +1495,7 @@ class _CaptureSheetSection extends StatelessWidget {
                     icon: const Icon(
                       Icons.delete_outline_rounded,
                       size: 20,
-                      color: Color(0xFFD81F26),
+                      color: AppColors.accent,
                     ),
                     onPressed: () async {
                       final ok = await FichaDownloader.deleteCaptureSheet(
@@ -1533,10 +1512,10 @@ class _CaptureSheetSection extends StatelessWidget {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              height: 42,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF28235D),
+                  minimumSize: const Size.fromHeight(46),
+                  backgroundColor: AppColors.navy,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1567,7 +1546,7 @@ class _CaptureSheetSection extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF28235D).withValues(alpha: 0.2)
+                    ? AppColors.navy.withValues(alpha: 0.2)
                     : colors.neutralBg,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
@@ -1629,7 +1608,7 @@ class _CaptureSheetSection extends StatelessWidget {
                       if (ok) onChanged();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD81F26),
+                      backgroundColor: AppColors.accent,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),

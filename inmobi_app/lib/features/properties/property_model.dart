@@ -43,6 +43,10 @@ class Property {
   final String tenantName;
   final int? userId;
   final String userName;
+  // Captador: es quien aparece como asesor en la página web.
+  final int? captureUserId;
+  final String captureUserName;
+  final bool hasSign;
   final DateTime? dateListed;
   final int daysOnMarket;
   final double avmEstimatedPrice;
@@ -94,6 +98,9 @@ class Property {
     this.tenantName = '',
     this.userId,
     this.userName = '',
+    this.captureUserId,
+    this.captureUserName = '',
+    this.hasSign = false,
     this.dateListed,
     this.daysOnMarket = 0,
     this.avmEstimatedPrice = 0,
@@ -153,6 +160,8 @@ class Property {
     'buyer_id',
     'tenant_id',
     'user_id',
+    'exclusive_user_id',
+    'has_sign',
     'date_listed',
     'days_on_market',
     'avm_estimated_price',
@@ -208,6 +217,11 @@ class Property {
       tenantName: many2oneName(json['tenant_id']),
       userId: json['user_id'] is List ? json['user_id'][0] as int : null,
       userName: many2oneName(json['user_id']),
+      captureUserId: json['exclusive_user_id'] is List
+          ? json['exclusive_user_id'][0] as int
+          : null,
+      captureUserName: many2oneName(json['exclusive_user_id']),
+      hasSign: json['has_sign'] == true,
       dateListed: json['date_listed'] is String
           ? DateTime.tryParse(json['date_listed'])
           : null,

@@ -16,6 +16,8 @@ import '../reminders/reminders_section.dart';
 import 'contact_form_screen.dart';
 import 'contact_model.dart';
 import 'contact_service.dart';
+import '../../core/utils/formats.dart';
+import '../../core/widgets/more_menu.dart';
 
 class ContactDetailScreen extends StatefulWidget {
   final int contactId;
@@ -82,7 +84,7 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD81F26),
+              backgroundColor: AppColors.accent,
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Eliminar'),
@@ -124,13 +126,9 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
               tooltip: 'Editar',
               onPressed: _openEdit,
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.delete_outline_rounded,
-                color: Color(0xFFD81F26),
-              ),
-              tooltip: 'Eliminar',
-              onPressed: _deleteContact,
+            DeleteMenuButton(
+              onDelete: _deleteContact,
+              label: 'Eliminar contacto',
             ),
           ],
         ],
@@ -199,7 +197,7 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
                   child: FilledButton.icon(
                     onPressed: () => _whatsapp(c.bestPhone),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF25D366),
+                      backgroundColor: AppColors.whatsapp,
                     ),
                     icon: const Icon(Icons.chat, size: 17),
                     label: const Text('WhatsApp'),
@@ -219,8 +217,9 @@ class _ContactDetailScreenState extends State<ContactDetailScreen> {
         const SizedBox(height: 18),
         _InfoCard(
           rows: [
-            if (c.mobile.isNotEmpty) ('Celular', c.mobile),
-            if (c.phone.isNotEmpty) ('Teléfono', c.phone),
+            if (c.mobile.isNotEmpty) ('Celular', Fmt.phone(c.mobile)),
+            if (c.phone.isNotEmpty && c.phone != c.mobile)
+              ('Teléfono', Fmt.phone(c.phone)),
             if (c.email.isNotEmpty) ('Email', c.email),
             if (c.preferredContact.isNotEmpty)
               (

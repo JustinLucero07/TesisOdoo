@@ -344,7 +344,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
                 ListTile(
                   leading: const Icon(
                     Icons.open_in_new_rounded,
-                    color: Color(0xFF28235D),
+                    color: AppColors.navy,
                   ),
                   title: const Text('Abrir y Previsualizar'),
                   onTap: () {
@@ -475,7 +475,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1A3E) : colors.neutralBg,
+              color: isDark ? AppColors.darkCard : colors.neutralBg,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: isDark ? Colors.white12 : colors.line),
             ),
@@ -520,7 +520,7 @@ class _DocumentsSectionState extends State<DocumentsSection> {
 
               return Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+                  color: isDark ? AppColors.darkCard : Colors.white,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: doc.state == 'rejected'

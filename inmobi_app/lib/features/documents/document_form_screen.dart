@@ -364,7 +364,7 @@ class _DocumentFormScreenState extends State<DocumentFormScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF1E1A3E)
+                    ? AppColors.darkCard
                     : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(

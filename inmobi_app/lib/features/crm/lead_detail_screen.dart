@@ -31,6 +31,8 @@ import 'interactions_section.dart';
 import 'lead_form_screen.dart';
 import 'lead_model.dart';
 import 'stage_funnel.dart';
+import '../../core/utils/formats.dart';
+import '../../core/widgets/more_menu.dart';
 
 class LeadDetailScreen extends StatefulWidget {
   final int leadId;
@@ -176,7 +178,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD81F26),
+              backgroundColor: AppColors.accent,
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Eliminar'),
@@ -226,13 +228,9 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
               tooltip: 'Editar',
               onPressed: _openEdit,
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.delete_outline_rounded,
-                color: Color(0xFFD81F26),
-              ),
-              tooltip: 'Eliminar',
-              onPressed: _deleteLead,
+            DeleteMenuButton(
+              onDelete: _deleteLead,
+              label: 'Eliminar oportunidad',
             ),
           ],
         ],
@@ -266,11 +264,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
 
   Widget _buildBody() {
     final lead = _lead!;
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
 
     return Column(
       children: [
@@ -405,14 +399,20 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                   ),
                 ),
                 const SizedBox(height: 10),
-                _InfoRow(
-                  icon: Icons.person_outline,
-                  label: lead.contactName.isEmpty ? '—' : lead.contactName,
-                ),
+                // Si el nombre escrito y el contacto vinculado son el mismo,
+                // se muestra una sola vez (el vinculado, que abre la ficha).
+                if (lead.partnerName.isEmpty ||
+                    (lead.contactName.trim().toLowerCase() !=
+                            lead.partnerName.trim().toLowerCase() &&
+                        lead.contactName.isNotEmpty))
+                  _InfoRow(
+                    icon: Icons.person_outline,
+                    label: lead.contactName.isEmpty ? '—' : lead.contactName,
+                  ),
                 if (lead.partnerName.isNotEmpty)
                   _InfoRow(
                     icon: Icons.badge_outlined,
-                    label: 'Contacto vinculado: ${lead.partnerName}',
+                    label: lead.partnerName,
                     onTap: lead.partnerId == null
                         ? null
                         : () => Navigator.of(context).push(
@@ -424,7 +424,10 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                           ),
                   ),
                 if (lead.phone.isNotEmpty)
-                  _InfoRow(icon: Icons.phone_outlined, label: lead.phone),
+                  _InfoRow(
+                    icon: Icons.phone_outlined,
+                    label: Fmt.phone(lead.phone),
+                  ),
                 if (lead.email.isNotEmpty)
                   _InfoRow(icon: Icons.email_outlined, label: lead.email),
                 if (lead.phone.isNotEmpty || lead.email.isNotEmpty) ...[
@@ -444,7 +447,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                           child: FilledButton.icon(
                             onPressed: () => _whatsapp(lead.phone),
                             style: FilledButton.styleFrom(
-                              backgroundColor: const Color(0xFF25D366),
+                              backgroundColor: AppColors.whatsapp,
                             ),
                             icon: const Icon(Icons.chat, size: 17),
                             label: const Text('WhatsApp'),
@@ -720,7 +723,7 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                     Icon(
                       Icons.description_outlined,
                       size: 17,
-                      color: Color(0xFF28235D),
+                      color: AppColors.navy,
                     ),
                     SizedBox(width: 8),
                     Text(
@@ -739,12 +742,12 @@ class _LeadDetailScreenState extends State<LeadDetailScreen>
                         ? Icons.add_rounded
                         : Icons.edit_outlined,
                     size: 15,
-                    color: const Color(0xFFD81F26),
+                    color: AppColors.accent,
                   ),
                   label: Text(
                     lead.description.isEmpty ? 'Agregar' : 'Editar',
                     style: const TextStyle(
-                      color: Color(0xFFD81F26),
+                      color: AppColors.accent,
                       fontWeight: FontWeight.w700,
                       fontSize: 12.5,
                     ),
@@ -1097,7 +1100,7 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                 const Icon(
                   Icons.tour_outlined,
                   size: 18,
-                  color: Color(0xFF28235D),
+                  color: AppColors.navy,
                 ),
                 const SizedBox(width: 8),
                 const Expanded(
@@ -1112,7 +1115,7 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                   onPressed: widget.onScheduleNew,
                   icon: const Icon(
                     Icons.add_circle_outline_rounded,
-                    color: Color(0xFFD81F26),
+                    color: AppColors.accent,
                     size: 20,
                   ),
                 ),
@@ -1137,7 +1140,7 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF1E1A3E)
+                      ? AppColors.darkCard
                       : AppColors.of(context).neutralBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
@@ -1198,7 +1201,7 @@ class _VisitedPropertiesSectionState extends State<_VisitedPropertiesSection> {
 
                   return Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+                      color: isDark ? AppColors.darkCard : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isDark
@@ -1381,7 +1384,7 @@ class _LeadDescriptionEditSheetState extends State<_LeadDescriptionEditSheet> {
                     Icon(
                       Icons.description_outlined,
                       size: 20,
-                      color: Color(0xFF28235D),
+                      color: AppColors.navy,
                     ),
                     SizedBox(width: 8),
                     Text(
@@ -1427,7 +1430,7 @@ class _LeadDescriptionEditSheetState extends State<_LeadDescriptionEditSheet> {
               height: 46,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF28235D),
+                  backgroundColor: AppColors.navy,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -1519,11 +1522,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
 
     return Card(
       child: Padding(
@@ -1536,7 +1535,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                 const Icon(
                   Icons.handshake_outlined,
                   size: 18,
-                  color: Color(0xFF28235D),
+                  color: AppColors.navy,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -1554,7 +1553,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                   onPressed: _openNewOffer,
                   icon: const Icon(
                     Icons.add_circle_outline_rounded,
-                    color: Color(0xFFD81F26),
+                    color: AppColors.accent,
                     size: 20,
                   ),
                 ),
@@ -1578,7 +1577,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF1E1A3E)
+                      ? AppColors.darkCard
                       : AppColors.of(context).neutralBg,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
@@ -1605,7 +1604,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                     const SizedBox(height: 12),
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF28235D),
+                        backgroundColor: AppColors.navy,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 9,
@@ -1642,7 +1641,7 @@ class _LeadOffersSectionState extends State<_LeadOffersSection> {
                   final o = _offers[i];
                   return Container(
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+                      color: isDark ? AppColors.darkCard : Colors.white,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isDark
@@ -1910,7 +1909,7 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
       case 'sent':
         return const Color(0xFFF59E0B);
       case 'cancel':
-        return const Color(0xFFEF4444);
+        return AppColors.accentLight;
       default:
         return const Color(0xFF6B7280);
     }
@@ -1919,11 +1918,7 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
 
     if (_loading) {
       return Card(
@@ -2040,7 +2035,7 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                 return Container(
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF1E1A3E)
+                        ? AppColors.darkCard
                         : const Color(0xFFF0FDF4),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
@@ -2160,7 +2155,7 @@ class _LeadSaleSectionState extends State<_LeadSaleSection> {
                 icon: const Icon(
                   Icons.assignment_outlined,
                   size: 18,
-                  color: Color(0xFF28235D),
+                  color: AppColors.navy,
                 ),
                 label: Text(
                   'Ver Contrato Formal (${_contracts.first['name'] ?? ''})',
@@ -2279,11 +2274,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 2,
-    );
+    final currency = Fmt.money(decimals: 2);
 
     final order = widget.order;
     final lead = widget.lead;
@@ -2427,7 +2418,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF1E1A3E)
+                      ? AppColors.darkCard
                       : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
@@ -2534,7 +2525,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF1E1A3E)
+                        ? AppColors.darkCard
                         : const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
@@ -2593,7 +2584,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF1E1A3E)
+                        ? AppColors.darkCard
                         : const Color(0xFFF0FDF4),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
@@ -2670,7 +2661,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF1E1A3E)
+                        ? AppColors.darkCard
                         : const Color(0xFFFFFBEB),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
@@ -2715,7 +2706,7 @@ class _SaleOrderDetailSheetState extends State<_SaleOrderDetailSheet> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF28235D),
+                      backgroundColor: AppColors.navy,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

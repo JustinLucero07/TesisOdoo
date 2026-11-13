@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../contacts/contact_list_screen.dart';
 import 'lead_funnel_screen.dart';
 import 'lead_list_screen.dart';
+import '../../core/theme/app_theme.dart';
 
 class CrmShellScreen extends StatefulWidget {
   const CrmShellScreen({super.key});
@@ -101,10 +102,10 @@ class _SegmentedToggle extends StatelessWidget {
       height: 42,
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161330) : const Color(0xFFEBEBF2),
+        color: isDark ? AppColors.darkSurface : const Color(0xFFEBEBF2),
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isDark ? const Color(0xFF28244E) : const Color(0xFFE2E8F0),
+          color: isDark ? AppColors.darkLine : const Color(0xFFE2E8F0),
         ),
       ),
       child: LayoutBuilder(
@@ -122,14 +123,14 @@ class _SegmentedToggle extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF28235D), Color(0xFF1B1740)],
+                      colors: [AppColors.navy, AppColors.navyDeep],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(11),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF28235D).withValues(alpha: 0.35),
+                        color: AppColors.navy.withValues(alpha: 0.35),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -148,6 +149,7 @@ class _SegmentedToggle extends StatelessWidget {
                         child: AnimatedDefaultTextStyle(
                           duration: const Duration(milliseconds: 180),
                           style: TextStyle(
+                            fontFamily: AppType.family,
                             fontSize: 12.5,
                             fontWeight: selected
                                 ? FontWeight.w800
@@ -191,7 +193,7 @@ class _ViewModeButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: Material(
-        color: isDark ? const Color(0xFF161330) : const Color(0xFFEBEBF2),
+        color: isDark ? AppColors.darkSurface : const Color(0xFFEBEBF2),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -203,14 +205,14 @@ class _ViewModeButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isDark
-                    ? const Color(0xFF28244E)
+                    ? AppColors.darkLine
                     : const Color(0xFFE2E8F0),
               ),
             ),
             child: Icon(
               icon,
               size: 20,
-              color: isDark ? const Color(0xFF8B85FF) : const Color(0xFF28235D),
+              color: isDark ? AppColors.darkNavy : AppColors.navy,
             ),
           ),
         ),

@@ -18,7 +18,67 @@ class LeadService {
     int? priority,
     String order = 'lead_temperature desc, write_date desc',
     int limit = 50,
+    int offset = 0,
   }) async {
+    final rows = await odoo.searchRead(
+      model: 'crm.lead',
+      domain: _domain(
+        searchText: searchText,
+        temperature: temperature,
+        stageId: stageId,
+        stageIds: stageIds,
+        myLeadsOnly: myLeadsOnly,
+        currentUserId: currentUserId,
+        advisorId: advisorId,
+        minBudget: minBudget,
+        maxBudget: maxBudget,
+        priority: priority,
+      ),
+      fields: Lead.listFields,
+      limit: limit,
+      offset: offset > 0 ? offset : null,
+      order: order,
+    );
+    return rows.map(Lead.fromJson).toList();
+  }
+
+  /// Cuántos leads hay con los mismos filtros (para el contador de cada
+  /// columna del embudo, que carga de a poco).
+  Future<int> count({
+    String? searchText,
+    int? stageId,
+    bool myLeadsOnly = false,
+    int? currentUserId,
+    int? advisorId,
+  }) async {
+    final result = await odoo.callKw(
+      model: 'crm.lead',
+      method: 'search_count',
+      args: [
+        _domain(
+          searchText: searchText,
+          stageId: stageId,
+          myLeadsOnly: myLeadsOnly,
+          currentUserId: currentUserId,
+          advisorId: advisorId,
+        ),
+      ],
+    );
+    return result as int;
+  }
+
+  List<dynamic> _domain({
+    String? searchText,
+    String? temperature,
+    int? stageId,
+    List<int>? stageIds,
+    bool myLeadsOnly = false,
+    int? currentUserId,
+    int? advisorId,
+    double? minBudget,
+    double? maxBudget,
+    int? priority,
+  }) {
     final domain = <dynamic>[
       ['type', '=', 'opportunity'],
       ['active', '=', true],
@@ -66,15 +126,7 @@ class LeadService {
     if (priority != null && priority > 0) {
       domain.add(['priority', '>=', priority.toString()]);
     }
-
-    final rows = await odoo.searchRead(
-      model: 'crm.lead',
-      domain: domain,
-      fields: Lead.listFields,
-      limit: limit,
-      order: order,
-    );
-    return rows.map(Lead.fromJson).toList();
+    return domain;
   }
 
   Future<int> countHot() async {

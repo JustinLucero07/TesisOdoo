@@ -13,6 +13,7 @@ import '../contacts/contact_detail_screen.dart';
 import '../properties/property_detail_screen.dart';
 import 'offer_model.dart';
 import 'offer_service.dart';
+import '../../core/utils/formats.dart';
 
 class OfferListScreen extends StatefulWidget {
   final int? propertyId;
@@ -69,11 +70,7 @@ class _OfferListScreenState extends State<OfferListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
     return RecordListScaffold<Offer>(
       key: ValueKey(_version),
       title: widget.title ?? 'Ofertas',

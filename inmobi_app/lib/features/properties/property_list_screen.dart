@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/add_button.dart';
 import '../../core/widgets/glass.dart';
-import '../../core/widgets/glass_nav_bar.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/skeleton.dart';
@@ -14,6 +13,7 @@ import 'property_card.dart';
 import 'property_form_screen.dart';
 import 'property_model.dart';
 import 'property_service.dart';
+import '../../core/utils/formats.dart';
 
 class PropertyListScreen extends StatefulWidget {
   const PropertyListScreen({super.key});
@@ -176,27 +176,12 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
     final activeFilters = _activeAdvancedFilterCount;
 
     return Scaffold(
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: GlassNavBar.reservedHeight),
-        child: FloatingActionButton.small(
-          heroTag: null,
-          onPressed: _openCreate,
-          backgroundColor: const Color(0xFFD81F26),
-          elevation: 4,
-          tooltip: 'Nueva Propiedad',
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
-        ),
-      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: CustomScrollView(
@@ -248,10 +233,10 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                             Material(
                               color: activeFilters > 0
                                   ? (isDark
-                                        ? const Color(0xFF28235D)
+                                        ? AppColors.navy
                                         : const Color(0xFFEBEBF2))
                                   : (isDark
-                                        ? const Color(0xFF1E1A3E)
+                                        ? AppColors.darkCard
                                         : const Color(0xFFF1F5F9)),
                               borderRadius: BorderRadius.circular(14),
                               child: InkWell(
@@ -264,7 +249,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                     borderRadius: BorderRadius.circular(14),
                                     border: Border.all(
                                       color: activeFilters > 0
-                                          ? const Color(0xFF28235D)
+                                          ? AppColors.navy
                                           : (isDark
                                                 ? Colors.white12
                                                 : const Color(0xFFE2E8F0)),
@@ -275,7 +260,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                     size: 20,
                                     color: isDark
                                         ? Colors.white
-                                        : const Color(0xFF28235D),
+                                        : AppColors.navy,
                                   ),
                                 ),
                               ),
@@ -287,7 +272,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(4),
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFD81F26),
+                                    color: AppColors.accent,
                                     shape: BoxShape.circle,
                                   ),
                                   constraints: const BoxConstraints(
@@ -307,6 +292,11 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                 ),
                               ),
                           ],
+                        ),
+                        const SizedBox(width: 8),
+                        AddSquareButton(
+                          onTap: _openCreate,
+                          tooltip: 'Nueva propiedad',
                         ),
                       ],
                     ),
@@ -345,14 +335,14 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: selected
-                                  ? const Color(0xFF28235D)
+                                  ? AppColors.navy
                                   : (isDark
-                                        ? const Color(0xFF1E1A3E)
+                                        ? AppColors.darkCard
                                         : const Color(0xFFF1F5F9)),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: selected
-                                    ? const Color(0xFF28235D)
+                                    ? AppColors.navy
                                     : (isDark
                                           ? Colors.white12
                                           : const Color(0xFFE2E8F0)),
@@ -412,7 +402,7 @@ class _PropertyListScreenState extends State<PropertyListScreen> {
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFFD81F26),
+                                  color: AppColors.accent,
                                 ),
                               ),
                             ),
@@ -647,7 +637,7 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                     child: const Text(
                       'Restablecer',
                       style: TextStyle(
-                        color: Color(0xFFD81F26),
+                        color: AppColors.accent,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -911,16 +901,14 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
 
               Container(
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1E1A3E)
-                      : const Color(0xFFF8FAFC),
+                  color: isDark ? AppColors.darkCard : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: SwitchListTile.adaptive(
-                  activeTrackColor: const Color(0xFFD81F26),
+                  activeTrackColor: AppColors.accent,
                   activeThumbColor: Colors.white,
                   title: const Text(
                     'Solo Propiedades Exclusivas',
@@ -944,7 +932,7 @@ class _PropertyFilterSheetState extends State<_PropertyFilterSheet> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF28235D),
+                    backgroundColor: AppColors.navy,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1014,12 +1002,12 @@ class _FilterChoiceChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF28235D)
-              : (isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9)),
+              ? AppColors.navy
+              : (isDark ? AppColors.darkCard : const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ? const Color(0xFF28235D)
+                ? AppColors.navy
                 : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
           ),
         ),
@@ -1064,12 +1052,12 @@ class _NumberOptionButton extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFF28235D)
-                : (isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9)),
+                ? AppColors.navy
+                : (isDark ? AppColors.darkCard : const Color(0xFFF1F5F9)),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF28235D)
+                  ? AppColors.navy
                   : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
               width: selected ? 1.5 : 1.0,
             ),

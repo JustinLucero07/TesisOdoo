@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
 import '../finance/finance_models.dart';
+import '../../core/utils/formats.dart';
 
 class PriceHistorySection extends StatefulWidget {
   final OdooClient odoo;
@@ -50,11 +51,7 @@ class _PriceHistorySectionState extends State<PriceHistorySection> {
   @override
   Widget build(BuildContext context) {
     final p = AppColors.of(context);
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
     final dateFmt = DateFormat('d MMM y', 'es_EC');
 
     if (_loading) {

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/add_button.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_service.dart';
@@ -14,6 +15,7 @@ import 'lead_detail_screen.dart';
 import 'lead_form_screen.dart';
 import 'lead_model.dart';
 import 'lead_service.dart';
+import '../../core/utils/formats.dart';
 
 class LeadFunnelScreen extends StatefulWidget {
   final bool isPostSale;
@@ -36,6 +38,11 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
 
   List<CrmStage> _stages = [];
   Map<int, List<Lead>> _leadsByStage = {};
+  // Total real de cada etapa: las columnas cargan de a 40 al ir bajando.
+  Map<int, int> _countByStage = {};
+  final Set<int> _loadingMore = {};
+  bool _openedOnce = false;
+  static const _pageSize = 40;
   bool _loading = true;
   String? _error;
   int _currentPage = 0;
@@ -148,10 +155,9 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       // consulta y se repartían aquí: con más leads que ese tope, las etapas
       // con pocos registros o poco recientes quedaban vacías aunque en Odoo
       // sí tuvieran leads.
-      final porEtapa = await Future.wait(
+      final conteos = Future.wait(
         stages.map(
-          (s) => _leadService.list(
-            limit: 40,
+          (s) => _leadService.count(
             myLeadsOnly: myLeadsOnly,
             currentUserId: auth.odoo.userId,
             advisorId: advisorFilter,
@@ -160,18 +166,41 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
           ),
         ),
       );
+      final porEtapa = await Future.wait(
+        stages.map(
+          (s) => _leadService.list(
+            limit: _pageSize,
+            myLeadsOnly: myLeadsOnly,
+            currentUserId: auth.odoo.userId,
+            advisorId: advisorFilter,
+            stageId: s.id,
+            searchText: _query,
+          ),
+        ),
+      );
+      final totales = await conteos;
       final grouped = <int, List<Lead>>{};
+      final counts = <int, int>{};
       for (var i = 0; i < stages.length; i++) {
         grouped[stages[i].id] = porEtapa[i];
+        counts[stages[i].id] = totales[i];
       }
       if (!mounted || pedido != _loadSeq) return;
       setState(() {
         _stages = stages;
         _leadsByStage = grouped;
+        _countByStage = counts;
+        _loadingMore.clear();
       });
-      // Al buscar se salta a la primera etapa con resultados: si no, la
-      // primera columna podía salir vacía y parecer que no había nada.
-      if (_query.isNotEmpty) {
+      // Al buscar, y al abrir el embudo, se salta a la primera etapa con
+      // leads: si no, la primera columna (p. ej. "Oportunidades Bot") podía
+      // salir vacía y parecer que no había nada.
+      final primeraCarga = !_openedOnce;
+      _openedOnce = true;
+      final actualVacia =
+          _currentPage >= stages.length ||
+          (grouped[stages[_currentPage].id] ?? const <Lead>[]).isEmpty;
+      if (_query.isNotEmpty || (primeraCarga && actualVacia)) {
         final idx = stages.indexWhere(
           (st) => (grouped[st.id] ?? const <Lead>[]).isNotEmpty,
         );
@@ -203,10 +232,46 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
 
   int get _totalLeadsCount {
     int count = 0;
-    for (final list in _leadsByStage.values) {
-      count += list.length;
+    for (final stage in _stages) {
+      count += _countByStage[stage.id] ?? _leadsByStage[stage.id]?.length ?? 0;
     }
     return count;
+  }
+
+  /// Trae los siguientes leads de una columna al llegar al final de la lista.
+  Future<void> _loadMore(int stageId) async {
+    final current = _leadsByStage[stageId] ?? const <Lead>[];
+    final total = _countByStage[stageId] ?? current.length;
+    if (_loadingMore.contains(stageId) || current.length >= total) return;
+    final pedido = _loadSeq;
+    setState(() => _loadingMore.add(stageId));
+    try {
+      final auth = context.read<AuthService>();
+      final more = await _leadService.list(
+        limit: _pageSize,
+        offset: current.length,
+        myLeadsOnly: _selectedAdvisorId == 0,
+        currentUserId: auth.odoo.userId,
+        advisorId: (_selectedAdvisorId != null && _selectedAdvisorId! > 0)
+            ? _selectedAdvisorId
+            : null,
+        stageId: stageId,
+        searchText: _query,
+      );
+      if (!mounted || pedido != _loadSeq) return;
+      final ids = current.map((l) => l.id).toSet();
+      setState(() {
+        _leadsByStage[stageId] = [
+          ...current,
+          ...more.where((l) => !ids.contains(l.id)),
+        ];
+        if (more.isEmpty) _countByStage[stageId] = current.length;
+      });
+    } catch (_) {
+      // Si falla, se puede volver a intentar bajando otra vez.
+    } finally {
+      if (mounted) setState(() => _loadingMore.remove(stageId));
+    }
   }
 
   String get _currentAdvisorLabel {
@@ -248,7 +313,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                     Icon(
                       Icons.people_alt_rounded,
                       size: 18,
-                      color: Color(0xFF28235D),
+                      color: AppColors.navy,
                     ),
                     SizedBox(width: 8),
                     Text(
@@ -268,7 +333,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                     ListTile(
                       leading: const Icon(
                         Icons.public_rounded,
-                        color: Color(0xFF28235D),
+                        color: AppColors.navy,
                       ),
                       title: const Text(
                         'Todos los Asesores (Toda la Inmobiliaria)',
@@ -280,7 +345,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                       trailing: _selectedAdvisorId == null
                           ? const Icon(
                               Icons.check_circle_rounded,
-                              color: Color(0xFFD81F26),
+                              color: AppColors.accent,
                             )
                           : null,
                       onTap: () {
@@ -292,7 +357,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                     ListTile(
                       leading: const Icon(
                         Icons.person_rounded,
-                        color: Color(0xFFD81F26),
+                        color: AppColors.accent,
                       ),
                       title: const Text(
                         'Mis Leads Asignados',
@@ -304,7 +369,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                       trailing: _selectedAdvisorId == 0
                           ? const Icon(
                               Icons.check_circle_rounded,
-                              color: Color(0xFFD81F26),
+                              color: AppColors.accent,
                             )
                           : null,
                       onTap: () {
@@ -333,9 +398,9 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                         (adv) => ListTile(
                           leading: CircleAvatar(
                             radius: 14,
-                            backgroundColor: const Color(
-                              0xFF28235D,
-                            ).withValues(alpha: 0.1),
+                            backgroundColor: AppColors.navy.withValues(
+                              alpha: 0.1,
+                            ),
                             child: Text(
                               adv.name.isNotEmpty
                                   ? adv.name[0].toUpperCase()
@@ -343,7 +408,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF28235D),
+                                color: AppColors.navy,
                               ),
                             ),
                           ),
@@ -354,7 +419,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                           trailing: _selectedAdvisorId == adv.id
                               ? const Icon(
                                   Icons.check_circle_rounded,
-                                  color: Color(0xFFD81F26),
+                                  color: AppColors.accent,
                                 )
                               : null,
                           onTap: () {
@@ -401,41 +466,20 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
       );
     }
 
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
     final auth = context.watch<AuthService>();
     final isAdmin = auth.isAdmin;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
 
     return Scaffold(
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 74),
-        child: FloatingActionButton.small(
-          heroTag: null,
-          onPressed: _openCreate,
-          elevation: 4,
-          backgroundColor: const Color(0xFFD81F26),
-          tooltip: 'Nuevo Lead',
-          child: const Icon(
-            Icons.person_add_alt_1_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
       body: Column(
         children: [
           if (isAdmin)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1E1A3E)
-                    : const Color(0xFFF8FAFC),
+                color: isDark ? AppColors.darkCard : const Color(0xFFF8FAFC),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -456,9 +500,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                         color: isDark ? const Color(0xFF0F172A) : Colors.white,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: const Color(
-                            0xFFD81F26,
-                          ).withValues(alpha: 0.35),
+                          color: AppColors.accent.withValues(alpha: 0.35),
                           width: 1.2,
                         ),
                       ),
@@ -468,7 +510,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                           const Icon(
                             Icons.person_search_rounded,
                             size: 15,
-                            color: Color(0xFFD81F26),
+                            color: AppColors.accent,
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -476,14 +518,14 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                             style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF28235D),
+                              color: AppColors.navy,
                             ),
                           ),
                           const SizedBox(width: 4),
                           const Icon(
                             Icons.arrow_drop_down_rounded,
                             size: 18,
-                            color: Color(0xFFD81F26),
+                            color: AppColors.accent,
                           ),
                         ],
                       ),
@@ -496,7 +538,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF28235D).withValues(alpha: 0.08),
+                      color: AppColors.navy.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -504,7 +546,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                       style: const TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF28235D),
+                        color: AppColors.navy,
                       ),
                     ),
                   ),
@@ -515,9 +557,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF1E1A3E)
-                    : const Color(0xFFF8FAFC),
+                color: isDark ? AppColors.darkCard : const Color(0xFFF8FAFC),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -529,7 +569,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                   const Icon(
                     Icons.person_pin_rounded,
                     size: 15,
-                    color: Color(0xFFD81F26),
+                    color: AppColors.accent,
                   ),
                   const SizedBox(width: 6),
                   const Text(
@@ -537,7 +577,7 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF28235D),
+                      color: AppColors.navy,
                     ),
                   ),
                   const Spacer(),
@@ -555,26 +595,38 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
 
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: _onSearchChanged,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: 'Buscar lead, cliente, asesor o teléfono…',
-                prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                suffixIcon: _searchCtrl.text.isEmpty
-                    ? null
-                    : IconButton(
-                        tooltip: 'Limpiar búsqueda',
-                        icon: const Icon(Icons.close_rounded, size: 18),
-                        onPressed: _clearSearch,
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: _onSearchChanged,
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      hintText: 'Buscar lead, cliente, asesor o teléfono…',
+                      prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                      suffixIcon: _searchCtrl.text.isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: 'Limpiar búsqueda',
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              onPressed: _clearSearch,
+                            ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 8),
+                AddSquareButton(
+                  onTap: _openCreate,
+                  tooltip: 'Nuevo lead',
+                  icon: Icons.person_add_alt_1_rounded,
+                ),
+              ],
             ),
           ),
           SizedBox(
@@ -601,6 +653,9 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
                   return _StageColumn(
                     stage: stage,
                     leads: leads,
+                    totalCount: _countByStage[stage.id] ?? leads.length,
+                    loadingMore: _loadingMore.contains(stage.id),
+                    onLoadMore: () => _loadMore(stage.id),
                     currency: currency,
                     onRefresh: _load,
                   );
@@ -636,12 +691,18 @@ class _LeadFunnelScreenState extends State<LeadFunnelScreen> {
 class _StageColumn extends StatelessWidget {
   final CrmStage stage;
   final List<Lead> leads;
+  final int totalCount;
+  final bool loadingMore;
+  final VoidCallback onLoadMore;
   final NumberFormat currency;
   final VoidCallback onRefresh;
 
   const _StageColumn({
     required this.stage,
     required this.leads,
+    required this.totalCount,
+    required this.loadingMore,
+    required this.onLoadMore,
     required this.currency,
     required this.onRefresh,
   });
@@ -710,7 +771,7 @@ class _StageColumn extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    '${leads.length}',
+                    '$totalCount',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 12.5,
@@ -733,14 +794,50 @@ class _StageColumn extends StatelessWidget {
                       ),
                     ),
                   )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 100),
-                    itemCount: leads.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 8),
-                    itemBuilder: (context, i) => _FunnelCard(
-                      lead: leads[i],
-                      currency: currency,
-                      onRefresh: onRefresh,
+                : NotificationListener<ScrollNotification>(
+                    // Al acercarse al final se piden los siguientes leads.
+                    onNotification: (n) {
+                      if (n.metrics.axis == Axis.vertical &&
+                          n.metrics.extentAfter < 400 &&
+                          leads.length < totalCount) {
+                        onLoadMore();
+                      }
+                      return false;
+                    },
+                    child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(10, 0, 10, 100),
+                      itemCount:
+                          leads.length + (leads.length < totalCount ? 1 : 0),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, i) {
+                        if (i >= leads.length) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Center(
+                              child: loadingMore
+                                  ? const SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.4,
+                                      ),
+                                    )
+                                  : TextButton(
+                                      onPressed: onLoadMore,
+                                      child: Text(
+                                        'Ver más (${totalCount - leads.length})',
+                                      ),
+                                    ),
+                            ),
+                          );
+                        }
+                        return _FunnelCard(
+                          lead: leads[i],
+                          currency: currency,
+                          onRefresh: onRefresh,
+                        );
+                      },
                     ),
                   ),
           ),
@@ -851,7 +948,7 @@ class _FunnelCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      lead.phone,
+                      Fmt.phone(lead.phone),
                       style: TextStyle(fontSize: 12, color: colors.muted),
                     ),
                   ],

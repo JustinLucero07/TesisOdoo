@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/add_button.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
-import '../../core/widgets/glass_nav_bar.dart';
 import '../../core/widgets/motion.dart';
 import '../../core/widgets/states.dart';
 import '../../core/widgets/skeleton.dart';
@@ -20,6 +20,7 @@ import 'lead_form_screen.dart';
 import 'lead_model.dart';
 import 'lead_service.dart';
 import '../../core/api/odoo_json.dart';
+import '../../core/utils/formats.dart';
 
 class LeadListScreen extends StatefulWidget {
   final bool isPostSale;
@@ -186,7 +187,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                       selected
                           ? Icons.radio_button_checked
                           : Icons.radio_button_off,
-                      color: selected ? const Color(0xFF28235D) : colors.muted,
+                      color: selected ? AppColors.navy : colors.muted,
                       size: 20,
                     ),
                     title: Text(
@@ -195,13 +196,11 @@ class _LeadListScreenState extends State<LeadListScreen> {
                         fontWeight: selected
                             ? FontWeight.w800
                             : FontWeight.w500,
-                        color: selected ? const Color(0xFF28235D) : null,
+                        color: selected ? AppColors.navy : null,
                       ),
                     ),
                     selected: selected,
-                    selectedTileColor: const Color(
-                      0xFF28235D,
-                    ).withValues(alpha: 0.08),
+                    selectedTileColor: AppColors.navy.withValues(alpha: 0.08),
                     onTap: () {
                       setState(() => _sortOrder = value);
                       Navigator.pop(ctx);
@@ -219,30 +218,11 @@ class _LeadListScreenState extends State<LeadListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
 
     return Scaffold(
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: GlassNavBar.reservedHeight),
-        child: FloatingActionButton.small(
-          heroTag: null,
-          onPressed: _openCreate,
-          elevation: 4,
-          backgroundColor: const Color(0xFFD81F26),
-          tooltip: 'Nuevo Lead',
-          child: const Icon(
-            Icons.person_add_alt_1_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: Column(
@@ -276,7 +256,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                     message: 'Ordenar',
                     child: Material(
                       color: isDark
-                          ? const Color(0xFF1E1A3E)
+                          ? AppColors.darkCard
                           : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(14),
                       child: InkWell(
@@ -296,7 +276,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                           child: const Icon(
                             Icons.sort_rounded,
                             size: 20,
-                            color: Color(0xFF28235D),
+                            color: AppColors.navy,
                           ),
                         ),
                       ),
@@ -311,9 +291,9 @@ class _LeadListScreenState extends State<LeadListScreen> {
                       children: [
                         Material(
                           color: _activeLeadFilterCount > 0
-                              ? const Color(0xFF28235D)
+                              ? AppColors.navy
                               : (isDark
-                                    ? const Color(0xFF1E1A3E)
+                                    ? AppColors.darkCard
                                     : const Color(0xFFF1F5F9)),
                           borderRadius: BorderRadius.circular(14),
                           child: InkWell(
@@ -326,7 +306,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: _activeLeadFilterCount > 0
-                                      ? const Color(0xFF28235D)
+                                      ? AppColors.navy
                                       : (isDark
                                             ? Colors.white12
                                             : const Color(0xFFE2E8F0)),
@@ -337,7 +317,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                 size: 20,
                                 color: _activeLeadFilterCount > 0
                                     ? Colors.white
-                                    : const Color(0xFF28235D),
+                                    : AppColors.navy,
                               ),
                             ),
                           ),
@@ -349,7 +329,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(5),
                               decoration: const BoxDecoration(
-                                color: Color(0xFFD81F26),
+                                color: AppColors.accent,
                                 shape: BoxShape.circle,
                               ),
                               child: Text(
@@ -365,6 +345,12 @@ class _LeadListScreenState extends State<LeadListScreen> {
                           ),
                       ],
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  AddSquareButton(
+                    onTap: _openCreate,
+                    tooltip: 'Nuevo lead',
+                    icon: Icons.person_add_alt_1_rounded,
                   ),
                 ],
               ),
@@ -425,7 +411,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                       selected: selected,
                       selectedColor: isDark ? colors.navyLight : colors.navy,
                       backgroundColor: isDark
-                          ? const Color(0xFF1E1A3E)
+                          ? AppColors.darkCard
                           : colors.neutralBg,
                       labelStyle: TextStyle(
                         color: selected
@@ -574,7 +560,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
         alignment: Alignment.centerLeft,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFF25D366),
+          color: AppColors.whatsapp,
           borderRadius: BorderRadius.circular(20),
         ),
         child: const Row(
@@ -600,7 +586,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFF28235D),
+          color: AppColors.navy,
           borderRadius: BorderRadius.circular(20),
         ),
         child: const Row(
@@ -621,7 +607,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isDark ? Colors.white12 : colors.line),
           boxShadow: softShadow(opacity: isDark ? 0.25 : 0.04, isDark: isDark),
@@ -702,7 +688,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                               const Icon(
                                 Icons.home_work_outlined,
                                 size: 14,
-                                color: Color(0xFFD81F26),
+                                color: AppColors.accent,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
@@ -727,7 +713,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                             style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF28235D),
+                              color: AppColors.navy,
                             ),
                           ),
                         ],
@@ -796,7 +782,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                             ),
                             const SizedBox(width: 4),
                             Material(
-                              color: const Color(0xFF25D366),
+                              color: AppColors.whatsapp,
                               borderRadius: BorderRadius.circular(10),
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(10),
@@ -835,7 +821,7 @@ class _LeadListScreenState extends State<LeadListScreen> {
                                 height: 32,
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? const Color(0xFF28244E)
+                                      ? AppColors.darkLine
                                       : const Color(0xFFF1F5F9),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
@@ -1144,7 +1130,7 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                     child: const Text(
                       'Restablecer',
                       style: TextStyle(
-                        color: Color(0xFFD81F26),
+                        color: AppColors.accent,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1155,16 +1141,14 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
 
               Container(
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1E1A3E)
-                      : const Color(0xFFF8FAFC),
+                  color: isDark ? AppColors.darkCard : const Color(0xFFF8FAFC),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
                   ),
                 ),
                 child: SwitchListTile.adaptive(
-                  activeTrackColor: const Color(0xFF28235D),
+                  activeTrackColor: AppColors.navy,
                   activeThumbColor: Colors.white,
                   title: const Text(
                     'Solo mis Oportunidades',
@@ -1284,7 +1268,7 @@ class _LeadFilterSheetState extends State<_LeadFilterSheet> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF28235D),
+                    backgroundColor: AppColors.navy,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1342,12 +1326,12 @@ class _LeadOptionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF28235D)
-              : (isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9)),
+              ? AppColors.navy
+              : (isDark ? AppColors.darkCard : const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ? const Color(0xFF28235D)
+                ? AppColors.navy
                 : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
           ),
         ),

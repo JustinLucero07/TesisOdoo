@@ -13,11 +13,8 @@ import '../auth/auth_service.dart';
 import '../auth/login_screen.dart';
 import '../contacts/contact_list_screen.dart';
 import '../contracts/contract_list_screen.dart';
-import '../crm/lead_form_screen.dart';
 import '../finance/finance_screens.dart';
 import '../offers/offer_screens.dart';
-import '../properties/property_form_screen.dart';
-import '../visits/visit_form_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -35,7 +32,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD81F26),
+              backgroundColor: AppColors.accent,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Cerrar sesión'),
@@ -65,14 +62,12 @@ class SettingsScreen extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF28235D), Color(0xFF18143C)],
+            colors: [AppColors.navy, AppColors.navyDeep],
           ),
           borderRadius: BorderRadius.circular(26),
           boxShadow: [
             BoxShadow(
-              color: const Color(
-                0xFF28235D,
-              ).withValues(alpha: isDark ? 0.5 : 0.28),
+              color: AppColors.navy.withValues(alpha: isDark ? 0.5 : 0.28),
               blurRadius: 26,
               offset: const Offset(0, 12),
               spreadRadius: -8,
@@ -145,11 +140,12 @@ class SettingsScreen extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD81F26),
+                    // Rol real del usuario, sin rojo (no es una alerta).
+                    color: Colors.white.withValues(alpha: 0.16),
                     borderRadius: BorderRadius.circular(100),
                   ),
-                  child: const Text(
-                    'ASESOR',
+                  child: Text(
+                    auth.isAdmin ? 'ADMINISTRADOR' : 'ASESOR',
                     style: TextStyle(
                       fontSize: 9.5,
                       fontWeight: FontWeight.w900,
@@ -208,48 +204,6 @@ class SettingsScreen extends StatelessWidget {
       ),
       const SizedBox(height: 22),
 
-      _SectionHeader(title: 'ACCIONES RÁPIDAS'),
-      Row(
-        children: [
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.add_home_work_rounded,
-              label: '+ Propiedad',
-              color: const Color(0xFF28235D),
-              isDark: isDark,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PropertyFormScreen()),
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.person_add_alt_1_rounded,
-              label: '+ Lead / CRM',
-              color: const Color(0xFFD81F26),
-              isDark: isDark,
-              onTap: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const LeadFormScreen())),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _QuickActionCard(
-              icon: Icons.event_available_rounded,
-              label: '+ Cita Visita',
-              color: const Color(0xFF0284C7),
-              isDark: isDark,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const VisitFormScreen()),
-              ),
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 22),
-
       _SectionHeader(title: 'GESTIÓN COMERCIAL'),
       _GroupCard(
         isDark: isDark,
@@ -265,7 +219,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           _SettingsTile(
             icon: Icons.contacts_outlined,
-            iconColor: const Color(0xFF28235D),
+            iconColor: AppColors.navy,
             title: 'Directorio de contactos',
             subtitle: 'Propietarios, compradores y aliados',
             onTap: () => Navigator.of(context).push(
@@ -274,7 +228,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           _SettingsTile(
             icon: Icons.description_outlined,
-            iconColor: const Color(0xFF3F3787),
+            iconColor: AppColors.navyLight,
             title: 'Contratos y expedientes',
             subtitle: 'Arriendos, promesas de compraventa',
             onTap: () => Navigator.of(context).push(
@@ -310,7 +264,7 @@ class SettingsScreen extends StatelessWidget {
           ),
           _SettingsTile(
             icon: Icons.assessment_outlined,
-            iconColor: const Color(0xFFD81F26),
+            iconColor: AppColors.accent,
             title: 'Tasaciones y avalúos',
             subtitle: 'Informes de valoración inmobiliaria',
             isLast: true,
@@ -348,8 +302,8 @@ class SettingsScreen extends StatelessWidget {
         onPressed: () => _logout(context),
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          foregroundColor: const Color(0xFFD81F26),
-          side: const BorderSide(color: Color(0xFFD81F26), width: 1.5),
+          foregroundColor: AppColors.accent,
+          side: const BorderSide(color: AppColors.accent, width: 1.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -371,75 +325,6 @@ class SettingsScreen extends StatelessWidget {
       ),
       itemCount: sections.length,
       itemBuilder: (context, i) => FadeSlideIn(index: i, child: sections[i]),
-    );
-  }
-}
-
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _QuickActionCard({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return PressableScale(
-      scale: 0.95,
-      haptic: true,
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF161330) : Colors.white,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isDark ? const Color(0xFF28244E) : colors.line,
-            ),
-          ),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: isDark ? 0.25 : 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: isDark ? const Color(0xFF8B85FF) : color,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -475,10 +360,10 @@ class _GroupCard extends StatelessWidget {
     final colors = AppColors.of(context);
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161330) : Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? const Color(0xFF28244E) : colors.line,
+          color: isDark ? AppColors.darkLine : colors.line,
         ),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
@@ -532,7 +417,7 @@ class _SettingsTile extends StatelessWidget {
                     child: Icon(
                       icon,
                       size: 20,
-                      color: isDark ? const Color(0xFF8B85FF) : iconColor,
+                      color: isDark ? AppColors.darkNavy : iconColor,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -570,7 +455,7 @@ class _SettingsTile extends StatelessWidget {
             height: 1,
             indent: 58,
             endIndent: 16,
-            color: isDark ? const Color(0xFF28244E) : colors.line,
+            color: isDark ? AppColors.darkLine : colors.line,
           ),
       ],
     );
@@ -601,7 +486,7 @@ class _InfoTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
             children: [
-              Icon(icon, size: 20, color: const Color(0xFF28235D)),
+              Icon(icon, size: 20, color: AppColors.navy),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -634,7 +519,7 @@ class _InfoTile extends StatelessWidget {
             height: 1,
             indent: 50,
             endIndent: 16,
-            color: isDark ? const Color(0xFF28244E) : colors.line,
+            color: isDark ? AppColors.darkLine : colors.line,
           ),
       ],
     );
@@ -658,10 +543,10 @@ class _ThemeSelectorCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161330) : Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? const Color(0xFF28244E) : colors.line,
+          color: isDark ? AppColors.darkLine : colors.line,
         ),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),
@@ -686,15 +571,15 @@ class _ThemeSelectorCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: selected
                       ? (isDark
-                            ? const Color(0xFF28235D).withValues(alpha: 0.4)
-                            : const Color(0xFF28235D).withValues(alpha: 0.08))
+                            ? AppColors.navy.withValues(alpha: 0.4)
+                            : AppColors.navy.withValues(alpha: 0.08))
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: selected
                         ? (isDark
-                              ? const Color(0xFF8B85FF)
-                              : const Color(0xFF28235D))
+                              ? AppColors.darkNavy
+                              : AppColors.navy)
                         : Colors.transparent,
                     width: 1.5,
                   ),
@@ -706,8 +591,8 @@ class _ThemeSelectorCard extends StatelessWidget {
                       size: 22,
                       color: selected
                           ? (isDark
-                                ? const Color(0xFF8B85FF)
-                                : const Color(0xFF28235D))
+                                ? AppColors.darkNavy
+                                : AppColors.navy)
                           : const Color(0xFF64748B),
                     ),
                     const SizedBox(height: 6),
@@ -719,7 +604,7 @@ class _ThemeSelectorCard extends StatelessWidget {
                             ? FontWeight.w800
                             : FontWeight.w600,
                         color: selected
-                            ? (isDark ? Colors.white : const Color(0xFF28235D))
+                            ? (isDark ? Colors.white : AppColors.navy)
                             : const Color(0xFF64748B),
                       ),
                     ),
@@ -781,10 +666,10 @@ class _NotificationsCardState extends State<_NotificationsCard> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161330) : Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(
-          color: isDark ? const Color(0xFF28244E) : colors.line,
+          color: isDark ? AppColors.darkLine : colors.line,
         ),
         boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
       ),

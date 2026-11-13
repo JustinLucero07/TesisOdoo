@@ -53,12 +53,12 @@ class Interaction {
   };
 
   static Color colorOf(String type, AppPalette colors) => switch (type) {
-    'note' => const Color(0xFFD81F26),
+    'note' => AppColors.accent,
     'call' => colors.navy,
     'email' => colors.info,
     'visit' => colors.success,
     'meeting' => colors.navyLight,
-    'whatsapp' => const Color(0xFF25D366),
+    'whatsapp' => AppColors.whatsapp,
     _ => colors.mutedLight,
   };
 }

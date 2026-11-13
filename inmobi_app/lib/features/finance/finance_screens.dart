@@ -12,9 +12,10 @@ import '../auth/auth_service.dart';
 import '../contacts/contact_detail_screen.dart';
 import '../properties/property_detail_screen.dart';
 import 'finance_models.dart';
+import '../../core/utils/formats.dart';
 
 NumberFormat get _currency =>
-    NumberFormat.currency(locale: 'es_EC', symbol: '\$', decimalDigits: 0);
+    Fmt.money();
 DateFormat get _dateFmt => DateFormat('d MMM y', 'es_EC');
 
 /// Los roles de un mismo negocio (captación, recepción, visita, cierre) se
@@ -110,7 +111,12 @@ class CommissionListScreen extends StatelessWidget {
       ],
       load: (filter) async {
         final domain = <dynamic>[];
-        if (filter != null) domain.add(['state', '=', filter]);
+        if (filter != null) {
+          domain.add(['state', '=', filter]);
+        } else {
+          // "Todas" no muestra las anuladas ($0): solo estorbaban.
+          domain.add(['state', '!=', 'cancelled']);
+        }
         if (onlyMine && odoo.uid != null) {
           domain.add(['user_id', '=', odoo.uid]);
         }
@@ -190,7 +196,7 @@ class CommissionListScreen extends StatelessWidget {
                                 ? '${g.rolePct.toStringAsFixed(0)}% de '
                                       '${_currency.format(g.dealTotal)}'
                                 : 'Comisión '
-                                      '${g.first.commissionPct.toStringAsFixed(1)}%',
+                                      '${Fmt.percent(g.first.commissionPct)}',
                             style: AppType.caption.copyWith(
                               color: p.mutedLight,
                             ),
@@ -595,7 +601,7 @@ class _EntityLink extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: tocable
                 ? style.copyWith(

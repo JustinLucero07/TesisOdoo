@@ -172,7 +172,7 @@ class FichaDownloader {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD81F26),
+              backgroundColor: AppColors.accent,
             ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Eliminar'),
@@ -573,7 +573,7 @@ class _FichaOptionsSheetState extends State<_FichaOptionsSheet> {
                   action: FichaActionType.shareWhatsappText,
                 )),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF25D366),
+                  backgroundColor: AppColors.whatsapp,
                   foregroundColor: Colors.white,
                 ),
                 icon: const Icon(Icons.chat_outlined, size: 18),

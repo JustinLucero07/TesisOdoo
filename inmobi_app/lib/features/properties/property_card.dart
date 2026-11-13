@@ -76,7 +76,7 @@ class _PropertyCardState extends State<PropertyCard> {
       onLongPress: _openQuickActions,
       child: Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isDark
@@ -235,9 +235,7 @@ class _PropertyCardState extends State<PropertyCard> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFD81F26,
-                              ).withValues(alpha: 0.9),
+                              color: AppColors.accent.withValues(alpha: 0.9),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: Colors.white24,
@@ -490,7 +488,7 @@ class _PropertyCardState extends State<PropertyCard> {
                                 );
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF25D366),
+                                backgroundColor: AppColors.whatsapp,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 9,
@@ -526,7 +524,7 @@ class _PropertyCardState extends State<PropertyCard> {
                             height: 36,
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? const Color(0xFF28244E)
+                                  ? AppColors.darkLine
                                   : const Color(0xFFF1F5F9),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -813,7 +811,7 @@ class _PropertyQuickActionSheet extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF161330) : Colors.white,
+        color: isDark ? AppColors.darkSurface : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -869,7 +867,7 @@ class _PropertyQuickActionSheet extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFFD81F26),
+                          color: AppColors.accent,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -885,7 +883,7 @@ class _PropertyQuickActionSheet extends StatelessWidget {
 
             _QuickActionTile(
               icon: Icons.picture_as_pdf_outlined,
-              color: const Color(0xFFD81F26),
+              color: AppColors.accent,
               title: 'Descargar / Compartir Ficha PDF',
               onTap: () {
                 Navigator.of(context).pop();
@@ -898,13 +896,13 @@ class _PropertyQuickActionSheet extends StatelessWidget {
             ),
             _QuickActionTile(
               icon: Icons.chat_bubble_outline_rounded,
-              color: const Color(0xFF25D366),
+              color: AppColors.whatsapp,
               title: 'Compartir por WhatsApp',
               onTap: () => _shareWhatsApp(context),
             ),
             _QuickActionTile(
               icon: Icons.calendar_month_outlined,
-              color: const Color(0xFF28235D),
+              color: AppColors.navy,
               title: 'Agendar Visita a esta Propiedad',
               onTap: () {
                 Navigator.of(context).pop();

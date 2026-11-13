@@ -17,6 +17,7 @@ import 'visit_form_screen.dart';
 import 'visit_model.dart';
 import 'visit_service.dart';
 import '../../core/api/odoo_json.dart';
+import '../../core/widgets/more_menu.dart';
 
 class VisitDetailScreen extends StatefulWidget {
   final int visitId;
@@ -286,10 +287,10 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
               icon: const Icon(Icons.edit_outlined),
               onPressed: _busy ? null : _openEdit,
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Eliminar cita',
-              onPressed: _busy ? null : _delete,
+            DeleteMenuButton(
+              onDelete: _delete,
+              label: 'Eliminar cita',
+              enabled: !_busy,
             ),
           ],
         ],
@@ -538,7 +539,7 @@ class _VisitDetailScreenState extends State<VisitDetailScreen> {
                           const SizedBox(width: AppSpace.sm),
                           _RoundAction(
                             icon: Icons.chat,
-                            background: const Color(0xFF25D366),
+                            background: AppColors.whatsapp,
                             onTap: () => _whatsapp(_clientPhone!),
                           ),
                         ],

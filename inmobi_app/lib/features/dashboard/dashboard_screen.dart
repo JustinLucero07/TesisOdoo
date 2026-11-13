@@ -21,6 +21,7 @@ import '../visits/visit_form_screen.dart';
 import '../visits/visit_model.dart';
 import '../visits/visit_service.dart';
 import '../../core/api/odoo_json.dart';
+import '../../core/widgets/inmobi_logo.dart';
 
 class DashboardScreen extends StatefulWidget {
   final ValueChanged<int>? onNavigate;
@@ -302,7 +303,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF28235D),
+        color: AppColors.navy,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isInProgress ? const Color(0xFF10B981) : Colors.white12,
@@ -310,7 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF28235D).withValues(alpha: 0.25),
+            color: AppColors.navy.withValues(alpha: 0.25),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -466,7 +467,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               _GlassActionButton(
                 icon: Icons.chat_bubble_rounded,
                 label: 'WhatsApp',
-                color: const Color(0xFF25D366),
+                color: AppColors.whatsapp,
                 onTap: () => _openWhatsAppVisit(next),
               ),
               if (next.location.isNotEmpty || next.propertyName.isNotEmpty) ...[
@@ -489,7 +490,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -638,7 +639,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+            color: isDark ? AppColors.darkCard : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -669,7 +670,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             padding: const EdgeInsets.only(bottom: 8),
             child: Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+                color: isDark ? AppColors.darkCard : Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -696,7 +697,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     width: 48,
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF28235D).withValues(alpha: 0.08),
+                      color: AppColors.navy.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     alignment: Alignment.center,
@@ -704,7 +705,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       timeFmt.format(v.start),
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF28235D),
+                        color: AppColors.navy,
                         fontSize: 12,
                       ),
                     ),
@@ -830,7 +831,7 @@ class _MetricCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -964,7 +965,7 @@ class _ActionSquareButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -1029,108 +1030,91 @@ class _DashboardHeader extends StatelessWidget {
         ? 'Buenos días'
         : (hour < 19 ? 'Buenas tardes' : 'Buenas noches');
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF28235D), Color(0xFF1E1A46)],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(26)),
-      ),
+    final fecha = DateFormat("EEE d MMM", 'es_EC').format(DateTime.now());
+
+    // Cabecera con la diagonal del logo (dos azules de la marca) y el techo
+    // rojo dibujado como sello, en lugar de la franja azul plana.
+    return InmobiDiagonalBackground(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
       child: SafeArea(
         bottom: false,
-        child: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.35),
-                  width: 2,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 16, 22),
+          child: Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 2,
+                  ),
+                ),
+                child: UserAvatar(
+                  odoo: auth.odoo,
+                  userId: auth.odoo.userId ?? 0,
+                  userName: firstName,
+                  radius: 23,
+                  backgroundColor: AppColors.navyLight,
                 ),
               ),
-              child: UserAvatar(
-                odoo: auth.odoo,
-                userId: auth.odoo.userId ?? 0,
-                userName: firstName,
-                radius: 22,
-                backgroundColor: const Color(0xFF4338CA),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    greeting,
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white.withValues(alpha: 0.75),
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    firstName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Container(
-                        width: 7,
-                        height: 7,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF10B981),
-                          shape: BoxShape.circle,
-                        ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      greeting,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.white.withValues(alpha: 0.72),
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'En línea · Odoo ERP',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      firstName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 21,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        letterSpacing: -0.3,
                       ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                DateFormat(
-                  "d MMM",
-                  'es_EC',
-                ).format(DateTime.now()).toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                  fontSize: 12,
-                  letterSpacing: 0.5,
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            'En línea · $fecha',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              const InmobiRoof(width: 64),
+            ],
+          ),
         ),
       ),
     );

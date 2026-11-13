@@ -161,9 +161,9 @@ class _GlassNavBarState extends State<GlassNavBar>
                           AnimatedBuilder(
                             animation: _indicator,
                             builder: (context, _) => Positioned(
-                              left: _indicator.value * itemWidth + 8,
+                              left: _indicator.value * itemWidth + 4,
                               top: 7,
-                              width: itemWidth - 16,
+                              width: itemWidth - 8,
                               height: pillHeight,
                               child: DecoratedBox(
                                 decoration: BoxDecoration(
@@ -264,17 +264,23 @@ class _NavButton extends StatelessWidget {
               child: Opacity(
                 opacity: labelOpacity,
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 3),
-                  child: Text(
-                    item.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: AppType.family,
-                      fontSize: 10.5,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                      letterSpacing: 0.1,
-                      color: selected ? onPill : resting,
+                  padding: const EdgeInsets.fromLTRB(6, 3, 6, 0),
+                  // Si la etiqueta no cabe en la píldora se achica un poco
+                  // en vez de salirse o cortarse.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      item.label,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontFamily: AppType.family,
+                        fontSize: 10.5,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                        letterSpacing: 0.1,
+                        color: selected ? onPill : resting,
+                      ),
                     ),
                   ),
                 ),

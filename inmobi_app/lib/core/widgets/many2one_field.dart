@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../api/odoo_client.dart';
 import '../api/odoo_json.dart';
 import '../theme/app_theme.dart';
 import '../../features/contacts/contact_form_screen.dart';
 import 'odoo_image.dart';
+import '../utils/formats.dart';
 
 class Many2oneValue {
   final int id;
@@ -61,10 +61,10 @@ class Many2oneField extends StatelessWidget {
     if (value != null && model == 'estate.property') {
       return Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isDark ? const Color(0xFF28235D) : const Color(0xFFD4D4E8),
+            color: isDark ? AppColors.navy : const Color(0xFFD4D4E8),
             width: 1.2,
           ),
           boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
@@ -112,7 +112,7 @@ class Many2oneField extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFFD81F26),
+                            color: AppColors.accent,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -151,10 +151,10 @@ class Many2oneField extends StatelessWidget {
     if (value != null && model == 'res.partner') {
       return Container(
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isDark ? const Color(0xFF28235D) : const Color(0xFFD4D4E8),
+            color: isDark ? AppColors.navy : const Color(0xFFD4D4E8),
             width: 1.2,
           ),
           boxShadow: softShadow(opacity: isDark ? 0.2 : 0.04, isDark: isDark),
@@ -170,15 +170,13 @@ class Many2oneField extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: const Color(
-                      0xFF28235D,
-                    ).withValues(alpha: 0.1),
+                    backgroundColor: AppColors.navy.withValues(alpha: 0.1),
                     child: Text(
                       value!.name.isNotEmpty
                           ? value!.name[0].toUpperCase()
                           : '?',
                       style: const TextStyle(
-                        color: Color(0xFF28235D),
+                        color: AppColors.navy,
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
                       ),
@@ -195,7 +193,7 @@ class Many2oneField extends StatelessWidget {
                           style: const TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF28235D),
+                            color: AppColors.navy,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -341,11 +339,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
         order: isProperty ? 'write_date desc' : '${widget.searchField} asc',
       );
 
-      final currency = NumberFormat.currency(
-        symbol: r'$',
-        decimalDigits: 0,
-        locale: 'es_EC',
-      );
+      final currency = Fmt.money();
 
       setState(() {
         _results = rows.map((r) {
@@ -445,12 +439,12 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
               icon: const Icon(
                 Icons.person_add_alt_1_rounded,
                 size: 18,
-                color: Color(0xFFD81F26),
+                color: AppColors.accent,
               ),
               label: const Text(
                 'Nuevo',
                 style: TextStyle(
-                  color: Color(0xFFD81F26),
+                  color: AppColors.accent,
                   fontWeight: FontWeight.w800,
                   fontSize: 13,
                 ),
@@ -515,7 +509,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                             const SizedBox(height: 14),
                             ElevatedButton.icon(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF28235D),
+                                backgroundColor: AppColors.navy,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -548,7 +542,7 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                       return Container(
                         decoration: BoxDecoration(
                           color: isDark
-                              ? const Color(0xFF1E1A3E)
+                              ? AppColors.darkCard
                               : Colors.white,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
@@ -590,13 +584,11 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                           width: 140,
                                           height: 140,
                                           errorBuilder: (_) => Container(
-                                            color: const Color(
-                                              0xFF28235D,
-                                            ).withValues(alpha: 0.08),
+                                            color: AppColors.navy.withValues(alpha: 0.08),
                                             child: const Icon(
                                               Icons.home_work_outlined,
                                               size: 24,
-                                              color: Color(0xFF28235D),
+                                              color: AppColors.navy,
                                             ),
                                           ),
                                         ),
@@ -605,15 +597,13 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                   else if (isPartner)
                                     CircleAvatar(
                                       radius: 22,
-                                      backgroundColor: const Color(
-                                        0xFF28235D,
-                                      ).withValues(alpha: 0.1),
+                                      backgroundColor: AppColors.navy.withValues(alpha: 0.1),
                                       child: Text(
                                         item.name.isNotEmpty
                                             ? item.name[0].toUpperCase()
                                             : '?',
                                         style: const TextStyle(
-                                          color: Color(0xFF28235D),
+                                          color: AppColors.navy,
                                           fontWeight: FontWeight.w800,
                                           fontSize: 15,
                                         ),
@@ -624,14 +614,12 @@ class _Many2oneSearchScreenState extends State<_Many2oneSearchScreen> {
                                       width: 44,
                                       height: 44,
                                       decoration: BoxDecoration(
-                                        color: const Color(
-                                          0xFF28235D,
-                                        ).withValues(alpha: 0.08),
+                                        color: AppColors.navy.withValues(alpha: 0.08),
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       child: const Icon(
                                         Icons.check_circle_outline_rounded,
-                                        color: Color(0xFF28235D),
+                                        color: AppColors.navy,
                                         size: 20,
                                       ),
                                     ),

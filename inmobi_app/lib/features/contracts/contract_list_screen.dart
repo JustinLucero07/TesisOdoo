@@ -12,6 +12,7 @@ import 'contract_detail_screen.dart';
 import 'contract_form_screen.dart';
 import 'contract_model.dart';
 import 'contract_service.dart';
+import '../../core/utils/formats.dart';
 
 class ContractListScreen extends StatefulWidget {
   final int? propertyId;
@@ -90,11 +91,7 @@ class _ContractListScreenState extends State<ContractListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
     final colors = AppColors.of(context);
     return Scaffold(
       appBar: AppBar(

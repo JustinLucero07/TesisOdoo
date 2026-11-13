@@ -53,54 +53,57 @@ class AppPalette {
     required this.neutralBg,
   });
 
+  // Paleta oficial del logo Inmobi: azul marino #142559 (principal), azul
+  // oscuro #0D1940, rojos #D9042B / #A60F2B y vino #590C37.
   static const light = AppPalette(
     isDark: false,
-    navy: Color(0xFF28235D),
-    navyDeep: Color(0xFF1B1740),
-    navyLight: Color(0xFF3F3787),
-    accent: Color(0xFFD81F26),
-    accentSoft: Color(0xFFFEE2E2),
-    background: Color(0xFFF8FAFC),
+    navy: AppColors.navy,
+    navyDeep: AppColors.navyDeep,
+    navyLight: AppColors.navyLight,
+    accent: AppColors.accent,
+    accentSoft: Color(0xFFFDE6EA),
+    background: Color(0xFFF6F8FC),
     surface: Colors.white,
-    surfaceAlt: Color(0xFFF1F5F9),
-    ink: Color(0xFF0F172A),
-    muted: Color(0xFF64748B),
-    mutedLight: Color(0xFF94A3B8),
-    line: Color(0xFFE2E8F0),
+    surfaceAlt: Color(0xFFEFF3FA),
+    ink: Color(0xFF0E1630),
+    muted: Color(0xFF5D6B85),
+    mutedLight: Color(0xFF94A0B8),
+    line: Color(0xFFE1E7F1),
     success: Color(0xFF10B981),
     successBg: Color(0xFFECFDF5),
     warning: Color(0xFFF59E0B),
     warningBg: Color(0xFFFFFBEB),
-    danger: Color(0xFFD81F26),
-    dangerBg: Color(0xFFFEF2F2),
+    danger: AppColors.accent,
+    dangerBg: Color(0xFFFEF2F4),
     info: Color(0xFF0284C7),
     infoBg: Color(0xFFF0F9FF),
-    neutralBg: Color(0xFFF1F5F9),
+    neutralBg: Color(0xFFEFF3FA),
   );
 
+  // Modo oscuro con los mismos azules de la marca (antes era violeta).
   static const dark = AppPalette(
     isDark: true,
-    navy: Color(0xFF6C63FF),
-    navyDeep: Color(0xFF28235D),
-    navyLight: Color(0xFF8B85FF),
-    accent: Color(0xFFEF4444),
-    accentSoft: Color(0xFF450A0A),
-    background: Color(0xFF0C0A1E),
-    surface: Color(0xFF161330),
-    surfaceAlt: Color(0xFF221E47),
-    ink: Color(0xFFF8FAFC),
-    muted: Color(0xFF94A3B8),
-    mutedLight: Color(0xFF64748B),
-    line: Color(0xFF28244E),
+    navy: AppColors.darkNavy,
+    navyDeep: AppColors.navy,
+    navyLight: Color(0xFFB4C4F7),
+    accent: AppColors.accentLight,
+    accentSoft: Color(0xFF3D0A16),
+    background: AppColors.darkBackground,
+    surface: AppColors.darkSurface,
+    surfaceAlt: Color(0xFF17213F),
+    ink: Color(0xFFF4F6FB),
+    muted: Color(0xFF9AA6BF),
+    mutedLight: Color(0xFF66738F),
+    line: AppColors.darkLine,
     success: Color(0xFF34D399),
     successBg: Color(0xFF064E3B),
     warning: Color(0xFFFBBF24),
     warningBg: Color(0xFF451A03),
-    danger: Color(0xFFF87171),
-    dangerBg: Color(0xFF450A0A),
+    danger: Color(0xFFFF6B81),
+    dangerBg: Color(0xFF3D0A16),
     info: Color(0xFF38BDF8),
     infoBg: Color(0xFF0C4A6E),
-    neutralBg: Color(0xFF1E1A3C),
+    neutralBg: Color(0xFF141D38),
   );
 }
 
@@ -112,26 +115,38 @@ class AppColors {
       ? AppPalette.dark
       : AppPalette.light;
 
-  static const navy = Color(0xFF28235D);
-  static const navyDeep = Color(0xFF1B1740);
-  static const navyLight = Color(0xFF3F3787);
-  static const accent = Color(0xFFD81F26);
-  static const accentLight = Color(0xFFEF4444);
-  static const ink = Color(0xFF0F172A);
-  static const muted = Color(0xFF64748B);
-  static const mutedLight = Color(0xFF94A3B8);
-  static const line = Color(0xFFE2E8F0);
-  static const background = Color(0xFFF8FAFC);
+  // Marca (logo)
+  static const navy = Color(0xFF142559);
+  static const navyDeep = Color(0xFF0D1940);
+  static const navyLight = Color(0xFF2B418C);
+  static const accent = Color(0xFFD9042B);
+  static const accentDark = Color(0xFFA60F2B);
+  static const wine = Color(0xFF590C37);
+  static const accentLight = Color(0xFFFF4D6A);
+
+  // Superficies del modo oscuro
+  static const darkNavy = Color(0xFF8EA6F2);
+  static const darkBackground = Color(0xFF070C1C);
+  static const darkSurface = Color(0xFF0F1730);
+  static const darkCard = Color(0xFF121B36);
+  static const darkLine = Color(0xFF223056);
+
+  static const ink = Color(0xFF0E1630);
+  static const muted = Color(0xFF5D6B85);
+  static const mutedLight = Color(0xFF94A0B8);
+  static const line = Color(0xFFE1E7F1);
+  static const background = Color(0xFFF6F8FC);
   static const surface = Colors.white;
   static const success = Color(0xFF10B981);
   static const successBg = Color(0xFFECFDF5);
   static const warning = Color(0xFFF59E0B);
   static const warningBg = Color(0xFFFFFBEB);
-  static const danger = Color(0xFFD81F26);
-  static const dangerBg = Color(0xFFFEF2F2);
+  static const danger = accent;
+  static const dangerBg = Color(0xFFFEF2F4);
   static const info = Color(0xFF0284C7);
   static const infoBg = Color(0xFFF0F9FF);
-  static const neutralBg = Color(0xFFF1F5F9);
+  static const neutralBg = Color(0xFFEFF3FA);
+  static const whatsapp = Color(0xFF25D366);
 }
 
 class AppType {
@@ -140,41 +155,49 @@ class AppType {
   static const family = 'Jost';
 
   static const display = TextStyle(
+    fontFamily: family,
     fontSize: 28,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.7,
     height: 1.15,
   );
   static const title = TextStyle(
+    fontFamily: family,
     fontSize: 20,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.4,
     height: 1.2,
   );
   static const heading = TextStyle(
+    fontFamily: family,
     fontSize: 16,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.2,
     height: 1.3,
   );
-  static const body = TextStyle(fontSize: 14.5, height: 1.5, letterSpacing: 0);
+  static const body = TextStyle(
+    fontFamily: family,fontSize: 14.5, height: 1.5, letterSpacing: 0);
   static const bodySmall = TextStyle(
+    fontFamily: family,
     fontSize: 13,
     height: 1.45,
     letterSpacing: 0.1,
   );
   static const caption = TextStyle(
+    fontFamily: family,
     fontSize: 11.5,
     height: 1.35,
     letterSpacing: 0.2,
   );
   static const label = TextStyle(
+    fontFamily: family,
     fontSize: 10.5,
     fontWeight: FontWeight.w600,
     letterSpacing: 0.7,
     height: 1.2,
   );
   static const numeric = TextStyle(
+    fontFamily: family,
     fontSize: 22,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
@@ -437,7 +460,7 @@ List<BoxShadow> softShadow({double opacity = 0.04, bool isDark = false}) => [
 ];
 
 List<BoxShadow> modernAmbientShadow({
-  Color color = const Color(0xFF28235D),
+  Color color = AppColors.navy,
   double opacity = 0.07,
   double blur = 24,
   Offset offset = const Offset(0, 8),
@@ -464,7 +487,7 @@ class AppGlass {
       color:
           customColor ??
           (isDark
-              ? const Color(0xFF1C1938).withValues(alpha: opacity)
+              ? AppColors.darkSurface.withValues(alpha: opacity)
               : Colors.white.withValues(alpha: opacity)),
       borderRadius: BorderRadius.circular(radius),
       border:
@@ -486,7 +509,7 @@ class AppGradients {
   static const LinearGradient navyHero = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [Color(0xFF28235D), Color(0xFF1B1840)],
+    colors: [AppColors.navy, AppColors.navyDeep],
   );
 
   static const LinearGradient accentHero = LinearGradient(

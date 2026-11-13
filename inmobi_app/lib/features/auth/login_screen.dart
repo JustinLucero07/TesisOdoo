@@ -8,6 +8,7 @@ import '../../core/api/odoo_exception.dart';
 import '../../core/theme/app_theme.dart';
 import '../home/home_shell.dart';
 import 'auth_service.dart';
+import '../../core/widgets/inmobi_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -131,7 +132,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     return Scaffold(
       backgroundColor: isDark
-          ? const Color(0xFF0C0A1E)
+          ? AppColors.darkBackground
           : const Color(0xFFF8FAFC),
       body: Stack(
         children: [
@@ -155,9 +156,7 @@ class _LoginScreenState extends State<LoginScreen>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              (isDark
-                                      ? const Color(0xFF28235D)
-                                      : const Color(0xFF28235D))
+                              (isDark ? AppColors.navy : AppColors.navy)
                                   .withValues(alpha: isDark ? 0.35 : 0.12),
                               Colors.transparent,
                             ],
@@ -176,9 +175,9 @@ class _LoginScreenState extends State<LoginScreen>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              const Color(
-                                0xFFD81F26,
-                              ).withValues(alpha: isDark ? 0.18 : 0.08),
+                              AppColors.accent.withValues(
+                                alpha: isDark ? 0.18 : 0.08,
+                              ),
                               Colors.transparent,
                             ],
                           ),
@@ -204,50 +203,44 @@ class _LoginScreenState extends State<LoginScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const _AssemblingInmobiLogo(),
-
-                      const SizedBox(height: 18),
-
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'INMOBI',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 3,
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF1B1740),
+                      // Logo de la marca dibujado y animado, sobre la
+                      // diagonal azul del logo.
+                      Container(
+                        width: double.infinity,
+                        height: 210,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.navy.withValues(alpha: 0.28),
+                              blurRadius: 30,
+                              offset: const Offset(0, 14),
+                            ),
+                          ],
+                        ),
+                        child: InmobiDiagonalBackground(
+                          borderRadius: BorderRadius.circular(28),
+                          child: const Center(
+                            child: AnimatedInmobiLogo(
+                              width: 200,
+                              delay: Duration(milliseconds: 150),
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFD81F26),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: 14),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF28235D,
-                          ).withValues(alpha: isDark ? 0.25 : 0.08),
+                          color: AppColors.navy.withValues(
+                            alpha: isDark ? 0.25 : 0.08,
+                          ),
                           borderRadius: BorderRadius.circular(100),
                           border: Border.all(
-                            color: const Color(
-                              0xFF28235D,
-                            ).withValues(alpha: 0.15),
+                            color: AppColors.navy.withValues(alpha: 0.15),
                           ),
                         ),
                         child: Text(
@@ -256,9 +249,7 @@ class _LoginScreenState extends State<LoginScreen>
                             fontSize: 11,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 1.1,
-                            color: isDark
-                                ? const Color(0xFF9E96E6)
-                                : const Color(0xFF28235D),
+                            color: isDark ? AppColors.darkNavy : AppColors.navy,
                           ),
                         ),
                       ),
@@ -273,12 +264,12 @@ class _LoginScreenState extends State<LoginScreen>
                             padding: const EdgeInsets.all(26),
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? const Color(0xFF161330)
+                                  ? AppColors.darkSurface
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(28),
                               border: Border.all(
                                 color: isDark
-                                    ? const Color(0xFF28244E)
+                                    ? AppColors.darkLine
                                     : const Color(0xFFE2E8F0),
                                 width: 1.2,
                               ),
@@ -337,7 +328,7 @@ class _LoginScreenState extends State<LoginScreen>
                                           const Icon(
                                             Icons.error_outline_rounded,
                                             size: 18,
-                                            color: Color(0xFFD81F26),
+                                            color: AppColors.accent,
                                           ),
                                           const SizedBox(width: 8),
                                           Expanded(
@@ -345,7 +336,7 @@ class _LoginScreenState extends State<LoginScreen>
                                               _error!,
                                               style: const TextStyle(
                                                 fontSize: 12.5,
-                                                color: Color(0xFFD81F26),
+                                                color: AppColors.accent,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
@@ -376,24 +367,24 @@ class _LoginScreenState extends State<LoginScreen>
                                       prefixIcon: const Icon(
                                         Icons.person_outline_rounded,
                                         size: 20,
-                                        color: Color(0xFF28235D),
+                                        color: AppColors.navy,
                                       ),
                                       filled: true,
                                       fillColor: isDark
-                                          ? const Color(0xFF0C0A1E)
+                                          ? AppColors.darkBackground
                                           : const Color(0xFFF8FAFC),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(16),
                                         borderSide: BorderSide(
                                           color: isDark
-                                              ? const Color(0xFF28244E)
+                                              ? AppColors.darkLine
                                               : const Color(0xFFE2E8F0),
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(16),
                                         borderSide: const BorderSide(
-                                          color: Color(0xFF28235D),
+                                          color: AppColors.navy,
                                           width: 2,
                                         ),
                                       ),
@@ -426,7 +417,7 @@ class _LoginScreenState extends State<LoginScreen>
                                       prefixIcon: const Icon(
                                         Icons.lock_outline_rounded,
                                         size: 20,
-                                        color: Color(0xFF28235D),
+                                        color: AppColors.navy,
                                       ),
                                       suffixIcon: IconButton(
                                         icon: AnimatedSwitcher(
@@ -452,20 +443,20 @@ class _LoginScreenState extends State<LoginScreen>
                                       ),
                                       filled: true,
                                       fillColor: isDark
-                                          ? const Color(0xFF0C0A1E)
+                                          ? AppColors.darkBackground
                                           : const Color(0xFFF8FAFC),
                                       enabledBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(16),
                                         borderSide: BorderSide(
                                           color: isDark
-                                              ? const Color(0xFF28244E)
+                                              ? AppColors.darkLine
                                               : const Color(0xFFE2E8F0),
                                         ),
                                       ),
                                       focusedBorder: OutlineInputBorder(
                                         borderRadius: BorderRadius.circular(16),
                                         borderSide: const BorderSide(
-                                          color: Color(0xFF28235D),
+                                          color: AppColors.navy,
                                           width: 2,
                                         ),
                                       ),
@@ -482,8 +473,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       decoration: BoxDecoration(
                                         gradient: const LinearGradient(
                                           colors: [
-                                            Color(0xFF28235D),
-                                            Color(0xFF1B1740),
+                                            AppColors.navy,
+                                            AppColors.navyDeep,
                                           ],
                                           begin: Alignment.topLeft,
                                           end: Alignment.bottomRight,
@@ -491,9 +482,9 @@ class _LoginScreenState extends State<LoginScreen>
                                         borderRadius: BorderRadius.circular(16),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: const Color(
-                                              0xFF28235D,
-                                            ).withValues(alpha: 0.35),
+                                            color: AppColors.navy.withValues(
+                                              alpha: 0.35,
+                                            ),
                                             blurRadius: 18,
                                             offset: const Offset(0, 6),
                                           ),
@@ -571,14 +562,18 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
-                              'Conexión Segura y Encriptada · Inmobi',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? const Color(0xFF64748B)
-                                    : const Color(0xFF94A3B8),
+                            Flexible(
+                              child: Text(
+                                'Conexión Segura y Encriptada · Inmobi',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFF64748B)
+                                      : const Color(0xFF94A3B8),
+                                ),
                               ),
                             ),
                           ],
@@ -591,307 +586,6 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _AssemblingInmobiLogo extends StatefulWidget {
-  const _AssemblingInmobiLogo();
-
-  @override
-  State<_AssemblingInmobiLogo> createState() => _AssemblingInmobiLogoState();
-}
-
-class _AssemblingInmobiLogoState extends State<_AssemblingInmobiLogo>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  late final Animation<Offset> _topRoofSlide;
-  late final Animation<double> _topRoofRotate;
-  late final Animation<Offset> _leftPillarSlide;
-  late final Animation<Offset> _rightPillarSlide;
-  late final Animation<double> _coreScale;
-
-  late final Animation<double> _finalBadgeScale;
-  late final Animation<double> _flashAuraOpacity;
-  late final Animation<double> _piecesFadeOut;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-
-    _topRoofSlide =
-        Tween<Offset>(begin: const Offset(0.0, -1.8), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.0, 0.55, curve: Curves.easeOutBack),
-          ),
-        );
-
-    _topRoofRotate = Tween<double>(begin: -0.4, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
-      ),
-    );
-
-    _leftPillarSlide =
-        Tween<Offset>(begin: const Offset(-2.0, 0.6), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.1, 0.60, curve: Curves.easeOutBack),
-          ),
-        );
-
-    _rightPillarSlide =
-        Tween<Offset>(begin: const Offset(2.0, 0.6), end: Offset.zero).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.15, 0.65, curve: Curves.easeOutBack),
-          ),
-        );
-
-    _coreScale = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.2, 0.70, curve: Curves.elasticOut),
-    );
-
-    _flashAuraOpacity =
-        TweenSequence<double>([
-          TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 40),
-          TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 60),
-        ]).animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: const Interval(0.58, 0.90, curve: Curves.easeOut),
-          ),
-        );
-
-    _piecesFadeOut = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.65, 0.85, curve: Curves.easeInOut),
-      ),
-    );
-
-    _finalBadgeScale = Tween<double>(begin: 0.82, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.65, 1.0, curve: Curves.easeOutBack),
-      ),
-    );
-
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _replay() {
-    HapticFeedback.selectionClick();
-    _controller.reset();
-    _controller.forward();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: _replay,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, _) {
-          return SizedBox(
-            width: 140,
-            height: 140,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Opacity(
-                  opacity: _flashAuraOpacity.value,
-                  child: Container(
-                    width: 136,
-                    height: 136,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFFD81F26).withValues(alpha: 0.6),
-                          blurRadius: 40,
-                          spreadRadius: 10,
-                        ),
-                        BoxShadow(
-                          color: const Color(0xFF28235D).withValues(alpha: 0.8),
-                          blurRadius: 46,
-                          spreadRadius: 12,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                if (_piecesFadeOut.value > 0)
-                  Opacity(
-                    opacity: _piecesFadeOut.value,
-                    child: SizedBox(
-                      width: 110,
-                      height: 110,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          SlideTransition(
-                            position: _topRoofSlide,
-                            child: RotationTransition(
-                              turns: _topRoofRotate,
-                              child: Align(
-                                alignment: Alignment.topCenter,
-                                child: Container(
-                                  width: 60,
-                                  height: 28,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFD81F26),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(10),
-                                      topRight: Radius.circular(10),
-                                      bottomLeft: Radius.circular(6),
-                                      bottomRight: Radius.circular(6),
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(
-                                          0xFFD81F26,
-                                        ).withValues(alpha: 0.4),
-                                        blurRadius: 12,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          SlideTransition(
-                            position: _leftPillarSlide,
-                            child: Align(
-                              alignment: Alignment.bottomLeft,
-                              child: Container(
-                                width: 30,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF28235D),
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFF28235D,
-                                      ).withValues(alpha: 0.4),
-                                      blurRadius: 12,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          SlideTransition(
-                            position: _rightPillarSlide,
-                            child: Align(
-                              alignment: Alignment.bottomRight,
-                              child: Container(
-                                width: 30,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1B1740),
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFF1B1740,
-                                      ).withValues(alpha: 0.4),
-                                      blurRadius: 12,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          ScaleTransition(
-                            scale: _coreScale,
-                            child: Align(
-                              alignment: Alignment.center,
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF3F3787),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.5),
-                                    width: 2,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                if (_controller.value >= 0.6)
-                  ScaleTransition(
-                    scale: _finalBadgeScale,
-                    child: Container(
-                      width: 125,
-                      height: 125,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF28235D), Color(0xFF18143C)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.22),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFF28235D,
-                            ).withValues(alpha: 0.45),
-                            blurRadius: 32,
-                            offset: const Offset(0, 12),
-                            spreadRadius: 3,
-                          ),
-                          BoxShadow(
-                            color: const Color(
-                              0xFFD81F26,
-                            ).withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(4, 6),
-                          ),
-                        ],
-                      ),
-                      child: Image.asset(
-                        'assets/branding/logo_white.png',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

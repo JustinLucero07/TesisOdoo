@@ -180,7 +180,7 @@ class _RemindersSectionState extends State<RemindersSection> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E1A3E) : colors.neutralBg,
+              color: isDark ? AppColors.darkCard : colors.neutralBg,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: isDark ? Colors.white12 : colors.line),
             ),
@@ -268,7 +268,7 @@ class ReminderTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+          color: isDark ? AppColors.darkCard : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: r.isOverdue

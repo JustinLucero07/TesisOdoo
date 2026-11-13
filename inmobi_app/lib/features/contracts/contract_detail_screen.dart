@@ -14,6 +14,7 @@ import '../properties/property_detail_screen.dart';
 import 'contract_form_screen.dart';
 import 'contract_model.dart';
 import 'contract_service.dart';
+import '../../core/utils/formats.dart';
 
 class ContractDetailScreen extends StatefulWidget {
   final int contractId;
@@ -85,11 +86,7 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
 
   Widget _buildBody(AppPalette colors) {
     final c = _contract!;
-    final currency = NumberFormat.currency(
-      locale: 'es_EC',
-      symbol: '\$',
-      decimalDigits: 0,
-    );
+    final currency = Fmt.money();
     final dateFmt = DateFormat('d MMM yyyy', 'es_EC');
 
     return ListView(
@@ -180,7 +177,7 @@ class _ContractDetailScreenState extends State<ContractDetailScreen> {
               child: _StatCard(
                 icon: Icons.percent,
                 label: 'Comisión',
-                value: '${c.commissionPercentage.toStringAsFixed(1)}%',
+                value: '${Fmt.percent(c.commissionPercentage)}',
               ),
             ),
           ],

@@ -270,7 +270,7 @@ class _PropertyGallerySectionState extends State<PropertyGallerySection> {
               ListTile(
                 leading: const Icon(
                   Icons.checklist_rounded,
-                  color: Color(0xFF28235D),
+                  color: AppColors.navy,
                 ),
                 title: const Text('Seleccionar fotos específicas'),
                 subtitle: const Text('Elige qué fotos descargar una por una'),

@@ -52,6 +52,8 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
   Many2oneValue? _buyer;
   Many2oneValue? _tenant;
   Many2oneValue? _advisor;
+  Many2oneValue? _captureUser;
+  bool _hasSign = false;
 
   bool _saving = false;
   String? _error;
@@ -101,6 +103,10 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       if (p.tenantId != null)
         _tenant = Many2oneValue(p.tenantId!, p.tenantName);
       if (p.userId != null) _advisor = Many2oneValue(p.userId!, p.userName);
+      if (p.captureUserId != null) {
+        _captureUser = Many2oneValue(p.captureUserId!, p.captureUserName);
+      }
+      _hasSign = p.hasSign;
     }
   }
 
@@ -138,9 +144,11 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
       'description': _descriptionCtrl.text.trim(),
       if (_propertyType != null) 'property_type_id': _propertyType!.id,
       'owner_id': _owner?.id ?? false,
-      'buyer_id': _buyer?.id ?? false,
-      'tenant_id': _tenant?.id ?? false,
+      if (widget.isEdit) 'buyer_id': _buyer?.id ?? false,
+      if (widget.isEdit) 'tenant_id': _tenant?.id ?? false,
       if (_advisor != null) 'user_id': _advisor!.id,
+      'exclusive_user_id': _captureUser?.id ?? false,
+      'has_sign': _hasSign,
       if (!widget.isEdit) 'state': 'available',
     };
 
@@ -203,30 +211,32 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
               value: _isExclusive,
               onChanged: (v) => setState(() => _isExclusive = v),
             ),
-            const _FormSectionTitle('Precio y comisión'),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _priceCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Precio de venta (\$)',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _rentalPriceCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Precio de arriendo (\$)',
-                    ),
-                  ),
-                ),
-              ],
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: const Text(
+                'Letrero puesto',
+                style: TextStyle(fontSize: 14),
+              ),
+              value: _hasSign,
+              onChanged: (v) => setState(() => _hasSign = v),
             ),
+            const _FormSectionTitle('Precio y comisión'),
+            if (_offerType == 'rent')
+              TextFormField(
+                controller: _rentalPriceCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Valor del arriendo mensual (\$)',
+                ),
+              )
+            else
+              TextFormField(
+                controller: _priceCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Precio de venta (\$)',
+                ),
+              ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -235,7 +245,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                     controller: _bottomPriceCtrl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Precio tope (mínimo)',
+                      labelText: 'Precio mínimo (\$)',
                     ),
                   ),
                 ),
@@ -389,9 +399,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                   child: TextFormField(
                     controller: _parkingCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Parqueaderos',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Parqueos'),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -407,9 +415,7 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
                   child: TextFormField(
                     controller: _yearBuiltCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Año construcción',
-                    ),
+                    decoration: const InputDecoration(labelText: 'Año'),
                   ),
                 ),
               ],
@@ -424,20 +430,32 @@ class _PropertyFormScreenState extends State<PropertyFormScreen> {
             ),
             const SizedBox(height: 14),
             Many2oneField(
-              label: 'Comprador',
+              label: 'Captador (sale en la web)',
               odoo: _odoo,
-              model: 'res.partner',
-              value: _buyer,
-              onChanged: (v) => setState(() => _buyer = v),
+              model: 'res.users',
+              value: _captureUser,
+              onChanged: (v) => setState(() => _captureUser = v),
             ),
-            const SizedBox(height: 14),
-            Many2oneField(
-              label: 'Arrendatario',
-              odoo: _odoo,
-              model: 'res.partner',
-              value: _tenant,
-              onChanged: (v) => setState(() => _tenant = v),
-            ),
+            if (widget.isEdit && _buyer != null) ...[
+              const SizedBox(height: 14),
+              Many2oneField(
+                label: 'Comprador',
+                odoo: _odoo,
+                model: 'res.partner',
+                value: _buyer,
+                onChanged: (v) => setState(() => _buyer = v),
+              ),
+            ],
+            if (widget.isEdit && _tenant != null) ...[
+              const SizedBox(height: 14),
+              Many2oneField(
+                label: 'Arrendatario',
+                odoo: _odoo,
+                model: 'res.partner',
+                value: _tenant,
+                onChanged: (v) => setState(() => _tenant = v),
+              ),
+            ],
             const SizedBox(height: 14),
             Many2oneField(
               label: 'Asesor responsable',

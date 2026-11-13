@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/odoo_client.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/add_button.dart';
 import '../../core/utils/phone_utils.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/glass_nav_bar.dart';
@@ -182,11 +183,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
   }
 
   void _showAdvisorPicker() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -267,11 +267,10 @@ class _VisitListScreenState extends State<VisitListScreen> {
   }
 
   void _showTypePicker() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final colors = AppColors.of(context);
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -359,62 +358,20 @@ class _VisitListScreenState extends State<VisitListScreen> {
     final colors = AppColors.of(context);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      backgroundColor: colors.background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: double.infinity,
-            padding: EdgeInsets.only(
-              top: MediaQuery.of(context).padding.top + 8,
-              left: 18,
-              right: 8,
-              bottom: 14,
+            padding: EdgeInsets.fromLTRB(
+              18,
+              MediaQuery.paddingOf(context).top + 10,
+              12,
+              12,
             ),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF1E1A3E), Color(0xFF28235D)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Agenda',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _openCreate,
-                  icon: const Icon(
-                    Icons.add,
-                    color: Color(0xFFFFB800),
-                    size: 30,
-                  ),
-                  tooltip: 'Nueva Cita',
-                ),
-              ],
-            ),
-          ),
-
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              border: Border(
-                bottom: BorderSide(
-                  color: isDark
-                      ? const Color(0xFF334155)
-                      : const Color(0xFFE2E8F0),
-                  width: 1,
-                ),
-              ),
+              color: colors.surface,
+              border: Border(bottom: BorderSide(color: colors.line, width: 1)),
             ),
             child: Row(
               children: [
@@ -501,7 +458,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
                           color: _activeVisitFilterCount > 0
-                              ? const Color(0xFF28235D)
+                              ? AppColors.navy
                               : (isDark
                                     ? const Color(0xFF334155)
                                     : const Color(0xFFF1F5F9)),
@@ -522,7 +479,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: const BoxDecoration(
-                              color: Color(0xFFD81F26),
+                              color: AppColors.accent,
                               shape: BoxShape.circle,
                             ),
                             child: Text(
@@ -539,12 +496,14 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(width: 10),
+                AddSquareButton(onTap: _openCreate, tooltip: 'Nueva cita'),
               ],
             ),
           ),
 
           Container(
-            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            color: colors.surface,
             padding: const EdgeInsets.only(bottom: 8),
             child: TableCalendar<Visit>(
               locale: 'es_EC',
@@ -635,7 +594,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                   fontSize: 13.5,
                 ),
                 markerDecoration: const BoxDecoration(
-                  color: Color(0xFFEF4444),
+                  color: AppColors.accentLight,
                   shape: BoxShape.circle,
                 ),
                 markersMaxCount: 3,
@@ -645,10 +604,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
             ),
           ),
 
-          Container(
-            height: 1,
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
-          ),
+          Container(height: 1, color: colors.line),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
@@ -1011,9 +967,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                     child: Container(
                       width: 1.5,
                       margin: const EdgeInsets.symmetric(vertical: 4),
-                      color: isDark
-                          ? const Color(0xFF334155)
-                          : const Color(0xFFE2E8F0),
+                      color: colors.line,
                     ),
                   ),
               ],
@@ -1027,13 +981,9 @@ class _VisitListScreenState extends State<VisitListScreen> {
               padding: const EdgeInsets.only(bottom: 16),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  color: colors.surface,
                   borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF334155)
-                        : const Color(0xFFE2E8F0),
-                  ),
+                  border: Border.all(color: colors.line),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(
@@ -1130,7 +1080,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                               _ActionCircleButton(
                                 icon: Icons.phone_outlined,
                                 bgColor: isDark
-                                    ? const Color(0xFF28244E)
+                                    ? AppColors.darkLine
                                     : const Color(0xFFF1F5F9),
                                 iconColor: isDark
                                     ? Colors.white70
@@ -1141,7 +1091,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
 
                               _ActionCircleButton(
                                 icon: Icons.chat_bubble_rounded,
-                                bgColor: const Color(0xFF25D366),
+                                bgColor: AppColors.whatsapp,
                                 iconColor: Colors.white,
                                 onTap: () => _openWhatsApp(v, timeFmt),
                               ),
@@ -1150,7 +1100,7 @@ class _VisitListScreenState extends State<VisitListScreen> {
                               _ActionCircleButton(
                                 icon: Icons.location_on_outlined,
                                 bgColor: isDark
-                                    ? const Color(0xFF28244E)
+                                    ? AppColors.darkLine
                                     : const Color(0xFFF1F5F9),
                                 iconColor: isDark
                                     ? Colors.white70
@@ -1294,7 +1244,7 @@ class _VisitFilterSheetState extends State<_VisitFilterSheet> {
                     child: const Text(
                       'Restablecer',
                       style: TextStyle(
-                        color: Color(0xFFD81F26),
+                        color: AppColors.accent,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1348,7 +1298,7 @@ class _VisitFilterSheetState extends State<_VisitFilterSheet> {
                 height: 48,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF28235D),
+                    backgroundColor: AppColors.navy,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
@@ -1398,12 +1348,12 @@ class _VisitFilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF28235D)
-              : (isDark ? const Color(0xFF1E1A3E) : const Color(0xFFF1F5F9)),
+              ? AppColors.navy
+              : (isDark ? AppColors.darkCard : const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected
-                ? const Color(0xFF28235D)
+                ? AppColors.navy
                 : (isDark ? Colors.white12 : const Color(0xFFE2E8F0)),
           ),
         ),

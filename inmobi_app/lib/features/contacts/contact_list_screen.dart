@@ -128,21 +128,6 @@ class _ContactListScreenState extends State<ContactListScreen> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Scaffold(
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 74),
-        child: FloatingActionButton.small(
-          heroTag: null,
-          onPressed: _openCreate,
-          backgroundColor: const Color(0xFFD81F26),
-          elevation: 4,
-          tooltip: 'Nuevo Contacto',
-          child: const Icon(
-            Icons.person_add_alt_1_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
       body: Column(
         children: [
           Padding(
@@ -172,7 +157,7 @@ class _ContactListScreenState extends State<ContactListScreen> {
                 Tooltip(
                   message: 'Nuevo Contacto',
                   child: Material(
-                    color: const Color(0xFFD81F26),
+                    color: AppColors.accent,
                     borderRadius: BorderRadius.circular(14),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(14),
@@ -328,7 +313,7 @@ class _ContactTile extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1A3E) : Colors.white,
+        color: isDark ? AppColors.darkCard : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isDark ? Colors.white12 : const Color(0xFFE2E8F0),
@@ -392,7 +377,7 @@ class _ContactTile extends StatelessWidget {
                 if (phone.isNotEmpty) ...[
                   Material(
                     color: isDark
-                        ? const Color(0xFF28244E)
+                        ? AppColors.darkLine
                         : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(10),
                     child: InkWell(
@@ -414,7 +399,7 @@ class _ContactTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Material(
-                    color: const Color(0xFF25D366),
+                    color: AppColors.whatsapp,
                     borderRadius: BorderRadius.circular(10),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),

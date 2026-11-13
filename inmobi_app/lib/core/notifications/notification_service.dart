@@ -10,6 +10,7 @@ import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../api/odoo_client.dart';
+import '../theme/app_theme.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -233,7 +234,7 @@ class NotificationService {
         importance: Importance.high,
         priority: Priority.high,
         icon: '@drawable/ic_notification',
-        color: Color(0xFFD81F26),
+        color: AppColors.accent,
       ),
       iOS: DarwinNotificationDetails(),
     );
@@ -277,7 +278,7 @@ class NotificationService {
         importance: Importance.high,
         priority: Priority.high,
         icon: '@drawable/ic_notification',
-        color: Color(0xFFD81F26),
+        color: AppColors.accent,
       ),
       iOS: DarwinNotificationDetails(),
     );

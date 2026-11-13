@@ -91,9 +91,9 @@ class _HomeShellState extends State<HomeShell> {
   static const _titles = [
     'Panel Inmobi',
     'Propiedades',
-    'CRM & Clientes',
-    'Agenda de Citas',
-    'Opciones & Ajustes',
+    'CRM y clientes',
+    'Agenda',
+    'Opciones',
   ];
 
   static const _navItems = [
@@ -163,7 +163,7 @@ class _HomeShellState extends State<HomeShell> {
           _goTo(index);
         },
       ),
-      appBar: (_index == 0 || _index == 3)
+      appBar: _index == 0
           ? null
           : AppBar(
               backgroundColor: Colors.transparent,
@@ -197,10 +197,7 @@ class _HomeShellState extends State<HomeShell> {
                   child: Padding(
                     padding: const EdgeInsets.only(right: 16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
                         color: colors.navy.withValues(
                           alpha: isDark ? 0.25 : 0.08,
@@ -217,17 +214,8 @@ class _HomeShellState extends State<HomeShell> {
                             odoo: auth.odoo,
                             userId: auth.odoo.userId ?? 0,
                             userName: userName,
-                            radius: 12,
+                            radius: 15,
                             backgroundColor: colors.navy,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            userName.split(' ').first,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: colors.navy,
-                            ),
                           ),
                         ],
                       ),
@@ -279,7 +267,7 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFD81F26),
+              backgroundColor: AppColors.accent,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Cerrar sesión'),
@@ -312,7 +300,7 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF28235D), Color(0xFF18143C)],
+                  colors: [AppColors.navy, AppColors.navyDeep],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -372,7 +360,7 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFD81F26),
+                          color: AppColors.accent,
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: const Text(
@@ -405,7 +393,7 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                           userId: auth.odoo.userId ?? 0,
                           userName: userName,
                           radius: 20,
-                          backgroundColor: const Color(0xFFD81F26),
+                          backgroundColor: AppColors.accent,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -469,7 +457,7 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     icon: Icons.contacts_outlined,
                     title: 'Directorio de Contactos',
                     subtitle: 'Propietarios e interesados',
-                    color: const Color(0xFF28235D),
+                    color: AppColors.navy,
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
@@ -483,7 +471,7 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     icon: Icons.description_outlined,
                     title: 'Contratos de Alquiler / Venta',
                     subtitle: 'Expedientes activos y reservas',
-                    color: const Color(0xFF3F3787),
+                    color: AppColors.navyLight,
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
@@ -555,7 +543,7 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     icon: Icons.add_home_work_outlined,
                     title: 'Registrar Nueva Propiedad',
                     subtitle: 'Captación en Inmobi',
-                    color: const Color(0xFFD81F26),
+                    color: AppColors.accent,
                     onTap: () {
                       Navigator.of(context).pop();
                       Navigator.of(context).push(
@@ -573,12 +561,12 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
               decoration: BoxDecoration(
                 color: isDark
-                    ? const Color(0xFF161330)
+                    ? AppColors.darkSurface
                     : const Color(0xFFF8FAFC),
                 border: Border(
                   top: BorderSide(
                     color: isDark
-                        ? const Color(0xFF28244E)
+                        ? AppColors.darkLine
                         : const Color(0xFFE2E8F0),
                   ),
                 ),
@@ -589,9 +577,9 @@ class _InmobiExecutiveDrawer extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: () => _logout(context),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFD81F26),
+                        foregroundColor: AppColors.accent,
                         side: const BorderSide(
-                          color: Color(0xFFD81F26),
+                          color: AppColors.accent,
                           width: 1.2,
                         ),
                         shape: RoundedRectangleBorder(
@@ -680,7 +668,7 @@ class _DrawerActionTile extends StatelessWidget {
                   child: Icon(
                     icon,
                     size: 18,
-                    color: isDark ? const Color(0xFF8B85FF) : color,
+                    color: isDark ? AppColors.darkNavy : color,
                   ),
                 ),
                 const SizedBox(width: 12),
