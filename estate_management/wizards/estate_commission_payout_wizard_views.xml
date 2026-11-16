@@ -22,6 +22,7 @@
                         <field name="user_id" force_save="1"/>
                         <field name="roles" force_save="1"/>
                         <field name="amount_base" force_save="1"/>
+                        <field name="pay_now"/>
                         <field name="invoice"/>
                         <field name="payment_method"/>
                         <field name="payment_date"/>
@@ -39,7 +40,7 @@
                 <group class="oe_subtotal_footer">
                     <field name="amount_base_total" widget="monetary"/>
                     <field name="amount_vat_total" widget="monetary"/>
-                    <field name="amount_to_pay" widget="monetary" class="oe_subtotal_footer_separator fw-bold fs-5"/>
+                    <field name="amount_to_pay" string="Total a pagar ahora" widget="monetary" class="oe_subtotal_footer_separator fw-bold fs-5"/>
                 </group>
 
                 <p class="text-muted small">

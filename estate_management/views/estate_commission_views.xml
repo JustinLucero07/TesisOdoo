@@ -114,7 +114,7 @@
                             context="{'estate_split_only': True}"
                             invisible="state in ('paid', 'cancelled', 'split') or split_count == 0"
                             help="Deja registrado quién hizo cada paso. El pago queda pendiente hasta que el propietario pague."/>
-                    <button name="action_open_payout_wizard" string="Pagar pendientes"
+                    <button name="action_open_payout_wizard" string="Completar pago a asesores"
                             type="object" class="btn-warning" icon="fa-check-circle"
                             invisible="state != 'split' or client_collection_state == 'pending'"
                             help="Paga a los asesores del reparto que aún no han cobrado."/>

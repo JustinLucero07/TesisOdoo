@@ -45,3 +45,45 @@
     display: block;
     width: 100%;
 }
+
+.o_estate_payout_when {
+    display: inline-flex;
+    padding: 3px;
+    border-radius: 10px;
+    background: $o-gray-100;
+    gap: 3px;
+}
+
+.o_estate_payout_when_btn {
+    border: 0;
+    background: transparent;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: .85rem;
+    font-weight: 600;
+    color: $text-muted;
+
+    &.active {
+        background: $o-view-background-color;
+        color: $o-brand-primary;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, .12);
+    }
+
+    &.active.later {
+        color: #b45309;
+    }
+}
+
+.o_estate_payout_later_note {
+    margin-top: 8px;
+    font-size: .82rem;
+    color: #92400e;
+    background: #fffbeb;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+// Los datos de pago se pueden dejar llenos, pero se ven atenuados.
+.o_estate_payout_later {
+    opacity: .45;
+}

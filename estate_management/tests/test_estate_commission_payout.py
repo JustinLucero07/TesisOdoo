@@ -303,3 +303,29 @@ class TestEstateCommissionPayout(TransactionCase):
             'estate_management.action_report_commission_receipt', com.ids)
         self.assertIn(b'001-002-000123', html)
         self.assertIn(b'Factura entregada en oficina', html)
+
+    def test_pagar_ahora_a_uno_y_despues_al_otro(self):
+        wizard = self.env['estate.commission.payout.wizard'].with_context(
+            default_commission_id=self.commission.id, default_mode='split').create({})
+        ufredo = wizard.line_ids.filtered(lambda l: l.user_id == self.user_advisor1)
+        camila = wizard.line_ids.filtered(lambda l: l.user_id == self.user_advisor2)
+        camila.write({'pay_now': False, 'invoice': 'with'})
+        self.assertAlmostEqual(wizard.amount_to_pay, ufredo.amount_total, places=2,
+                               msg='El total a pagar ahora no incluye a quien se paga después')
+        wizard.action_confirm()
+
+        hijos = self.commission.child_commission_ids
+        de_ufredo = hijos.filtered(lambda c: c.user_id == self.user_advisor1)
+        de_camila = hijos.filtered(lambda c: c.user_id == self.user_advisor2)
+        self.assertEqual(set(de_ufredo.mapped('state')), {'paid'})
+        self.assertEqual(set(de_camila.mapped('state')), {'approved'})
+        self.assertFalse(de_camila.mapped('payment_id'))
+        self.assertEqual(self.commission.state, 'split')
+
+        # Después: "Completar pago a asesores" solo muestra a Camila
+        completar = self.env['estate.commission.payout.wizard'].with_context(
+            default_commission_id=self.commission.id, default_mode='pending').create({})
+        self.assertEqual(completar.line_ids.user_id, self.user_advisor2)
+        completar.action_confirm()
+        self.assertEqual(set(de_camila.mapped('state')), {'paid'})
+        self.assertEqual(len(de_camila.mapped('payment_id')), 1)

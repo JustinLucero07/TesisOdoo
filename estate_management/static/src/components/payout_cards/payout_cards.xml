@@ -11,10 +11,28 @@
                         <div class="text-muted small" t-esc="rec.data.roles"/>
                     </div>
                     <div class="text-end">
-                        <div class="text-muted small">Total a pagar</div>
+                        <div class="text-muted small" t-esc="rec.data.pay_now ? 'Total a pagar' : 'Pendiente'"/>
                         <div class="fs-5 fw-semibold" t-esc="money(rec, rec.data.amount_total)"/>
                     </div>
                 </div>
+                <!-- Pagar ahora o dejarlo para después ("Completar pago a asesores") -->
+                <div class="o_estate_payout_when mt-3">
+                    <button type="button" t-att-disabled="readonly"
+                            t-attf-class="o_estate_payout_when_btn {{ rec.data.pay_now ? 'active' : '' }}"
+                            t-on-click="() => this.set(rec, 'pay_now', true)">
+                        <i class="fa fa-check-circle me-1"/>Pagar ahora
+                    </button>
+                    <button type="button" t-att-disabled="readonly"
+                            t-attf-class="o_estate_payout_when_btn {{ rec.data.pay_now ? '' : 'active later' }}"
+                            t-on-click="() => this.set(rec, 'pay_now', false)">
+                        <i class="fa fa-clock-o me-1"/>Pagar después
+                    </button>
+                </div>
+                <div t-if="!rec.data.pay_now" class="o_estate_payout_later_note">
+                    Queda pendiente. Se le paga después con el botón
+                    <b>Completar pago a asesores</b> de la comisión.
+                </div>
+                <div t-att-class="rec.data.pay_now ? '' : 'o_estate_payout_later'">
                 <div class="row g-3 mt-1">
                     <div class="col-md-4">
                         <div class="o_estate_payout_label">¿Cómo se le paga?</div>
@@ -80,6 +98,7 @@
                           t-att-disabled="readonly"
                           t-on-change="(ev) => this.set(rec, 'payment_note', ev.target.value)"
                           t-esc="rec.data.payment_note or ''"/>
+                </div>
             </div>
         </div>
     </t>

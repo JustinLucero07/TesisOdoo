@@ -39,13 +39,17 @@ class EstateCommissionPayoutWizard(models.TransientModel):
         compute='_compute_totals')
     advisor_count = fields.Integer(compute='_compute_totals')
 
-    @api.depends('line_ids.amount_base', 'line_ids.amount_vat', 'line_ids.amount_total')
+    @api.depends('line_ids.amount_base', 'line_ids.amount_vat', 'line_ids.amount_total',
+                 'line_ids.pay_now')
     def _compute_totals(self):
+        # Los totales son de lo que se paga ahora; lo que queda para después
+        # no sale todavía de la caja.
         for wiz in self:
-            wiz.amount_base_total = sum(wiz.line_ids.mapped('amount_base'))
-            wiz.amount_vat_total = sum(wiz.line_ids.mapped('amount_vat'))
-            wiz.amount_to_pay = sum(wiz.line_ids.mapped('amount_total'))
-            wiz.advisor_count = len(wiz.line_ids)
+            now = wiz.line_ids.filtered('pay_now')
+            wiz.amount_base_total = sum(now.mapped('amount_base'))
+            wiz.amount_vat_total = sum(now.mapped('amount_vat'))
+            wiz.amount_to_pay = sum(now.mapped('amount_total'))
+            wiz.advisor_count = len(now)
 
     @api.model
     def default_get(self, fields_list):
@@ -122,6 +126,10 @@ class EstateCommissionPayoutWizard(models.TransientModel):
             'payment_note': line.payment_note,
         }
 
+    def _pays_now(self, user):
+        line = self.line_ids.filtered(lambda l: l.user_id == user)[:1]
+        return bool(line.pay_now) if line else True
+
     def action_confirm(self):
         self.ensure_one()
         com = self.commission_id
@@ -147,7 +155,11 @@ class EstateCommissionPayoutWizard(models.TransientModel):
                     'parent_commission_id': com.id,
                 }))
             com.state = 'split'
-            creadas.action_register_payment()
+            # Solo se paga a los marcados "Pagar ahora"; el resto queda
+            # aprobado y se completa después con "Completar pago a asesores".
+            ahora = creadas.filtered(lambda c: self._pays_now(c.user_id))
+            if ahora:
+                ahora.action_register_payment()
             return com.action_view_children()
 
         if self.mode == 'pending':
@@ -157,11 +169,15 @@ class EstateCommissionPayoutWizard(models.TransientModel):
                 raise UserError('Todas las comisiones de este reparto ya están pagadas.')
             for hija in pendientes:
                 hija.write(self._line_vals(hija.user_id))
-            pendientes.action_register_payment()
+            ahora = pendientes.filtered(lambda c: self._pays_now(c.user_id))
+            if not ahora:
+                raise UserError('Marca "Pagar ahora" en al menos un asesor.')
+            ahora.action_register_payment()
             return com.action_view_children()
 
         com.write(self._line_vals(com.user_id))
-        com.action_register_payment()
+        if self._pays_now(com.user_id):
+            com.action_register_payment()
         return {'type': 'ir.actions.act_window_close'}
 
 
@@ -181,6 +197,9 @@ class EstateCommissionPayoutLine(models.TransientModel):
     amount_total = fields.Monetary(
         string='Total a pagar', currency_field='company_currency', compute='_compute_amounts')
     company_currency = fields.Many2one(related='wizard_id.company_currency')
+    pay_now = fields.Boolean(
+        string='Pagar ahora', default=True,
+        help='Si se desmarca, al asesor se le paga después con "Completar pago a asesores".')
     payment_method = fields.Selection(
         selection=lambda self: self.env['estate.commission']._fields['payment_method'].selection,
         string='¿Cómo se le paga?', default='transfer')
